@@ -1,0 +1,86 @@
+{
+  "_id": "629baa7d43eb7939e4e5c698",
+  "name": "J'peux pas J'suis Acro",
+  "year": 2022,
+  "pilots": [
+    "Théo De Blic",
+    "Luke de Weert",
+    "Jerome Loyet",
+    "Jérémy Péclard",
+    "Veselin Ovcharov"
+  ],
+  "judges": [
+    "Jérôme Loyet",
+    "Julien Grosse"
+  ],
+  "state": "init",
+  "type": "solo",
+  "config": {
+    "nb_pilots_to_keep_for_next_run": 0,
+    "apply_penalties": true
+  },
+  "start_date": "2022-07-05",
+  "end_date": "2022-07-10",
+  "Runs": [
+    {
+      "state": "not open",
+      "start_date": "2022-07-05T10:00:00Z",
+      "pilots": [],
+      "judges": [],
+      "results": [
+        {
+          "pilot": "Veselin Ovcharov",
+          "tricks": [
+            "/LM",
+            "RH",
+            "/SS/",
+            "LI",
+            "LMC",
+            "LL",
+            "FS"
+          ],
+          "marks": [
+            {
+              "judge": "Jérôme Loyet",
+              "technical": 6.5,
+              "choreography": 5,
+              "landing": 6
+            },
+            {
+              "judge": "Julien Grosse",
+              "technical": 7,
+              "choreography": 4.5,
+              "landing": 6.5
+            }
+          ]
+        },
+        {
+          "pilot": "Jérémy Péclard",
+          "tricks": [
+            "/LM",
+            "RH",
+            "/SS/",
+            "LI",
+            "LMC",
+            "LL",
+            "FS"
+          ],
+          "marks": [
+            {
+              "judge": "Jérôme Loyet",
+              "technical": 7.5,
+              "choreography": 5.5,
+              "landing": 6.5
+            },
+            {
+              "judge": "Julien Grosse",
+              "technical": 7.5,
+              "choreography": 5,
+              "landing": 5
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

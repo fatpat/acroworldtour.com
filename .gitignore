@@ -1,0 +1,7 @@
+mongo/
+api/.venv-docker/
+__pycache__/
+*.py[cod]
+.DS_Store
+mongo.pass.env
+*.tar.gz

@@ -1,0 +1,39 @@
+pilot: jerry,
+tricks:
+  - name: "right Anti-Rythmic SAT"
+    acronym: "RA"
+    technical_coefficient: 1.8
+    bonus: 0
+  - name: "left Mac Twist"
+    acronym: "LMC"
+    technical_coefficient: 1.7
+    bonus: 0
+  - name: "right Misty Flip"
+    acronym: "RM"
+    technical_coefficient: 1.65
+    bonus: 0
+  - name: "Full Stall"
+    acronym: "/FS"
+    technical_coefficient: 1
+    bonus: 1.5
+  - name: "right Misty to Helicopter reverse"
+    acronym: "RMHR"
+    technical_coefficient: 1.75
+    bonus: 3
+marks:
+  - judge: jury1
+    technical: 1
+    choreography: 1
+    landing: 1
+    synchro: 7
+  - judge: jury2
+    technical: 2
+    choreography: 2
+    landing: 2
+    synchro: 8
+  - judge: jury3
+    technical: 4
+    choreography: 4
+    landing: 4
+    synchro: 9
+
