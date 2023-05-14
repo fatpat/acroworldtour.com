@@ -1,0 +1,41 @@
+import Link from "next/link";
+
+import { components } from "@/interfaces/openapi";
+
+interface Props {
+  competition: components["schemas"]["CompetitionPublicExport"];
+}
+
+const Competition: React.FC<Props> = ({ competition }) => {
+  const { code: id, name, location, image, start_date, end_date } = competition;
+  const startDate = new Date(start_date);
+  const endDate = new Date(end_date);
+  const startDay = startDate.getDate();
+  const startMonth = startDate.toLocaleString("default", {
+    month: "long",
+  });
+  const startYear = startDate.getFullYear();
+  const endDay = endDate.getDate();
+  const endMonth = endDate.toLocaleString("default", {
+    month: "long",
+  });
+  const endYear = endDate.getFullYear();
+  return (
+    <Link key={id} href={`/competitions/${id}`} className="hover:invert">
+      <article
+        style={{ backgroundImage: `url(${image})` }}
+        className="mb-4 rounded-xl bg-neutral-50/95 bg-cover bg-center bg-no-repeat p-4 bg-blend-overlay"
+      >
+        <hgroup className="mb-12">
+          <h3>{name}</h3>
+          <h4>{location}</h4>
+        </hgroup>
+        <small>{`${startDay} ${startMonth !== endMonth ? startMonth : ""} ${
+          startYear !== endYear ? startYear : ""
+        } to ${endDay} ${endMonth} ${endYear}`}</small>
+      </article>
+    </Link>
+  );
+};
+
+export default Competition;
