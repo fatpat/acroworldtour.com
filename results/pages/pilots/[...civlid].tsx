@@ -6,6 +6,12 @@ import { fetcher } from "@/utils/fetcher";
 
 type Pilot = components["schemas"]["Pilot"];
 
+const pageTitle = "Acro World Tour | Pilots";
+const pageDescription =
+  "Acro World Tour Pilots page. In this page you will find all the pilots that are part of the Acro World Tour.";
+const headerTitle = "Pilots";
+const headerSubtitle = "Acro World Tour";
+
 const Pilot = () => {
   const router = useRouter();
   const { id } = router.query;
@@ -30,5 +36,10 @@ const Pilot = () => {
     </main>
   );
 };
+
+Pilot.pageTitle = pageTitle;
+Pilot.pageDescription = pageDescription;
+Pilot.headerTitle = headerTitle;
+Pilot.headerSubtitle = headerSubtitle;
 
 export default Pilot;

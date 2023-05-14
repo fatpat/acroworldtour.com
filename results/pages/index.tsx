@@ -1,62 +1,29 @@
-import useSWR from "swr";
+import classNames from "classnames";
 
 import About from "@/components/about";
-import Competition from "@/components/competition";
 import Download from "@/components/download";
-import { components } from "@/types";
-import { fetcher } from "@/utils/fetcher";
-
-import Loading from "./loading";
-
-type Competition = components["schemas"]["CompetitionPublicExport"];
 
 const pageTitle = "Acro World Tour | Home";
 const pageDescription =
   "Home page for the official web application of the Acro World Tour. In this app you can find everything you need to know about competition results and your favourite pilots.";
 
 const Home = () => {
-  const { data: competitions, error } = useSWR<Competition[], Error>(
-    "https://api-preprod.acroworldtour.com/public/competitions",
-    fetcher
-  );
-
-  if (error) {
-    return (
-      <>
-        <h2>Failed to load data ❌</h2>
-        <small>
-          The database may be down.
-          <br />
-          Check again in a few minutes.
-        </small>
-      </>
-    );
-  }
-  if (!competitions) return <Loading />;
-
   // const currentCompetitions = competitions.filter((comp) => {
   //   comp.state === "open";
   // });
 
-  const currentCompetitions = [competitions[0]];
-
   return (
     <>
       <About />
-      <section>
-        {/* <article>
-          {currentCompetitions.length ? (
-            <h2>Current Event{currentCompetitions.length > 1 ? "s" : ""}</h2>
-          ) : (
-            <h2>
-              {!currentCompetitions.length &&
-                "There is no event at the moment."}
-            </h2>
+      <section className="flex flex-col gap-8">
+        <article
+          className={classNames(
+            "flex h-24 w-full max-w-lg items-center justify-center rounded-xl bg-gray-100 shadow-md my-8"
           )}
-          {currentCompetitions.map((competition) =>
-            Competition({ competition })
-          )}
-        </article> */}
+        >
+          <h2>Loading...</h2>
+        </article>
+
         <Download />
       </section>
     </>

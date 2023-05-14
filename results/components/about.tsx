@@ -58,7 +58,7 @@ const About = () => {
       <footer
         className={classNames(
           "flex w-1/2 max-w-[150px] items-center justify-between",
-          "lg: max-w-lg",
+          "lg: max-w-xs",
           hideAbout ? "translate-x-1/2 mt-[2px]" : "mt-2"
         )}
       >
