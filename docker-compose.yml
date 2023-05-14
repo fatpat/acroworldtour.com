@@ -1,0 +1,52 @@
+version: '3'
+services:
+  api:
+    build: ./api
+    environment: 
+      - MONGODB_URL=mongodb://mongo:mongo@mongodb
+      - DATABASE=acropyx2-dev
+    ports:
+      - 8000:8000
+    volumes:
+        - ./api:/app
+    tty: true
+    environment:
+      - MONGODB_URL=mongodb://mongo:mongo@mongodb/
+      - DATABASE=acropyx2-dev
+      - CACHE_EXPIRES=1
+
+  manager:
+    image: node:18-alpine
+    command: sh -c "yarn install && yarn run dev"
+    working_dir: /app
+    ports:
+      - 3001:3001
+    volumes:
+      - ./manager:/app
+    environment:
+      - NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
+#      - NEXT_PUBLIC_API_URL=https://api-preprod.acroworldtour.com
+
+  results:
+    image: node:18-alpine
+    command: sh -c "yarn install && yarn run dev"
+    working_dir: /app
+    ports:
+      - 3000:3000
+    volumes:
+      - ./results:/app
+    environment:
+      - NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
+#      - NEXT_PUBLIC_API_URL=https://api-preprod.acroworldtour.com
+      - NEXT_CACHE_DURATION=1
+
+  mongodb:
+    image: mongo:5.0
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=mongo
+      - MONGO_INITDB_ROOT_PASSWORD=mongo
+    command: --setParameter processUmask=022
+    volumes:
+      - ./mongo:/data/db
+    ports:
+      - 27017:27017
