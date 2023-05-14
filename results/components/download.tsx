@@ -3,7 +3,7 @@ import Link from "next/link";
 import { SPORTING_CODE_MANUAL_URL } from "@/config/flags";
 
 const Download = () => (
-  <article className="mt-8">
+  <article>
     <h2>Downloads</h2>
     <div className="rounded-xl bg-awtgrey-100 p-4 text-sm flex flex-col items-center">
       <Link

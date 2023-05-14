@@ -1,8 +1,9 @@
+import classNames from "classnames";
 import { alpha3ToAlpha2 } from "i18n-iso-countries";
 import Link from "next/link";
 import useSWR from "swr";
 
-import { components } from "@/interfaces/openapi";
+import { components } from "@/types";
 import { fetcher } from "@/utils/fetcher";
 
 type Pilot = components["schemas"]["Pilot"];
@@ -23,7 +24,7 @@ const Pilots = () => {
   if (!pilots) return <div>Loading...</div>;
 
   return (
-    <section className="flex flex-wrap gap-x-8 gap-y-4 mt-4 justify-start">
+    <section className="mt-4 flex flex-wrap justify-start gap-x-8 gap-y-4">
       {pilots.map((pilot) => {
         const { _id: id, name, photo, country, rank } = pilot;
         const slug = name.toLowerCase().replace(/\s/g, "-");
@@ -38,12 +39,20 @@ const Pilots = () => {
           >
             <div
               style={{ backgroundImage: `url('${photo}')` }}
-              className="relative h-52 w-52 rounded-xl bg-cover bg-center bg-no-repeat mb-1"
+              className="relative mb-1 h-52 w-52 rounded-xl bg-cover bg-center bg-no-repeat"
             >
-              <i className={`${alpha2country} flag absolute right-2 top-2`} />
+              <i
+                className={classNames(
+                  alpha2country,
+                  "flag",
+                  "absolute right-2 top-2"
+                )}
+              />
             </div>
             <h3 className="">{name}</h3>
-            <small>{rank === 9999 ? "Unranked" : `Overall Rank: #${rank}`}</small>
+            <small>
+              {rank === 9999 ? "Unranked" : `Overall Rank: #${rank}`}
+            </small>
           </Link>
         );
       })}

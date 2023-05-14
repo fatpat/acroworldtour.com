@@ -1,3 +1,4 @@
+import classNames from "classnames";
 import { type NextPage } from "next";
 import { Montserrat } from "next/font/google";
 import Image from "next/image";
@@ -17,7 +18,12 @@ interface Props {
 
 const Header: NextPage<Props> = ({ headerTitle, headerSubtitle }) => (
   <header
-    className={`${montserrat.className} z-10 flex h-24 w-full items-center justify-between bg-awtgrey-900 bg-contain bg-right bg-no-repeat px-6 sm:justify-between lg:fixed lg:inset-x-0 lg:top-0`}
+    className={classNames(
+      montserrat.className,
+      "z-10 flex h-24 w-full items-center justify-between bg-awtgrey-900 bg-contain bg-right bg-no-repeat px-6",
+      "sm:justify-between",
+      "lg:fixed lg:inset-x-0 lg:-top-0"
+    )}
     style={{
       backgroundImage: `url(${lines.src})`,
     }}

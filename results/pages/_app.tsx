@@ -1,6 +1,7 @@
 import "@/styles/globals.css";
 import "semantic-ui-flag/flag.min.css";
 
+import classNames from "classnames";
 import type { AppProps } from "next/app";
 import { Montserrat } from "next/font/google";
 import { NextComponentType } from "next/types";
@@ -20,7 +21,7 @@ type CustomAppProps<P = {}> = AppProps<P> & {
   };
 };
 
-export default function App({ Component, pageProps }: CustomAppProps) {
+const App = ({ Component, pageProps }: CustomAppProps) => {
   return (
     <Layout
       pageTitle={Component.pageTitle}
@@ -28,9 +29,17 @@ export default function App({ Component, pageProps }: CustomAppProps) {
       headerTitle={Component.headerTitle}
       headerSubtitle={Component.headerSubtitle}
     >
-      <main className={montserrat.className}>
+      <main
+        className={classNames(
+          montserrat.className,
+          "mb-28 flex max-w-md flex-col px-4 gap-6",
+          "lg:mb-8 lg:ml-52 lg:mt-28 lg:max-w-full lg:justify-evenly lg:gap-4"
+        )}
+      >
         <Component {...pageProps} />
       </main>
     </Layout>
   );
-}
+};
+
+export default App;

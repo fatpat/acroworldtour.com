@@ -7,13 +7,13 @@ import { fetcher } from "@/utils/fetcher";
 
 type Competition = components["schemas"]["CompetitionPublicExport"];
 
-const pageTitle = "Acro World Tour | Events";
+const pageTitle = "Acro World Tour | Results";
 const pageDescription =
-  "Acro World Tour Events page. In this page you will find all the past, present, and scheduled competitions.";
-const headerTitle = "Events";
+  "Acro World Tour Results page. In this page you will find all seasons's results.";
+const headerTitle = "Results";
 const headerSubtitle = "Acro World Tour";
 
-const Events = () => {
+const Results = () => {
   const { data: competitions, error } = useSWR<Competition[]>(
     "https://api-preprod.acroworldtour.com/public/competitions",
     fetcher
@@ -49,9 +49,9 @@ const Events = () => {
   );
 };
 
-Events.pageTitle = pageTitle;
-Events.pageDescription = pageDescription;
-Events.headerTitle = headerTitle;
-Events.headerSubtitle = headerSubtitle;
+Results.pageTitle = pageTitle;
+Results.pageDescription = pageDescription;
+Results.headerTitle = headerTitle;
+Results.headerSubtitle = headerSubtitle;
 
-export default Events;
+export default Results;

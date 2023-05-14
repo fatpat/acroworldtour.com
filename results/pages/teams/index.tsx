@@ -1,12 +1,8 @@
 import useSWR from "swr";
 
-import About from "@/components/about";
 import Competition from "@/components/competition";
-import Download from "@/components/download";
 import { components } from "@/types";
 import { fetcher } from "@/utils/fetcher";
-
-import Loading from "./loading";
 
 type Competition = components["schemas"]["CompetitionPublicExport"];
 
@@ -32,7 +28,7 @@ const Home = () => {
       </>
     );
   }
-  if (!competitions) return <Loading />;
+  if (!competitions) return <h2>Fetching the latest data </h2>;
 
   // const currentCompetitions = competitions.filter((comp) => {
   //   comp.state === "open";
@@ -42,9 +38,7 @@ const Home = () => {
 
   return (
     <>
-      <About />
-      <section>
-        {/* <article>
+        <article>
           {currentCompetitions.length ? (
             <h2>Current Event{currentCompetitions.length > 1 ? "s" : ""}</h2>
           ) : (
@@ -56,9 +50,7 @@ const Home = () => {
           {currentCompetitions.map((competition) =>
             Competition({ competition })
           )}
-        </article> */}
-        <Download />
-      </section>
+        </article>
     </>
   );
 };

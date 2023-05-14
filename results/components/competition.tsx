@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { components } from "@/interfaces/openapi";
+import { components } from "@/types";
 
 interface Props {
   competition: components["schemas"]["CompetitionPublicExport"];

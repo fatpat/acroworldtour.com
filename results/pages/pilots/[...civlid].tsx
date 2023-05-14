@@ -1,7 +1,7 @@
 import { useRouter } from "next/router";
 import useSWR from "swr";
 
-import { components } from "@/interfaces/openapi";
+import { components } from "@/types";
 import { fetcher } from "@/utils/fetcher";
 
 type Pilot = components["schemas"]["Pilot"];
