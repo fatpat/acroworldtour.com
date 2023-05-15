@@ -12,7 +12,9 @@ import {
 const iconClasses = "hover:bg-awtgrey-200 p-1 rounded-md";
 
 const About = () => {
-  const [hideAbout, setHideAbout] = useState<boolean | null>(localStorage.getItem("hideAbout") !== null);
+  const [hideAbout, setHideAbout] = useState(
+    localStorage.getItem("hideAbout") !== null
+  );
 
   useEffect(() => {
     hideAbout
@@ -24,14 +26,12 @@ const About = () => {
     <article className="flex flex-col items-center">
       <header
         className={classNames(
-          "z-10 flex w-1/2 cursor-pointer items-center justify-center",
+          "z-10 flex w-1/2 cursor-pointer items-center justify-center mb-1",
           hideAbout && "-translate-x-3/4 opacity-50"
         )}
         onClick={() => setHideAbout(!hideAbout)}
       >
-        <h2 className={classNames("m-2", hideAbout && "text-sm")}>
-          About {`${hideAbout}`}
-        </h2>
+        <h2 className={classNames("m-2", hideAbout && "text-sm")}>About</h2>
         <ChevronIcon
           className={classNames(
             "mt-[1px] h-3 w-auto",
@@ -41,7 +41,7 @@ const About = () => {
       </header>
       <div
         className={classNames(
-          "flex h-56 flex-col items-center justify-evenly rounded-xl bg-awtgrey-100 px-4 font-medium",
+          "flex h-56 flex-col items-center justify-evenly rounded-xl bg-awtgrey-100 px-4 font-medium shadow",
           hideAbout && "-mt-64 opacity-0"
         )}
       >
@@ -59,20 +59,20 @@ const About = () => {
         className={classNames(
           "flex w-1/2 max-w-[150px] items-center justify-between",
           "lg: max-w-xs",
-          hideAbout ? "mt-[2px] translate-x-1/2" : "mt-2"
+          hideAbout ? "translate-x-1/2" : "mt-2"
         )}
       >
         <Link
           href={{ pathname: "https://www.instagram.com/acroworldtour/" }}
           target="_blank"
-          className={iconClasses}
+          className={iconClasses + " instagram"}
         >
           <InstagramIcon />
         </Link>
         <Link
           href={{ pathname: "https://www.facebook.com/acroworldtour" }}
           target="_blank"
-          className={iconClasses}
+          className={iconClasses + " facebook"}
         >
           <FacebookIcon />
         </Link>
@@ -82,7 +82,7 @@ const About = () => {
               "https://www.youtube.com/channel/UCZupvXQsTPEdyMSLxBW1RLg",
           }}
           target="_blank"
-          className={iconClasses}
+          className={iconClasses + " youtube"}
         >
           <YoutubeIcon />
         </Link>

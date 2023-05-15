@@ -24,7 +24,7 @@ const Competition: React.FC<Props> = ({ competition }) => {
     <Link key={id} href={`/competitions/${id}`} className="hover:invert">
       <article
         style={{ backgroundImage: `url(${image})` }}
-        className="mb-4 rounded-xl bg-neutral-50/95 bg-cover bg-center bg-no-repeat p-4 bg-blend-overlay"
+        className="mb-4 max-w-lg rounded-xl bg-neutral-50/95 bg-cover bg-center bg-no-repeat p-4 bg-blend-overlay"
       >
         <hgroup className="mb-12">
           <h3>{name}</h3>

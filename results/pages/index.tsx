@@ -1,6 +1,6 @@
-import classNames from "classnames";
 import dynamic from "next/dynamic";
 
+import CurrentCompetitions from "@/components/currentCompetitions";
 import Download from "@/components/download";
 
 const pageTitle = "Acro World Tour | Home";
@@ -9,7 +9,7 @@ const pageDescription =
 
 const About = dynamic(() => import("@/components/about"), {
   ssr: false,
-} );
+});
 
 const Home = () => {
   // const currentCompetitions = competitions.filter((comp) => {
@@ -19,24 +19,8 @@ const Home = () => {
   return (
     <>
       <About />
-      <section className="flex flex-col gap-8">
-        <article
-          className={classNames(
-            "my-8 flex h-24 w-full max-w-lg flex-col items-center justify-center rounded-xl bg-awtgrey-100 shadow-md"
-          )}
-        >
-          <h2>Loading...</h2>
-          {/* <Image
-            src="/images/acro-world-tour-logo.png"
-            alt=""
-            width="0"
-            height="0"
-            className=""
-          /> */}
-        </article>
-
-        <Download />
-      </section>
+      <CurrentCompetitions />
+      <Download />
     </>
   );
 };

@@ -86,7 +86,7 @@ export const YoutubeIcon = ({ className }: Props) => (
   <svg
     width="20"
     height="20"
-    viewBox="0 0 550 500"
+    viewBox="0 0 600 500"
     fill="current"
     xmlns="http://www.w3.org/2000/svg"
     className={className}

@@ -16,8 +16,8 @@ const NavItem: React.FC<Props> = ({ link, active }) => {
       href={`/${link.toLowerCase()}`}
       className={classNames(
         "flex flex-col items-center justify-center rounded-l-xl fill-awtgrey-400 text-xs font-semibold text-awtgrey-400",
-        "hover:fill-current hover:text-current hover:shadow-md",
-        "lg:flex-row lg:justify-start lg:px-6 lg:py-3 lg:hover:bg-awtgrey-200",
+        "hover:fill-current hover:text-current",
+        "lg:flex-row lg:justify-start lg:px-6 lg:py-3 lg:hover:bg-awtgrey-200 lg:hover:shadow-md",
         active && "fill-current text-current"
       )}
     >
