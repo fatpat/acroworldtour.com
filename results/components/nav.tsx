@@ -19,10 +19,10 @@ const Nav = ({ pageTitle }: Props) => (
       "lg:left-0 lg:top-0 lg:mt-24 lg:h-full lg:w-52 lg:flex-col lg:justify-start lg:bg-transparent lg:bg-white lg:pl-4 lg:pt-8 lg:shadow-lg"
     )}
   >
-    <NavItem link="" active={pageTitle.includes("Home")} />
-    <NavItem link="Results" active={pageTitle.includes("Results")} />
-    <NavItem link="Events" active={pageTitle.includes("Events")} />
-    <NavItem link="Pilots" active={pageTitle.includes("Pilots")} />
+    <NavItem link="" active={pageTitle?.includes("Home")} />
+    <NavItem link="Results" active={pageTitle?.includes("Results")} />
+    <NavItem link="Events" active={pageTitle?.includes("Events")} />
+    <NavItem link="Pilots" active={pageTitle?.includes("Pilots")} />
   </nav>
 );
 

@@ -12,9 +12,7 @@ import {
 const iconClasses = "hover:bg-awtgrey-200 p-1 rounded-md";
 
 const About = () => {
-  const [hideAbout, setHideAbout] = useState(
-    localStorage.getItem("hideAbout") !== null
-  );
+  const [hideAbout, setHideAbout] = useState<boolean | null>(localStorage.getItem("hideAbout") !== null);
 
   useEffect(() => {
     hideAbout
@@ -31,7 +29,9 @@ const About = () => {
         )}
         onClick={() => setHideAbout(!hideAbout)}
       >
-        <h2 className={classNames("m-2", hideAbout && "text-sm")}>About</h2>
+        <h2 className={classNames("m-2", hideAbout && "text-sm")}>
+          About {`${hideAbout}`}
+        </h2>
         <ChevronIcon
           className={classNames(
             "mt-[1px] h-3 w-auto",
@@ -59,7 +59,7 @@ const About = () => {
         className={classNames(
           "flex w-1/2 max-w-[150px] items-center justify-between",
           "lg: max-w-xs",
-          hideAbout ? "translate-x-1/2 mt-[2px]" : "mt-2"
+          hideAbout ? "mt-[2px] translate-x-1/2" : "mt-2"
         )}
       >
         <Link
