@@ -22,17 +22,25 @@ const CurrentEvents = () => {
   if (error) return <FetchError />;
   if (!competitions) return <FetchLoading />;
 
-  const currentCompetitions = [competitions[0]];
+  const currentCompetitions = [...competitions]; // to test multiple competitions
+  // const currentCompetitions = [competitions[0]]; // to test single competition
+  // const currentCompetitions = []; // to test no competition
+
+  // const currentCompetitions = competitions.filter(
+  //   (competition) => competition.state === "open"
+  // );
 
   const ongoing = currentCompetitions.length > 0;
   const isPlural = currentCompetitions.length > 1;
 
   return (
     <section>
-      <h2 className="mb-4 text-center">
+      <h2 className="text-center">
         {ongoing ? (isPlural ? pluralH2 : singularH2) : noEventH2}
       </h2>
-      {currentCompetitions.map((competition) => Competition({ competition }))}
+      <div>
+        {currentCompetitions.map((competition) => Competition({ competition }))}
+      </div>
     </section>
   );
 };

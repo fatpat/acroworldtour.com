@@ -7,16 +7,20 @@
     @apply transition-all duration-300 ease-in-out;
   }
 
-  nav > ul > li {
-    @apply w-full
+  #__next {
+    @apply flex flex-col;
   }
 
-  main > * {
-    @apply w-full;
+  nav > ul > li {
+    @apply w-11/12;
   }
 
   section {
-    @apply w-full max-w-4xl flex flex-col items-center;
+    @apply w-full flex flex-col items-center;
+  }
+
+  section > div {
+    @apply flex flex-wrap items-center justify-start gap-6 mt-4;
   }
 
   h1 {
@@ -40,6 +44,7 @@
   }
 }
 
+/* CSS cloud for FetchLoading, FetchError */
 @layer components {
   .loader {
     width: 180px;

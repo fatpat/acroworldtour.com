@@ -11,19 +11,13 @@ const About = dynamic(() => import("@/components/about"), {
   ssr: false,
 });
 
-const Home = () => {
-  // const currentCompetitions = competitions.filter((comp) => {
-  //   comp.state === "open";
-  // });
-
-  return (
-    <>
-      <About />
-      <CurrentCompetitions />
-      <Download />
-    </>
-  );
-};
+const Home = () => (
+  <>
+    <About />
+    <CurrentCompetitions />
+    <Download />
+  </>
+);
 
 Home.pageTitle = pageTitle;
 Home.pageDescription = pageDescription;

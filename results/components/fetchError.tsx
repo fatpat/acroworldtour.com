@@ -5,7 +5,7 @@ const FetchError = () => (
     <h2 className="mb-4 text-center">Couldn&apos;t fetch data.</h2>
     <article
       className={classNames(
-        "flex w-full max-w-lg flex-col items-center justify-center rounded-xl bg-awtgrey-100 shadow"
+        "flex h-48 w-full max-w-lg flex-col items-center justify-center rounded-xl bg-awtgrey-100 shadow"
       )}
     >
       <span className="loader translate-y-10"></span>

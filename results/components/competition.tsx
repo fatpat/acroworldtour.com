@@ -24,11 +24,11 @@ const Competition: React.FC<Props> = ({ competition }) => {
     <Link
       key={id}
       href={`/competitions/${id}`}
-      className="w-full max-w-lg hover:invert"
+      className="max-w-none hover:invert min-w-fit flex-1"
     >
       <article
         style={{ backgroundImage: `url(${image})` }}
-        className="mb-4 max-w-lg rounded-xl bg-neutral-50/95 bg-cover bg-center bg-no-repeat p-4 bg-blend-overlay"
+        className="max-w-lg rounded-xl bg-neutral-50/95 bg-cover bg-center bg-no-repeat p-4 bg-blend-overlay h-48 flex flex-col justify-between"
       >
         <hgroup className="mb-12">
           <h3>{name}</h3>

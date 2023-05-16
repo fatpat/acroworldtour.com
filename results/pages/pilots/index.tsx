@@ -3,6 +3,8 @@ import { alpha3ToAlpha2 } from "i18n-iso-countries";
 import Link from "next/link";
 import useSWR from "swr";
 
+import FetchError from "@/components/fetchError";
+import FetchLoading from "@/components/fetchLoading";
 import { components } from "@/types";
 import { fetcher } from "@/utils/fetcher";
 
@@ -20,8 +22,8 @@ const Pilots = () => {
     fetcher
   );
 
-  if (error) return <div>Failed to load</div>;
-  if (!pilots) return <div>Loading...</div>;
+  if (error) return <FetchError />;
+  if (!pilots) return <FetchLoading />;
 
   return (
     <section className="mt-4 flex flex-wrap justify-start gap-x-8 gap-y-4">
