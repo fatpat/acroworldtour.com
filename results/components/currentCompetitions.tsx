@@ -19,20 +19,8 @@ const CurrentEvents = () => {
     fetcher
   );
 
-  if (error)
-    return (
-      <section>
-        <h2 className="mb-4 text-center">Couldn&apos;t fetch events.</h2>
-        <FetchError />
-      </section>
-    );
-  if (!competitions)
-    return (
-      <section>
-        <h2 className="mb-4 text-center opacity-50">Fetching events...</h2>
-        <FetchLoading />
-      </section>
-    );
+  if (error) return <FetchError />;
+  if (!competitions) return <FetchLoading />;
 
   const currentCompetitions = [competitions[0]];
 

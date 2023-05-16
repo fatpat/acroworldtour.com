@@ -21,7 +21,11 @@ const Competition: React.FC<Props> = ({ competition }) => {
   });
   const endYear = endDate.getFullYear();
   return (
-    <Link key={id} href={`/competitions/${id}`} className="hover:invert">
+    <Link
+      key={id}
+      href={`/competitions/${id}`}
+      className="w-full max-w-lg hover:invert"
+    >
       <article
         style={{ backgroundImage: `url(${image})` }}
         className="mb-4 max-w-lg rounded-xl bg-neutral-50/95 bg-cover bg-center bg-no-repeat p-4 bg-blend-overlay"
