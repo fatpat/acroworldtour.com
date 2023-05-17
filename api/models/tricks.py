@@ -65,7 +65,7 @@ class Trick(BaseModel):
     directions: List[str] = Field(..., description="List of allowed diredctions for the trick. Empty list implies a trick with a unique direction")
     technical_coefficient: float = Field(..., ge=0.0, description="The technical coefficient of the trick")
     bonuses: List[Bonus] = Field(..., description="List of all bonuses that can apply to this trick")
-    bonus_constraints: List[List[str]] = Field(..., description="List of bonuses that are exclusive to each other")
+    bonus_constraints: List[List[str]] = Field([], description="List of bonuses that are exclusive to each other")
     first_maneuver: int = Field(0, ge=0, description="If positive, indicates that the trick must be performed in the first N tricks of the run")
     no_first_maneuver: int = Field(0, ge=0, description="If positive, indicates that the trick must not be performed in the first N tricks of the run")
     last_maneuver: int = Field(0, ge=0, description="If positive, indicates that the trick must be performed in the last N tricks of the run")
