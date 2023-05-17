@@ -9,7 +9,7 @@
   }
 
   #__next {
-    @apply flex flex-col;
+    @apply flex flex-col h-screen;
   }
 
   nav > ul > li {
