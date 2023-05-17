@@ -7,6 +7,7 @@ from fastapi_cache.decorator import cache
 
 from models.competitions import Competition, CompetitionExport, CompetitionNew, CompetitionState, CompetitionPublicExport, CompetitionPublicExportWithResults
 from models.pilots import Pilot
+from models.pilots_with_results import PilotWithResults
 from models.judges import Judge
 from models.teams import Team, TeamExport
 from models.seasons import Season, SeasonExport
@@ -34,11 +35,11 @@ async def list_teams():
 @public.get(
     "/pilots/{civlid}",
     response_description="Get a Pilot",
-    response_model=Pilot,
+    response_model=PilotWithResults,
 )
 #@cache(expire=settings.CACHE_EXPIRES)
 async def get_pilot(civlid: int):
-    return await Pilot.get(civlid)
+    return await PilotWithResults.get(civlid)
 
 #
 # Get all teams
