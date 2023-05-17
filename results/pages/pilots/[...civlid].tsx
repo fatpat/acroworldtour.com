@@ -1,3 +1,4 @@
+import classNames from "classnames";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
@@ -41,10 +42,12 @@ const PilotPage = ({
   if (!pilot) return <FetchLoading />;
 
   return (
-    <section className="mt-4 flex flex-row-reverse flex-wrap items-center justify-evenly gap-6">
+    <section className={classNames("flex flex-col items-start")}>
       <PilotDetails pilot={pilot} />
     </section>
   );
 };
+
+PilotPage.pageDescription = "Pilot details";
 
 export default PilotPage;

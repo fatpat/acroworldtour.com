@@ -12,7 +12,7 @@ const Download = () => (
       }}
       target="_blank"
       className={classNames(
-        "mt-4 flex flex-col items-start self-start rounded-xl bg-awtgrey-100 p-4 text-sm font-semibold text-orange-400 shadow",
+        "mt-4 flex flex-col items-start rounded-xl bg-awtgrey-100 p-4 text-sm font-semibold text-orange-400 shadow",
         "hover:bg-awtgrey-200 hover:text-orange-500"
       )}
     >

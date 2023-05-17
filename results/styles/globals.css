@@ -5,11 +5,11 @@
 @layer base {
   * {
     @apply transition-all duration-300 ease-in-out;
-    @apply outline outline-1 outline-red-200; /* DEV ONLY */
+    /* @apply outline outline-1 outline-red-200; DEV ONLY */
   }
 
   #__next {
-    @apply flex flex-col min-h-screen;
+    @apply flex min-h-screen flex-col;
   }
 
   nav > ul > li {
@@ -21,27 +21,27 @@
   }
 
   section > div {
-    @apply mt-4 flex flex-wrap items-center justify-evenly gap-6;
+    @apply mt-4 flex flex-wrap justify-evenly gap-6 w-full px-4;
   }
 
   h1 {
-    @apply text-2xl font-bold drop-shadow-sm;
+    @apply text-2xl font-bold drop-shadow-sm leading-loose;
   }
 
   h2 {
-    @apply text-xl font-bold drop-shadow-sm;
+    @apply text-xl font-bold drop-shadow-sm leading-loose;
   }
 
   h3 {
-    @apply text-lg font-bold drop-shadow-sm;
+    @apply text-lg font-bold drop-shadow-sm leading-loose;
   }
 
   h4 {
-    @apply text-base font-semibold drop-shadow-sm;
+    @apply text-base font-semibold drop-shadow-sm leading-loose;
   }
 
   p {
-    @apply text-sm font-medium drop-shadow-sm;
+    @apply text-sm font-medium drop-shadow-sm leading-loose;
   }
 }
 

@@ -24,11 +24,11 @@ const CompetitionCard = ({ competition }: Props) => {
     <Link
       key={code}
       href={`/competitions/${code}`}
-      className="min-w-fit max-w-none flex-1 hover:invert"
+      className="w-full max-w-sm hover:invert"
     >
       <article
         style={{ backgroundImage: `url(${image})` }}
-        className="flex h-48 max-w-lg flex-col justify-between rounded-xl bg-neutral-50/95 bg-cover bg-center bg-no-repeat p-4 bg-blend-overlay"
+        className="flex h-48 flex-col justify-between rounded-xl bg-neutral-50/95 bg-cover bg-center bg-no-repeat p-4 bg-blend-overlay"
       >
         <hgroup className="mb-12">
           <h3>{name}</h3>

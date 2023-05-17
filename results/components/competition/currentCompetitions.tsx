@@ -23,8 +23,8 @@ const CurrentCompetitions = () => {
   if (!competitions) return <FetchLoading />;
 
   // const currentCompetitions = [...competitions]; // to test multiple competitions
-  // const currentCompetitions = [competitions[0]]; // to test single competition
-  const currentCompetitions: Competition[] = []; // to test no competition
+  const currentCompetitions = [competitions[0]]; // to test single competition
+  // const currentCompetitions: Competition[] = []; // to test no competition
 
   // const currentCompetitions = competitions.filter(
   //   (competition) => competition.state === "open"
