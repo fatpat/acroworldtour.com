@@ -8,6 +8,10 @@
     @apply outline outline-1 outline-red-200; /* DEV ONLY */
   }
 
+  #__next {
+    @apply flex flex-col min-h-screen;
+  }
+
   nav > ul > li {
     @apply w-11/12;
   }
