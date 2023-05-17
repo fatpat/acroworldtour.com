@@ -4,12 +4,12 @@
 
 @layer base {
   * {
-    @apply duration-300 ease-in-out;
+    @apply transition-all duration-300 ease-in-out;
     @apply outline outline-1 outline-red-200; /* DEV ONLY */
   }
 
   #__next {
-    @apply flex flex-col h-screen;
+    @apply flex flex-col min-h-screen;
   }
 
   nav > ul > li {

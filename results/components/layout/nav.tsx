@@ -15,14 +15,14 @@ const Nav = ({ pageTitle }: Props) => (
   <nav
     className={classNames(
       montserrat.className,
-      "sticky bottom-0 z-10 h-20 w-full bg-white shadow-md shadow-current",
+      "sticky bottom-0 z-10 w-full bg-white shadow-md shadow-current",
       "lg:fixed lg:h-full lg:left-0 lg:w-52 lg:pl-4 lg:shadow-lg lg:pt-32"
     )}
   >
     <ul
       className={classNames(
-        "flex h-full w-full items-center justify-evenly",
-        "lg:flex-col lg:items-end lg:justify-start lg:gap-4"
+        "flex h-20 w-full items-center justify-evenly",
+        "lg:flex-col lg:items-end lg:justify-start lg:gap-4 lg:h-auto"
       )}
     >
       <li>

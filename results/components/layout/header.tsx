@@ -21,7 +21,7 @@ const Header: NextPage<Props> = ({ headerTitle, headerSubtitle }) => (
     className={classNames(
       montserrat.className,
       "z-20 flex h-24 w-full items-center justify-between bg-awtgrey-900 bg-contain bg-right bg-no-repeat px-6",
-      "lg:sticky lg:top-0"
+      "lg:fixed lg:top-0"
     )}
     style={{
       backgroundImage: `url(${lines.src})`,
