@@ -51,7 +51,7 @@ class Settings(BaseSettings):
         available_directions = [
             {"name": "right", "acronym": "R" },
             {"name": "left", "acronym": "L" },
-            {"name": "mirror", "acronym": "M" },
+            {"name": "opposite", "acronym": "O" },
         ]
 
     class competitions:
