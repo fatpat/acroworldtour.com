@@ -1,7 +1,7 @@
 import Link from "next/link";
 import useSWR from "swr";
 
-import CompetitionCard from "@/components/competition";
+import CompetitionCard from "@/components/competition/competitionCard";
 import { components } from "@/types";
 import { fetcher } from "@/utils/fetcher";
 

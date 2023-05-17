@@ -2,7 +2,7 @@ import dynamic from "next/dynamic";
 
 import AWTContent from "@/components/about/awtContent";
 import AWTSocial from "@/components/about/awtSocial";
-import CurrentCompetitions from "@/components/currentCompetitions";
+import CurrentCompetitions from "@/components/competition/currentCompetitions";
 import Download from "@/components/download";
 
 const pageTitle = "Acro World Tour | Home";

@@ -2,9 +2,9 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
 
-import FetchError from "@/components/fetchError";
-import FetchLoading from "@/components/fetchLoading";
-import PilotDetails from "@/components/pilotDetails";
+import PilotDetails from "@/components/pilot/pilotDetails";
+import FetchError from "@/components/ui/fetchError";
+import FetchLoading from "@/components/ui/fetchLoading";
 import { components } from "@/types";
 import { fetcher } from "@/utils/fetcher";
 
@@ -41,7 +41,7 @@ const PilotPage = ({
   if (!pilot) return <FetchLoading />;
 
   return (
-    <section className="mt-4 flex flex-wrap flex-row-reverse items-center justify-evenly gap-6">
+    <section className="mt-4 flex flex-row-reverse flex-wrap items-center justify-evenly gap-6">
       <PilotDetails pilot={pilot} />
     </section>
   );

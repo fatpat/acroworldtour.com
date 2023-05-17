@@ -1,11 +1,11 @@
 import useSWR from "swr";
 
-import CompetitionCard from "@/components/competitionCard";
+import CompetitionCard from "@/components/competition/competitionCard";
 import { components } from "@/types";
 import { fetcher } from "@/utils/fetcher";
 
-import FetchError from "./ui/fetchError";
-import FetchLoading from "./ui/fetchLoading";
+import FetchError from "../ui/fetchError";
+import FetchLoading from "../ui/fetchLoading";
 
 type Competition = components["schemas"]["CompetitionPublicExport"];
 

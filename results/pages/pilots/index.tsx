@@ -1,8 +1,8 @@
 import useSWR from "swr";
 
-import FetchError from "@/components/fetchError";
-import FetchLoading from "@/components/fetchLoading";
-import PilotCard from "@/components/pilotCard";
+import PilotCard from "@/components/pilot/pilotCard";
+import FetchError from "@/components/ui/fetchError";
+import FetchLoading from "@/components/ui/fetchLoading";
 import { components } from "@/types";
 import { fetcher } from "@/utils/fetcher";
 
