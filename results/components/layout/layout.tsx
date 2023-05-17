@@ -24,8 +24,8 @@ const Layout = ({
       <meta name="description" content={pageDescription} />
     </Head>
     <Header headerTitle={headerTitle} headerSubtitle={headerSubtitle} />
-    <Nav pageTitle={pageTitle} />
     {children}
+    <Nav pageTitle={pageTitle} />
   </>
 );
 

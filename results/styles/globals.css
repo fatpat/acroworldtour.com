@@ -9,7 +9,7 @@
   }
 
   #__next {
-    @apply flex flex-col h-[100dvh];
+    @apply flex flex-col;
   }
 
   nav > ul > li {
