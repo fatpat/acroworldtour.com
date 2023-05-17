@@ -1,11 +1,11 @@
 import useSWR from "swr";
 
-import Competition from "@/components/competition";
+import CompetitionCard from "@/components/competitionCard";
 import { components } from "@/types";
 import { fetcher } from "@/utils/fetcher";
 
-import FetchError from "./fetchError";
-import FetchLoading from "./fetchLoading";
+import FetchError from "./ui/fetchError";
+import FetchLoading from "./ui/fetchLoading";
 
 type Competition = components["schemas"]["CompetitionPublicExport"];
 
@@ -13,7 +13,7 @@ const pluralH2 = "Current Events";
 const singularH2 = "Current Event";
 const noEventH2 = "There is no ongoing event.";
 
-const CurrentEvents = () => {
+const CurrentCompetitions = () => {
   const { data: competitions, error } = useSWR<Competition[], Error>(
     "https://api-preprod.acroworldtour.com/public/competitions",
     fetcher
@@ -39,10 +39,12 @@ const CurrentEvents = () => {
         {ongoing ? (isPlural ? pluralH2 : singularH2) : noEventH2}
       </h2>
       <div>
-        {currentCompetitions.map((competition) => Competition({ competition }))}
+        {currentCompetitions.map((competition) =>
+          CompetitionCard({ competition })
+        )}
       </div>
     </section>
   );
 };
 
-export default CurrentEvents;
+export default CurrentCompetitions;

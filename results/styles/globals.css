@@ -4,11 +4,8 @@
 
 @layer base {
   * {
-    @apply transition-all duration-300 ease-in-out;
-  }
-
-  #__next {
-    @apply flex flex-col;
+    @apply duration-300 ease-in-out;
+    @apply outline outline-1 outline-red-200; /* DEV ONLY */
   }
 
   nav > ul > li {
@@ -16,11 +13,11 @@
   }
 
   section {
-    @apply w-full flex flex-col items-center;
+    @apply flex w-full flex-col items-center;
   }
 
   section > div {
-    @apply flex flex-wrap items-center justify-start gap-6 mt-4;
+    @apply mt-4 flex flex-wrap items-center justify-evenly gap-6;
   }
 
   h1 {

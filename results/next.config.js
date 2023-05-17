@@ -2,7 +2,7 @@
 const nextConfig = {
   // output: "export",
   images: {
-    domains: ["api-preprod.acroworldtour.com"],
+    domains: ["api-preprod.acroworldtour.com", "civlcomps.org"],
   },
   reactStrictMode: true,
 };

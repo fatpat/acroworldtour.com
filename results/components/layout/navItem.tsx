@@ -1,7 +1,7 @@
 import classNames from "classnames";
 import Link from "next/link";
 
-import { EventsIcon, HomeIcon, PilotsIcon, ResultsIcon } from "./ui/icons";
+import { EventsIcon, HomeIcon, PilotsIcon, ResultsIcon } from "../ui/icons";
 
 interface Props {
   link: string;

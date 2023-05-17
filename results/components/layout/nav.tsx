@@ -22,7 +22,7 @@ const Nav = ({ pageTitle }: Props) => (
     <ul
       className={classNames(
         "flex h-full w-full items-center justify-evenly",
-        "lg:flex-col lg:justify-start lg:items-end lg:gap-4"
+        "lg:flex-col lg:items-end lg:justify-start lg:gap-4"
       )}
     >
       <li>

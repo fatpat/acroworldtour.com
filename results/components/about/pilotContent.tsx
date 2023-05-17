@@ -1,4 +1,5 @@
 import classNames from "classnames";
+import { NextComponentType } from "next";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -7,11 +8,15 @@ import {
   FacebookIcon,
   InstagramIcon,
   YoutubeIcon,
-} from "./ui/icons";
+} from "../ui/icons";
+
+interface Props {
+
+}
 
 const iconClasses = "hover:bg-awtgrey-200 p-1 rounded-md";
 
-const About = () => {
+const PilotContent = (): Props => {
   const [hideAbout, setHideAbout] = useState(
     localStorage.getItem("hideAbout") !== null
   );
@@ -26,7 +31,7 @@ const About = () => {
     <article className="flex flex-col items-center">
       <header
         className={classNames(
-          "z-10 flex w-1/2 cursor-pointer items-center justify-center mb-1",
+          "z-10 mb-1 flex w-1/2 cursor-pointer items-center justify-center",
           hideAbout && "-translate-x-3/4 opacity-50"
         )}
         onClick={() => setHideAbout(!hideAbout)}
@@ -91,4 +96,4 @@ const About = () => {
   );
 };
 
-export default About;
+export default PilotContent;

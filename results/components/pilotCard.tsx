@@ -8,19 +8,20 @@ interface Props {
   pilot: components["schemas"]["Pilot"];
 }
 
-const Pilot: React.FC<Props> = ({ pilot }) => {
+const PilotCard = ({ pilot }: Props) => {
   const { civlid, name, photo, country, rank } = pilot;
-  const slug = name.toLowerCase().replace(/\s/g, "-");
+  const urlName = name.toLowerCase().replace(/\s/g, "-");
   const alpha2country = alpha3ToAlpha2(country.toUpperCase()).toLowerCase();
   return (
     <Link
       key={civlid}
-      href={`/pilots/${civlid}/${slug}`}
+      href={`/pilots/${civlid}/${urlName}`}
       className="flex flex-col pb-4"
     >
-      <div
+      <article
         style={{ backgroundImage: `url('${photo}')` }}
-        className="relative mb-1 h-52 w-52 rounded-xl bg-cover bg-center bg-no-repeat"
+        className="relative flex h-64 w-64
+         max-w-lg flex-col justify-between rounded-xl bg-cover bg-center bg-no-repeat p-4"
       >
         <i
           className={classNames(
@@ -29,11 +30,11 @@ const Pilot: React.FC<Props> = ({ pilot }) => {
             "absolute right-2 top-2"
           )}
         />
-      </div>
+      </article>
       <h3 className="">{name}</h3>
       <small>{rank === 9999 ? "Unranked" : `Overall Rank: #${rank}`}</small>
     </Link>
   );
 };
 
-export default Pilot;
+export default PilotCard;

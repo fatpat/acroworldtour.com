@@ -1,45 +1,50 @@
 import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
 import useSWR from "swr";
 
+import FetchError from "@/components/fetchError";
+import FetchLoading from "@/components/fetchLoading";
+import PilotDetails from "@/components/pilotDetails";
 import { components } from "@/types";
 import { fetcher } from "@/utils/fetcher";
 
+interface Props {
+  pageTitle: string;
+  pageDescription: string;
+  headerTitle: string;
+  headerSubtitle: string;
+}
+
 type Pilot = components["schemas"]["Pilot"];
 
-const pageTitle = "Acro World Tour | Pilots";
-const pageDescription =
-  "Acro World Tour Pilots page. In this page you will find all the pilots that are part of the Acro World Tour.";
-const headerTitle = "Pilots";
-const headerSubtitle = "Acro World Tour";
-
-const Pilot = () => {
+const PilotPage = ({
+  pageTitle,
+  pageDescription,
+  headerTitle,
+  headerSubtitle,
+}: Props) => {
   const router = useRouter();
-  const { id } = router.query;
+  const [civlid, setCivlid] = useState("");
 
-  // const { data: pilot, error } = useSWR<Pilot>(
-  //   `https://api-preprod.acroworldtour.com/public/pilots/${id}`,
-  //   fetcher
-  // );
+  useEffect(() => {
+    if (router.isReady) setCivlid(router.query.civlid![0]);
+  }, [router.isReady, router.query.civlid]);
 
-  const { data: pilot, error } = useSWR<Pilot>(
-    `https://api-preprod.acroworldtour.com/public/pilots/${id}`,
+  const { data: pilot, error } = useSWR<Pilot, Error>(
+    civlid
+      ? `https://api-preprod.acroworldtour.com/public/pilots/${civlid}`
+      : null,
     fetcher
   );
 
-  if (error) return <div>Failed to load</div>;
-  if (!pilot) return <div>Loading...</div>;
+  if (error) return <FetchError />;
+  if (!pilot) return <FetchLoading />;
 
   return (
-    <main>
-      <h1>PILOT {id}</h1>
-      <h2>{pilot.name} fetched successfully</h2>
-    </main>
+    <section className="mt-4 flex flex-wrap flex-row-reverse items-center justify-evenly gap-6">
+      <PilotDetails pilot={pilot} />
+    </section>
   );
 };
 
-Pilot.pageTitle = pageTitle;
-Pilot.pageDescription = pageDescription;
-Pilot.headerTitle = headerTitle;
-Pilot.headerSubtitle = headerSubtitle;
-
-export default Pilot;
+export default PilotPage;

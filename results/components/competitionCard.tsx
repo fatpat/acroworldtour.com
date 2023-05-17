@@ -6,8 +6,8 @@ interface Props {
   competition: components["schemas"]["CompetitionPublicExport"];
 }
 
-const Competition: React.FC<Props> = ({ competition }) => {
-  const { code: id, name, location, image, start_date, end_date } = competition;
+const CompetitionCard = ({ competition }: Props) => {
+  const { code, name, location, image, start_date, end_date } = competition;
   const startDate = new Date(start_date);
   const endDate = new Date(end_date);
   const startDay = startDate.getDate();
@@ -22,13 +22,13 @@ const Competition: React.FC<Props> = ({ competition }) => {
   const endYear = endDate.getFullYear();
   return (
     <Link
-      key={id}
-      href={`/competitions/${id}`}
-      className="max-w-none hover:invert min-w-fit flex-1"
+      key={code}
+      href={`/competitions/${code}`}
+      className="min-w-fit max-w-none flex-1 hover:invert"
     >
       <article
         style={{ backgroundImage: `url(${image})` }}
-        className="max-w-lg rounded-xl bg-neutral-50/95 bg-cover bg-center bg-no-repeat p-4 bg-blend-overlay h-48 flex flex-col justify-between"
+        className="flex h-48 max-w-lg flex-col justify-between rounded-xl bg-neutral-50/95 bg-cover bg-center bg-no-repeat p-4 bg-blend-overlay"
       >
         <hgroup className="mb-12">
           <h3>{name}</h3>
@@ -42,4 +42,4 @@ const Competition: React.FC<Props> = ({ competition }) => {
   );
 };
 
-export default Competition;
+export default CompetitionCard;

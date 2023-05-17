@@ -1,7 +1,7 @@
 import Link from "next/link";
 import useSWR from "swr";
 
-import Competition from "@/components/competition";
+import CompetitionCard from "@/components/competition";
 import { components } from "@/types";
 import { fetcher } from "@/utils/fetcher";
 
@@ -30,17 +30,19 @@ const Events = () => {
     <>
       {currentEvents.length ? (
         <section className="mt-4 flex flex-wrap justify-start gap-x-8 gap-y-4">
-          {currentEvents.map((competition) => Competition({ competition }))}
+          {currentEvents.map((competition) => CompetitionCard({ competition }))}
         </section>
       ) : (
         <h2>No ongoing event.</h2>
       )}
       <section className="mt-4 flex flex-wrap justify-start gap-x-8 gap-y-4">
-        {previousEvents.map((competition) => Competition({ competition }))}
+        {previousEvents.map((competition) => CompetitionCard({ competition }))}
       </section>
       {scheduledEvents.length ? (
         <section className="mt-4 flex flex-wrap justify-start gap-x-8 gap-y-4">
-          {scheduledEvents.map((competition) => Competition({ competition }))}
+          {scheduledEvents.map((competition) =>
+            CompetitionCard({ competition })
+          )}
         </section>
       ) : (
         <h2>No scheduled event.</h2>
