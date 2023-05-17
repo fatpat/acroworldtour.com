@@ -15,7 +15,7 @@ const Nav = ({ pageTitle }: Props) => (
   <nav
     className={classNames(
       montserrat.className,
-      "fixed bottom-0 z-10 h-20 w-full bg-white shadow-md shadow-current",
+      "fixed bottom-0 left-0 z-10 h-20 w-full bg-white shadow-md shadow-current",
       "lg:left-0 lg:top-0 lg:mt-24 lg:h-full lg:w-52 lg:bg-transparent lg:bg-white lg:pl-4 lg:pt-8 lg:shadow-lg"
     )}
   >
