@@ -38,43 +38,20 @@ class Settings(BaseSettings):
             {"name": "twisted exit", "post_acronym": "/", "type": "twist"},
             {"name": "full twisted", "post_acronym": "\\", "type": "twist"},
             {"name": "devil twist", "post_acronym": "X", "type": "twist"},
+            {"name": "devil twist stall", "post_acronym": "XX", "type": "twist"},
             {"name": "to twisted sat", "post_acronym": "S", "type": "twist"},
+            {"name": "cab slide", "post_acronym": "C", "type": "twist"},
+            {"name": "hardcore", "post_acronym": "HC", "type": "twist"},
             {"name": "flip", "post_acronym": "F", "type": "flip"},
             {"name": "double flip", "post_acronym": "FF", "type": "flip"},
             {"name": "wing touch", "post_acronym": "T", "type": "other"},
+            {"name": "wing touch", "post_acronym": "WT", "type": "other"},
         ]
 
         available_directions = [
             {"name": "right", "acronym": "R" },
             {"name": "left", "acronym": "L" },
             {"name": "mirror", "acronym": "M" },
-            {"name": "opposite", "acronym": "O"},
-        ]
-
-        bonus_constraints = [
-#                ["twisted exit"],
-                ["twisted", "devil twist"],
-                ["twisted", "full twist"],
-                ["twisted", "to twisted sat"],
-                ["twisted", "flip"],
-                ["twisted", "double flip"],
-
-#                ["devil twist", "twisted exit"],
-                ["devil twist", "full twist"],
-                ["devil twist", "to twisted sat"],
-                ["devil twist", "flip"],
-                ["devil twist", "double flip"],
-
-                ["full twisted", "twisted exit"],
-                ["full twisted", "to twisted sat"],
-                ["full twisted", "flip"],
-                ["full twisted", "double flip"],
-
-                ["twisted exit", "to twisted sat"],
-                ["twisted exit", "flip"],
-                ["twisted exit", "double flip"],
-
-                ["flip", "double flip"],
         ]
 
     class competitions:
@@ -87,10 +64,10 @@ class Settings(BaseSettings):
         mark_percentage_solo_technical : int = 40
         mark_percentage_solo_choreography : int = 40
         mark_percentage_solo_landing : int = 20
-        mark_percentage_synchro_technical : int = 25
-        mark_percentage_synchro_choreography : int = 25
-        mark_percentage_synchro_landing : int = 25
-        mark_percentage_synchro_synchro : int = 25
+        mark_percentage_synchro_technical : int = 20
+        mark_percentage_synchro_choreography : int = 20
+        mark_percentage_synchro_landing : int = 20
+        mark_percentage_synchro_synchro : int = 40
         max_bonus_twist_per_run : int = 5
         max_bonus_reverse_per_run : int = 3
         max_bonus_flip_per_run : int = 2

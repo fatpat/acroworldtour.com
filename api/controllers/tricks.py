@@ -19,7 +19,7 @@ class TrickCtrl:
                 for pair in itertools.combinations(combination, min(i, 2)):
                     pair = list(map(lambda x: x.name, list(pair)))
                     pair.sort()
-                    for constraint in settings.tricks.bonus_constraints:
+                    for constraint in trick.bonus_constraints:
                         constraint.sort()
                         if pair == constraint:
                             ignore = True

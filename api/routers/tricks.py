@@ -131,7 +131,7 @@ async def create_import(tricks: List[Trick] = Body(...)):
 @tricks.put(
     "/{id}",
     status_code=204,
-    response_description="Add new Trick",
+    response_description="Update existing Trick",
     response_class=Response,
     dependencies=[Depends(auth)],
 )

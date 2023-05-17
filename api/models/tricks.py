@@ -25,8 +25,6 @@ class Bonus(BaseModel):
                 "bonus": 2.5
             }
         }
-
-
     @validator('name')
     def check_name(cls, v):
         bonuses = list(map(lambda x: x['name'], settings.tricks.available_bonuses))
@@ -34,6 +32,7 @@ class Bonus(BaseModel):
             bonuses = ", ".join(bonuses)
             raise ValueError(f"Invalid bonus ({v}), must be one of: {bonuses}")
         return v
+
 
 class UniqueTrick(BaseModel):
     name: str
@@ -66,6 +65,7 @@ class Trick(BaseModel):
     directions: List[str] = Field(..., description="List of allowed diredctions for the trick. Empty list implies a trick with a unique direction")
     technical_coefficient: float = Field(..., ge=0.0, description="The technical coefficient of the trick")
     bonuses: List[Bonus] = Field(..., description="List of all bonuses that can apply to this trick")
+    bonus_constraints: List[List[str]] = Field(..., description="List of bonuses that are exclusive to each other")
     first_maneuver: int = Field(0, ge=0, description="If positive, indicates that the trick must be performed in the first N tricks of the run")
     no_first_maneuver: int = Field(0, ge=0, description="If positive, indicates that the trick must not be performed in the first N tricks of the run")
     last_maneuver: int = Field(0, ge=0, description="If positive, indicates that the trick must be performed in the last N tricks of the run")
@@ -88,6 +88,13 @@ class Trick(BaseModel):
             if direction not in directions:
                 directions = ", ".join(directions)
                 raise ValueError(f"invalid direction '{direction}', must be one of {directions} ")
+        return v
+
+    @validator('bonus_constraints')
+    def check_bonus_constraints(cls, v):
+        for constraints in v:
+            if len(constraints) != 2:
+                raise ValueError(f"invalid bonus contraints '{contraints}', must be composed of strictly 2 bonuses")
         return v
 
     class Config:
@@ -179,6 +186,10 @@ class Trick(BaseModel):
         trick = await collection.find_one(search)
         if trick is None:
             raise HTTPException(404, f"Trick {id} not found")
+
+        if 'bonus_constraints' not in trick:
+            trick['bonus_constraints'] = []
+
         return Trick.parse_obj(trick)
 
     @staticmethod
