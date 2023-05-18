@@ -92,12 +92,13 @@ const PilotsPage = () => {
 
       setLoading(`Updating all pilots`)
 
-      const [err, data, headers] = await APIRequest(`/pilots/update_all`, {method: 'POST', expected_status: 201})
-      if (err) {
-          error(`Error updating all pilots: ${err}`)
-      } else {
-          success(`Pilots successfully updated`)
-      }
+      var i = 0
+      data.forEach(function(p) {
+        updatePilot(p.civlid)
+        i++
+        var percent = 100 * i / data.length
+        success(`Updating all pilots ... ${percent.toFixed(2)}% (${i}/${data.length})`)
+      })
 
       loadPilots()
   }
@@ -158,13 +159,9 @@ const PilotsPage = () => {
           <TextField id='civlid' label='CIVL ID' />
           <Button type="submit">Add or Update pilot from CIVL</Button>
         </form>
-      </Grid>
-{/* TODO: reenable when fixed from backend (broken because of CIVL shit)
-      <Grid item xs={4} sm={4} container direction='row' justifyContent='flex-end'>
         <Button variant='outlined' startIcon={<RefreshIcon />} onClick={updateRankings} disabled>Update rankings</Button>
-        <Button variant='outlined' startIcon={<RefreshIcon />} onClick={updateAllPilots} disabled>Synchronize from CIVL</Button>
+        <Button variant='outlined' startIcon={<RefreshIcon />} onClick={updateAllPilots}>Synchronize from CIVL</Button>
       </Grid>
-*/}
       {data.sort((a,b) => a.rank - b.rank).map(p => (
         <Grid item xs={12} sm={4} key={p.civlid}>
           <CardPilot pilot={p} updatePilot={updatePilot} changeGender={changeGender}/>
