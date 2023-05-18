@@ -5,9 +5,9 @@ from pydantic import AnyHttpUrl, BaseSettings, validator
 
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "acropyx2 API"
-    PROJECT_DESCRIPTION: str = "Manage Paragliding Aerobatics competitions"
-    VERSION: str = "2.0.1"
+    PROJECT_NAME: str = "Acro Scoring System API"
+    PROJECT_DESCRIPTION: str = "API to manage and access Paragliding Aerobatics competitions results"
+    VERSION: str = "2023.1"
     JWT_SECRET: str = "TEST_SECRET_DO_NOT_USE_IN_PROD"
     JWT_ALGORITHM: str = "HS256"
     # 60 minutes * 24 hours * 8 days = 8 days
