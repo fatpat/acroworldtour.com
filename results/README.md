@@ -9,7 +9,7 @@ First, run the development server:
 - Server runs on [http://localhost:3000](http://localhost:3000)
 - [Next.js Documentation](https://nextjs.org/docs)
 - [Tailwind CSS Documentation](https://tailwindcss.com/docs)
-- [AWT API Documentation](https://api-preprod.acroworldtour.com/docs)
+- [AWT API Documentation](https://api.acroworldtour.com/docs)
 
 ## Must Know
 

@@ -1,7 +1,7 @@
 import classNames from "classnames";
 import Link from "next/link";
 
-import { SPORTING_CODE_MANUAL_URL } from "@/config/flags";
+import { SPORTING_CODE_MANUAL_URL } from "@/constants";
 
 const Download = () => (
   <section>

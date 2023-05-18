@@ -2,6 +2,7 @@ import Link from "next/link";
 import useSWR from "swr";
 
 import CompetitionCard from "@/components/competition/competitionCard";
+import { API_URL } from "@/constants";
 import { components } from "@/types";
 import { fetcher } from "@/utils/fetcher";
 
@@ -15,7 +16,7 @@ const headerSubtitle = "Acro World Tour";
 
 const Events = () => {
   const { data: competitions, error } = useSWR<Competition[]>(
-    "https://api-preprod.acroworldtour.com/public/competitions",
+    `${API_URL}/public/competitions`,
     fetcher
   );
 

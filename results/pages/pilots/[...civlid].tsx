@@ -6,6 +6,7 @@ import useSWR from "swr";
 import PilotDetails from "@/components/pilot/pilotDetails";
 import FetchError from "@/components/ui/fetchError";
 import FetchLoading from "@/components/ui/fetchLoading";
+import { API_URL } from "@/constants";
 import { components } from "@/types";
 import { fetcher } from "@/utils/fetcher";
 
@@ -32,9 +33,7 @@ const PilotPage = ({
   }, [router.isReady, router.query.civlid]);
 
   const { data: pilot, error } = useSWR<Pilot, Error>(
-    civlid
-      ? `https://api-preprod.acroworldtour.com/public/pilots/${civlid}`
-      : null,
+    civlid ? `${API_URL}/public/pilots/${civlid}` : null,
     fetcher
   );
 

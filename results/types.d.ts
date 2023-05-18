@@ -425,10 +425,10 @@ export interface components {
        *     "landing": 20
        *   },
        *   "synchro": {
-       *     "technical": 25,
-       *     "choreography": 25,
-       *     "landing": 25,
-       *     "synchro": 25
+       *     "technical": 20,
+       *     "choreography": 20,
+       *     "landing": 20,
+       *     "synchro": 40
        *   }
        * }
        */
@@ -610,6 +610,12 @@ export interface components {
       teams: (components["schemas"]["TeamExport"])[];
       /** Judges */
       judges: (components["schemas"]["Judge"])[];
+    };
+    /** CompetitionResult */
+    CompetitionResult: {
+      competition: components["schemas"]["CompetitionPublicExport"];
+      /** Rank */
+      rank: number;
     };
     /** CompetitionResultsExport */
     CompetitionResultsExport: {
@@ -971,25 +977,25 @@ export interface components {
       /**
        * Technical 
        * @description % of the technical part in the final score for synchro runs 
-       * @default 25
+       * @default 20
        */
       technical?: number;
       /**
        * Choreography 
        * @description % of the choreography part in the final score for synchro runs 
-       * @default 25
+       * @default 20
        */
       choreography?: number;
       /**
        * Landing 
        * @description % of the landing part in the final score for synchro runs 
-       * @default 25
+       * @default 20
        */
       landing?: number;
       /**
        * Synchro 
        * @description % of the synchro part in the final score for synchro runs 
-       * @default 25
+       * @default 40
        */
       synchro?: number;
     };
@@ -1022,10 +1028,10 @@ export interface components {
       /**
        * Synchro 
        * @default {
-       *   "technical": 25,
-       *   "choreography": 25,
-       *   "landing": 25,
-       *   "synchro": 25
+       *   "technical": 20,
+       *   "choreography": 20,
+       *   "landing": 20,
+       *   "synchro": 40
        * }
        */
       synchro?: components["schemas"]["MarkPercentageSynchro"];
@@ -1063,10 +1069,10 @@ export interface components {
      * @example {
      *   "civlid": 67619,
      *   "name": "Luke de Weert",
-     *   "link": "https://civlcomps.org/pilot/67619",
+     *   "civl_link": "https://civlcomps.org/pilot/67619",
      *   "country": "nld",
      *   "about": "\"I am an athlete who believes that dedication is the core of the thing that keeps me pushing and motivating me to achieve all my goals, and even set new goals where I never thought it was possible.\"",
-     *   "links": [
+     *   "social_links": [
      *     {
      *       "name": "facebook",
      *       "link": "https://www.facebook.com/deweert.luke"
@@ -1134,11 +1140,11 @@ export interface components {
        */
       name: string;
       /**
-       * Link 
+       * Civl Link 
        * Format: uri 
        * @description The link to the CIVL pilot page
        */
-      link: string;
+      civl_link: string;
       /**
        * Country 
        * @description The country of the pilot
@@ -1150,10 +1156,10 @@ export interface components {
        */
       about: string;
       /**
-       * Links 
+       * Social Links 
        * @description List of pilot's links (socials medias, ...)
        */
-      links: (components["schemas"]["Link"])[];
+      social_links: (components["schemas"]["Link"])[];
       /**
        * Sponsors 
        * @description List of the pilot's sponsors
@@ -1187,6 +1193,148 @@ export interface components {
        * @default man
        */
       gender?: components["schemas"]["GenderEnum"];
+    };
+    /**
+     * PilotWithResults 
+     * @example {
+     *   "civlid": 67619,
+     *   "name": "Luke de Weert",
+     *   "civl_link": "https://civlcomps.org/pilot/67619",
+     *   "country": "nld",
+     *   "about": "\"I am an athlete who believes that dedication is the core of the thing that keeps me pushing and motivating me to achieve all my goals, and even set new goals where I never thought it was possible.\"",
+     *   "social_links": [
+     *     {
+     *       "name": "facebook",
+     *       "link": "https://www.facebook.com/deweert.luke"
+     *     },
+     *     {
+     *       "name": "instagram",
+     *       "link": "https://www.instagram.com/luke_deweert/"
+     *     },
+     *     {
+     *       "name": "twitter",
+     *       "link": "https://twitter.com/luke_deweert"
+     *     },
+     *     {
+     *       "name": "youtube",
+     *       "link": "https://www.youtube.com/lukedeweert"
+     *     },
+     *     {
+     *       "name": "Website",
+     *       "link": "https://lukedeweert.nl"
+     *     },
+     *     {
+     *       "name": "Tiktok",
+     *       "link": "https://www.tiktok.com/@lukedeweert"
+     *     }
+     *   ],
+     *   "sponsors": [
+     *     {
+     *       "name": "Sky Paragliders",
+     *       "link": "https://sky-cz.com/en",
+     *       "img": "https://civlcomps.org/uploads/images/ems_event_sponsor_logo/1/4cbe1ebac175a9cde7a4c9d8769ba0c4/509e4e83c097d02828403b5a67e8c0b5.png"
+     *     },
+     *     {
+     *       "name": "Sinner",
+     *       "link": "https://www.sinner.eu/nl/",
+     *       "img": "https://civlcomps.org/uploads/images/ems_event_sponsor_logo/1/dddccfa819ee01d9b2410ba49fa432fc/eeff42d05ffefb8ef945dc83485007ea.png"
+     *     },
+     *     {
+     *       "name": "Wanbound",
+     *       "link": "https://www.wanbound.com/",
+     *       "img": "https://civlcomps.org/uploads/images/ems_event_sponsor_logo/1/aa675f347b7d7933332df96f08b21199/4ff22ae0404446f203ba682751e1e7b8.png"
+     *     },
+     *     {
+     *       "name": "KNVvL",
+     *       "link": "https://www.knvvl.nl/",
+     *       "img": "https://civlcomps.org/uploads/images/ems_event_sponsor_logo/1/53ee05f2c2172541b7f1dd99e67a59f9/0f68789e476c0494019a750a6da9c6aa.png"
+     *     }
+     *   ],
+     *   "photo": "https://civlcomps.org/uploads/images/profile/676/7bdecbee5d2246b1ebc14248dc1af935/8bfbe7e62a481a19145c55c9dc97e6ab.jpeg",
+     *   "background_picture": "https://civlcomps.org/uploads/images/pilot_header/9/c017697641aa9ef817c4c17728e9e6d6/08788da048eea61f93be8591e97f6a0c.jpg",
+     *   "last_update": "2022-06-03T19:05:59.325692",
+     *   "rank": 2
+     * }
+     */
+    PilotWithResults: {
+      /** Id */
+      _id: number;
+      /**
+       * Civlid 
+       * @description The CIVL ID of the pilot
+       */
+      civlid: number;
+      /**
+       * Name 
+       * @description The complete name of the pilot
+       */
+      name: string;
+      /**
+       * Civl Link 
+       * Format: uri 
+       * @description The link to the CIVL pilot page
+       */
+      civl_link: string;
+      /**
+       * Country 
+       * @description The country of the pilot
+       */
+      country: string;
+      /**
+       * About 
+       * @description About text of the pilot
+       */
+      about: string;
+      /**
+       * Social Links 
+       * @description List of pilot's links (socials medias, ...)
+       */
+      social_links: (components["schemas"]["Link"])[];
+      /**
+       * Sponsors 
+       * @description List of the pilot's sponsors
+       */
+      sponsors: (components["schemas"]["Sponsor"])[];
+      /**
+       * Photo 
+       * Format: uri 
+       * @description Link to the profile image of the pilot
+       */
+      photo: string;
+      /**
+       * Background Picture 
+       * Format: uri 
+       * @description Link to the background profile image of the pilot
+       */
+      background_picture: string;
+      /**
+       * Last Update 
+       * Format: date-time 
+       * @description Last time the pilot has been updated
+       */
+      last_update?: string;
+      /**
+       * Rank 
+       * @description Current pilot's ranking in the aerobatic solo overwall world ranking
+       */
+      rank: number;
+      /**
+       * @description Pilot's sex 
+       * @default man
+       */
+      gender?: components["schemas"]["GenderEnum"];
+      /**
+       * Competitions Results 
+       * @description List of competitions results 
+       * @default []
+       */
+      competitions_results?: (components["schemas"]["CompetitionResult"])[];
+      /**
+       * Seasons Results 
+       * @description List of seasons results 
+       * @default []
+       */
+      seasons_results?: (components["schemas"]["models__pilots_with_results__SeasonResult"])[];
     };
     /** RunExport */
     RunExport: {
@@ -1294,19 +1442,12 @@ export interface components {
       /** Results */
       results: (components["schemas"]["SeasonResults"])[];
     };
-    /** SeasonResult */
-    SeasonResult: {
-      pilot?: components["schemas"]["Pilot"];
-      team?: components["schemas"]["TeamExport"];
-      /** Score */
-      score: number;
-    };
     /** SeasonResults */
     SeasonResults: {
       /** Type */
       type: string;
       /** Results */
-      results: (components["schemas"]["SeasonResult"])[];
+      results: (components["schemas"]["models__seasons__SeasonResult"])[];
     };
     /** Sponsor */
     Sponsor: {
@@ -1491,6 +1632,12 @@ export interface components {
        */
       bonuses: (components["schemas"]["Bonus"])[];
       /**
+       * Bonus Constraints 
+       * @description List of bonuses that are exclusive to each other 
+       * @default []
+       */
+      bonus_constraints?: ((string)[])[];
+      /**
        * First Maneuver 
        * @description If positive, indicates that the trick must be performed in the first N tricks of the run 
        * @default 0
@@ -1574,6 +1721,19 @@ export interface components {
       msg: string;
       /** Error Type */
       type: string;
+    };
+    /** SeasonResult */
+    models__pilots_with_results__SeasonResult: {
+      season: components["schemas"]["Season"];
+      /** Rank */
+      rank: number;
+    };
+    /** SeasonResult */
+    models__seasons__SeasonResult: {
+      pilot?: components["schemas"]["Pilot"];
+      team?: components["schemas"]["TeamExport"];
+      /** Score */
+      score: number;
     };
   };
   responses: never;
@@ -2090,7 +2250,7 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Add new Trick */
+      /** @description Update existing Trick */
       204: never;
       /** @description Validation Error */
       422: {
@@ -2859,7 +3019,7 @@ export interface operations {
       /** @description Get a Pilot */
       200: {
         content: {
-          "application/json": components["schemas"]["Pilot"];
+          "application/json": components["schemas"]["PilotWithResults"];
         };
       };
       /** @description Validation Error */

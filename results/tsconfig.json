@@ -22,7 +22,8 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    "pages/judges/[...id].tsx"
+    "pages/judges/[...id].tsx",
+    "constants.ts"
   ],
   "exclude": ["node_modules"]
 }

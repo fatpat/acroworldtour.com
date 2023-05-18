@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "interface": "openapi-typescript https://api-preprod.acroworldtour.com/openapi.json --output types.d.ts",
+    "interface": "openapi-typescript https://api.acroworldtour.com/openapi.json --output types.d.ts",
     "prepare": "husky install"
   },
   "dependencies": {
