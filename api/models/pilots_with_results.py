@@ -82,8 +82,6 @@ class PilotWithResults(Pilot):
                 for rank, result in enumerate(results.results):
                     res = None
 
-                    log.debug(f"{season.code} > {result}")
-
                     if result.pilot is not None and result.pilot.id == id:
                         res = SeasonResult(
                             season = season,
