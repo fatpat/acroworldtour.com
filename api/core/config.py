@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     ADMIN_USER: str = 'admin'
     ADMIN_PASS: str = None
 
+    REDIS_URL: str = None
     CACHE_EXPIRES: int = 60
 
     class Config:

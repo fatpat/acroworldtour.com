@@ -5,6 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 import time
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
+from fastapi_cache.backends.redis import RedisBackend
+
+from redis import asyncio as aioredis
 
 from core.config import settings
 from core.database import clean_database
@@ -44,8 +47,13 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_event():
-    log.debug("starup_event()")
-    FastAPICache.init(InMemoryBackend())
+    log.debug("startup_event()")
+    if settings.REDIS_URL is None:
+        FastAPICache.init(InMemoryBackend())
+    else:
+        redis = aioredis.from_url(settings.REDIS_URL, encoding="utf8", decode_responses=True)
+        FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
+
     if "test" in settings.DATABASE:
         log.debug(f"Using a testing database")
         await clean_database()

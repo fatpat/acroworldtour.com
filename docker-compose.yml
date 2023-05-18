@@ -13,7 +13,8 @@ services:
     environment:
       - MONGODB_URL=mongodb://mongo:mongo@mongodb/
       - DATABASE=acropyx2-dev
-      - CACHE_EXPIRES=1
+      - CACHE_EXPIRES=30
+      - REDIS_URL=redis://redis:6379
 
   manager:
     image: node:18-alpine
@@ -50,3 +51,6 @@ services:
       - ./mongo:/data/db
     ports:
       - 27017:27017
+
+  redis:
+    image: redis:alpine

@@ -25,7 +25,7 @@ public = APIRouter()
     response_description="List all public",
     response_model=List[Pilot],
 )
-#@cache(expire=settings.CACHE_EXPIRES)
+@cache(expire=settings.CACHE_EXPIRES)
 async def list_teams():
     return await Pilot.getall()
 
@@ -37,7 +37,7 @@ async def list_teams():
     response_description="Get a Pilot",
     response_model=PilotWithResults,
 )
-#@cache(expire=settings.CACHE_EXPIRES)
+@cache(expire=settings.CACHE_EXPIRES)
 async def get_pilot(civlid: int):
     return await PilotWithResults.get(civlid)
 
@@ -49,7 +49,7 @@ async def get_pilot(civlid: int):
     response_description="List all teams",
     response_model=List[TeamExport],
 )
-#@cache(expire=settings.CACHE_EXPIRES)
+@cache(expire=settings.CACHE_EXPIRES)
 async def list_teams():
     teams = []
     cache = await UtilsCtrl.get_cache()
@@ -65,7 +65,7 @@ async def list_teams():
     response_description="Get a Team",
     response_model=TeamExport,
 )
-#@cache(expire=settings.CACHE_EXPIRES)
+@cache(expire=settings.CACHE_EXPIRES)
 async def get_team(id: str):
     team = await Team.get(id, False)
     return await team.export(cache=await UtilsCtrl.get_cache())
@@ -78,7 +78,7 @@ async def get_team(id: str):
     response_description="List all judges",
     response_model=List[Judge],
 )
-#@cache(expire=settings.CACHE_EXPIRES)
+@cache(expire=settings.CACHE_EXPIRES)
 async def list_judges():
     return await Judge.getall(False)
 
@@ -90,7 +90,7 @@ async def list_judges():
     response_description="Get a Judge",
     response_model=Judge,
 )
-#@cache(expire=settings.CACHE_EXPIRES)
+@cache(expire=settings.CACHE_EXPIRES)
 async def get_judge(id: str):
     return await Judge.get(id, False)
 
@@ -102,7 +102,7 @@ async def get_judge(id: str):
     response_description="List all competitions",
     response_model=List[CompetitionPublicExport],
 )
-#@cache(expire=settings.CACHE_EXPIRES)
+@cache(expire=settings.CACHE_EXPIRES)
 async def list_competitions():
     comps = []
     for comp in await Competition.getall():
@@ -119,7 +119,7 @@ async def list_competitions():
     response_description="Get a Competition",
     response_model=CompetitionPublicExportWithResults,
 )
-#@cache(expire=settings.CACHE_EXPIRES)
+@cache(expire=settings.CACHE_EXPIRES)
 async def get_competition(id: str):
     comp = await Competition.get(id)
     return await comp.export_public_with_results(cache=await UtilsCtrl.get_cache())
