@@ -33,10 +33,10 @@ class Pilot(BaseModel):
     id: int = Field(..., alias="_id")
     civlid: int = Field(..., description="The CIVL ID of the pilot")
     name: str = Field(..., description="The complete name of the pilot")
-    link: HttpUrl = Field(..., description="The link to the CIVL pilot page")
+    civl_link: HttpUrl = Field(..., description="The link to the CIVL pilot page")
     country: str = Field(..., description="The country of the pilot")
     about: str = Field(..., description="About text of the pilot")
-    links: List[Link] = Field(..., description="List of pilot's links (socials medias, ...)")
+    social_links: List[Link] = Field(..., description="List of pilot's links (socials medias, ...)")
     sponsors: List[Sponsor] = Field(..., description="List of the pilot's sponsors")
     photo: HttpUrl = Field(..., description="Link to the profile image of the pilot")
     background_picture: HttpUrl = Field(..., description="Link to the background profile image of the pilot")
@@ -52,10 +52,10 @@ class Pilot(BaseModel):
             "example": {
                 "civlid": 67619,
                 "name": "Luke de Weert",
-                "link": "https://civlcomps.org/pilot/67619",
+                "civl_link": "https://civlcomps.org/pilot/67619",
                 "country": "nld",
                 "about": "\"I am an athlete who believes that dedication is the core of the thing that keeps me pushing and motivating me to achieve all my goals, and even set new goals where I never thought it was possible.\"",
-                "links": [
+                "social_links": [
                     {"name": "facebook", "link": "https://www.facebook.com/deweert.luke"},
                     {"name": "instagram", "link": "https://www.instagram.com/luke_deweert/"},
                     {"name": "twitter", "link": "https://twitter.com/luke_deweert"},
