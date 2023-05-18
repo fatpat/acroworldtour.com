@@ -50,9 +50,11 @@ async def startup_event():
     log.debug("startup_event()")
     if settings.REDIS_URL is None:
         FastAPICache.init(InMemoryBackend())
+        log.info("Using in memory cache")
     else:
         redis = aioredis.from_url(settings.REDIS_URL, encoding="utf8", decode_responses=True)
         FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
+        log.info(f"Using redis cache ({REDIS_URL})")
 
     if "test" in settings.DATABASE:
         log.debug(f"Using a testing database")

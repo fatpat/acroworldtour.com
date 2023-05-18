@@ -700,6 +700,7 @@ class Competition(CompetitionNew):
         search = {"$or": [{"_id": id}, {"code": id}]}
         if not deleted:
             search['deleted'] = None
+        log.debug(f"mongo[competition].find_one({search})")
         competition = await collection.find_one(search)
         if competition is None:
             raise HTTPException(404, f"Competition {id} not found")
@@ -708,6 +709,7 @@ class Competition(CompetitionNew):
     @staticmethod
     async def getall(season: str = None):
         competitions = []
+        log.debug(f"mongo[competition].find()")
         for competition in await collection.find({"deleted": None}, sort=[("name", pymongo.ASCENDING)]).to_list(1000):
             competition = Competition.parse_obj(competition)
             if season is None or season in competition.seasons:

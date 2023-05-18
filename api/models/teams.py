@@ -105,6 +105,7 @@ class Team(BaseModel):
             search = {"_id": id}
         else:
             search = {"_id": id, "deleted": None}
+        log.debug(f"mongo[team].find_one({search})")
         team = await collection.find_one(search)
         if team is None:
             raise HTTPException(404, f"Team {id} not found")
@@ -117,6 +118,7 @@ class Team(BaseModel):
         else:
             search = {"deleted": None}
         teams = []
+        log.debug(f"mongo[team].find({search})")
         for team in await collection.find(search, sort=[("name", pymongo.ASCENDING)]).to_list(1000):
             teams.append(Team.parse_obj(team))
         return teams

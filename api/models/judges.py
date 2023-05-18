@@ -98,6 +98,7 @@ class Judge(BaseModel):
             search = {"_id": id}
         else:
             search = {"_id": id, "deleted": None}
+        log.debug(f"mongo[judge].find_one({search})")
         judge = await collection.find_one(search)
         if judge is None:
             raise HTTPException(404, f"Judge {id} not found")
@@ -110,6 +111,7 @@ class Judge(BaseModel):
         else:
             search = {"deleted": None}
         judges = []
+        log.debug(f"mongo[judge].find({search})")
         for judge in await collection.find(search, sort=[("level", pymongo.DESCENDING), ("name", pymongo.ASCENDING)]).to_list(1000):
             judges.append(Judge.parse_obj(judge))
         return judges

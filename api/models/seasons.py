@@ -120,6 +120,7 @@ class Season(BaseModel):
         if not deleted:
             search['deleted'] = None
 
+        log.debug(f"mongo[seasons].find_one({search})")
         season = await collection.find_one(search)
         if season is None:
             raise HTTPException(404, f"Season {id} not found")
@@ -134,6 +135,7 @@ class Season(BaseModel):
         else:
             search = {"deleted": None}
         seasons = []
+        log.debug(f"mongo[seasons].find({search})")
         for season in await collection.find(search, sort=[("level", pymongo.DESCENDING), ("name", pymongo.ASCENDING)]).to_list(1000):
             season = Season.parse_obj(season)
             season.image_url = season.get_image_url()
