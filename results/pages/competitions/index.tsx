@@ -1,3 +1,4 @@
+import classNames from "classnames";
 import useSWR from "swr";
 
 import CompetitionCard from "@/components/competition/competitionCard";
@@ -8,73 +9,55 @@ import { components } from "@/types";
 import { fetcher } from "@/utils/fetcher";
 
 type Competition = components["schemas"]["CompetitionPublicExport"];
-
-const pageTitle = "Acro World Tour | Competitions";
-const pageDescription =
-  "Acro World Tour Competitions page. In this page you will find all the past, present, and scheduled competitions.";
+type Season = components["schemas"]["SeasonExport"];
 
 const Competitions = () => {
-  const { data: competitions, error } = useSWR<Competition[]>(
-    `${API_URL}/competitions`,
+  const { data: seasons, error: seasonsError } = useSWR<Season[]>(
+    `${API_URL}/seasons`,
     fetcher
   );
 
-  if (error) return <FetchError />;
-  if (!competitions) return <FetchLoading />;
+  const { data: competitions, error: competitionsError } = useSWR<
+    Competition[]
+  >(`${API_URL}/competitions`, fetcher);
 
-  const currentCompetitions = competitions.filter(
-    (comp) => comp.state === "open"
-  );
-  const previousCompetitions = competitions.filter(
-    (comp) => comp.state === "closed"
-  );
-  const scheduledCompetitions = competitions.filter(
-    (comp) => comp.state === "init"
+  if (competitionsError || seasonsError) return <FetchError />;
+  if (!competitions || !seasons) return <FetchLoading />;
+
+  const soloSeasons = seasons.filter((season) => season.type === "solo");
+  const orphanCompetitions = competitions.filter(
+    (competition) => competition.seasons.length === 0
   );
 
   return (
     <>
-      <section>
-        {currentCompetitions.length ? (
-          <>
-            <h2>Ongoing Competitions</h2>
-            <div>
-              {currentCompetitions.map((competition) =>
-                CompetitionCard({ competition })
-              )}
-            </div>
-          </>
-        ) : (
-          <h2 className="opacity-30">No ongoing competition.</h2>
-        )}
-      </section>
-      <section>
-        {scheduledCompetitions.length ? (
-          <>
-            <h2>Scheduled Competitions.</h2>
-            <div>
-              {scheduledCompetitions.map((competition) =>
-                CompetitionCard({ competition })
-              )}
-            </div>
-          </>
-        ) : (
-          <h2 className="opacity-30">No scheduled competition.</h2>
-        )}
-      </section>
-      <section>
-        <h2>Previous Competitions</h2>
-        <div>
-          {previousCompetitions.map((competition) =>
-            CompetitionCard({ competition })
-          )}
-        </div>
+      <h2 className="pt-4">Competitions</h2>
+      <section className={classNames("flex flex-wrap")}>
+        {soloSeasons.map((season) => {
+          const {
+            code,
+            competitions,
+            name,
+            year,
+            image,
+            results,
+            number_of_pilots,
+          } = season;
+          return (
+            <section key={code}>
+              <h3>{name}</h3>
+              {competitions.map((competition) => (
+                <CompetitionCard
+                  key={competition.code}
+                  competition={competition}
+                />
+              ))}
+            </section>
+          );
+        })}
       </section>
     </>
   );
 };
-
-Competitions.pageTitle = pageTitle;
-Competitions.pageDescription = pageDescription;
 
 export default Competitions;

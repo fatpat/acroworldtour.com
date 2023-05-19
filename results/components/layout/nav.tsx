@@ -29,7 +29,7 @@ const Nav = ({ pageTitle }: Props) => (
         <NavItem link="" active={pageTitle?.includes("Home")} />
       </li>
       <li>
-        <NavItem link="Results" active={pageTitle?.includes("Results")} />
+        <NavItem link="Seasons" active={pageTitle?.includes("Seasons")} />
       </li>
       <li>
         <NavItem

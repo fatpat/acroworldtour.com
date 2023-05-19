@@ -11,12 +11,12 @@
   }
 
   #__next {
-    @apply flex min-h-screen flex-col;
+    @apply flex min-h-screen flex-col items-center;
   }
 
   section,
   article {
-    @apply prose prose-neutral prose-lg;
+    @apply prose prose-lg prose-neutral;
   }
 
   nav > ul > li {
@@ -46,6 +46,16 @@
   p {
     @apply text-sm font-medium leading-loose drop-shadow-sm;
   } */
+}
+
+@layer utilities {
+  .awt-background {
+    @apply bg-cover bg-center bg-no-repeat;
+  }
+
+  .awt-background-blend {
+    @apply bg-white/50 bg-cover bg-center bg-no-repeat bg-blend-screen;
+  }
 }
 
 /* CSS cloud for FetchLoading, FetchError */

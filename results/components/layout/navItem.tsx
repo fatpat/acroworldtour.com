@@ -5,7 +5,7 @@ import {
   CompetitionsIcon,
   HomeIcon,
   PilotsIcon,
-  ResultsIcon,
+  SeasonsIcon,
 } from "../ui/icons";
 
 interface Props {
@@ -27,7 +27,7 @@ const NavItem: React.FC<Props> = ({ link, active }) => {
       )}
     >
       {link === "" && <HomeIcon className={iconClasses} />}
-      {link === "Results" && <ResultsIcon className={iconClasses} />}
+      {link === "Seasons" && <SeasonsIcon className={iconClasses} />}
       {link === "Competitions" && <CompetitionsIcon className={iconClasses} />}
       {link === "Pilots" && <PilotsIcon className={iconClasses} />}
       <span>{link || "Home"}</span>
