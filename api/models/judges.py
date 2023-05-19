@@ -12,6 +12,7 @@ from fastapi import HTTPException
 from core.database import db, PyObjectId
 
 from models.pilots import Pilot
+from models.cache import Cache
 
 log = logging.getLogger(__name__)
 collection = db.judges
@@ -84,15 +85,14 @@ class Judge(BaseModel):
         log.debug('index created on "name,deleted"')
 
     @staticmethod
-    async def get(id, deleted: bool = False, cache:dict = {}):
+    async def get(id, deleted: bool = False, cache:Cache = None):
         if id is None:
             raise HTTPException(404, f"Judge not found")
 
-        if not deleted and 'judges' in cache:
-            try:
-                return [j for j in cache['judges'] if str(j.id) == id][0]
-            except:
-                pass
+        if not deleted and cache is not None:
+            judge = cache.get('judges', id)
+            if judge is not None:
+                return judge
 
         if deleted:
             search = {"_id": id}
@@ -102,18 +102,31 @@ class Judge(BaseModel):
         judge = await collection.find_one(search)
         if judge is None:
             raise HTTPException(404, f"Judge {id} not found")
-        return Judge.parse_obj(judge)
+
+        judge = Judge.parse_obj(judge)
+        if not deleted and cache is not None:
+            cache.add('judges', judge)
+        return judge
 
     @staticmethod
-    async def getall(deleted: bool = False):
+    async def getall(deleted: bool = False, cache:Cache = None):
         if deleted:
             search = {}
         else:
             search = {"deleted": None}
+            if cache is not None:
+                judges = cache.get_all('judges')
+                if judges is not None:
+                    return judges
         judges = []
         log.debug(f"mongo[judge].find({search})")
         for judge in await collection.find(search, sort=[("level", pymongo.DESCENDING), ("name", pymongo.ASCENDING)]).to_list(1000):
-            judges.append(Judge.parse_obj(judge))
+            judge = Judge.parse_obj(judge)
+            judges.append(judge)
+            if not deleted and cache is not None:
+                cache.add('judges', judge)
+        if not deleted and cache is not None:
+            cache.set_all('judges', judges)
         return judges
 
     @staticmethod

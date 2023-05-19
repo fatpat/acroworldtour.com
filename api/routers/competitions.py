@@ -15,6 +15,7 @@ from models.runs import Run, RunExport
 from models.marks import FinalMark, FinalMarkExport
 from models.flights import Flight, FlightNew, FlightExport
 from models.results import RunResults, CompetitionResults, CompetitionResultsExport, RunResultsExport
+from models.cache import Cache
 from controllers.competitions import CompCtrl
 from controllers.utils import UtilsCtrl
 
@@ -49,8 +50,9 @@ async def list():
     dependencies=[Depends(auth)]
 )
 async def get_by_id(id: str, deleted: bool = False):
+    cache = Cache()
     comp = await Competition.get(id, deleted)
-    return await comp.export(cache=await UtilsCtrl.get_cache())
+    return await comp.export(cache=cache)
 
 #
 # Create a new Competition
@@ -63,8 +65,9 @@ async def get_by_id(id: str, deleted: bool = False):
     dependencies=[Depends(auth)],
 )
 async def create(competition: CompetitionNew = Body(...)):
+    cache=Cache()
     comp = await competition.create()
-    return await comp.export(cache=await UtilsCtrl.get_cache())
+    return await comp.export(cache=cache)
 
 #
 # Update a Competition
@@ -202,9 +205,10 @@ async def close(id: str):
     dependencies=[Depends(auth)],
 )
 async def new_run(id: str, pilots_to_qualify: int = 0):
-    comp = await Competition.get(id)
+    cache = Cache()
+    comp = await Competition.get(id, cache=cache)
     run = await comp.new_run(pilots_to_qualify)
-    return await run.export(cache=await UtilsCtrl.get_cache())
+    return await run.export(cache=cache)
 
 @competitions.get(
     "/{cid}/runs/{rid}",
@@ -213,9 +217,10 @@ async def new_run(id: str, pilots_to_qualify: int = 0):
     dependencies=[Depends(auth)],
 )
 async def get_run(cid: str, rid: int):
-    comp = await Competition.get(cid)
+    cache=Cache()
+    comp = await Competition.get(cid, cache=cache)
     run = await comp.run_get(rid)
-    return await run.export(cache=await UtilsCtrl.get_cache())
+    return await run.export(cache=cache)
 
 #
 # Update Run Pilot list
@@ -339,9 +344,10 @@ async def flight_get(id: str, i: int, pilot_team_id):
     dependencies=[Depends(auth)],
 )
 async def flight_save(id: str, i: int, pilot_team_id, save: bool, published:bool = False, flight: FlightNew = Body(...)):
-    comp = await Competition.get(id)
+    cache = Cache()
+    comp = await Competition.get(id, cache=cache)
     mark = await comp.flight_save(run_i=i, id=pilot_team_id, flight=flight, save=save, published=published)
-    return await mark.export(cache=await UtilsCtrl.get_cache())
+    return await mark.export(cache=cache)
 
 @competitions.get(
     "/{id}/results",
@@ -351,9 +357,10 @@ async def flight_save(id: str, i: int, pilot_team_id, save: bool, published:bool
     dependencies=[Depends(auth)],
 )
 async def get_all_results(id: str):
-    comp = await Competition.get(id)
+    cache = Cache()
+    comp = await Competition.get(id, cache=cache)
     res = await comp.results()
-    return await res.export(cache=await UtilsCtrl.get_cache())
+    return await res.export(cache=cache)
 
 @competitions.get(
     "/{id}/results/export",
@@ -363,9 +370,10 @@ async def get_all_results(id: str):
 #    dependencies=[Depends(auth)],
 )
 async def get_export_results(request: Request, id: str, bg_tasks: BackgroundTasks, limit_run: int =-1, filetype: str = "xls"):
-    comp = await Competition.get(id)
+    cache = Cache()
+    comp = await Competition.get(id, cache=cache)
     res = await comp.results(limit = limit_run)
-    res = await res.export(cache=await UtilsCtrl.get_cache())
+    res = await res.export(cache=cache)
     if filetype == "xls":
         file = CompCtrl.comp_to_xlsx(res, comp.type)
     elif filetype == "html":
@@ -387,9 +395,10 @@ async def get_export_results(request: Request, id: str, bg_tasks: BackgroundTask
     dependencies=[Depends(auth)],
 )
 async def run_get_results(id: str, i: int, published_only: bool = True):
-    comp = await Competition.get(id)
+    cache = Cache()
+    comp = await Competition.get(id, cache=cache)
     res = await comp.run_results(run_i=i, published_only=published_only)
-    return await res.export(cache=await UtilsCtrl.get_cache())
+    return await res.export(cache=cache)
 
 @competitions.get(
     "/{id}/results/{i}/export",
@@ -399,9 +408,10 @@ async def run_get_results(id: str, i: int, published_only: bool = True):
 #    dependencies=[Depends(auth)],
 )
 async def run_get_results(request: Request, id: str, i: int, bg_tasks: BackgroundTasks, filetype: str = "xls"):
-    comp = await Competition.get(id)
+    cache = Cache()
+    comp = await Competition.get(id, cache=cache)
     res = await comp.run_results(run_i=i)
-    res = await res.export(cache=await UtilsCtrl.get_cache())
+    res = await res.export(cache=cache)
     if filetype == "xls":
         file = CompCtrl.run_to_xlsx(res, comp.type)
     elif filetype == "html":

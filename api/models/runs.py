@@ -13,6 +13,7 @@ from models.pilots import Pilot
 from models.teams import Team, TeamExport
 from models.judges import Judge
 from models.tricks import Trick
+from models.cache import Cache
 
 from core.config import settings
 
@@ -60,7 +61,7 @@ class Run(BaseModel):
             }
         }
 
-    async def export(self, cache:dict = {}) -> RunExport:
+    async def export(self, cache:Cache = None) -> RunExport:
 
         pilots = []
         for pilot in self.pilots:

@@ -8,6 +8,7 @@ from enum import Enum
 from datetime import datetime
 
 from models.judges import Judge
+from models.cache import Cache
 
 from core.config import settings
 from core.utils import float2digits, float3digits
@@ -51,7 +52,7 @@ class JudgeMark(BaseModel):
             }
         }
 
-    async def export(self, cache:dict = {}) -> JudgeMarkExport:
+    async def export(self, cache:Cache = None) -> JudgeMarkExport:
         judge = None
         if self.judge != "":
             judge = await Judge.get(self.judge, cache=cache)
@@ -138,7 +139,7 @@ class FinalMark(BaseModel):
             }
         }
 
-    async def export(self, cache:dict = {}) -> FinalMarkExport:
+    async def export(self, cache:Cache = None) -> FinalMarkExport:
         return FinalMarkExport(
             judges_mark = await self.judges_mark.export(cache=cache),
             technicity = self.technicity,

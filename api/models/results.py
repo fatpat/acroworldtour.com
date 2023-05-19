@@ -10,6 +10,7 @@ from datetime import datetime
 from models.flights import Flight, FlightExport
 from models.pilots import Pilot
 from models.teams import Team, TeamExport
+from models.cache import Cache
 
 from core.config import settings
 from core.utils import float3digits
@@ -37,7 +38,7 @@ class RunResults(BaseModel):
             }
         }
 
-    async def export(self, cache:dict = {}) -> FlightExport:
+    async def export(self, cache:Cache = None) -> FlightExport:
         results = []
         for result in self.results:
             results.append(await result.export(cache=cache))
@@ -97,7 +98,7 @@ class CompetitionPilotResults(BaseModel):
             }
         }
 
-    async def export(self, cache:dict = {}) -> CompetitionPilotResultsExport:
+    async def export(self, cache:Cache = None) -> CompetitionPilotResultsExport:
         try:
           pilot = await Pilot.get(self.pilot, cache=cache)
         except:
@@ -140,7 +141,7 @@ class CompetitionResults(BaseModel):
             }
         }
 
-    async def export(self, cache:dict = {}) -> CompetitionResultsExport:
+    async def export(self, cache:Cache = None) -> CompetitionResultsExport:
         overall_results = []
         for r in self.overall_results:
             overall_results.append(await r.export(cache=cache))

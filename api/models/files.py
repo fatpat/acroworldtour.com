@@ -10,6 +10,7 @@ from datetime import datetime
 from fastapi import HTTPException
 
 from core.config import settings
+from models.cache import Cache
 
 from core.database import db, PyObjectId
 log = logging.getLogger(__name__)
@@ -61,15 +62,14 @@ class File(BaseModel):
             raise HTTPException(400, f"Error while saving file {self.id}, 1 item should have been saved, got {res.modified_count}")
 
     @staticmethod
-    async def get(id, deleted: bool = False, cache:dict = {}):
+    async def get(id, deleted: bool = False, cache:Cache = None):
         if id is None:
             raise HTTPException(404, f"File not found")
 
-        if not deleted and 'files' in cache:
-            try:
-                return [j for j in cache['files'] if str(j.id) == id][0]
-            except:
-                pass
+        if not deleted and cache is not None:
+            file = cache.get('files', id)
+            if file is not None:
+                return file
 
         if deleted:
             search = {"_id": id}
@@ -79,7 +79,10 @@ class File(BaseModel):
         file = await collection.find_one(search)
         if file is None:
             raise HTTPException(404, f"File {id} not found")
-        return File.parse_obj(file)
+        file = File.parse_obj(file)
+        if not deleted and cache is not None:
+            cache.add('files', file)
+        return file
 
     @staticmethod
     async def getall(deleted: bool = False):

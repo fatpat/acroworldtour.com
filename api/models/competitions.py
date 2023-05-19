@@ -19,6 +19,7 @@ from models.flights import Flight, FlightNew
 from models.marks import JudgeMark, FinalMark
 from models.competition_configs import CompetitionConfig
 from models.results import RunResults, CompetitionResults, CompetitionPilotResults, RunResultSummary, CompetitionResultsExport
+from models.cache import Cache
 
 from core.database import db, PyObjectId
 from core.config import settings
@@ -210,7 +211,7 @@ class Competition(CompetitionNew):
             return f"{settings.SERVER_HOST}/files/{self.image}"
         return None
 
-    async def export(self, cache:dict={}) -> CompetitionExport:
+    async def export(self, cache:Cache = None) -> CompetitionExport:
 
         pilots = []
         if self.type == CompetitionType.solo:
@@ -255,7 +256,7 @@ class Competition(CompetitionNew):
             seasons = self.seasons,
         )
 
-    async def export_public(self) -> CompetitionPublicExport:
+    async def export_public(self, cache:Cache = None) -> CompetitionPublicExport:
         if not self.published:
             return None
 
@@ -277,7 +278,7 @@ class Competition(CompetitionNew):
             seasons = self.seasons,
         )
 
-    async def export_public_with_results(self, cache:dict = {}) -> CompetitionPublicExportWithResults:
+    async def export_public_with_results(self, cache:Cache = None) -> CompetitionPublicExportWithResults:
         if not self.published:
             raise HTTPException(404, f"Competition {self.code} not published")
 
@@ -286,7 +287,7 @@ class Competition(CompetitionNew):
             for r in result.results:
                 r.marks = []
 
-        comp = await self.export()
+        comp = await self.export(cache=cache)
         return CompetitionPublicExportWithResults(
             _id = str(comp.id),
             name = comp.name,
@@ -696,24 +697,44 @@ class Competition(CompetitionNew):
         log.debug('index created on "name,deleted" and on "code,deleted"')
 
     @staticmethod
-    async def get(id: str, deleted: bool = False):
+    async def get(id: str, deleted: bool = False, cache:Cache = None):
         search = {"$or": [{"_id": id}, {"code": id}]}
         if not deleted:
             search['deleted'] = None
+            if cache is not None:
+                competition = cache.get('competitions', id)
+                if competition is not None:
+                    return competition
         log.debug(f"mongo[competition].find_one({search})")
         competition = await collection.find_one(search)
         if competition is None:
             raise HTTPException(404, f"Competition {id} not found")
-        return Competition.parse_obj(competition)
+        competition = Competition.parse_obj(competition)
+        if not deleted and cache is not None:
+            cache.add('competitions', competition)
+        return competition
 
     @staticmethod
-    async def getall(season: str = None):
+    async def getall(season: str = None, cache:Cache = None):
+        if cache is not None:
+            competitions = cache.get_all('competitions')
+            if competitions is not None:
+                if season is None:
+                    return competitions
+                else:
+                    return [c for c in competitions if season in c.seasons]
+
         competitions = []
         log.debug(f"mongo[competition].find()")
         for competition in await collection.find({"deleted": None}, sort=[("name", pymongo.ASCENDING)]).to_list(1000):
             competition = Competition.parse_obj(competition)
             if season is None or season in competition.seasons:
                 competitions.append(competition)
+                if cache is not None:
+                    cache.add('competitions', competition)
+
+        if cache is not None and season is None:
+            cache.set_all('competitions', competitions)
         return competitions
 
     @staticmethod

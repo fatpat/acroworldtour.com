@@ -11,6 +11,7 @@ from models.pilots import Pilot
 from models.teams import Team, TeamExport
 from models.tricks import Trick, UniqueTrick
 from models.marks import JudgeMark, FinalMark, FinalMarkExport, JudgeMarkExport
+from models.cache import Cache
 
 from core.config import settings
 
@@ -49,7 +50,7 @@ class Flight(BaseModel):
             }
         }
 
-    async def export(self, cache:dict = {}) -> FlightExport:
+    async def export(self, cache:Cache = None) -> FlightExport:
 
         marks = []
         for mark in self.marks:

@@ -11,11 +11,30 @@ from models.pilots_with_results import PilotWithResults
 from models.judges import Judge
 from models.teams import Team, TeamExport
 from models.seasons import Season, SeasonExport
+from models.tricks import Trick
+from models.cache import Cache
 from core.config import settings
 from controllers.utils import UtilsCtrl
 
 log = logging.getLogger(__name__)
 public = APIRouter()
+
+# test
+@public.get(
+    "/test",
+    response_class=Response,
+)
+async def test():
+    cache = Cache()
+    await Pilot.get(78952, cache=cache)
+    await Pilot.get(78952, cache=cache)
+    await Pilot.get(78952, cache=cache)
+    await Pilot.get(78952, cache=cache)
+    log.debug(cache.get('pilots', 78952))
+    await Team.getall(deleted=False, cache=cache)
+    await Team.getall(deleted=False, cache=cache)
+    await Team.getall(deleted=False, cache=cache)
+    await Team.get('6335d53bd30964166ad55ed8', cache=cache)
 
 #
 # Get all public
@@ -26,8 +45,9 @@ public = APIRouter()
     response_model=List[Pilot],
 )
 @cache(expire=settings.CACHE_EXPIRES)
-async def list_teams():
-    return await Pilot.getall()
+async def list_pilots():
+    cache = Cache()
+    return await Pilot.getall(cache=cache)
 
 #
 # Get one pilot
@@ -39,7 +59,14 @@ async def list_teams():
 )
 @cache(expire=settings.CACHE_EXPIRES)
 async def get_pilot(civlid: int):
-    return await PilotWithResults.get(civlid)
+    cache = Cache()
+    await Pilot.getall(cache=cache)
+    await Team.getall(cache=cache)
+    await Judge.getall(cache=cache)
+    await Trick.getall(cache=cache)
+    await Competition.getall(cache=cache)
+    await Season.getall(cache=cache)
+    return await PilotWithResults.get(civlid, cache=cache)
 
 #
 # Get all teams
@@ -52,8 +79,8 @@ async def get_pilot(civlid: int):
 @cache(expire=settings.CACHE_EXPIRES)
 async def list_teams():
     teams = []
-    cache = await UtilsCtrl.get_cache()
-    for team in await Team.getall(False):
+    cache = Cache()
+    for team in await Team.getall(deleted=False, cache=cache):
         teams.append(await team.export(cache=cache))
     return teams
 
@@ -67,8 +94,9 @@ async def list_teams():
 )
 @cache(expire=settings.CACHE_EXPIRES)
 async def get_team(id: str):
-    team = await Team.get(id, False)
-    return await team.export(cache=await UtilsCtrl.get_cache())
+    cache = Cache()
+    team = await Team.get(id, cache=cache)
+    return await team.export(cache=cache)
 
 #
 # Get all judges
@@ -80,7 +108,8 @@ async def get_team(id: str):
 )
 @cache(expire=settings.CACHE_EXPIRES)
 async def list_judges():
-    return await Judge.getall(False)
+    cache = Cache()
+    return await Judge.getall(deleted=False, cache=cache)
 
 #
 # Get one judge
@@ -92,7 +121,8 @@ async def list_judges():
 )
 @cache(expire=settings.CACHE_EXPIRES)
 async def get_judge(id: str):
-    return await Judge.get(id, False)
+    cache = Cache()
+    return await Judge.get(id, cache=cache)
 
 #
 # Get all competitions
@@ -104,9 +134,10 @@ async def get_judge(id: str):
 )
 @cache(expire=settings.CACHE_EXPIRES)
 async def list_competitions():
+    cache = Cache()
     comps = []
-    for comp in await Competition.getall():
-        comp = await comp.export_public()
+    for comp in await Competition.getall(cache=cache):
+        comp = await comp.export_public(cache=cache)
         if comp is not None:
             comps.append(comp)
     return comps
@@ -121,8 +152,9 @@ async def list_competitions():
 )
 @cache(expire=settings.CACHE_EXPIRES)
 async def get_competition(id: str):
-    comp = await Competition.get(id)
-    return await comp.export_public_with_results(cache=await UtilsCtrl.get_cache())
+    cache = Cache()
+    comp = await Competition.get(id, cache=cache)
+    return await comp.export_public_with_results(cache=cache)
 
 #
 # Get all seasons
@@ -133,8 +165,8 @@ async def get_competition(id: str):
     response_model=List[SeasonExport],
 )
 async def list_seasons(deleted: bool = False):
-    cache=await UtilsCtrl.get_cache()
-    return [await season.export(cache=cache) for season in await Season.getall(deleted=deleted)]
+    cache = Cache()
+    return [await season.export(cache=cache) for season in await Season.getall(deleted=deleted, cache=cache)]
 
 #
 # Get a season
@@ -145,6 +177,6 @@ async def list_seasons(deleted: bool = False):
     response_model=SeasonExport,
 )
 async def get_season(id: str, deleted: bool = False):
-    cache=await UtilsCtrl.get_cache()
+    cache = Cache()
     season = await Season.get(id, deleted=deleted, cache=cache)
     return await season.export(cache=cache)

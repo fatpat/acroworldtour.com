@@ -47,12 +47,3 @@ class UtilsCtrl:
         for pilot in await PilotCtrl.get_all_unused_pilots():
             log.info(f"deleting pilot {pilot}")
             await Pilot.delete(pilot)
-
-    @staticmethod
-    async def get_cache() -> dict:
-        return{
-            "pilots": await Pilot.getall(),
-            "teams": await Team.getall(),
-            "judges": await Judge.getall(),
-            "tricks": await Trick.getall()
-        }

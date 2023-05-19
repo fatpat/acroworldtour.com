@@ -8,6 +8,7 @@ import pymongo
 from fastapi import HTTPException
 
 from models.pilots import Pilot
+from models.cache import Cache
 
 from core.database import db, PyObjectId
 log = logging.getLogger(__name__)
@@ -74,7 +75,7 @@ class Team(BaseModel):
         if res.modified_count != 1:
             raise HTTPException(400, f"Error while saving team, 1 item should have been saved, got {res.modified_count}")
 
-    async def export(self, cache:dict = {}) -> TeamExport:
+    async def export(self, cache:Cache = None) -> TeamExport:
         pilots = []
         for pilot in self.pilots:
             pilots.append(await Pilot.get(pilot, cache=cache))
@@ -91,15 +92,15 @@ class Team(BaseModel):
         log.debug('index created on "name,deleted"')
 
     @staticmethod
-    async def get(id, deleted: bool = False, cache:dict = {}):
+    async def get(id, deleted: bool = False, cache:Cache = None):
         if id is None or id == '':
             raise HTTPException(404, f"Team not found")
 
-        if not deleted and 'teams' in cache:
-            try:
-                return [t for t in cache['teams'] if str(t.id) == id][0]
-            except:
-                pass
+        if cache is not None:
+            if not deleted:
+                team = cache.get('teams', id)
+                if team is not None:
+                    return team
 
         if deleted:
             search = {"_id": id}
@@ -109,18 +110,37 @@ class Team(BaseModel):
         team = await collection.find_one(search)
         if team is None:
             raise HTTPException(404, f"Team {id} not found")
-        return Team.parse_obj(team)
+        team = Team.parse_obj(team)
+        if cache is not None:
+            cache.add('teams', team)
+        return team
 
     @staticmethod
-    async def getall(deleted: bool = False):
+    async def getall(deleted: bool = False, cache:Cache = None):
         if deleted:
             search = {}
         else:
+            if cache is not None:
+                teams = cache.get_all('teams')
+                if teams is not None:
+                    return teams
             search = {"deleted": None}
+
+        # ensure to replace all teams from cache
+        # to avoid doubles
+        if not deleted and cache is not None:
+            cache.clean('teams')
+
         teams = []
         log.debug(f"mongo[team].find({search})")
         for team in await collection.find(search, sort=[("name", pymongo.ASCENDING)]).to_list(1000):
-            teams.append(Team.parse_obj(team))
+            team = Team.parse_obj(team)
+            teams.append(team)
+            if not deleted and cache is not None:
+                cache.add('teams', team)
+
+        if not deleted:
+            cache.set_all('teams', teams)
         return teams
 
     @staticmethod

@@ -11,6 +11,7 @@ from fastapi import HTTPException
 from core.config import settings
 
 from core.database import db, PyObjectId
+from models.cache import Cache
 log = logging.getLogger(__name__)
 collection = db.tricks
 
@@ -169,15 +170,14 @@ class Trick(BaseModel):
         log.debug('index created on "name,deleted" and "acronym,deleted"')
 
     @staticmethod
-    async def get(id, deleted: bool = False, cache:dict = {}):
+    async def get(id, deleted: bool = False, cache:Cache = None):
         if id is None:
             raise HTTPException(404, f"Trick not found")
 
-        if not deleted and 'tricks' in cache:
-            try:
-                return [t for t in cache['tricks'] if str(t.id) == id][0]
-            except:
-                pass
+        if not deleted and cache is not None:
+            trick = cache.get('tricks', id)
+            if trick is not None:
+                return trick
 
         if deleted:
             search = {"$or": [{"_id": id}, {"name": id}]}
@@ -191,7 +191,11 @@ class Trick(BaseModel):
         if 'bonus_constraints' not in trick:
             trick['bonus_constraints'] = []
 
-        return Trick.parse_obj(trick)
+        trick = Trick.parse_obj(trick)
+        if not deleted and cache is not None:
+            cache.add('tricks', trick)
+
+        return trick
 
     @staticmethod
     async def get_unique_tricks(solo: bool, synchro: bool) -> List[UniqueTrick]:
@@ -218,18 +222,30 @@ class Trick(BaseModel):
         return None
 
     @staticmethod
-    async def getall(deleted: bool = False, repeatable: bool = None):
+    async def getall(deleted: bool = False, repeatable: bool = None, cache:Cache = None):
         tricks = []
         if deleted:
             search = {}
         else:
             search = {"deleted": None}
+            if cache is not None:
+                tricks = cache.get_all('tricks')
+                if tricks is not None:
+                    return tricks
 
         if repeatable is not None:
             search["repeatable"] = repeatable
 
+        tricks = []
         for trick in await collection.find(search, sort=[("technical_coefficient", pymongo.ASCENDING)]).to_list(1000):
-            tricks.append(Trick.parse_obj(trick))
+
+            trick = Trick.parse_obj(trick)
+            tricks.append(trick)
+            if not deleted and cache is not None:
+                cache.add('tricks', trick)
+
+        if not deleted and cache is not None:
+            cache.set_all('tricks', tricks)
         return tricks
 
     @staticmethod

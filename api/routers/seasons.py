@@ -3,6 +3,7 @@ from http import HTTPStatus
 from fastapi import APIRouter, Depends, Body, HTTPException
 from core.security import auth
 from models.seasons import Season, SeasonExport
+from models.cache import Cache
 from typing import List
 from fastapi.responses import Response
 
@@ -21,8 +22,8 @@ seasons = APIRouter()
     dependencies=[Depends(auth)],
 )
 async def list(deleted: bool = False):
-    cache=await UtilsCtrl.get_cache()
-    return [await season.export(cache=cache) for season in await Season.getall(deleted=deleted)]
+    cache = Cache()
+    return [await season.export(cache=cache) for season in await Season.getall(deleted=deleted, cache=cache)]
 
 #
 # Get one season
@@ -34,7 +35,7 @@ async def list(deleted: bool = False):
     dependencies=[Depends(auth)],
 )
 async def get(id: str, deleted: bool = False):
-    cache=await UtilsCtrl.get_cache()
+    cache = Cache()
     return await Season.get(id, deleted=deleted, cache=cache)
 
 #
@@ -47,7 +48,7 @@ async def get(id: str, deleted: bool = False):
     dependencies=[Depends(auth)],
 )
 async def export(id: str, deleted: bool = False):
-    cache=await UtilsCtrl.get_cache()
+    cache = Cache()
     season = await Season.get(id, deleted=deleted, cache=cache)
     return await season.export(cache=cache)
 

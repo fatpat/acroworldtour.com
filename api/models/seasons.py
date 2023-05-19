@@ -12,6 +12,7 @@ from fastapi import HTTPException
 from models.competitions import Competition, CompetitionPublicExportWithResults, CompetitionState, CompetitionType
 from models.pilots import Pilot
 from models.teams import Team, TeamExport
+from models.cache import Cache
 
 from core.database import db, PyObjectId
 from core.config import settings
@@ -106,15 +107,14 @@ class Season(BaseModel):
         log.debug('index created on "name,deleted" and on "code,deleted"')
 
     @staticmethod
-    async def get(id, deleted: bool = False, cache:dict = {}):
+    async def get(id, deleted: bool = False, cache:Cache = None):
         if id is None:
             raise HTTPException(404, f"Season not found")
 
-        if not deleted and 'seasons' in cache:
-            try:
-                return [j for j in cache['seasons'] if str(j.id) == id or j.code == id][0]
-            except:
-                pass
+        if not deleted and cache is not None:
+            season = cache.get('seasons', id)
+            if season is not None:
+                return season
 
         search = {"$or": [{"_id": id}, {"code": id}]}
         if not deleted:
@@ -126,20 +126,30 @@ class Season(BaseModel):
             raise HTTPException(404, f"Season {id} not found")
         season = Season.parse_obj(season)
         season.image_url = season.get_image_url()
+        if not deleted and cache is not None:
+            cache.add('seasons', season)
         return season
 
     @staticmethod
-    async def getall(deleted: bool = False):
+    async def getall(deleted: bool = False, cache:Cache = None):
         if deleted:
             search = {}
         else:
             search = {"deleted": None}
+            if cache is not None:
+                seasons = cache.get_all('seasons')
+                if seasons is not None:
+                    return seasons
         seasons = []
         log.debug(f"mongo[seasons].find({search})")
         for season in await collection.find(search, sort=[("level", pymongo.DESCENDING), ("name", pymongo.ASCENDING)]).to_list(1000):
             season = Season.parse_obj(season)
             season.image_url = season.get_image_url()
             seasons.append(season)
+            if not deleted and cache is not None:
+                cache.add('seasons', season)
+        if not deleted and cache is not None:
+            cache.set_all('seasons', seasons)
         return seasons
 
     @staticmethod
@@ -172,14 +182,14 @@ class Season(BaseModel):
             return f"{settings.SERVER_HOST}/files/{self.image}"
         return None
 
-    async def export(self, cache:dict={}) -> SeasonExport:
+    async def export(self, cache:Cache=None) -> SeasonExport:
         competitions = []
         results = {}
         _type = None
         teams = {}
         pilots = {}
 
-        for comp in await Competition.getall(season=self.code):
+        for comp in await Competition.getall(season=self.code, cache=cache):
             comp = await comp.export_public_with_results(cache=cache)
 
             # handle type and check that all comp of the season are of the same type

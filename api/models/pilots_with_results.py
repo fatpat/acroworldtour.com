@@ -13,6 +13,7 @@ from core.database import db, PyObjectId
 from models.pilots import Pilot
 from models.competitions import CompetitionPublicExport, Competition, CompetitionType
 from models.seasons import Season, SeasonExport
+from models.cache import Cache
 
 log = logging.getLogger(__name__)
 
@@ -28,21 +29,21 @@ class PilotWithResults(Pilot):
     competitions_results: List[CompetitionResult] = Field([], description="List of competitions results")
     seasons_results: List[SeasonResult] = Field([], description="List of seasons results")
 
-    async def get(id: int, cache:dict ={}):
-        pilot = await Pilot.get(id, cache)
+    async def get(id: int, cache:Cache = None):
+        pilot = await Pilot.get(id, cache=cache)
         if pilot is None:
             return None
         pilot = PilotWithResults.parse_obj(pilot)
 
         seasons = []
-        for comp in await Competition.getall():
+        for comp in await Competition.getall(cache=cache):
             if not comp.published:
                 continue
 
             if comp.type == CompetitionType.solo and id not in comp.pilots:
                 continue
 
-            comp_with_results = await comp.export_public_with_results(cache)
+            comp_with_results = await comp.export_public_with_results(cache=cache)
 
             team = None
             if comp.type == CompetitionType.synchro:
@@ -65,7 +66,7 @@ class PilotWithResults(Pilot):
                     continue
 
                 competition_results = CompetitionResult(
-                    competition = await comp.export_public(),
+                    competition = await comp.export_public(cache=cache),
                     rank = rank+1,
                 )
                 pilot.competitions_results.append(competition_results)
@@ -74,8 +75,8 @@ class PilotWithResults(Pilot):
 
         seasons = list(set(seasons))
         for season in seasons:
-            season = await Season.get(season)
-            season_export = await season.export(cache)
+            season = await Season.get(season, cache=cache)
+            season_export = await season.export(cache=cache)
             for results in season_export.results:
                 if results.type != "overall":
                     continue

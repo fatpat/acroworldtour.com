@@ -1,3 +1,4 @@
+import traceback
 import logging
 from pydantic import BaseModel, Field, validator, HttpUrl
 from bson import ObjectId
@@ -10,6 +11,7 @@ import pymongo
 from fastapi import HTTPException
 
 from core.database import db, PyObjectId
+from models.cache import Cache
 
 log = logging.getLogger(__name__)
 collection = db.pilots
@@ -93,34 +95,54 @@ class Pilot(BaseModel):
             self.gender = GenderEnum.man
 
     @staticmethod
-    async def get(id: int, cache:dict = {}):
-        if 'pilots' in cache:
-            try:
-                return [p for p in cache['pilots'] if p.id == id][0]
-            except:
-                pass
+    async def get(id: int, cache:Cache = None):
+        if id <= 0:
+            raise HTTPException(status_code=404, detail=f"Pilot {id} not found")
+
+        if cache is not None:
+            pilot = cache.get('pilots', id)
+            if pilot is not None:
+                return pilot
+
         log.debug(f"mongo[pilot].find_one({id})")
         pilot = await collection.find_one({"_id": id})
 
         if pilot is None:
             raise HTTPException(status_code=404, detail=f"Pilot {id} not found")
 
-        return Pilot.parse_obj(pilot)
+        pilot = Pilot.parse_obj(pilot)
+        if cache is not None:
+            cache.add('pilots', pilot)
+
+        return pilot
 
     @staticmethod
-    async def getall(list:List[str] = []):
+    async def getall(list:List[str] = [], cache:Cache = None):
+        pilots = None
+        if cache is not None:
+            pilots = cache.get_all('pilots')
+
         if len(list) > 0:
             cond = {"$or": [
                 {"id": {"$in": list}},
                 {"name": {"$in": list}}
             ]}
         else:
+            if pilots is not None:
+                return pilots
             cond = {}
+
         pilots = []
         sort=[("rank", pymongo.ASCENDING),("name", pymongo.ASCENDING)]
         log.debug(f"mongo[pilot].find({cond})")
         for pilot in await collection.find(filter=cond, sort=sort).to_list(1000):
-            pilots.append(Pilot.parse_obj(pilot))
+            pilot = Pilot.parse_obj(pilot)
+            pilots.append(pilot)
+            if cache is not None:
+                cache.add('pilots', pilot)
+
+        if len(list) == 0 and cache is not None:
+            cache.set_all('pilots', pilots)
         return pilots
 
     @staticmethod
