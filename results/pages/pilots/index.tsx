@@ -24,7 +24,7 @@ const Pilots = () => {
   return (
     <>
       <h2>All Pilots</h2>
-      <section className="mt-8">
+      <section className="mt-8 px-2">
         <div className="wrapper">
           {pilots.map((pilot) => (
             <PilotCard key={pilot.civlid} pilot={pilot} />

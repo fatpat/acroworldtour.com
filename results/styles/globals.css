@@ -48,7 +48,7 @@
 
 @layer utilities {
   .wrapper {
-    @apply flex w-full flex-wrap justify-center gap-8;
+    @apply flex w-full flex-wrap justify-center gap-8 px-2;
   }
 
   .card {

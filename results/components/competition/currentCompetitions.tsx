@@ -23,10 +23,12 @@ const CurrentCompetitions = () => {
   if (error) return <FetchError />;
   if (!competitions) return <FetchLoading />;
 
-  // const currentCompetitions = [...competitions]; // to test multiple competitions
-  const currentCompetitions = [competitions[0]]; // to test single competition
+  // DEV ONLY
+  const currentCompetitions = [...competitions]; // to test multiple competitions
+  // const currentCompetitions = [competitions[0]]; // to test single competition
   // const currentCompetitions: Competition[] = []; // to test no competition
 
+  // ACTUAL BELOW
   // const currentCompetitions = competitions.filter(
   //   (competition) => competition.state === "open"
   // );
@@ -35,16 +37,18 @@ const CurrentCompetitions = () => {
   const isPlural = currentCompetitions.length > 1;
 
   return (
-    <section>
-      <h2 className="text-center">
+    <>
+      <h2 className="mt-6">
         {ongoing ? (isPlural ? pluralH2 : singularH2) : noCompetitionH2}
       </h2>
-      <div>
-        {currentCompetitions.map((competition) =>
-          CompetitionCard({ competition })
-        )}
-      </div>
-    </section>
+      <section className="w-full my-8">
+        <div className="wrapper">
+          {currentCompetitions.map((competition) =>
+            CompetitionCard({ competition })
+          )}
+        </div>
+      </section>
+    </>
   );
 };
 

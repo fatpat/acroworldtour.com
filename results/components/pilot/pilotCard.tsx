@@ -17,18 +17,17 @@ const PilotCard = ({ pilot }: Props) => {
       key={civlid}
       title={`See ${name}'s profile`}
       href={`/pilots/${civlid}/${urlName}`}
-      className="flex flex-col rounded-xl pb-4 hover:-translate-y-2 hover:shadow-xl"
+      className="flex flex-col rounded-xl pb-4 hover:-translate-y-2 hover:shadow-xl w-full sm:w-48"
     >
       <figure
         style={{ backgroundImage: `url('${photo}')` }}
-        className="pilot-card relative flex h-64
-         w-64 max-w-lg flex-col justify-between"
+        className="pilot-card relative flex flex-col justify-between aspect-square"
       >
         <i
           className={classNames(
             alpha2country,
             "flag",
-            "absolute right-2 top-2"
+            "absolute right-6 top-6"
           )}
         />
       </figure>

@@ -19,7 +19,7 @@ const About = () => {
   }, [hideAbout]);
 
   return (
-    <article className="flex flex-col items-center">
+    <section className="flex flex-col items-center">
       <header
         className={classNames(
           "z-10 mb-1 flex w-1/2 cursor-pointer items-center justify-center",
@@ -71,7 +71,7 @@ const About = () => {
           media={"youtube"}
         />
       </footer>
-    </article>
+    </section>
   );
 };
 

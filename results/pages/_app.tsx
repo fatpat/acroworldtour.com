@@ -32,7 +32,7 @@ const App = ({ Component, pageProps }: CustomAppProps) => {
       <main
         className={classNames(
           montserrat.className,
-          "pb-8 pt-2 flex w-full flex-1 flex-col items-center px-4",
+          "pb-8 flex w-full flex-1 flex-col items-center",
           "lg:pl-52 lg:pt-24"
         )}
       >
