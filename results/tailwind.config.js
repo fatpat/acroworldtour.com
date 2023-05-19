@@ -12,7 +12,7 @@ module.exports = {
       colors: {
         awtgrey: colors.neutral,
       },
-      plugins: [],
     },
   },
+  plugins: [require('@tailwindcss/typography'),],
 };

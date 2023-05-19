@@ -3,7 +3,7 @@
 const nextConfig = {
   // output: "export",
   images: {
-    domains: ["https://api.acroworldtour.com", "civlcomps.org"],
+    domains: ["api.acroworldtour.com", "civlcomps.org"],
   },
   reactStrictMode: true,
 };

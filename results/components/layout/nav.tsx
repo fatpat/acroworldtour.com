@@ -16,13 +16,13 @@ const Nav = ({ pageTitle }: Props) => (
     className={classNames(
       montserrat.className,
       "sticky bottom-0 z-10 w-full bg-white shadow-md shadow-current",
-      "lg:fixed lg:h-full lg:left-0 lg:w-52 lg:pl-4 lg:shadow-lg lg:pt-32"
+      "lg:fixed lg:left-0 lg:h-full lg:w-52 lg:pl-4 lg:pt-32 lg:shadow-lg"
     )}
   >
     <ul
       className={classNames(
         "flex h-20 w-full items-center justify-evenly",
-        "lg:flex-col lg:items-end lg:justify-start lg:gap-4 lg:h-auto"
+        "lg:h-auto lg:flex-col lg:items-end lg:justify-start lg:gap-4"
       )}
     >
       <li>
@@ -32,7 +32,10 @@ const Nav = ({ pageTitle }: Props) => (
         <NavItem link="Results" active={pageTitle?.includes("Results")} />
       </li>
       <li>
-        <NavItem link="Events" active={pageTitle?.includes("Events")} />
+        <NavItem
+          link="Competitions"
+          active={pageTitle?.includes("Competitions")}
+        />
       </li>
       <li>
         <NavItem link="Pilots" active={pageTitle?.includes("Pilots")} />

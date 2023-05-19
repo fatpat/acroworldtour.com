@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
 
+import CompetitionDetails from "@/components/competition/competitionDetails";
 import PilotDetails from "@/components/pilot/pilotDetails";
 import FetchError from "@/components/ui/fetchError";
 import FetchLoading from "@/components/ui/fetchLoading";
@@ -17,37 +18,33 @@ interface Props {
   headerSubtitle: string;
 }
 
-type Pilot = components["schemas"]["Pilot"];
+type Competition = components["schemas"]["CompetitionPublicExportWithResults"];
 
-const PilotPage = ({
+const CompetitionPage = ({
   pageTitle,
   pageDescription,
   headerTitle,
   headerSubtitle,
 }: Props) => {
   const router = useRouter();
-  const [civlid, setCivlid] = useState("");
+  const [code, setCode] = useState<string>("");
 
   useEffect(() => {
-    if (router.isReady && router.query.civlid)
-      setCivlid(router.query.civlid[0]);
-  }, [router.isReady, router.query.civlid]);
+    if (router.isReady && typeof router.query.code === "string")
+      setCode(router.query.code);
+  }, [router.isReady, router.query.code]);
 
-  const { data: pilot, error } = useSWR<Pilot, Error>(
-    civlid ? `${API_URL}/pilots/${civlid}` : null,
+  const { data: competition, error } = useSWR<Competition, Error>(
+    code ? `${API_URL}/competitions/${code}` : null,
     fetcher
   );
 
   if (error) return <FetchError />;
-  if (!pilot) return <FetchLoading />;
+  if (!competition) return <FetchLoading />;
 
-  return (
-    <section className={classNames("flex flex-col items-start")}>
-      <PilotDetails pilot={pilot} />
-    </section>
-  );
+  return <CompetitionDetails competition={competition} />;
 };
 
-PilotPage.pageDescription = "Pilot details";
+CompetitionPage.pageDescription = "Pilot details";
 
-export default PilotPage;
+export default CompetitionPage;

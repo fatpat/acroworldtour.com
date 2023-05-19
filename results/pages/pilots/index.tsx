@@ -9,12 +9,12 @@ import { fetcher } from "@/utils/fetcher";
 
 type Pilot = components["schemas"]["Pilot"];
 
-const pageTitle = "Pilots";
+const pageTitle = "Acro World Tour | Pilots";
 const pageDescription = "All the pilots of the Acro World Tour";
 
 const Pilots = () => {
   const { data: pilots, error } = useSWR<Pilot[], Error>(
-    `${API_URL}/public/pilots`,
+    `${API_URL}/pilots`,
     fetcher
   );
 

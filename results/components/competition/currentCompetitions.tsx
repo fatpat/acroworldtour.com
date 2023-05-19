@@ -10,13 +10,13 @@ import FetchLoading from "../ui/fetchLoading";
 
 type Competition = components["schemas"]["CompetitionPublicExport"];
 
-const pluralH2 = "Current Events";
-const singularH2 = "Current Event";
-const noEventH2 = "There is no ongoing event.";
+const pluralH2 = "Current Competitions";
+const singularH2 = "Current Competition";
+const noCompetitionH2 = "There is no ongoing competition.";
 
 const CurrentCompetitions = () => {
   const { data: competitions, error } = useSWR<Competition[], Error>(
-    `${API_URL}/public/competitions`,
+    `${API_URL}/competitions`,
     fetcher
   );
 
@@ -37,7 +37,7 @@ const CurrentCompetitions = () => {
   return (
     <section>
       <h2 className="text-center">
-        {ongoing ? (isPlural ? pluralH2 : singularH2) : noEventH2}
+        {ongoing ? (isPlural ? pluralH2 : singularH2) : noCompetitionH2}
       </h2>
       <div>
         {currentCompetitions.map((competition) =>

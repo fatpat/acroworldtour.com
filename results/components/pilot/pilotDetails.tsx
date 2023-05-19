@@ -90,7 +90,7 @@ const PilotDetails = ({ pilot }: Props) => {
           <p className="font-medium">{about}</p>
         </div>
         {socialLinks.length > 0 && (
-          <div className="flex w-full gap-4 justify-center">
+          <div className="flex w-full justify-center gap-4">
             {socialLinks.map((link) => {
               const { name: linkName, link: linkUrl } = link;
               return (
@@ -119,7 +119,7 @@ const PilotDetails = ({ pilot }: Props) => {
           <table className="w-full">
             <thead>
               <tr>
-                <th className="pl-2 text-left">Event</th>
+                <th className="pl-2 text-left">Competition</th>
                 <th className="pr-2 text-right">Rank</th>
               </tr>
             </thead>

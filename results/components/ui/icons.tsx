@@ -28,7 +28,7 @@ export const ResultsIcon = ({ className }: Props) => (
   </svg>
 );
 
-export const EventsIcon = ({ className }: Props) => (
+export const CompetitionsIcon = ({ className }: Props) => (
   <svg
     width="73"
     height="76"
