@@ -14,18 +14,6 @@ module.exports = {
       },
     },
   },
-  plugins: [
-    ({ addUtilities }) => {
-      addUtilities({
-        ".awt-background": {
-          "@apply bg-cover bg-center bg-no-repeat": {},
-        },
-        ".awt-background-blend": {
-          "@apply bg-white/50 bg-cover bg-center bg-no-repeat bg-blend-screen":
-            {},
-        },
-      });
-    },
-    require("@tailwindcss/typography"),
+  plugins: [require("@tailwindcss/typography"),
   ],
 };

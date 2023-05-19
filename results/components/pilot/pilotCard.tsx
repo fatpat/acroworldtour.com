@@ -15,13 +15,14 @@ const PilotCard = ({ pilot }: Props) => {
   return (
     <Link
       key={civlid}
+      title={`See ${name}'s profile`}
       href={`/pilots/${civlid}/${urlName}`}
-      className="flex flex-col pb-4"
+      className="flex flex-col rounded-xl pb-4 hover:-translate-y-2 hover:shadow-xl"
     >
-      <article
+      <figure
         style={{ backgroundImage: `url('${photo}')` }}
-        className="relative flex h-64 w-64
-         max-w-lg flex-col justify-between rounded-xl bg-cover bg-center bg-no-repeat p-4"
+        className="pilot-card relative flex h-64
+         w-64 max-w-lg flex-col justify-between"
       >
         <i
           className={classNames(
@@ -30,9 +31,11 @@ const PilotCard = ({ pilot }: Props) => {
             "absolute right-2 top-2"
           )}
         />
-      </article>
-      <h3 className="">{name}</h3>
-      <small>{rank === 9999 ? "Unranked" : `Overall Rank: #${rank}`}</small>
+      </figure>
+      <figcaption className="px-2">
+        <h3>{name}</h3>
+        <small>{rank === 9999 ? "Unranked" : `Overall Rank: #${rank}`}</small>
+      </figcaption>
     </Link>
   );
 };

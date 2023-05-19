@@ -25,27 +25,28 @@ const Competitions = () => {
   if (!competitions || !seasons) return <FetchLoading />;
 
   const soloSeasons = seasons.filter((season) => season.type === "solo");
-  const orphanCompetitions = competitions.filter(
+
+  const offSeasonCompetitions = competitions.filter(
     (competition) => competition.seasons.length === 0
   );
 
   return (
     <>
-      <h2 className="pt-4">Competitions</h2>
-      <section className={classNames("flex flex-wrap")}>
-        {soloSeasons.map((season) => {
-          const {
-            code,
-            competitions,
-            name,
-            year,
-            image,
-            results,
-            number_of_pilots,
-          } = season;
-          return (
-            <section key={code}>
-              <h3>{name}</h3>
+      <h2 className="-mb-6">All Competitions</h2>
+      {soloSeasons.map((season) => {
+        const {
+          code,
+          competitions,
+          name,
+          year,
+          image,
+          results,
+          number_of_pilots,
+        } = season;
+        return (
+          <>
+            <h3 className="mt-12 mb-6 opacity-50">{name}</h3>
+            <section key={code} className={classNames("wrapper")}>
               {competitions.map((competition) => (
                 <CompetitionCard
                   key={competition.code}
@@ -53,8 +54,16 @@ const Competitions = () => {
                 />
               ))}
             </section>
-          );
-        })}
+          </>
+        );
+      })}
+      <h3 className="mt-12 mb-6 opacity-50">Off Season</h3>
+      <section
+        className={classNames("wrapper")}
+      >
+        {offSeasonCompetitions.map((competition) => (
+          <CompetitionCard key={competition.code} competition={competition} />
+        ))}
       </section>
     </>
   );

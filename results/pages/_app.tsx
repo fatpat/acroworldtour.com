@@ -32,8 +32,8 @@ const App = ({ Component, pageProps }: CustomAppProps) => {
       <main
         className={classNames(
           montserrat.className,
-          "mb-8 flex w-full flex-1 flex-col items-center prose max-w-max",
-          "lg:mb-8 lg:ml-52 lg:mt-24"
+          "pb-8 pt-2 flex w-full flex-1 flex-col items-center px-4",
+          "lg:pl-52 lg:pt-24"
         )}
       >
         <Component {...pageProps} />

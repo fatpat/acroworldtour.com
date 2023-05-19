@@ -7,7 +7,15 @@ interface Props {
 }
 
 const CompetitionCard = ({ competition }: Props) => {
-  const { code, name, location, image, start_date, end_date } = competition;
+  const {
+    code,
+    name,
+    location,
+    image,
+    start_date,
+    end_date,
+    number_of_pilots: numberOfPilots,
+  } = competition;
   const startDate = new Date(start_date);
   const endDate = new Date(end_date);
   const startDay = startDate.getDate();
@@ -24,19 +32,22 @@ const CompetitionCard = ({ competition }: Props) => {
     <Link
       key={code}
       href={`/competitions/${code}`}
-      className="w-full max-w-prose hover:invert"
+      className="w-full max-w-lg hover:-translate-y-2 hover:invert"
     >
       <article
         style={{ backgroundImage: `url(${image})` }}
-        className="flex h-48 flex-col justify-between rounded-xl bg-neutral-50/95 bg-cover bg-center bg-no-repeat bg-blend-overlay px-4"
+        className="card flex h-48 flex-col justify-between p-4"
       >
-        {/* <hgroup> */}
+        <hgroup>
           <h3>{name}</h3>
           <h4>{location}</h4>
-        {/* </hgroup> */}
-        <small>{`${startDay} ${startMonth !== endMonth ? startMonth : ""} ${
-          startYear !== endYear ? startYear : ""
-        } to ${endDay} ${endMonth} ${endYear}`}</small>
+        </hgroup>
+        <div className="flex justify-between">
+          <small>{`${startDay} ${startMonth !== endMonth ? startMonth : ""} ${
+            startYear !== endYear ? startYear : ""
+          } to ${endDay} ${endMonth} ${endYear}`}</small>
+          <small>{`${numberOfPilots} pilots`}</small>
+        </div>
       </article>
     </Link>
   );
