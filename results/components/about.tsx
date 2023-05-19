@@ -1,22 +1,13 @@
 import classNames from "classnames";
-import { NextComponentType } from "next";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import {
-  ChevronIcon,
-  FacebookIcon,
-  InstagramIcon,
-  YoutubeIcon,
-} from "../ui/icons";
-
-interface Props {
-
-}
+import { ChevronIcon } from "./ui/icons";
+import SocialLink from "./ui/socialLink";
 
 const iconClasses = "hover:bg-awtgrey-200 p-1 rounded-md";
 
-const PilotContent = (): Props => {
+const About = () => {
   const [hideAbout, setHideAbout] = useState(
     localStorage.getItem("hideAbout") !== null
   );
@@ -67,33 +58,21 @@ const PilotContent = (): Props => {
           hideAbout ? "translate-x-1/2" : "mt-2"
         )}
       >
-        <Link
-          href={{ pathname: "https://www.instagram.com/acroworldtour/" }}
-          target="_blank"
-          className={iconClasses + " instagram"}
-        >
-          <InstagramIcon />
-        </Link>
-        <Link
-          href={{ pathname: "https://www.facebook.com/acroworldtour" }}
-          target="_blank"
-          className={iconClasses + " facebook"}
-        >
-          <FacebookIcon />
-        </Link>
-        <Link
-          href={{
-            pathname:
-              "https://www.youtube.com/channel/UCZupvXQsTPEdyMSLxBW1RLg",
-          }}
-          target="_blank"
-          className={iconClasses + " youtube"}
-        >
-          <YoutubeIcon />
-        </Link>
+        <SocialLink
+          link="https://www.instagram.com/acroworldtour"
+          media={"instagram"}
+        />
+        <SocialLink
+          link="https://www.facebook.com/acroworldtour"
+          media={"facebook"}
+        />
+        <SocialLink
+          link="https://www.youtube.com/@acroworldtour2242"
+          media={"youtube"}
+        />
       </footer>
     </article>
   );
 };
 
-export default PilotContent;
+export default About;

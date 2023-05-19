@@ -4,7 +4,7 @@ import Link from "next/link";
 
 import { components } from "@/types";
 
-import CompetitionCard from "../competition/competitionCard";
+import SocialLink from "../ui/socialLink";
 
 countries.registerLocale(require("i18n-iso-countries/langs/en.json"));
 
@@ -45,9 +45,9 @@ const PilotDetails = ({ pilot }: Props) => {
       ></Link>
       <article
         className={classNames(
-          "flex w-full flex-col items-center gap-6 p-4",
+          "flex w-full flex-col items-center gap-6",
           "sm:px-8",
-          "lg:w-1/2"
+          "lg:w-6/12"
         )}
       >
         <div
@@ -85,12 +85,22 @@ const PilotDetails = ({ pilot }: Props) => {
             </span>
           </h4>
         </div>
-        <div className="mb-4 rounded-xl bg-awtgrey-100 p-4">
+        <div className="rounded-xl bg-awtgrey-100 p-4">
           <h4>About:</h4>
           <p className="font-medium">{about}</p>
         </div>
+        {socialLinks.length > 0 && (
+          <div className="flex w-full gap-4 justify-center">
+            {socialLinks.map((link) => {
+              const { name: linkName, link: linkUrl } = link;
+              return (
+                <SocialLink key={linkName} link={linkUrl} media={linkName} />
+              );
+            })}
+          </div>
+        )}
         {sponsors.length > 0 && (
-          <div className="mb-4 rounded-xl bg-awtgrey-100 p-4 w-full">
+          <div className="mb-4 w-full rounded-xl bg-awtgrey-100 p-4">
             <h4>Sponsors:</h4>
             {sponsors.map((sponsor) => (
               <Link
@@ -107,42 +117,49 @@ const PilotDetails = ({ pilot }: Props) => {
         )}
         <div className="w-full rounded-xl bg-awtgrey-100 p-2">
           <table className="w-full">
-            <tr>
-              <th className="pl-2 text-left">Event</th>
-              <th className="pr-2 text-right">Rank</th>
-            </tr>
-            {competitionsResults?.map(({ competition, rank }) => {
-              const { code, name, image } = competition;
-              return (
-                <tr
-                  key={code}
-                  // style={{ backgroundImage: `url('${image}')` }}
-                  className="cursor-pointer hover:bg-awtgrey-200"
-                >
-                  <td className="pl-2">{name}</td>
-                  <td className="pr-2 text-right">#{rank}</td>
-                </tr>
-              );
-            })}
+            <thead>
+              <tr>
+                <th className="pl-2 text-left">Event</th>
+                <th className="pr-2 text-right">Rank</th>
+              </tr>
+            </thead>
+            <tbody>
+              {competitionsResults?.map(({ competition, rank }) => {
+                const { code, name, image } = competition;
+                return (
+                  <tr
+                    key={code}
+                    // style={{ backgroundImage: `url('${image}')` }}
+                    className="cursor-pointer hover:bg-awtgrey-200"
+                  >
+                    <td className="pl-2">{name}</td>
+                    <td className="pr-2 text-right">#{rank}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
           </table>
-          <table className="w-full mt-4">
-            <tr>
-              <th className="pl-2 text-left">Season</th>
-              <th className="pr-2 text-right">Rank</th>
-            </tr>
-            {seasonsResults?.map(({ season, rank }) => {
-              const { code, name, image } = season;
-              return (
-                <tr
-                  key={code}
-                  // style={{ backgroundImage: `url('${image}')` }}
-                  className="cursor-pointer hover:bg-awtgrey-200"
-                >
-                  <td className="pl-2">{name}</td>
-                  <td className="pr-2 text-right">#{rank}</td>
-                </tr>
-              );
-            })}
+          <table className="mt-4 w-full">
+            <thead>
+              <tr>
+                <th className="pl-2 text-left">Season</th>
+              </tr>
+            </thead>
+            <tbody>
+              {seasonsResults?.map(({ season, rank }) => {
+                const { code, name, image } = season;
+                return (
+                  <tr
+                    key={code}
+                    // style={{ backgroundImage: `url('${image}')` }}
+                    className="cursor-pointer hover:bg-awtgrey-200"
+                  >
+                    <td className="pl-2">{name}</td>
+                    <td className="pr-2 text-right">#{rank}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
           </table>
         </div>
       </article>

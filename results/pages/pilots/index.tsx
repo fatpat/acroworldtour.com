@@ -24,7 +24,11 @@ const Pilots = () => {
   return (
     <section>
       <h2 className="text-center">All Pilots</h2>
-      <div>{pilots.map((pilot) => PilotCard({ pilot }))}</div>
+      <div>
+        {pilots.map((pilot) => (
+          <PilotCard key={pilot.civlid} pilot={pilot} />
+        ))}
+      </div>
     </section>
   );
 };

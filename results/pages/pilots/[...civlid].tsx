@@ -29,7 +29,8 @@ const PilotPage = ({
   const [civlid, setCivlid] = useState("");
 
   useEffect(() => {
-    if (router.isReady) setCivlid(router.query.civlid![0]);
+    if (router.isReady && router.query.civlid)
+      setCivlid(router.query.civlid[0]);
   }, [router.isReady, router.query.civlid]);
 
   const { data: pilot, error } = useSWR<Pilot, Error>(
