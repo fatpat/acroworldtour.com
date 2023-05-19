@@ -8,7 +8,6 @@ interface Props {
     | "instagram"
     | "tiktok"
     | "twitter"
-    | "website"
     | "wikipedia"
     | "youtube"
     | string;
@@ -17,14 +16,18 @@ interface Props {
 const SocialLink = ({ className, link, media }: Props) => {
   const mediaName = media.toLowerCase();
   return (
-    <Link href={{ pathname: link }} target="_blank" className={className}>
-      {mediaName === "facebook" && <FacebookIcon />}
-      {mediaName === "instagram" && <InstagramIcon />}
-      {mediaName === "tiktok" && <TikTokIcon />}
-      {mediaName === "twitter" && <TwitterIcon />}
-      {mediaName === "website" && <WebsiteIcon />}
-      {mediaName === "wikipedia" && <WikipediaIcon />}
-      {mediaName === "youtube" && <YouTubeIcon />}
+    <Link
+      href={{ pathname: link }}
+      title={media}
+      target="_blank"
+      className={className}
+    >
+      {(mediaName === "facebook" && <FacebookIcon />) ||
+        (mediaName === "instagram" && <InstagramIcon />) ||
+        (mediaName === "tiktok" && <TikTokIcon />) ||
+        (mediaName === "twitter" && <TwitterIcon />) ||
+        (mediaName === "wikipedia" && <WikipediaIcon />) ||
+        (mediaName === "youtube" && <YouTubeIcon />) || <WebsiteIcon />}
     </Link>
   );
 };
