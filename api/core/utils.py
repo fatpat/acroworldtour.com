@@ -36,36 +36,3 @@ def float3digits(cls, v) -> float:
 
 def ordinal(n: int):
     return str(n)+("th" if 4<=n%100<=20 else {1:"st",2:"nd",3:"rd"}.get(n%10, "th"))
-
-def exists(list: List, t, e):
-    for l in list:
-        try:
-            if l['t'] == e:
-                return True
-        except:
-            pass
-    return False
-
-def init_cache(cache: dict):
-    if cache is None:
-        return cache
-
-    if 'pilots' not in cache:
-        cache['pilots'] = []
-
-    if 'teams' not in cache:
-        cache['teams'] = []
-
-    if 'judges' not in cache:
-        cache['judges'] = []
-
-    if 'competitions' not in cache:
-        cache['competitions'] = []
-
-    if 'seasons' not in cache:
-        cache['seasons'] = []
-
-    if 'tricks' not in cache:
-        cache['tricks'] = []
-
-    return cache
