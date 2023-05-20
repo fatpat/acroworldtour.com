@@ -158,7 +158,6 @@ class PilotCtrl:
             async with httpx.AsyncClient() as client:
                 try:
                     ret = await client.head(photo2)
-                    log.debug(f"HEAD {photo2}: {ret.status_code}")
                     if ret.status_code == HTTPStatus.OK:
                         photo = photo2
 
