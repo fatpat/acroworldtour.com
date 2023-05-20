@@ -167,7 +167,7 @@ const PilotsPage = () => {
           <TextField id='civlid' label='CIVL ID' />
           <Button type="submit">Add or Update pilot from CIVL</Button>
         </form>
-        <Button variant='outlined' startIcon={<RefreshIcon />} onClick={updateRankings} disabled>Update rankings</Button>
+        <Button variant='outlined' startIcon={<RefreshIcon />} onClick={updateRankings}>Update rankings</Button>
         <Button variant='outlined' startIcon={<RefreshIcon />} onClick={updateAllPilots}>Synchronize from CIVL</Button>
       </Grid>
       {data.sort((a,b) => a.rank - b.rank).map(p => (
