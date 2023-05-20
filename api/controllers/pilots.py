@@ -107,7 +107,7 @@ class PilotCtrl:
 
             try:
                 ret = await client.get(link)
-            except httpx.HTTPError as exc:
+            except h2yyttpx.HTTPError as exc:
                 log.error(f"Connection failed to CIVL website ({link})", exc)
                 raise HTTPException(status_code=500, detail=f"Connection failed to CIVL website")
 
@@ -152,6 +152,20 @@ class PilotCtrl:
             })
 
         photo = html.cssselect('.photo-pilot img')[0].get('src')
+
+        if isinstance(photo, str):
+            photo2 = photo.replace('/uploads/resize/profile/header/', '/uploads/images/profile/')
+            async with httpx.AsyncClient() as client:
+                try:
+                    ret = await client.head(photo2)
+                    log.debug(f"HEAD {photo2}: {ret.status_code}")
+                    if ret.status_code == HTTPStatus.OK:
+                        photo = photo2
+
+                except Exception as exc:
+                    log.error(f"Unable to HEAD highres photo {photo2}", exc)
+                    pass
+
 
         background_picture = html.cssselect('.image-fon img')[0].get('src')
 
