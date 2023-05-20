@@ -17,7 +17,7 @@ services:
       - REDIS_URL=redis://redis:6379
 
   manager:
-    image: node:18-alpine
+    image: node:20-alpine
     command: sh -c "yarn install && yarn run dev"
     working_dir: /app
     ports:
@@ -29,8 +29,8 @@ services:
 #      - NEXT_PUBLIC_API_URL=https://api-preprod.acroworldtour.com
 
   results:
-    image: node:18-alpine
-    command: sh -c "yarn install && yarn run dev"
+    image: node:20-alpine
+    command: sh -c "npm install -g pnpm && pnpm install && pnpm run dev"
     working_dir: /app
     ports:
       - 3000:3000
@@ -38,7 +38,7 @@ services:
       - ./results:/app
     environment:
       - NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
-#      - NEXT_PUBLIC_API_URL=https://api-preprod.acroworldtour.com
+#      - NEXT_PUBLIC_API_URL=https://api.acroworldtour.com
       - NEXT_CACHE_DURATION=1
 
   mongodb:
