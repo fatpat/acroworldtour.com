@@ -41,6 +41,7 @@ class Pilot(BaseModel):
     social_links: List[Link] = Field(..., description="List of pilot's links (socials medias, ...)")
     sponsors: List[Sponsor] = Field(..., description="List of the pilot's sponsors")
     photo: HttpUrl = Field(..., description="Link to the profile image of the pilot")
+    photo_highres: Optional[HttpUrl] = Field(None, description="Link to the highres profile image of the pilot")
     background_picture: HttpUrl = Field(..., description="Link to the background profile image of the pilot")
     last_update: Optional[datetime] = Field(None, description="Last time the pilot has been updated")
     rank: int = Field(..., description="Current pilot's ranking in the aerobatic solo overwall world ranking")
@@ -71,7 +72,8 @@ class Pilot(BaseModel):
                     {"name": "Wanbound", "link": "https://www.wanbound.com/", "img": "https://civlcomps.org/uploads/images/ems_event_sponsor_logo/1/aa675f347b7d7933332df96f08b21199/4ff22ae0404446f203ba682751e1e7b8.png"},
                     {"name": "KNVvL","link": "https://www.knvvl.nl/", "img": "https://civlcomps.org/uploads/images/ems_event_sponsor_logo/1/53ee05f2c2172541b7f1dd99e67a59f9/0f68789e476c0494019a750a6da9c6aa.png"}
                 ],
-                "photo": "https://civlcomps.org/uploads/images/profile/676/7bdecbee5d2246b1ebc14248dc1af935/8bfbe7e62a481a19145c55c9dc97e6ab.jpeg",
+                "photo": "https://civlcomps.org/uploads/resize/profile/header/676/7bdecbee5d2246b1ebc14248dc1af935/8bfbe7e62a481a19145c55c9dc97e6ab.jpeg",
+                "photo_highres": "https://civlcomps.org/uploads/images/profile/676/7bdecbee5d2246b1ebc14248dc1af935/8bfbe7e62a481a19145c55c9dc97e6ab.jpeg",
                 "background_picture": "https://civlcomps.org/uploads/images/pilot_header/9/c017697641aa9ef817c4c17728e9e6d6/08788da048eea61f93be8591e97f6a0c.jpg",
                 "last_update": "2022-06-03T19:05:59.325692",
                 "rank": 2

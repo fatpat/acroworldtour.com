@@ -152,6 +152,7 @@ class PilotCtrl:
             })
 
         photo = html.cssselect('.photo-pilot img')[0].get('src')
+        photo_highres = photo
 
         if isinstance(photo, str):
             photo2 = photo.replace('/uploads/resize/profile/header/', '/uploads/images/profile/')
@@ -159,7 +160,7 @@ class PilotCtrl:
                 try:
                     ret = await client.head(photo2)
                     if ret.status_code == HTTPStatus.OK:
-                        photo = photo2
+                        photo_highres = photo2
 
                 except Exception as exc:
                     log.error(f"Unable to HEAD highres photo {photo2}", exc)
@@ -197,6 +198,7 @@ class PilotCtrl:
             social_links=links,
             sponsors=sponsors,
             photo=photo,
+            photo_highres=photo_highres,
             background_picture=background_picture,
             rank = rank,
         )
