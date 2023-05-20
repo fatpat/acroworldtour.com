@@ -5,6 +5,7 @@ from openpyxl import load_workbook
 from tempfile import NamedTemporaryFile
 import lxml.html
 import re
+from datetime import datetime
 from fastapi.concurrency import run_in_threadpool
 from fastapi import HTTPException
 from random import shuffle
@@ -35,37 +36,94 @@ class PilotCtrl:
         async with httpx.AsyncClient() as client:
             ret = await client.get(settings.pilots.civl_link_all_pilots)
 
-        if ret.status_code != HTTPStatus.OK:
-            log.error("unable to update pilots from %s, code=%d", settings.pilots.civl_link_all_pilots, res.status_code)
-            return
+            if ret.status_code != HTTPStatus.OK:
+                log.error("unable to update pilots from %s, code=%d", settings.pilots.civl_link_all_pilots, ret.status_code)
+                return
 
-        html = lxml.html.fromstring(ret.text)
-
-        xls_url = html.cssselect('a.btn-download')[0].get('href')
-
-        # fetch the excel
-        async with httpx.AsyncClient() as client:
-            ret = await client.get(xls_url)
-
-        if ret.status_code != HTTPStatus.OK:
-            log.error("unable to update pilots from %s, code=%d", settings.pilots.civl_link_all_pilots, res.status_code)
-            return
-
-        # write the excel to a temporary file and read it
-        xls = await run_in_threadpool(lambda: PilotCtrl.fetch_and_load_pilots_list(ret.content))
-        sheet = xls.active # get the first and only sheet
-        # loop over each cells of column B (where the CIVL id are)
-        # and extract civlids
-        for cell in sheet['B']:
+            csrf_token = None
             try:
-                # convert the cell content to int
-                # if conversion can be made we assume it's a CIVLID
-                civlid = int(cell.value or '')
-                pilot = await Pilot.get(civlid)
-                pilot.rank = int(cell.offset(column=-1).value or '')
-                await pilot.save()
-            except ValueError:
-                continue
+                html = lxml.html.fromstring(ret.text)
+                #csrf_param = html.cssselect('meta[name="csrf-param"]')[0].get('content')
+                csrf_token = html.cssselect('meta[name="csrf-token"]')[0].get('content')
+            except Exception as e:
+                log.error(f"Unable to retrieve CSRF token from {settings.pilots.civl_link_all_pilots}", e)
+                return
+
+            now = datetime.now()
+            data = {
+                'search': {
+                    'nation_id': '',
+                    'profile_id': '',
+                    'continent_id': ['', 0],
+                    'scoringCategory': ['', 0],
+                    'rankingDate': now.strftime('%Y-%M-01'),
+                },
+                'date_': {
+                    'day': '01',
+                    'month': now.strftime('%M'),
+                    'year': now.strftime('%Y'),
+                }
+            }
+            headers = {'X-CSRF-Token': csrf_token}
+            ret = await client.post(settings.pilots.civl_link_export_ranking, headers=headers, cookies=ret.cookies, data=data)
+
+            if ret.status_code != HTTPStatus.OK:
+                log.error("unable to update pilots from %s, code=%d", settings.pilots.civl_link_all_pilots, ret.status_code)
+                return
+
+            # write the excel to a temporary file and read it
+            xls = await run_in_threadpool(lambda: PilotCtrl.fetch_and_load_pilots_list(ret.content))
+            sheet = xls.active # get the first and only sheet
+
+            pilots = await Pilot.getall()
+
+            pilots_updated = []
+
+            # loop over each cells of column B (where the CIVL id are)
+            # and extract civlids
+            for cell in sheet['B']:
+                try:
+                    if cell.value is None:
+                        continue
+                    # convert the cell content to int
+                    # if conversion can be made we assume it's a CIVLID
+                    civlid = int(cell.value or '')
+                    if civlid == 0:
+                        continue
+                    pilot = await Pilot.get(civlid)
+                    rank = int(cell.offset(column=-1).value or 9999)
+                    if rank != pilot.rank:
+                        log.debug(f"pilot {civlid} changed rank from {pilot.rank} to {rank}")
+                        pilot.rank = rank
+                        await pilot.save()
+                    pilots_updated.append(pilot)
+                except HTTPException as e:
+                    if e.status_code == 404:
+                        civlid = int(cell.value or '')
+                        if civlid == 0:
+                            continue
+                        log.info(f"pilot {civlid} not in our database, importing from CIVL ...")
+                        try:
+                            await PilotCtrl.update_pilot(civlid)
+                        except Exception as e2:
+                            log.error(f"error while importing {cell.value} from CIVL database:", e2)
+                    else:
+                        log.error(f"unable to update pilot {cell.value}", e)
+                except ValueError:
+                    pass
+                except Exception as e:
+                    log.error(f"unable to update pilot {cell.value}", e)
+
+            for pilot in pilots:
+                if len([p for p in pilots_updated if p.civlid == pilot.civlid]) == 0:
+                    if pilot.rank == 9999:
+                        continue
+                    log.debug(f"pilot {pilot.name} {pilot.rank} ({pilot.civlid}) is not ranked anymore")
+                    pilot.rank = 9999
+                    try:
+                        await pilot.save()
+                    except Exception as e:
+                        log.errorf(f"unable to save unranked pilot {pilot.civlid}: {e}")
 
     @staticmethod
     async def update_pilots():
