@@ -171,7 +171,7 @@ const PilotsPage = () => {
         <Button variant='outlined' startIcon={<RefreshIcon />} onClick={updateAllPilots}>Synchronize from CIVL</Button>
       </Grid>
       {data.sort((a,b) => a.rank - b.rank).map(p => (
-        <Grid item xs={12} sm={4} key={p.civlid}>
+        <Grid item xs={12} sm={6} md={2} lg={1} key={p.civlid}>
           <CardPilot pilot={p} updatePilot={updatePilot} changeGender={changeGender}/>
         </Grid>
       ))}

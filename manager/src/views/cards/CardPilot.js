@@ -52,7 +52,7 @@ const CardPilot = (props) => {
               />
             </Typography>
             <Typography variant='caption'>CIVL ID: {pilot.civlid}</Typography>
-            <Typography variant='caption'>Rank: #{pilot.rank}</Typography>
+            <Typography variant='caption'>Rank: #{pilot.rank == 9999 ? 'unranked' : pilot.rank}</Typography>
           </Box>
           <Button variant='contained' onClick={() => props.updatePilot(pilot.civlid)} >
             Update pilot
