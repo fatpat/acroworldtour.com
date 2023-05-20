@@ -92,14 +92,22 @@ const PilotsPage = () => {
 
       setLoading(`Updating all pilots`)
 
-      var i = 0
-      data.forEach(function(p) {
-        updatePilot(p.civlid)
-        i++
-        var percent = 100 * i / data.length
-        success(`Updating all pilots ... ${percent.toFixed(2)}% (${i}/${data.length})`)
-      })
+      for (let i=0; i<fullData.length; i++) {
+        var civlid = fullData[i].civlid
+        var percent = 100 * (i+1) / fullData.length
+        setLoading(`Updating all pilots ... ${percent.toFixed(2)}% (${i+1}/${fullData.length})`)
+        const [err, retData, headers] = await APIRequest(`/pilots/${civlid}`, {method: 'POST', expected_status: 201})
+        if (err) {
+          error(`Error updating Pilot #${civlid}: ${err}`)
+        } else {
+          success(`Pilot #${civlid} successfully updated`)
+          fullData[i] = retData
+        }
+      }
 
+      setFullData(fullData)
+      setData(fullData)
+      setLoading(null)
       loadPilots()
   }
 
