@@ -11,21 +11,9 @@ import { API_URL } from "@/constants";
 import { components } from "@/types";
 import { fetcher } from "@/utils/fetcher";
 
-interface Props {
-  pageTitle: string;
-  pageDescription: string;
-  headerTitle: string;
-  headerSubtitle: string;
-}
-
 type Competition = components["schemas"]["CompetitionPublicExportWithResults"];
 
-const CompetitionPage = ({
-  pageTitle,
-  pageDescription,
-  headerTitle,
-  headerSubtitle,
-}: Props) => {
+const CompetitionPage = () => {
   const router = useRouter();
   const [code, setCode] = useState<string>("");
 
@@ -44,7 +32,5 @@ const CompetitionPage = ({
 
   return <CompetitionDetails competition={competition} />;
 };
-
-CompetitionPage.pageDescription = "Pilot details";
 
 export default CompetitionPage;

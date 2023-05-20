@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import useSWR from "swr";
 
+import { useLayout } from "@/components/layout/layoutContext";
 import PilotCard from "@/components/pilot/pilotCard";
 import FetchError from "@/components/ui/fetchError";
 import FetchLoading from "@/components/ui/fetchLoading";
@@ -13,6 +15,28 @@ const pageTitle = "Acro World Tour | Pilots";
 const pageDescription = "All the pilots of the Acro World Tour";
 
 const Pilots = () => {
+  const {
+    setPageTitle,
+    setPageDescription,
+    setHeaderTitle,
+    setHeaderSubtitle,
+    setActiveNav,
+  } = useLayout();
+
+  useEffect(() => {
+    setPageTitle("Acro World Tour | Pilots");
+    setPageDescription(`All the pilots of the Acro World Tour.`);
+    setHeaderTitle("Pilots");
+    setHeaderSubtitle("Acro World Tour");
+    setActiveNav("pilots");
+  }, [
+    setActiveNav,
+    setHeaderSubtitle,
+    setHeaderTitle,
+    setPageDescription,
+    setPageTitle,
+  ]);
+
   const { data: pilots, error } = useSWR<Pilot[], Error>(
     `${API_URL}/pilots`,
     fetcher

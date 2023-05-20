@@ -11,7 +11,7 @@
   }
 
   #__next {
-    @apply flex min-h-screen flex-col;
+    @apply flex min-h-screen flex-col text-awtgrey-700;
   }
 
   nav > ul > li {
@@ -42,7 +42,7 @@
   }
 
   p {
-    @apply text-sm font-medium leading-loose text-awtgrey-900 drop-shadow-sm;
+    @apply text-sm font-medium leading-loose drop-shadow-sm;
   }
 }
 

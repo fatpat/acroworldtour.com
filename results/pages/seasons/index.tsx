@@ -1,6 +1,8 @@
 import classNames from "classnames";
+import { useEffect } from "react";
 import useSWR from "swr";
 
+import { useLayout } from "@/components/layout/layoutContext";
 import SeasonCard from "@/components/season/seasonCard";
 import FetchError from "@/components/ui/fetchError";
 import FetchLoading from "@/components/ui/fetchLoading";
@@ -10,7 +12,29 @@ import { fetcher } from "@/utils/fetcher";
 
 type Season = components["schemas"]["SeasonExport"];
 
-const Competitions = () => {
+const Seasons = () => {
+  const {
+    setPageTitle,
+    setPageDescription,
+    setHeaderTitle,
+    setHeaderSubtitle,
+    setActiveNav,
+  } = useLayout();
+
+  useEffect(() => {
+    setPageTitle("Acro World Tour | Seasons");
+    setPageDescription(`All the seasons of the Acro World Tour.`);
+    setHeaderTitle("Seasons");
+    setHeaderSubtitle("Acro World Tour");
+    setActiveNav("seasons");
+  }, [
+    setActiveNav,
+    setHeaderSubtitle,
+    setHeaderTitle,
+    setPageDescription,
+    setPageTitle,
+  ]);
+
   const { data: seasons, error: seasonsError } = useSWR<Season[]>(
     `${API_URL}/seasons`,
     fetcher
@@ -42,4 +66,4 @@ const Competitions = () => {
   );
 };
 
-export default Competitions;
+export default Seasons;

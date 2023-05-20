@@ -8,10 +8,10 @@ const montserrat = Montserrat({
 });
 
 interface Props {
-  pageTitle: string;
+  activeNav: string;
 }
 
-const Nav = ({ pageTitle }: Props) => (
+const Nav = ({ activeNav }: Props) => (
   <nav
     className={classNames(
       montserrat.className,
@@ -26,19 +26,16 @@ const Nav = ({ pageTitle }: Props) => (
       )}
     >
       <li>
-        <NavItem link="" active={pageTitle?.includes("Home")} />
+        <NavItem link="" active={activeNav === "home"} />
       </li>
       <li>
-        <NavItem link="Seasons" active={pageTitle?.includes("Seasons")} />
+        <NavItem link="Seasons" active={activeNav === "seasons"} />
       </li>
       <li>
-        <NavItem
-          link="Competitions"
-          active={pageTitle?.includes("Competitions")}
-        />
+        <NavItem link="Competitions" active={activeNav === "competitions"} />
       </li>
       <li>
-        <NavItem link="Pilots" active={pageTitle?.includes("Pilots")} />
+        <NavItem link="Pilots" active={activeNav === "pilots"} />
       </li>
     </ul>
   </nav>

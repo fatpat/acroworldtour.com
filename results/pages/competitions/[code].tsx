@@ -4,28 +4,24 @@ import { useEffect, useState } from "react";
 import useSWR from "swr";
 
 import CompetitionDetails from "@/components/competition/competitionDetails";
-import PilotDetails from "@/components/pilot/pilotDetails";
+import { useLayout } from "@/components/layout/layoutContext";
 import FetchError from "@/components/ui/fetchError";
 import FetchLoading from "@/components/ui/fetchLoading";
 import { API_URL } from "@/constants";
 import { components } from "@/types";
 import { fetcher } from "@/utils/fetcher";
 
-interface Props {
-  pageTitle: string;
-  pageDescription: string;
-  headerTitle: string;
-  headerSubtitle: string;
-}
-
 type Competition = components["schemas"]["CompetitionPublicExportWithResults"];
 
-const CompetitionPage = ({
-  pageTitle,
-  pageDescription,
-  headerTitle,
-  headerSubtitle,
-}: Props) => {
+const CompetitionPage = () => {
+  const {
+    setPageTitle,
+    setPageDescription,
+    setHeaderTitle,
+    setHeaderSubtitle,
+    setActiveNav,
+  } = useLayout();
+
   const router = useRouter();
   const [code, setCode] = useState<string>("");
 
@@ -39,12 +35,27 @@ const CompetitionPage = ({
     fetcher
   );
 
+  useEffect(() => {
+    if (competition) {
+      setPageTitle(competition?.name || "");
+      setPageDescription(`Competition page for ${competition?.name}`);
+      setHeaderTitle(competition?.name || "");
+      setHeaderSubtitle(`${competition.type} - ${competition?.location}` || "");
+      setActiveNav("competitions");
+    }
+  }, [
+    competition,
+    setActiveNav,
+    setHeaderSubtitle,
+    setHeaderTitle,
+    setPageDescription,
+    setPageTitle,
+  ]);
+
   if (error) return <FetchError />;
   if (!competition) return <FetchLoading />;
 
   return <CompetitionDetails competition={competition} />;
 };
-
-CompetitionPage.pageDescription = "Pilot details";
 
 export default CompetitionPage;

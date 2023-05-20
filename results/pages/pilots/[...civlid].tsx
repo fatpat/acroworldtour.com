@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
 
+import { useLayout } from "@/components/layout/layoutContext";
 import PilotDetails from "@/components/pilot/pilotDetails";
 import FetchError from "@/components/ui/fetchError";
 import FetchLoading from "@/components/ui/fetchLoading";
@@ -10,21 +11,16 @@ import { API_URL } from "@/constants";
 import { components } from "@/types";
 import { fetcher } from "@/utils/fetcher";
 
-interface Props {
-  pageTitle: string;
-  pageDescription: string;
-  headerTitle: string;
-  headerSubtitle: string;
-}
-
 type Pilot = components["schemas"]["Pilot"];
 
-const PilotPage = ({
-  pageTitle,
-  pageDescription,
-  headerTitle,
-  headerSubtitle,
-}: Props) => {
+const PilotPage = () => {
+  const {
+    setPageTitle,
+    setPageDescription,
+    setHeaderTitle,
+    setHeaderSubtitle,
+    setActiveNav,
+  } = useLayout();
   const router = useRouter();
   const [civlid, setCivlid] = useState("");
 
@@ -38,16 +34,30 @@ const PilotPage = ({
     fetcher
   );
 
+  useEffect(() => {
+    if (pilot) {
+      setPageTitle(pilot?.name || "");
+      setPageDescription(`Pilot page for ${pilot?.name}`);
+      setHeaderTitle(pilot?.name || "");
+      setHeaderSubtitle(
+        `${pilot?.rank === 9999 ? "" : "#"+pilot?.rank+" -"} ${civlid}` || ""
+      );
+      setActiveNav("pilots");
+    }
+  }, [
+    civlid,
+    pilot,
+    setActiveNav,
+    setHeaderSubtitle,
+    setHeaderTitle,
+    setPageDescription,
+    setPageTitle,
+  ]);
+
   if (error) return <FetchError />;
   if (!pilot) return <FetchLoading />;
 
-  return (
-    <section className={classNames("flex flex-col items-start")}>
-      <PilotDetails pilot={pilot} />
-    </section>
-  );
+  return <PilotDetails pilot={pilot} />;
 };
-
-PilotPage.pageDescription = "Pilot details";
 
 export default PilotPage;

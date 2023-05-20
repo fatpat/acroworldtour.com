@@ -4,7 +4,6 @@ import "semantic-ui-flag/flag.min.css";
 import classNames from "classnames";
 import type { AppProps } from "next/app";
 import { Montserrat } from "next/font/google";
-import { NextComponentType } from "next/types";
 
 import Layout from "@/components/layout/layout";
 
@@ -12,27 +11,13 @@ const montserrat = Montserrat({
   subsets: ["latin"],
 });
 
-type CustomAppProps<P = {}> = AppProps<P> & {
-  Component: NextComponentType & {
-    pageTitle: string;
-    pageDescription: string;
-    headerTitle?: string;
-    headerSubtitle?: string;
-  };
-};
-
-const App = ({ Component, pageProps }: CustomAppProps) => {
+const App = ({ Component, pageProps }: AppProps) => {
   return (
-    <Layout
-      pageTitle={Component.pageTitle}
-      pageDescription={Component.pageDescription}
-      headerTitle={Component.headerTitle}
-      headerSubtitle={Component.headerSubtitle}
-    >
+    <Layout>
       <main
         className={classNames(
           montserrat.className,
-          "pb-8 flex w-full flex-1 flex-col items-center",
+          "flex w-full flex-1 flex-col items-center pb-8",
           "lg:pl-52 lg:pt-24"
         )}
       >
