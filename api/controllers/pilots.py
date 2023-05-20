@@ -107,7 +107,7 @@ class PilotCtrl:
 
             try:
                 ret = await client.get(link)
-            except h2yyttpx.HTTPError as exc:
+            except httpx.HTTPError as exc:
                 log.error(f"Connection failed to CIVL website ({link})", exc)
                 raise HTTPException(status_code=500, detail=f"Connection failed to CIVL website")
 
