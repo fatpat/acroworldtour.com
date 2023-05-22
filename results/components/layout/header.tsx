@@ -1,28 +1,21 @@
 import classNames from "classnames";
-import { Montserrat } from "next/font/google";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
 import lines from "/img/lines.svg";
 import awtLogo from "/img/logo.svg";
 
-const montserrat = Montserrat({
-  subsets: ["latin"],
-});
-
 interface Props {
+  fontClass: string;
   headerTitle: string;
   headerSubtitle: string;
 }
 
-const Header = (
-  { headerTitle, headerSubtitle }: Props
-) => {
+const Header = ({ fontClass, headerTitle, headerSubtitle }: Props) => {
   return (
     <header
       className={classNames(
-        montserrat.className,
+        fontClass,
         "z-20 flex h-24 w-full items-center justify-between bg-awtgrey-900 bg-contain bg-right bg-no-repeat px-6",
         "lg:fixed lg:top-0"
       )}
@@ -40,12 +33,10 @@ const Header = (
         />
       </Link>
       <hgroup className="text-right">
-        <h2 className="text-base font-medium text-awtgrey-400 m-0">
+        <h2 className="m-0 text-base font-medium text-awtgrey-400">
           {headerSubtitle}
         </h2>
-        <h1 className="text-white m-0">
-          {headerTitle}
-        </h1>
+        <h1 className="m-0 text-white">{headerTitle}</h1>
       </hgroup>
     </header>
   );

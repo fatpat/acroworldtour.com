@@ -1,6 +1,5 @@
 import classNames from "classnames";
 import countries from "i18n-iso-countries";
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect } from "react";
 
@@ -19,11 +18,10 @@ const PilotDetails = ({ pilot }: Props) => {
     civlid,
     name,
     civl_link: civlLink,
-    photo_highres: photo,
+    // photo_highres: photo,
     country,
     rank,
     about,
-    background_picture: coverPicture,
     social_links: socialLinks,
     sponsors,
     competitions_results: competitionsResults,
@@ -34,21 +32,29 @@ const PilotDetails = ({ pilot }: Props) => {
     ?.toLowerCase();
   const countryName = country ? countries.getName(country, "en") : "Unknown";
 
-  useEffect(() => {
-    console.log(document.title);
-  }, []);
+  const sortedCompetitionsResults = competitionsResults?.sort(
+    (a, b) =>
+      new Date(a.competition.start_date).getTime() -
+        new Date(b.competition.start_date).getTime() || a.rank - b.rank
+  );
+
+  const sortedSeasonsResults = seasonsResults?.sort(
+    (a, b) => a.season.year - b.season.year || a.rank - b.rank
+  );
+
+  const photo = "/martin-wyall-RYAUYkia-cI-unsplash.jpg";
 
   return (
     <section
-      className={classNames("flex w-full flex-col", "lg:w-5/12 lg:self-start")}
+      className={classNames("flex w-full flex-col", "lg:w-1/2 lg:self-start")}
     >
       <Link
         href={photo!}
         target="_blank"
         style={{ backgroundImage: `url('${photo}')` }}
         className={classNames(
-          "aspect-square w-full bg-cover bg-no-repeat bg-center",
-          "lg:fixed lg:right-0 lg:w-1/2"
+          "aspect-square w-full bg-cover bg-center bg-no-repeat",
+          "lg:fixed lg:right-0 lg:w-5/12"
         )}
       />
       <article className={classNames("flex w-full flex-col gap-4 px-4")}>
@@ -100,59 +106,66 @@ const PilotDetails = ({ pilot }: Props) => {
                 title={sponsor.name}
                 style={{ backgroundImage: `url('${sponsor.img}')` }}
                 target="_blank"
-                className="aspect-video w-20 bg-contain bg-center bg-no-repeat hover:fill-sky-500 m-4"
+                className="m-4 aspect-video w-20 bg-contain bg-center bg-no-repeat hover:fill-sky-500"
               />
             ))}
           </div>
         </article>
       )}
-      <div className="w-full bg-awtgrey-50 p-2 mt-4">
-        <table className="w-full">
-          <thead>
-            <tr>
-              <th className="pl-2 text-left">Competition</th>
-              <th className="pr-2 text-right">Rank</th>
-            </tr>
-          </thead>
-          <tbody>
-            {competitionsResults?.map(({ competition, rank }) => {
-              const { code, name, image } = competition;
-              return (
-                <tr
-                  key={code}
-                  // style={{ backgroundImage: `url('${image}')` }}
-                  className="cursor-pointer hover:bg-awtgrey-200"
-                >
-                  <td className="pl-2">{name}</td>
-                  <td className="pr-2 text-right">#{rank}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        <table className="mt-4 w-full">
-          <thead>
-            <tr>
-              <th className="pl-2 text-left">Season</th>
-            </tr>
-          </thead>
-          <tbody>
-            {seasonsResults?.map(({ season, rank }) => {
-              const { code, name, image } = season;
-              return (
-                <tr
-                  key={code}
-                  // style={{ backgroundImage: `url('${image}')` }}
-                  className="cursor-pointer hover:bg-awtgrey-200"
-                >
-                  <td className="pl-2">{name}</td>
-                  <td className="pr-2 text-right">#{rank}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      {(sortedCompetitionsResults!.length > 0 ||
+        sortedSeasonsResults!.length > 0) &&
+          <div className="mt-4 w-full bg-awtgrey-50 p-2">
+            {sortedCompetitionsResults!.length > 0 && (
+              <table className="w-full">
+                <thead>
+                  <tr className="h-12">
+                    <th className="pl-2 text-left">Competition</th>
+                    <th className="pr-2 text-right">Rank</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedCompetitionsResults?.map(({ competition, rank }) => {
+                    const { code, name, image } = competition;
+                    return (
+                      <tr
+                        key={code}
+                        // style={{ backgroundImage: `url('${image}')` }}
+                        className="h-8 cursor-pointer hover:bg-awtgrey-200"
+                      >
+                        <td className="pl-2">{name}</td>
+                        <td className="pr-2 text-right">#{rank}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+            {sortedSeasonsResults!.length > 0 && (
+              <table className="mt-4 w-full">
+                <thead>
+                  <tr className="h-12">
+                    <th className="pl-2 text-left">Season</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedSeasonsResults!.map(({ season, rank }) => {
+                    const { code, name, image } = season;
+                    return (
+                      <tr
+                        key={code}
+                        // style={{ backgroundImage: `url('${image}')` }}
+                        className="h-8 cursor-pointer hover:bg-awtgrey-200"
+                      >
+                        <td className="pl-2">{name}</td>
+                        <td className="pr-2 text-right">#{rank}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+      }
     </section>
   );
 };

@@ -7,16 +7,16 @@ import { Montserrat } from "next/font/google";
 
 import Layout from "@/components/layout/layout";
 
-const montserrat = Montserrat({
+const font = Montserrat({
   subsets: ["latin"],
-});
+})
 
 const App = ({ Component, pageProps }: AppProps) => {
   return (
-    <Layout>
+    <Layout fontClass={font.className}>
       <main
         className={classNames(
-          montserrat.className,
+          font.className,
           "flex w-full flex-1 flex-col items-center pb-8",
           "lg:pl-52 lg:pt-24"
         )}

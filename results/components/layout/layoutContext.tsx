@@ -9,7 +9,7 @@ interface ILayoutContext {
   setPageTitle: (value: string) => void;
   setPageDescription: (value: string) => void;
   setHeaderTitle: (value: string) => void;
-  setHeaderSubtitle: ( value: string ) => void;
+  setHeaderSubtitle: (value: string) => void;
   setActiveNav: (value: string) => void;
 }
 
@@ -22,7 +22,7 @@ const LayoutContext = createContext<ILayoutContext>({
   setPageTitle: () => {},
   setPageDescription: () => {},
   setHeaderTitle: () => {},
-  setHeaderSubtitle: () => { },
+  setHeaderSubtitle: () => {},
   setActiveNav: () => {},
 });
 

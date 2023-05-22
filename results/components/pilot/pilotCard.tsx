@@ -9,9 +9,17 @@ interface Props {
 }
 
 const PilotCard = ({ pilot }: Props) => {
-  const { civlid, name, photo_highres: photo, country, rank } = pilot;
+  const {
+    civlid,
+    name,
+    // photo_highres: photo,
+    country,
+    rank,
+  } = pilot;
   const urlName = name.toLowerCase().replace(/\s/g, "-");
-  const alpha2country = alpha3ToAlpha2( country?.toUpperCase() )?.toLowerCase();
+  const alpha2country = alpha3ToAlpha2(country?.toUpperCase())?.toLowerCase();
+
+  const photo = "/martin-wyall-RYAUYkia-cI-unsplash.jpg";
 
   return (
     <Link

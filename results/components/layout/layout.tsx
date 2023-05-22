@@ -1,3 +1,4 @@
+import { Montserrat } from "next/font/google";
 import Head from "next/head";
 import { useState } from "react";
 
@@ -7,9 +8,10 @@ import Nav from "./nav";
 
 interface LayoutProps {
   children: React.ReactNode;
+  fontClass: string;
 }
 
-const Layout = ({ children }: LayoutProps) => {
+const Layout = ({ children, fontClass }: LayoutProps) => {
   const [pageTitle, setPageTitle] = useState("");
   const [pageDescription, setPageDescription] = useState("");
   const [headerTitle, setHeaderTitle] = useState("");
@@ -35,9 +37,13 @@ const Layout = ({ children }: LayoutProps) => {
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
       </Head>
-      <Header headerTitle={headerTitle} headerSubtitle={headerSubtitle} />
+      <Header
+        fontClass={fontClass}
+        headerTitle={headerTitle}
+        headerSubtitle={headerSubtitle}
+      />
       {children}
-      <Nav activeNav={activeNav} />
+      <Nav fontClass={fontClass} activeNav={activeNav} />
     </LayoutContext.Provider>
   );
 };

@@ -1,20 +1,16 @@
 import classNames from "classnames";
-import { Montserrat } from "next/font/google";
 
 import NavItem from "./navItem";
 
-const montserrat = Montserrat({
-  subsets: ["latin"],
-});
-
 interface Props {
   activeNav: string;
+  fontClass: string;
 }
 
-const Nav = ({ activeNav }: Props) => (
+const Nav = ({ activeNav, fontClass }: Props) => (
   <nav
     className={classNames(
-      montserrat.className,
+      fontClass,
       "sticky bottom-0 z-10 w-full bg-white shadow-md shadow-current",
       "lg:fixed lg:left-0 lg:h-full lg:w-52 lg:pl-4 lg:pt-32 lg:shadow-lg"
     )}
