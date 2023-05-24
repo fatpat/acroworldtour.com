@@ -31,7 +31,7 @@ const CompetitionDetails = ({ competition }: Props) => {
   const runsResults = results.runs_results;
 
   const [showOverall, setShowOverall] = useState(false);
-  const [showRun, setShowRun] = useState(runsResults.map(() => true));
+  const [showRun, setShowRun] = useState(runsResults.map(() => false));
 
   const toggleRunVisibility = (index: number) => {
     const newShowRuns = [...showRun];
@@ -64,40 +64,29 @@ const CompetitionDetails = ({ competition }: Props) => {
           <p>{`Start Date: ${startDate}`}</p>
           <p>{`End Date: ${endDate}`}</p>
         </section>
-        <section className={classNames("flex flex-col bg-red-200/30 p-4")}>
-          <header
-            className={classNames("flex cursor-pointer items-baseline")}
-            onClick={() => setShowOverall(!showOverall)}
-          >
-            <h3>Overall Results</h3>
-            <ChevronIcon
+
+        <section
+          className={classNames("flex w-full flex-col bg-red-200/30 p-4")}
+        >
+          <article className={classNames("mb-8", { "h-auto": showOverall })}>
+            <header
+              className={classNames("flex cursor-pointer items-baseline")}
+              onClick={() => setShowOverall(!showOverall)}
+            >
+              <h3>Overall Results</h3>
+              <ChevronIcon
+                className={classNames(
+                  "ml-2 h-3 w-auto",
+                  !showOverall && "-rotate-90"
+                )}
+              />
+            </header>
+            <table
               className={classNames(
-                "ml-2 h-3 w-auto",
-                !showOverall && "-rotate-90"
+                "w-full",
+                !showOverall && "mb-[-75%] opacity-0"
               )}
-            />
-          </header>
-          <p>
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. A ipsa
-            eaque aliquid quibusdam, fuga ea laudantium quas atque aliquam
-            inventore assumenda harum, molestias aperiam sit voluptas est earum
-            quis qui. Quis qui quia quas praesentium vitae voluptatibus totam
-            recusandae? Eos reprehenderit quasi aliquid enim est possimus
-            consectetur aspernatur nobis ipsam, fugit excepturi exercitationem
-            adipisci pariatur porro delectus similique repellendus esse! Nobis
-            quam quia sit nostrum ex, unde asperiores ipsum deserunt velit.
-            Aspernatur magnam odio ipsam dolorum porro ea aliquid numquam
-            provident fugit qui quasi facere, inventore expedita consequuntur,
-            iste rerum. Harum nobis dolore, at ullam vero nulla! Doloribus, ex
-            hic! Nisi consectetur, asperiores iste, ad neque rerum tenetur
-            distinctio dolor, non cum eius possimus quos laborum. Ab suscipit
-            animi consectetur! Fugiat quis perspiciatis a. Animi mollitia
-            repudiandae unde iste quibusdam praesentium incidunt hic ullam,
-            maxime quasi dignissimos veniam dolore, maiores dolorem facilis,
-            harum consectetur eaque tempora iure qui! Beatae, qui.
-          </p>
-          {showOverall && (
-            <table className="w-11/12">
+            >
               <thead>
                 <tr className="h-12">
                   <th className="text-left">Pilot</th>
@@ -106,8 +95,8 @@ const CompetitionDetails = ({ competition }: Props) => {
               </thead>
               <tbody>
                 {overallResults.map((result) => {
-                  const { pilot, score, result_per_run } = result;
-                  const roundedScore = Math.round(score * 100) / 100;
+                  const { pilot, score } = result;
+                  const roundedScore = score.toFixed(3);
                   return (
                     <tr key={pilot!.name} className="h-12">
                       <td>{pilot!.name}</td>
@@ -117,16 +106,13 @@ const CompetitionDetails = ({ competition }: Props) => {
                 })}
               </tbody>
             </table>
-          )}
+          </article>
 
           {runsResults.map((run, index) => {
             const runNumber = index + 1;
 
             return (
-              <article
-                key={run.results[0].pilot!.civlid}
-                className={classNames("flex flex-col")}
-              >
+              <article key={runNumber} className="mb-8">
                 <header
                   className={classNames("flex cursor-pointer items-baseline")}
                   onClick={() => toggleRunVisibility(index)}
@@ -139,23 +125,37 @@ const CompetitionDetails = ({ competition }: Props) => {
                     )}
                   />
                 </header>
-                {showRun[index] &&
-                  run.results.map((result) => {
-                    const { pilot, tricks } = result;
-                    const { name: pilotName, civlid: pilotId } = pilot!;
-
-                    return <p key={pilotId}>{pilotName}</p>;
-                  })}
+                <table
+                  className={classNames(
+                    "w-full",
+                    !showRun[index] && "mb-[-75%] opacity-0"
+                  )}
+                >
+                  <thead>
+                    <tr className="h-12">
+                      <th className="text-left">Pilot</th>
+                      <th className="text-right">Score</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {run.results.map((result) => {
+                      const { pilot, final_marks } = result;
+                      const roundedScore = final_marks!.score.toFixed(3);
+                      return (
+                        <tr key={pilot!.name} className="h-12">
+                          <td>{pilot!.name}</td>
+                          <td className="text-right">{roundedScore}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </article>
             );
           })}
         </section>
 
-        <section
-          className={classNames(
-            "flex flex-col bg-blue-200/30 p-4"
-          )}
-        >
+        <section className={classNames("flex flex-col bg-blue-200/30 p-4")}>
           <h3>Judges</h3>
           <article
             className={classNames(
