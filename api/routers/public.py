@@ -180,3 +180,14 @@ async def get_season(id: str, deleted: bool = False):
     cache = Cache()
     season = await Season.get(id, deleted=deleted, cache=cache)
     return await season.export(cache=cache)
+
+#
+# Get all tricks
+#
+@public.get(
+    "/tricks",
+    response_description="List all tricks",
+    response_model=List[Trick],
+)
+async def list(repeatable: bool = None):
+    return await Trick.getall(deleted = False, repeatable = repeatable)
