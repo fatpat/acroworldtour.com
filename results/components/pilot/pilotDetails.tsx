@@ -18,7 +18,8 @@ const PilotDetails = ({ pilot }: Props) => {
     civlid,
     name,
     civl_link: civlLink,
-    photo_highres: photo,
+    //photo: photo,
+    //photo_highres: photo_highres,
     country,
     rank,
     about,
@@ -42,16 +43,17 @@ const PilotDetails = ({ pilot }: Props) => {
     (a, b) => a.season.year - b.season.year || a.rank - b.rank
   );
 
-  // const photo = "/martin-wyall-RYAUYkia-cI-unsplash.jpg";
+  const photo_highres = null
+  const photo = "/martin-wyall-RYAUYkia-cI-unsplash.jpg";
 
   return (
     <section
       className={classNames("flex w-full flex-col", "lg:w-1/2 lg:self-start")}
     >
       <Link
-        href={photo!}
+        href={civlLink}
         target="_blank"
-        style={{ backgroundImage: `url('${photo}')` }}
+        style={{ backgroundImage: `url('${photo_highres || photo}')` }}
         className={classNames(
           "aspect-square w-full bg-cover bg-center bg-no-repeat",
           "lg:fixed lg:right-0 lg:w-5/12"

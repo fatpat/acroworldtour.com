@@ -67,7 +67,7 @@ const About = () => {
           media={"facebook"}
         />
         <SocialLink
-          link="https://www.youtube.com/@acroworldtour2242"
+          link="https://www.youtube.com/@acroworldtour"
           media={"youtube"}
         />
       </footer>
