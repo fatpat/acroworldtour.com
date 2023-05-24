@@ -18,7 +18,7 @@ const PilotDetails = ({ pilot }: Props) => {
     civlid,
     name,
     civl_link: civlLink,
-    // photo_highres: photo,
+    photo_highres: photo,
     country,
     rank,
     about,
@@ -42,7 +42,7 @@ const PilotDetails = ({ pilot }: Props) => {
     (a, b) => a.season.year - b.season.year || a.rank - b.rank
   );
 
-  const photo = "/martin-wyall-RYAUYkia-cI-unsplash.jpg";
+  // const photo = "/martin-wyall-RYAUYkia-cI-unsplash.jpg";
 
   return (
     <section

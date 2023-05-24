@@ -12,24 +12,32 @@ interface Props {
 }
 
 const CompetitionDetails = ({ competition }: Props) => {
-  const [showResults, setShowResults] = useState<boolean>(false);
-
   const {
     code,
-    name,
-    judges,
-    start_date: startDate,
     end_date: endDate,
+    image,
+    judges,
     location,
+    name,
+    number_of_pilots: numberOfPilots,
     pilots,
     results,
+    start_date: startDate,
     state,
     type,
-    image,
   } = competition;
 
   const overallResults = results.overall_results;
   const runsResults = results.runs_results;
+
+  const [showOverall, setShowOverall] = useState(false);
+  const [showRun, setShowRun] = useState(runsResults.map(() => true));
+
+  const toggleRunVisibility = (index: number) => {
+    const newShowRuns = [...showRun];
+    newShowRuns[index] = !newShowRuns[index];
+    setShowRun(newShowRuns);
+  };
 
   return (
     <div
@@ -46,24 +54,30 @@ const CompetitionDetails = ({ competition }: Props) => {
           "lg:flex-row "
         )}
       >
+        <section className={classNames("flex flex-col bg-green-200/30 p-4")}>
+          <h3>Details</h3>
+          <p>{`Type: ${type}`}</p>
+          <p>{`Location: ${location}`}</p>
+          <p>{`Pilots: ${numberOfPilots}`}</p>
+          <p>{`Start Date: ${startDate}`}</p>
+          <p>{`End Date: ${endDate}`}</p>
+        </section>
         <section
-          className={classNames(
-            "flex flex-1 flex-col items-center bg-red-200/30 p-4"
-          )}
+          className={classNames("flex flex-1 flex-col bg-red-200/30 p-4")}
         >
           <header
             className={classNames("flex cursor-pointer items-baseline")}
-            onClick={() => setShowResults(!showResults)}
+            onClick={() => setShowOverall(!showOverall)}
           >
             <h3>Overall Results</h3>
             <ChevronIcon
               className={classNames(
                 "ml-2 h-3 w-auto",
-                !showResults && "-rotate-90"
+                !showOverall && "-rotate-90"
               )}
             />
           </header>
-          {showResults && (
+          {showOverall && (
             <table className="w-11/12">
               <thead>
                 <tr className="h-12">
@@ -86,74 +100,38 @@ const CompetitionDetails = ({ competition }: Props) => {
             </table>
           )}
 
-          {runsResults.map( ( run ) => {
-            const runNumber = runsResults.indexOf( run ) + 1;
-            
+          {runsResults.map((run, index) => {
+            const runNumber = index + 1;
+
             return (
-              <>
+              <article
+                key={run.results[0].pilot!.civlid}
+                className={classNames("flex flex-col")}
+              >
                 <header
                   className={classNames("flex cursor-pointer items-baseline")}
-                  onClick={() => setShowResults(!showResults)}
+                  onClick={() => toggleRunVisibility(index)}
                 >
                   <h3>{`Run ${runNumber}`}</h3>
                   <ChevronIcon
                     className={classNames(
                       "ml-2 h-3 w-auto",
-                      !showResults && "-rotate-90"
+                      !showRun[index] && "-rotate-90"
                     )}
                   />
                 </header>
-                {run.results.map((result) => {
-                  return (
-                    <p key={result.pilot!.name}>{result.tricks[0].name}</p>
-                  );
-                })}
-              </>
+                {showRun[index] &&
+                  run.results.map((result) => {
+                    const { pilot, tricks } = result;
+                    const { name: pilotName, civlid: pilotId } = pilot!;
+
+                    return <p key={pilotId}>{pilotName}</p>;
+                  })}
+              </article>
             );
           })}
+        </section>
 
-          {/* <header
-            className={classNames("flex cursor-pointer items-baseline")}
-            onClick={() => setShowResults(!showResults)}
-          >
-            <h3>Overall Results</h3>
-            <ChevronIcon
-              className={classNames(
-                "ml-2 h-3 w-auto",
-                !showResults && "-rotate-90"
-              )}
-            />
-          </header>
-          <table className="w-11/12">
-            <thead>
-              <tr className="h-12">
-                <th className="text-left">Pilot</th>
-                <th className="text-right">Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              {results.runs_results.map((result) => {
-                console.log(result);
-                const {} = result;
-                const roundedScore = Math.round(score * 100) / 100;
-                return (
-                  <tr key={pilot!.name} className="h-12">
-                    <td>{pilot!.name}</td>
-                    <td className="text-right">{roundedScore}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table> */}
-        </section>
-        <section
-          className={classNames(
-            "flex flex-1 flex-col items-center bg-green-200/30 p-4"
-          )}
-        >
-          <h3>Details</h3>
-          <article className={classNames()}></article>
-        </section>
         <section
           className={classNames(
             "flex flex-1 flex-col items-center bg-blue-200/30 p-4"

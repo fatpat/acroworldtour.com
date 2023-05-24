@@ -7,7 +7,7 @@
     @apply transition-all duration-300 ease-in-out;
 
     /* DEV ONLY */
-    /* @apply outline outline-1 outline-red-200; */
+    @apply outline outline-1 outline-red-200;
   }
 
   #__next {
