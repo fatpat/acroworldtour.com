@@ -274,6 +274,10 @@ export interface paths {
     /** Get Season */
     get: operations["get_season_public_seasons__id__get"];
   };
+  "/public/tricks": {
+    /** List */
+    get: operations["list_public_tricks_get"];
+  };
   "/utils/backup": {
     /** Backup */
     get: operations["backup_utils_backup_get"];
@@ -3191,6 +3195,28 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["SeasonExport"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** List */
+  list_public_tricks_get: {
+    parameters: {
+      query: {
+        repeatable?: boolean;
+      };
+    };
+    responses: {
+      /** @description List all tricks */
+      200: {
+        content: {
+          "application/json": (components["schemas"]["Trick"])[];
         };
       };
       /** @description Validation Error */

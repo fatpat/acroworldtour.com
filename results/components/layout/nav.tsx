@@ -39,6 +39,9 @@ const Nav = ({ activeNav, fontClass }: Props) => (
       <li>
         <NavItem link="Judges" active={activeNav === "Judges"} />
       </li>
+      <li>
+        <NavItem link="Tricks" active={activeNav === "Tricks"} />
+      </li>
     </ul>
   </nav>
 );
