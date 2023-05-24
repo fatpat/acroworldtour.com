@@ -15,9 +15,9 @@ type Pilot = components["schemas"]["Pilot"];
 
 const JudgeCard = ({ judge }: Props) => {
   const {
+    _id,
     civlid,
     name,
-    // photo_highres: photo,
     country,
     level,
   } = judge;
@@ -29,12 +29,12 @@ const JudgeCard = ({ judge }: Props) => {
     fetcher
   );
 
-  const photo = pilot?.photo_highres;
-  // const photo = "/martin-wyall-RYAUYkia-cI-unsplash.jpg";
+  const photo = pilot?.photo
+
 
   return (
     <Link
-      key={civlid}
+      key={_id}
       title={`See ${name}'s profile`}
       href={`/pilots/${civlid}/${urlName}`}
       className={classNames(

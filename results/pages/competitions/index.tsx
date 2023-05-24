@@ -40,7 +40,7 @@ const Competitions = () => {
   if (competitionsError || seasonsError) return <FetchError />;
   if (!competitions || !seasons) return <FetchLoading />;
 
-  const soloSeasons = seasons.filter((season) => season.type === "solo");
+  const soloSeasons = seasons.filter((season) => season.type === "solo" && season.competitions.length > 0);
 
   const offSeasonCompetitions = competitions.filter(
     (competition) => competition.seasons.length === 0
@@ -49,7 +49,7 @@ const Competitions = () => {
   return (
     <>
       <h2 className="-mb-6">All Competitions</h2>
-      {soloSeasons.map((season) => {
+      {soloSeasons.sort((a,b) => b.year - a.year || b.code.localeCompare(a.code)).map((season) => {
         const {
           code,
           competitions,
@@ -75,7 +75,7 @@ const Competitions = () => {
       })}
       <h3 className="mb-6 mt-12 opacity-50">Off Season</h3>
       <section className={classNames("wrapper")}>
-        {offSeasonCompetitions.map((competition) => (
+        {offSeasonCompetitions.sort((a,b) => b.start_date.localeCompare(a.start_date)).map((competition) => (
           <CompetitionCard key={competition.code} competition={competition} />
         ))}
       </section>

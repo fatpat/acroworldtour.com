@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { components } from "@/types";
 
-import JudgeCard from "../judgeCard";
+import JudgeCard from "../judge/judgeCard";
 import { ChevronIcon } from "../ui/icons";
 
 interface Props {

@@ -12,14 +12,14 @@ const PilotCard = ({ pilot }: Props) => {
   const {
     civlid,
     name,
-    photo_highres: photo,
+//    photo,
     country,
     rank,
   } = pilot;
   const urlName = name.toLowerCase().replace(/\s/g, "-");
   const alpha2country = alpha3ToAlpha2(country?.toUpperCase())?.toLowerCase();
 
-  // const photo = "/martin-wyall-RYAUYkia-cI-unsplash.jpg";
+  const photo = "/martin-wyall-RYAUYkia-cI-unsplash.jpg";
 
   return (
     <Link

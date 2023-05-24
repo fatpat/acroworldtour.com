@@ -19,7 +19,7 @@ const PilotDetails = ({ pilot }: Props) => {
     name,
     civl_link: civlLink,
     //photo: photo,
-    //photo_highres: photo_highres,
+    //photo_highres: photoHighres,
     country,
     rank,
     about,
@@ -43,7 +43,7 @@ const PilotDetails = ({ pilot }: Props) => {
     (a, b) => a.season.year - b.season.year || a.rank - b.rank
   );
 
-  const photo_highres = null
+  const photoHighres = null
   const photo = "/martin-wyall-RYAUYkia-cI-unsplash.jpg";
 
   return (
@@ -53,7 +53,7 @@ const PilotDetails = ({ pilot }: Props) => {
       <Link
         href={civlLink}
         target="_blank"
-        style={{ backgroundImage: `url('${photo_highres || photo}')` }}
+        style={{ backgroundImage: `url('${photoHighres || photo}')` }}
         className={classNames(
           "aspect-square w-full bg-cover bg-center bg-no-repeat",
           "lg:fixed lg:right-0 lg:w-5/12"
