@@ -54,7 +54,9 @@ const CompetitionDetails = ({ competition }: Props) => {
           "lg:flex-row "
         )}
       >
-        <section className={classNames("flex flex-col bg-green-200/30 p-4")}>
+        <section
+          className={classNames("flex min-w-max flex-col bg-green-200/10 p-4")}
+        >
           <h3>Details</h3>
           <p>{`Type: ${type}`}</p>
           <p>{`Location: ${location}`}</p>
@@ -62,9 +64,7 @@ const CompetitionDetails = ({ competition }: Props) => {
           <p>{`Start Date: ${startDate}`}</p>
           <p>{`End Date: ${endDate}`}</p>
         </section>
-        <section
-          className={classNames("flex flex-1 flex-col bg-red-200/30 p-4")}
-        >
+        <section className={classNames("flex flex-col bg-red-200/30 p-4")}>
           <header
             className={classNames("flex cursor-pointer items-baseline")}
             onClick={() => setShowOverall(!showOverall)}
@@ -77,6 +77,25 @@ const CompetitionDetails = ({ competition }: Props) => {
               )}
             />
           </header>
+          <p>
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. A ipsa
+            eaque aliquid quibusdam, fuga ea laudantium quas atque aliquam
+            inventore assumenda harum, molestias aperiam sit voluptas est earum
+            quis qui. Quis qui quia quas praesentium vitae voluptatibus totam
+            recusandae? Eos reprehenderit quasi aliquid enim est possimus
+            consectetur aspernatur nobis ipsam, fugit excepturi exercitationem
+            adipisci pariatur porro delectus similique repellendus esse! Nobis
+            quam quia sit nostrum ex, unde asperiores ipsum deserunt velit.
+            Aspernatur magnam odio ipsam dolorum porro ea aliquid numquam
+            provident fugit qui quasi facere, inventore expedita consequuntur,
+            iste rerum. Harum nobis dolore, at ullam vero nulla! Doloribus, ex
+            hic! Nisi consectetur, asperiores iste, ad neque rerum tenetur
+            distinctio dolor, non cum eius possimus quos laborum. Ab suscipit
+            animi consectetur! Fugiat quis perspiciatis a. Animi mollitia
+            repudiandae unde iste quibusdam praesentium incidunt hic ullam,
+            maxime quasi dignissimos veniam dolore, maiores dolorem facilis,
+            harum consectetur eaque tempora iure qui! Beatae, qui.
+          </p>
           {showOverall && (
             <table className="w-11/12">
               <thead>
@@ -134,7 +153,7 @@ const CompetitionDetails = ({ competition }: Props) => {
 
         <section
           className={classNames(
-            "flex flex-1 flex-col items-center bg-blue-200/30 p-4"
+            "flex flex-col bg-blue-200/30 p-4"
           )}
         >
           <h3>Judges</h3>

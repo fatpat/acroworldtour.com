@@ -11,9 +11,6 @@ import { fetcher } from "@/utils/fetcher";
 
 type Pilot = components["schemas"]["Pilot"];
 
-const pageTitle = "Acro World Tour | Pilots";
-const pageDescription = "All the pilots of the Acro World Tour";
-
 const Pilots = () => {
   const {
     setPageTitle,
@@ -58,8 +55,5 @@ const Pilots = () => {
     </>
   );
 };
-
-Pilots.pageTitle = pageTitle;
-Pilots.pageDescription = pageDescription;
 
 export default Pilots;

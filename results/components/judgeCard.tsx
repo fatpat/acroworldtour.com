@@ -29,7 +29,7 @@ const JudgeCard = ({ judge }: Props) => {
     fetcher
   );
 
-  const photo = pilot?.photo_highres
+  const photo = pilot?.photo_highres;
   // const photo = "/martin-wyall-RYAUYkia-cI-unsplash.jpg";
 
   return (
@@ -37,7 +37,7 @@ const JudgeCard = ({ judge }: Props) => {
       key={civlid}
       title={`See ${name}'s profile`}
       href={`/pilots/${civlid}/${urlName}`}
-      className="flex flex-col rounded-xl pb-4 hover:-translate-y-2 hover:shadow-xl w-full sm:w-32"
+      className="flex w-full flex-col rounded-xl pb-4 hover:-translate-y-2 hover:shadow-xl min-w-[200px] max-w-xs"
     >
       <figure
         style={{ backgroundImage: `url('${photo}')` }}
