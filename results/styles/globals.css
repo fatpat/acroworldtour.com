@@ -44,6 +44,14 @@
   p {
     @apply text-sm font-medium leading-loose drop-shadow-sm;
   }
+
+  tbody > tr {
+    @apply odd:bg-white
+  }
+
+  th, td {
+    @apply p-4
+  }
 }
 
 @layer utilities {

@@ -74,12 +74,11 @@ const CompetitionDetails = ({ competition }: Props) => {
         <section
           className={classNames(
             "flex w-full flex-col rounded-xl bg-awtgrey-50",
-            "lg:p-4"
           )}
         >
-          <article className={classNames("mb-8")}>
+          <article>
             <header
-              className={classNames("flex cursor-pointer items-baseline")}
+              className={classNames("flex cursor-pointer items-baseline p-4")}
               onClick={() => setShowOverall(!showOverall)}
             >
               <h3>Overall Results</h3>
@@ -97,7 +96,7 @@ const CompetitionDetails = ({ competition }: Props) => {
               )}
             >
               <thead>
-                <tr className="h-12">
+                <tr>
                   <th className="text-left">Pilot</th>
                   <th className="text-right">Score</th>
                 </tr>
@@ -107,7 +106,7 @@ const CompetitionDetails = ({ competition }: Props) => {
                   const { pilot, score } = result;
                   const roundedScore = score.toFixed(3);
                   return (
-                    <tr key={pilot!.name} className="h-12">
+                    <tr key={pilot!.name}>
                       <td>{pilot!.name}</td>
                       <td className="text-right">{roundedScore}</td>
                     </tr>
@@ -121,9 +120,9 @@ const CompetitionDetails = ({ competition }: Props) => {
             const runNumber = index + 1;
 
             return (
-              <article key={runNumber} className="mb-8">
+              <article key={runNumber}>
                 <header
-                  className={classNames("flex cursor-pointer items-baseline")}
+                  className={classNames("flex cursor-pointer items-baseline p-4")}
                   onClick={() => toggleRunVisibility(index)}
                 >
                   <h3>{`Run ${runNumber}`}</h3>
@@ -141,7 +140,7 @@ const CompetitionDetails = ({ competition }: Props) => {
                   )}
                 >
                   <thead>
-                    <tr className="h-12">
+                    <tr>
                       <th className="text-left">Pilot</th>
                       <th className="text-right">Score</th>
                     </tr>
@@ -151,7 +150,7 @@ const CompetitionDetails = ({ competition }: Props) => {
                       const { pilot, final_marks } = result;
                       const roundedScore = final_marks!.score.toFixed(3);
                       return (
-                        <tr key={pilot!.name} className="h-12">
+                        <tr key={pilot!.name}>
                           <td>{pilot!.name}</td>
                           <td className="text-right">{roundedScore}</td>
                         </tr>
