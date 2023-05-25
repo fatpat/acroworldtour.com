@@ -25,26 +25,44 @@ const TricksTable = ({ tricks }: Props) => {
               <Table.Cell>{trick.acronym}</Table.Cell>
               <Table.Cell>
                 {trick.directions.includes("left") && (
-                  <label title="Right">⬅️</label>
+                  <label htmlFor={`directions-${trick._id}`} title="Right">
+                    ⬅️
+                  </label>
                 )}
                 {trick.directions.includes("right") && (
-                  <label title="Left">➡️</label>
+                  <label htmlFor={`directions-${trick._id}`} title="Left">
+                    ➡️
+                  </label>
                 )}
                 {(trick.directions.includes("opposite") ||
                   trick.directions.includes("mirror")) && (
-                  <label title="Opposite/Mirror">↔️</label>
+                  <label
+                    htmlFor={`directions-${trick._id}`}
+                    title="Opposite/Mirror"
+                  >
+                    ↔️
+                  </label>
                 )}
                 {trick.repeatable && (
-                  <label title="this trick can be repeated">🔁</label>
+                  <label
+                    htmlFor={`repeatable-${trick._id}`}
+                    title="this trick can be repeated"
+                  >
+                    🔁
+                  </label>
                 )}
                 {(trick.first_maneuver || 0) > 0 && (
-                  <label title="this trick must be performed as a first trick only">
+                  <label
+                    htmlFor={`first-maneuver-${trick._id}`}
+                    title="this trick must be performed as a first trick only"
+                  >
                     ①
                   </label>
                 )}
                 {(trick.no_last_maneuver || 0) > 0 && (
                   <label
-                    title={`this trick cannot be performed as a last ${trick.no_last_maneuver} trick(s) of a run`}
+                    htmlFor={`no-last-maneuver-${trick._id}`}
+                    title={`this trick cannot be performed as a last ${trick.no_last_maneuver} maneuver(s)`}
                   >
                     ⨂
                   </label>

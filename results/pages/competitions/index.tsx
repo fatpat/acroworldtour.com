@@ -94,11 +94,11 @@ const Competitions = () => {
         </label>
         <select
           id="year-selector"
-          className="bg-inherit font-sans"
+          className="font-sans border-0"
           value={selectedYear ?? ""}
           onChange={handleYearChange}
         >
-          <option value="" className="text-red-500">
+          <option value="">
             All
           </option>
           {years.map((year) => (

@@ -89,10 +89,16 @@ const CompetitionDetails = ({ competition }: Props) => {
         >
           <article>
             <header
+              role="button"
+              tabIndex={0}
               className={classNames(
                 "flex cursor-pointer items-baseline pl-4 pt-4"
               )}
               onClick={() => setShowOverall(!showOverall)}
+              onKeyDown={({ key }) =>
+                (key === "Enter" || key === "Space") &&
+                setShowOverall(!showOverall)
+              }
             >
               <h3>Overall Results</h3>
               <ChevronIcon
@@ -136,10 +142,15 @@ const CompetitionDetails = ({ competition }: Props) => {
             return (
               <article key={runNumber}>
                 <header
+                  role="button"
+                  tabIndex={0}
                   className={classNames(
                     "flex cursor-pointer items-baseline pl-4 pt-4"
                   )}
                   onClick={() => toggleRun(runIndex)}
+                  onKeyDown={({ key }) =>
+                    (key === "Enter" || key === "Space") && toggleRun(runIndex)
+                  }
                 >
                   <h3>{`Run ${runNumber}`}</h3>
                   <ChevronIcon
@@ -149,66 +160,75 @@ const CompetitionDetails = ({ competition }: Props) => {
                     )}
                   />
                 </header>
-                { showRuns[runIndex] && <table className="w-full origin-top">
-                  <thead>
-                    <tr>
-                      <th className="text-left">Pilot</th>
-                      <th className="text-right">Score</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {run.results.map((result, resultIndex) => {
-                      const {
-                        pilot,
-                        final_marks,
-                        tricks,
-                        // marks
-                      } = result;
-                      const roundedScore = final_marks!.score.toFixed(3);
-                      return (
-                        <>
-                          <tr key={resultIndex}>
-                            <td
-                              className={classNames(
-                                "flex cursor-pointer items-baseline"
-                              )}
-                              onClick={() =>
-                                toggleRunDetails(runIndex, resultIndex)
-                              }
-                            >
-                              <p>{pilot?.name}</p>
-                              <ChevronIcon
+                {showRuns[runIndex] && (
+                  <table className="w-full origin-top">
+                    <thead>
+                      <tr>
+                        <th className="text-left">Pilot</th>
+                        <th className="text-right">Score</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {run.results.map((result, resultIndex) => {
+                        const {
+                          pilot,
+                          final_marks,
+                          tricks,
+                          // marks
+                        } = result;
+                        const roundedScore = final_marks!.score.toFixed(3);
+                        return (
+                          <>
+                            <tr key={resultIndex}>
+                              <td
+                                // eslint-disable-next-line jsx-a11y/no-noninteractive-element-to-interactive-role
+                                role="button"
+                                tabIndex={0}
                                 className={classNames(
-                                  "ml-2 h-2 w-auto",
-                                  !showRunDetails[runIndex][resultIndex] &&
-                                    "-rotate-90"
+                                  "flex cursor-pointer items-baseline"
                                 )}
-                              />
-                            </td>
-                            <td className="text-right">
-                              <p>{roundedScore}</p>
-                            </td>
-                          </tr>
+                                onClick={() =>
+                                  toggleRunDetails(runIndex, resultIndex)
+                                }
+                                onKeyDown={({ key }) =>
+                                  (key === "Enter" || key === "Space") &&
+                                  toggleRunDetails(runIndex, resultIndex)
+                                }
+                              >
+                                <p>{pilot?.name}</p>
+                                <ChevronIcon
+                                  className={classNames(
+                                    "ml-2 h-2 w-auto",
+                                    !showRunDetails[runIndex][resultIndex] &&
+                                      "-rotate-90"
+                                  )}
+                                />
+                              </td>
+                              <td className="text-right">
+                                <p>{roundedScore}</p>
+                              </td>
+                            </tr>
 
-                          {showRunDetails[runIndex][resultIndex] && (
-                            <>
-                              <th className="py-2 pl-8 text-left">
-                                <p className="font-semibold">Tricks</p>
-                              </th>
-                              {tricks.map((trick, trickIndex) => (
-                                <tr key={trickIndex}>
-                                  <td colSpan={2} className="py-2 pl-8">
-                                    <small>{capitalise(trick.name)}</small>
-                                  </td>
-                                </tr>
-                              ))}
-                            </>
-                          )}
-                        </>
-                      );
-                    })}
-                  </tbody>
-                </table>}
+                            {showRunDetails[runIndex][resultIndex] && (
+                              <>
+                                <th className="py-2 pl-8 text-left">
+                                  <p className="font-semibold">Tricks</p>
+                                </th>
+                                {tricks.map((trick, trickIndex) => (
+                                  <tr key={trickIndex}>
+                                    <td colSpan={2} className="py-2 pl-8">
+                                      <small>{capitalise(trick.name)}</small>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </>
+                            )}
+                          </>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
               </article>
             );
           })}

@@ -18,11 +18,16 @@ const About = () => {
   return (
     <section className="flex flex-col items-center">
       <header
+        role="button"
+        tabIndex={0}
         className={classNames(
           "z-10 mb-1 flex w-1/2 cursor-pointer items-center justify-center",
           hideAbout && "-translate-x-3/4 opacity-50"
         )}
         onClick={() => setHideAbout(!hideAbout)}
+        onKeyDown={({ key }) =>
+          (key === "Enter" || key === "Space") && setHideAbout(!hideAbout)
+        }
       >
         <h2 className={classNames("m-2", hideAbout && "text-sm")}>About</h2>
         <ChevronIcon

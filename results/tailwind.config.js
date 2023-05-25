@@ -14,6 +14,10 @@ module.exports = {
       },
     },
   },
-  plugins: [require("@tailwindcss/typography"),
+  plugins: [
+    require("@tailwindcss/forms")({
+      strategy: "base",
+    }),
+    require("@tailwindcss/typography"),
   ],
 };
