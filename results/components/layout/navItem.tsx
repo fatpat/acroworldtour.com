@@ -26,7 +26,7 @@ const NavItem: React.FC<Props> = ({ link, active }) => {
         "flex flex-col items-center justify-center fill-awtgrey-400 text-xs font-semibold text-awtgrey-400",
         "lg:flex-row lg:justify-start lg:rounded-l-xl lg:px-6 lg:py-3 lg:hover:bg-awtgrey-200 lg:hover:shadow-md",
         "hover:fill-sky-600 hover:text-sky-600",
-        active && "fill-current text-current bg-awtgrey-100"
+        active && "fill-current text-current lg:bg-awtgrey-100"
       )}
     >
       {link === "" && <HomeIcon className={iconClasses} />}
