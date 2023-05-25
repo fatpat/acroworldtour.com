@@ -1,18 +1,13 @@
-import classNames from "classnames";
-
 const FetchError = () => (
-  <section>
-    <h2 className="mb-4 text-center">Couldn&apos;t fetch data.</h2>
-    <article
-      className={classNames(
-        "flex h-48 w-full max-w-lg flex-col items-center justify-center rounded-xl bg-awtgrey-100 shadow"
-      )}
-    >
-      <span className="loader translate-y-10"></span>
-      <h2 className="-translate-y-20 rotate-90 text-xl font-semibold text-awtgrey-300">
+  <section className="flex flex-1 flex-col items-center justify-center">
+    <h2 className="z-10 mb-4 text-center opacity-80">
+      Couldn&apos;t fetch data.
+    </h2>
+    <span className="loader flex scale-150 items-center justify-center opacity-50">
+      <p className="-translate-y-5 rotate-90 text-lg font-semibold opacity-80">
         :(
-      </h2>
-    </article>
+      </p>
+    </span>
   </section>
 );
 
