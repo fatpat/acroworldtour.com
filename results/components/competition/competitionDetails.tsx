@@ -1,7 +1,5 @@
 import classNames from "classnames";
-import { url } from "inspector";
 import Image from "next/image";
-import Link from "next/link";
 import { useState } from "react";
 
 import { components } from "@/types";
@@ -15,17 +13,14 @@ interface Props {
 
 const CompetitionDetails = ({ competition }: Props) => {
   const {
-    code,
     end_date: endDate,
     image,
     judges,
     location,
     name,
     number_of_pilots: numberOfPilots,
-    pilots,
     results,
     start_date: startDate,
-    state,
     type,
   } = competition;
 
@@ -55,7 +50,12 @@ const CompetitionDetails = ({ competition }: Props) => {
           "lg:flex-row "
         )}
       >
-        <section className={classNames("bg-awtgrey-50 rounded-xl flex min-w-max flex-col", "lg:p-4")}>
+        <section
+          className={classNames(
+            "flex min-w-max flex-col rounded-xl bg-awtgrey-50",
+            "lg:p-4"
+          )}
+        >
           <Image
             src={image!}
             alt="Competition Image"
@@ -71,7 +71,12 @@ const CompetitionDetails = ({ competition }: Props) => {
           <p>{`End Date: ${endDate}`}</p>
         </section>
 
-        <section className={classNames("bg-awtgrey-50 rounded-xl flex w-full flex-col", "lg:p-4")}>
+        <section
+          className={classNames(
+            "flex w-full flex-col rounded-xl bg-awtgrey-50",
+            "lg:p-4"
+          )}
+        >
           <article className={classNames("mb-8")}>
             <header
               className={classNames("flex cursor-pointer items-baseline")}
@@ -159,7 +164,12 @@ const CompetitionDetails = ({ competition }: Props) => {
           })}
         </section>
 
-        <section className={classNames("bg-awtgrey-50 rounded-xl flex flex-col", "lg:p-4")}>
+        <section
+          className={classNames(
+            "flex flex-col rounded-xl bg-awtgrey-50",
+            "lg:p-4"
+          )}
+        >
           <h3>Judges</h3>
           <article
             className={classNames(

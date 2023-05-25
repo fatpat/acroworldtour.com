@@ -7,6 +7,7 @@ interface Props {
 }
 
 const CompetitionDetails = ({ season }: Props) => {
+  // eslint-disable-next-line no-unused-vars
   const { code, name, competitions, image, results, number_of_pilots, year } =
     season;
 

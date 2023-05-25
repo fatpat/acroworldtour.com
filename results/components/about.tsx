@@ -1,11 +1,8 @@
 import classNames from "classnames";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { ChevronIcon } from "./ui/icons";
 import SocialLink from "./ui/socialLink";
-
-const iconClasses = "hover:bg-awtgrey-200 p-1 rounded-md";
 
 const About = () => {
   const [hideAbout, setHideAbout] = useState(

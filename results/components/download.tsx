@@ -4,9 +4,9 @@ import Link from "next/link";
 import { SPORTING_CODE_MANUAL_URL } from "@/constants";
 
 const Download = () => (
-    <>
-      <h2 className="mx-auto mt-auto">Downloads</h2>
-        <section>
+  <>
+    <h2 className="mx-auto mt-auto">Downloads</h2>
+    <section>
       <Link
         href={{
           pathname: SPORTING_CODE_MANUAL_URL,
@@ -19,8 +19,8 @@ const Download = () => (
       >
         📑 FAI Sporting Code
       </Link>
-        </section>
-    </>
+    </section>
+  </>
 );
 
 export default Download;

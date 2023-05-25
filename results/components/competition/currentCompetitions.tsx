@@ -41,7 +41,7 @@ const CurrentCompetitions = () => {
       <h2 className="mt-6">
         {ongoing ? (isPlural ? pluralH2 : singularH2) : noCompetitionH2}
       </h2>
-      <section className="w-full my-8">
+      <section className="my-8 w-full">
         <div className="wrapper">
           {currentCompetitions.map((competition) =>
             CompetitionCard({ competition })

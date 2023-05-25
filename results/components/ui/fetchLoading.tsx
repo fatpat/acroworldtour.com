@@ -15,7 +15,7 @@ const FetchLoading = () => (
       >
         ...
       </h2>
-    </article>{" "}
+    </article>
   </section>
 );
 

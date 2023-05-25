@@ -12,7 +12,7 @@ const FetchError = () => (
       <h2 className="-translate-y-20 rotate-90 text-xl font-semibold text-awtgrey-300">
         :(
       </h2>
-    </article>{" "}
+    </article>
   </section>
 );
 

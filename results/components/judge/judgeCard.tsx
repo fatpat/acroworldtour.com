@@ -7,6 +7,9 @@ import { API_URL } from "@/constants";
 import { components } from "@/types";
 import { fetcher } from "@/utils/fetcher";
 
+import FetchError from "../ui/fetchError";
+import FetchLoading from "../ui/fetchLoading";
+
 interface Props {
   judge: components["schemas"]["Judge"];
 }
@@ -14,13 +17,7 @@ interface Props {
 type Pilot = components["schemas"]["Pilot"];
 
 const JudgeCard = ({ judge }: Props) => {
-  const {
-    _id,
-    civlid,
-    name,
-    country,
-    level,
-  } = judge;
+  const { _id, civlid, name, country, level } = judge;
   const urlName = name.toLowerCase().replace(/\s/g, "-");
   const alpha2country = alpha3ToAlpha2(country?.toUpperCase())?.toLowerCase();
 
@@ -29,8 +26,10 @@ const JudgeCard = ({ judge }: Props) => {
     fetcher
   );
 
-  const photo = pilot?.photo
+  if (error) return <FetchError />;
+  if (!pilot) return <FetchLoading />;
 
+  const photo = pilot?.photo;
 
   return (
     <Link

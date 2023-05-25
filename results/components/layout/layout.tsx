@@ -1,4 +1,3 @@
-import { Montserrat } from "next/font/google";
 import Head from "next/head";
 import { useState } from "react";
 

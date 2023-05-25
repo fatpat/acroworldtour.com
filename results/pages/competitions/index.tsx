@@ -62,15 +62,7 @@ const Competitions = () => {
       {soloSeasons
         .sort((a, b) => b.year - a.year || b.code.localeCompare(a.code))
         .map((season) => {
-          const {
-            code,
-            competitions,
-            name,
-            year,
-            image,
-            results,
-            number_of_pilots,
-          } = season;
+          const { code, competitions, name } = season;
           return (
             <>
               <h3 className="mb-6 mt-12 opacity-50">{name}</h3>

@@ -43,15 +43,15 @@ const Tricks = () => {
   if (error) return <FetchError />;
   if (!tricks) return <FetchLoading />;
 
-  const solo_tricks = tricks.filter((t) => t.solo)
-  const synchro_tricks = tricks.filter((t) => t.synchro && !t.solo)
+  const solo_tricks = tricks.filter((t) => t.solo);
+  const synchro_tricks = tricks.filter((t) => t.synchro && !t.solo);
 
   return (
     <>
       <h2>Solo and Synchro Tricks</h2>
-      <TricksTable key="solo" tricks={solo_tricks} />
+      <TricksTable tricks={solo_tricks} />
       <h2>Synchro only Tricks</h2>
-      <TricksTable key="synchro" tricks={synchro_tricks} />
+      <TricksTable tricks={synchro_tricks} />
     </>
   );
 };

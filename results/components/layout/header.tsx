@@ -36,8 +36,9 @@ const Header = ({ fontClass, headerTitle, headerSubtitle }: Props) => {
         <h2 className="m-0 text-base font-medium text-awtgrey-400">
           {headerSubtitle}
         </h2>
-        <h1 className={classNames( "m-0 text-white text-lg",
-        "lg:text-2xl")}>{headerTitle}</h1>
+        <h1 className={classNames("m-0 text-lg text-white", "lg:text-2xl")}>
+          {headerTitle}
+        </h1>
       </hgroup>
     </header>
   );

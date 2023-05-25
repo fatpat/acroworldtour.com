@@ -49,18 +49,9 @@ const Seasons = () => {
     <>
       <h2 className="mb-8">All Seasons</h2>
       <section className={classNames("wrapper")}>
-        {soloSeasons.map((season) => {
-          const {
-            code,
-            competitions,
-            name,
-            year,
-            image,
-            results,
-            number_of_pilots,
-          } = season;
-          return <SeasonCard key={code} season={season} />;
-        })}
+        {soloSeasons.map((season) => (
+          <SeasonCard key={season.code} season={season} />
+        ))}
       </section>
     </>
   );

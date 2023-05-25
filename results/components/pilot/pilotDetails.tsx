@@ -1,7 +1,6 @@
 import classNames from "classnames";
 import countries from "i18n-iso-countries";
 import Link from "next/link";
-import { useEffect } from "react";
 
 import { components } from "@/types";
 
@@ -43,7 +42,7 @@ const PilotDetails = ({ pilot }: Props) => {
     (a, b) => a.season.year - b.season.year || a.rank - b.rank
   );
 
-  const photoHighres = null
+  const photoHighres = null;
   const photo = "/martin-wyall-RYAUYkia-cI-unsplash.jpg";
 
   return (
@@ -115,59 +114,57 @@ const PilotDetails = ({ pilot }: Props) => {
         </article>
       )}
       {(sortedCompetitionsResults!.length > 0 ||
-        sortedSeasonsResults!.length > 0) &&
-          <div className="mt-4 w-full bg-awtgrey-50 p-2">
-            {sortedCompetitionsResults!.length > 0 && (
-              <table className="w-full">
-                <thead>
-                  <tr className="h-12">
-                    <th className="pl-2 text-left">Competition</th>
-                    <th className="pr-2 text-right">Rank</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedCompetitionsResults?.map(({ competition, rank }) => {
-                    const { code, name, image } = competition;
-                    return (
-                      <tr
-                        key={code}
-                        // style={{ backgroundImage: `url('${image}')` }}
-                        className="h-8 cursor-pointer hover:bg-awtgrey-200"
-                      >
-                        <td className="pl-2">{name}</td>
-                        <td className="pr-2 text-right">#{rank}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-            {sortedSeasonsResults!.length > 0 && (
-              <table className="mt-4 w-full">
-                <thead>
-                  <tr className="h-12">
-                    <th className="pl-2 text-left">Season</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedSeasonsResults!.map(({ season, rank }) => {
-                    const { code, name, image } = season;
-                    return (
-                      <tr
-                        key={code}
-                        // style={{ backgroundImage: `url('${image}')` }}
-                        className="h-8 cursor-pointer hover:bg-awtgrey-200"
-                      >
-                        <td className="pl-2">{name}</td>
-                        <td className="pr-2 text-right">#{rank}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-          </div>
-      }
+        sortedSeasonsResults!.length > 0) && (
+        <div className="mt-4 w-full bg-awtgrey-50 p-2">
+          {sortedCompetitionsResults!.length > 0 && (
+            <table className="w-full">
+              <thead>
+                <tr className="h-12">
+                  <th className="pl-2 text-left">Competition</th>
+                  <th className="pr-2 text-right">Rank</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedCompetitionsResults?.map(({ competition, rank }) => {
+                  const { code, name } = competition;
+                  return (
+                    <tr
+                      key={code}
+                      className="h-8 cursor-pointer hover:bg-awtgrey-200"
+                    >
+                      <td className="pl-2">{name}</td>
+                      <td className="pr-2 text-right">#{rank}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+          {sortedSeasonsResults!.length > 0 && (
+            <table className="mt-4 w-full">
+              <thead>
+                <tr className="h-12">
+                  <th className="pl-2 text-left">Season</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedSeasonsResults!.map(({ season, rank }) => {
+                  const { code, name } = season;
+                  return (
+                    <tr
+                      key={code}
+                      className="h-8 cursor-pointer hover:bg-awtgrey-200"
+                    >
+                      <td className="pl-2">{name}</td>
+                      <td className="pr-2 text-right">#{rank}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
     </section>
   );
 };
