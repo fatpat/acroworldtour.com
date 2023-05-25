@@ -11,13 +11,13 @@ const Nav = ({ activeNav, fontClass }: Props) => (
   <nav
     className={classNames(
       fontClass,
-      "sticky bottom-0 z-10 w-full bg-white shadow-md shadow-current",
+      "sticky bottom-0 z-10 w-full bg-white py-2",
       "lg:fixed lg:left-0 lg:h-full lg:w-52 lg:pl-4 lg:pt-32 lg:shadow-lg"
     )}
   >
     <ul
       className={classNames(
-        "flex h-20 w-full items-center justify-evenly",
+        "mb-2 flex w-full items-center justify-evenly",
         "lg:h-auto lg:flex-col lg:items-end lg:justify-start lg:gap-4"
       )}
     >
@@ -33,6 +33,13 @@ const Nav = ({ activeNav, fontClass }: Props) => (
       <li>
         <NavItem link="Pilots" active={activeNav === "pilots"} />
       </li>
+    </ul>
+    <ul
+      className={classNames(
+        "flex w-full items-center justify-evenly",
+        "lg:h-auto lg:flex-col lg:items-end lg:justify-start lg:gap-4"
+      )}
+    >
       <li>
         <NavItem link="Teams" active={activeNav === "teams"} />
       </li>

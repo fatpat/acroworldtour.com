@@ -15,7 +15,7 @@
   }
 
   nav > ul > li {
-    @apply w-11/12;
+    @apply lg:w-11/12;
   }
 
   h1,
