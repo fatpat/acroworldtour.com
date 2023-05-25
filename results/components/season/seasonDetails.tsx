@@ -1,26 +1,14 @@
 import classNames from "classnames";
-import Link from "next/link";
 
 import { components } from "@/types";
 
 interface Props {
-  competition: components["schemas"]["CompetitionPublicExportWithResults"];
+  season: components["schemas"]["SeasonExport"];
 }
 
-const CompetitionDetails = ({ competition }: Props) => {
-  const {
-    code,
-    name,
-    judges,
-    start_date: startDate,
-    end_date: endDate,
-    location,
-    pilots,
-    results,
-    state,
-    type,
-    image,
-  } = competition;
+const CompetitionDetails = ({ season }: Props) => {
+  const { code, name, competitions, image, results, number_of_pilots, year } =
+    season;
 
   return (
     <div
@@ -46,7 +34,7 @@ const CompetitionDetails = ({ competition }: Props) => {
               </tr>
             </thead>
             <tbody>
-              {results.overall_results.map((result) => {
+              {/* {results.overall_results.map((result) => {
                 const { pilot, score, result_per_run } = result;
                 const roundedScore = Math.round(score * 100) / 100;
                 return (
@@ -55,7 +43,7 @@ const CompetitionDetails = ({ competition }: Props) => {
                     <td className="text-right">{roundedScore}</td>
                   </tr>
                 );
-              })}
+              })} */}
             </tbody>
           </table>
         </section>

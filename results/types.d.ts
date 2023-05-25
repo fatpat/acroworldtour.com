@@ -1910,7 +1910,7 @@ export interface operations {
   /** List */
   list_judges__get: {
     parameters: {
-      query: {
+      query?: {
         deleted?: boolean;
       };
     };
@@ -1943,7 +1943,7 @@ export interface operations {
   /** Get */
   get_judges__id__get: {
     parameters: {
-      query: {
+      query?: {
         deleted?: boolean;
       };
       path: {
@@ -1991,7 +1991,7 @@ export interface operations {
   /** Delete */
   delete_judges__id__delete: {
     parameters: {
-      query: {
+      query?: {
         restore?: boolean;
       };
       path: {
@@ -2034,7 +2034,7 @@ export interface operations {
   /** List */
   list_teams__get: {
     parameters: {
-      query: {
+      query?: {
         deleted?: boolean;
       };
     };
@@ -2056,7 +2056,7 @@ export interface operations {
   /** Get */
   get_teams__id__get: {
     parameters: {
-      query: {
+      query?: {
         deleted?: boolean;
       };
       path: {
@@ -2104,7 +2104,7 @@ export interface operations {
   /** Delete */
   delete_teams__id__delete: {
     parameters: {
-      query: {
+      query?: {
         restore?: boolean;
       };
       path: {
@@ -2147,7 +2147,7 @@ export interface operations {
   /** List */
   list_tricks__get: {
     parameters: {
-      query: {
+      query?: {
         deleted?: boolean;
         repeatable?: boolean;
       };
@@ -2170,7 +2170,7 @@ export interface operations {
   /** Get Unique Tricks */
   get_unique_tricks_tricks_uniques_get: {
     parameters: {
-      query: {
+      query?: {
         solo?: boolean;
         synchro?: boolean;
       };
@@ -2237,7 +2237,7 @@ export interface operations {
   /** Get */
   get_tricks__id__get: {
     parameters: {
-      query: {
+      query?: {
         deleted?: boolean;
       };
       path: {
@@ -2285,7 +2285,7 @@ export interface operations {
   /** Delete */
   delete_tricks__id__delete: {
     parameters: {
-      query: {
+      query?: {
         restore?: boolean;
       };
       path: {
@@ -2361,7 +2361,7 @@ export interface operations {
   /** Get By Id */
   get_by_id_competitions__id__get: {
     parameters: {
-      query: {
+      query?: {
         deleted?: boolean;
       };
       path: {
@@ -2386,7 +2386,7 @@ export interface operations {
   /** Delete */
   delete_competitions__id__delete: {
     parameters: {
-      query: {
+      query?: {
         restore?: boolean;
       };
       path: {
@@ -2621,7 +2621,7 @@ export interface operations {
   /** New Run */
   new_run_competitions__id__runs_new_post: {
     parameters: {
-      query: {
+      query?: {
         pilots_to_qualify?: number;
       };
       path: {
@@ -2925,7 +2925,7 @@ export interface operations {
   /** Get Export Results */
   get_export_results_competitions__id__results_export_get: {
     parameters: {
-      query: {
+      query?: {
         limit_run?: number;
         filetype?: string;
       };
@@ -2947,7 +2947,7 @@ export interface operations {
   /** Run Get Results */
   run_get_results_competitions__id__results__i__get: {
     parameters: {
-      query: {
+      query?: {
         published_only?: boolean;
       };
       path: {
@@ -2973,7 +2973,7 @@ export interface operations {
   /** Run Get Results */
   run_get_results_competitions__id__results__i__export_get: {
     parameters: {
-      query: {
+      query?: {
         filetype?: string;
       };
       path: {
@@ -3161,7 +3161,7 @@ export interface operations {
   /** List Seasons */
   list_seasons_public_seasons_get: {
     parameters: {
-      query: {
+      query?: {
         deleted?: boolean;
       };
     };
@@ -3183,7 +3183,7 @@ export interface operations {
   /** Get Season */
   get_season_public_seasons__id__get: {
     parameters: {
-      query: {
+      query?: {
         deleted?: boolean;
       };
       path: {
@@ -3208,7 +3208,7 @@ export interface operations {
   /** List */
   list_public_tricks_get: {
     parameters: {
-      query: {
+      query?: {
         repeatable?: boolean;
       };
     };
@@ -3244,7 +3244,7 @@ export interface operations {
   /** Get File */
   get_file_files__id__get: {
     parameters: {
-      query: {
+      query?: {
         download?: boolean;
       };
       path: {
@@ -3264,7 +3264,7 @@ export interface operations {
   /** Delete */
   delete_files__id__delete: {
     parameters: {
-      query: {
+      query?: {
         restore?: boolean;
       };
       path: {
@@ -3306,7 +3306,7 @@ export interface operations {
   /** List */
   list_seasons__get: {
     parameters: {
-      query: {
+      query?: {
         deleted?: boolean;
       };
     };
@@ -3328,7 +3328,7 @@ export interface operations {
   /** Get */
   get_seasons__id__get: {
     parameters: {
-      query: {
+      query?: {
         deleted?: boolean;
       };
       path: {
@@ -3376,7 +3376,7 @@ export interface operations {
   /** Delete */
   delete_seasons__id__delete: {
     parameters: {
-      query: {
+      query?: {
         restore?: boolean;
       };
       path: {
@@ -3397,7 +3397,7 @@ export interface operations {
   /** Export */
   export_seasons__id__export_get: {
     parameters: {
-      query: {
+      query?: {
         deleted?: boolean;
       };
       path: {

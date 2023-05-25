@@ -1,4 +1,3 @@
-import classNames from "classnames";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
@@ -40,7 +39,8 @@ const PilotPage = () => {
       setPageDescription(`Pilot page for ${pilot?.name}`);
       setHeaderTitle(pilot?.name || "");
       setHeaderSubtitle(
-        `${pilot?.rank === 9999 ? "" : "#"+pilot?.rank+" -"} ${civlid}` || ""
+        `${pilot?.rank === 9999 ? "" : "#" + pilot?.rank + " -"} ${civlid}` ||
+          ""
       );
       setActiveNav("pilots");
     }

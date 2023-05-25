@@ -34,13 +34,13 @@ const Nav = ({ activeNav, fontClass }: Props) => (
         <NavItem link="Pilots" active={activeNav === "pilots"} />
       </li>
       <li>
-        <NavItem link="Teams" active={activeNav === "Teams"} />
+        <NavItem link="Teams" active={activeNav === "teams"} />
       </li>
       <li>
-        <NavItem link="Judges" active={activeNav === "Judges"} />
+        <NavItem link="Judges" active={activeNav === "judges"} />
       </li>
       <li>
-        <NavItem link="Tricks" active={activeNav === "Tricks"} />
+        <NavItem link="Tricks" active={activeNav === "tricks"} />
       </li>
     </ul>
   </nav>

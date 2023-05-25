@@ -13,7 +13,7 @@ const TricksTable = ({ tricks }: Props) => {
 /*
  */
   return (
-      <Table>
+      <Table className="w-4">
         <Table.Header>
           <Table.Column align="center">Trick</Table.Column>
           <Table.Column align="center">Acronym</Table.Column>

@@ -43,9 +43,15 @@ const Judges = () => {
   if (error) return <FetchError />;
   if (!judges) return <FetchLoading />;
 
-  const seniors = judges.filter(j => j.level == "senior").sort((a,b) => a.name.localeCompare(b.name))
-  const certifieds = judges.filter(j => j.level == "certified").sort((a,b) => a.name.localeCompare(b.name))
-  const trainees = judges.filter(j => j.level == "trainee").sort((a,b) => a.name.localeCompare(b.name))
+  const seniors = judges
+    .filter((j) => j.level == "senior")
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const certifieds = judges
+    .filter((j) => j.level == "certified")
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const trainees = judges
+    .filter((j) => j.level == "trainee")
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <>

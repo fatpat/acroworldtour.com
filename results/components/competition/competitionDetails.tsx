@@ -1,4 +1,6 @@
 import classNames from "classnames";
+import { url } from "inspector";
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -41,7 +43,6 @@ const CompetitionDetails = ({ competition }: Props) => {
 
   return (
     <div
-      style={{ backgroundImage: `url('${image}')` }}
       className={classNames(
         "bg-white/95 bg-cover bg-center bg-no-repeat bg-blend-overlay",
         "flex min-h-screen w-full flex-col items-center"
@@ -54,9 +55,14 @@ const CompetitionDetails = ({ competition }: Props) => {
           "lg:flex-row "
         )}
       >
-        <section
-          className={classNames("flex min-w-max flex-col bg-green-200/10 p-4")}
-        >
+        <section className={classNames("bg-awtgrey-50 rounded-xl flex min-w-max flex-col", "lg:p-4")}>
+          <Image
+            src={image!}
+            alt="Competition Image"
+            width={512}
+            height={0}
+            className="h-auto w-full"
+          />
           <h3>Details</h3>
           <p>{`Type: ${type}`}</p>
           <p>{`Location: ${location}`}</p>
@@ -65,10 +71,8 @@ const CompetitionDetails = ({ competition }: Props) => {
           <p>{`End Date: ${endDate}`}</p>
         </section>
 
-        <section
-          className={classNames("flex w-full flex-col bg-red-200/30 p-4")}
-        >
-          <article className={classNames("mb-8", { "h-auto": showOverall })}>
+        <section className={classNames("bg-awtgrey-50 rounded-xl flex w-full flex-col", "lg:p-4")}>
+          <article className={classNames("mb-8")}>
             <header
               className={classNames("flex cursor-pointer items-baseline")}
               onClick={() => setShowOverall(!showOverall)}
@@ -83,8 +87,8 @@ const CompetitionDetails = ({ competition }: Props) => {
             </header>
             <table
               className={classNames(
-                "w-full",
-                !showOverall && "mb-[-75%] opacity-0"
+                "w-full origin-top",
+                !showOverall && "collapse scale-y-0"
               )}
             >
               <thead>
@@ -127,8 +131,8 @@ const CompetitionDetails = ({ competition }: Props) => {
                 </header>
                 <table
                   className={classNames(
-                    "w-full",
-                    !showRun[index] && "mb-[-75%] opacity-0"
+                    "w-full origin-top",
+                    !showRun[index] && "collapse scale-y-0"
                   )}
                 >
                   <thead>
@@ -155,7 +159,7 @@ const CompetitionDetails = ({ competition }: Props) => {
           })}
         </section>
 
-        <section className={classNames("flex flex-col bg-blue-200/30 p-4")}>
+        <section className={classNames("bg-awtgrey-50 rounded-xl flex flex-col", "lg:p-4")}>
           <h3>Judges</h3>
           <article
             className={classNames(

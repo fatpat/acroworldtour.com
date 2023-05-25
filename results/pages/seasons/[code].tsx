@@ -1,19 +1,25 @@
-import classNames from "classnames";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
 
-import CompetitionDetails from "@/components/competition/competitionDetails";
-import PilotDetails from "@/components/pilot/pilotDetails";
+import { useLayout } from "@/components/layout/layoutContext";
+import SeasonDetails from "@/components/season/seasonDetails";
 import FetchError from "@/components/ui/fetchError";
 import FetchLoading from "@/components/ui/fetchLoading";
 import { API_URL } from "@/constants";
 import { components } from "@/types";
 import { fetcher } from "@/utils/fetcher";
 
-type Competition = components["schemas"]["CompetitionPublicExportWithResults"];
+type Season = components["schemas"]["SeasonExport"];
 
-const CompetitionPage = () => {
+const SeasonPage = () => {
+  const {
+    setPageTitle,
+    setPageDescription,
+    setHeaderTitle,
+    setHeaderSubtitle,
+    setActiveNav,
+  } = useLayout();
   const router = useRouter();
   const [code, setCode] = useState<string>("");
 
@@ -22,15 +28,32 @@ const CompetitionPage = () => {
       setCode(router.query.code);
   }, [router.isReady, router.query.code]);
 
-  const { data: competition, error } = useSWR<Competition, Error>(
-    code ? `${API_URL}/competitions/${code}` : null,
+  const { data: season, error } = useSWR<Season, Error>(
+    code ? `${API_URL}/season/${code}` : null,
     fetcher
   );
 
-  if (error) return <FetchError />;
-  if (!competition) return <FetchLoading />;
+  useEffect(() => {
+    if (season) {
+      setPageTitle(season?.name || "");
+      setPageDescription(`Season page for ${season?.name}`);
+      setHeaderTitle(season?.name || "");
+      setHeaderSubtitle(`${season.type} - ${season.year}` || "");
+      setActiveNav("seasons");
+    }
+  }, [
+    season,
+    setActiveNav,
+    setHeaderSubtitle,
+    setHeaderTitle,
+    setPageDescription,
+    setPageTitle,
+  ]);
 
-  return <CompetitionDetails competition={competition} />;
+  if (error) return <FetchError />;
+  if (!season) return <FetchLoading />;
+
+  return <SeasonDetails season={season} />;
 };
 
-export default CompetitionPage;
+export default SeasonPage;
