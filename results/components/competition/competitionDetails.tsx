@@ -29,11 +29,21 @@ const CompetitionDetails = ({ competition }: Props) => {
 
   const [showOverall, setShowOverall] = useState(false);
   const [showRun, setShowRun] = useState(runsResults.map(() => false));
+  const [showTricks, setShowTricks] = useState(
+    runsResults.map((run) => run.results.map(() => false))
+  );
 
   const toggleRunVisibility = (index: number) => {
     const newShowRuns = [...showRun];
     newShowRuns[index] = !newShowRuns[index];
     setShowRun(newShowRuns);
+  };
+
+  const toggleTricksVisibility = (runIndex: number, resultIndex: number) => {
+    const newShowTricks = [...showTricks];
+    newShowTricks[runIndex][resultIndex] =
+      !newShowTricks[runIndex][resultIndex];
+    setShowTricks(newShowTricks);
   };
 
   return (
@@ -73,7 +83,7 @@ const CompetitionDetails = ({ competition }: Props) => {
 
         <section
           className={classNames(
-            "flex w-full flex-col rounded-xl bg-awtgrey-50",
+            "flex w-full flex-col rounded-xl bg-awtgrey-50"
           )}
         >
           <article>
@@ -116,27 +126,29 @@ const CompetitionDetails = ({ competition }: Props) => {
             </table>
           </article>
 
-          {runsResults.map((run, index) => {
-            const runNumber = index + 1;
+          {runsResults.map((run, runIndex) => {
+            const runNumber = runIndex + 1;
 
             return (
               <article key={runNumber}>
                 <header
-                  className={classNames("flex cursor-pointer items-baseline p-4")}
-                  onClick={() => toggleRunVisibility(index)}
+                  className={classNames(
+                    "flex cursor-pointer items-baseline p-4"
+                  )}
+                  onClick={() => toggleRunVisibility(runIndex)}
                 >
                   <h3>{`Run ${runNumber}`}</h3>
                   <ChevronIcon
                     className={classNames(
                       "ml-2 h-3 w-auto",
-                      !showRun[index] && "-rotate-90"
+                      !showRun[runIndex] && "-rotate-90"
                     )}
                   />
                 </header>
                 <table
                   className={classNames(
                     "w-full origin-top",
-                    !showRun[index] && "collapse scale-y-0"
+                    !showRun[runIndex] && "collapse scale-y-0"
                   )}
                 >
                   <thead>
@@ -146,13 +158,42 @@ const CompetitionDetails = ({ competition }: Props) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {run.results.map((result) => {
-                      const { pilot, final_marks } = result;
+                    {run.results.map((result, resultIndex) => {
+                      const {
+                        pilot,
+                        final_marks,
+                        tricks,
+                        // marks
+                      } = result;
                       const roundedScore = final_marks!.score.toFixed(3);
                       return (
-                        <tr key={pilot!.name}>
-                          <td>{pilot!.name}</td>
+                        <tr
+                          key={resultIndex}
+                        >
+                          <td className={classNames(
+                                "flex cursor-pointer items-baseline"
+                              )}
+                              onClick={() => toggleTricksVisibility(runIndex, resultIndex)}>
+
+                              <p>{pilot?.name}</p>
+                              <ChevronIcon
+                                className={classNames(
+                                  "ml-2 h-2 w-auto",
+                                  !showTricks[runIndex][resultIndex] &&
+                                    "-rotate-90"
+                                )}
+                              />
+                          </td>
                           <td className="text-right">{roundedScore}</td>
+                          <td>
+                            {showTricks[runIndex][resultIndex] && (
+                              <ul>
+                                {tricks.map((trick, trickIndex) => (
+                                  <li key={trickIndex}>{trick.name}</li>
+                                ))}
+                              </ul>
+                            )}
+                          </td>
                         </tr>
                       );
                     })}

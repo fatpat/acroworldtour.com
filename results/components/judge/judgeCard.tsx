@@ -54,7 +54,7 @@ const JudgeCard = ({ judge }: Props) => {
           )}
         />
       </figure>
-      <figcaption className="px-2">
+      <figcaption className="px-4 mt-4">
         <h3 className="text-sm">{name}</h3>
         <small>{`Level: #${level}`}</small>
       </figcaption>
