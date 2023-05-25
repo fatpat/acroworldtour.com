@@ -8,6 +8,7 @@ import FetchError from "@/components/ui/fetchError";
 import FetchLoading from "@/components/ui/fetchLoading";
 import { API_URL } from "@/constants";
 import { components } from "@/types";
+import { capitalise } from "@/utils/capitalise";
 import { fetcher } from "@/utils/fetcher";
 
 type Competition = components["schemas"]["CompetitionPublicExportWithResults"];
@@ -39,7 +40,9 @@ const CompetitionPage = () => {
       setPageTitle(competition?.name || "");
       setPageDescription(`Competition page for ${competition?.name}`);
       setHeaderTitle(competition?.name || "");
-      setHeaderSubtitle(`${competition.type} - ${competition?.location}` || "");
+      setHeaderSubtitle(
+        `${capitalise(competition.type)} - ${competition?.location}` || ""
+      );
       setActiveNav("competitions");
     }
   }, [

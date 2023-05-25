@@ -3,6 +3,7 @@ import Image from "next/image";
 import { useState } from "react";
 
 import { components } from "@/types";
+import { capitalise } from "@/utils/capitalise";
 
 import JudgeCard from "../judge/judgeCard";
 import { ChevronIcon } from "../ui/icons";
@@ -28,22 +29,22 @@ const CompetitionDetails = ({ competition }: Props) => {
   const runsResults = results.runs_results;
 
   const [showOverall, setShowOverall] = useState(false);
-  const [showRun, setShowRun] = useState(runsResults.map(() => false));
-  const [showTricks, setShowTricks] = useState(
+  const [showRuns, setShowRuns] = useState(runsResults.map(() => false));
+  const [showRunDetails, setShowRunDetails] = useState(
     runsResults.map((run) => run.results.map(() => false))
   );
 
-  const toggleRunVisibility = (index: number) => {
-    const newShowRuns = [...showRun];
+  const toggleRun = (index: number) => {
+    const newShowRuns = [...showRuns];
     newShowRuns[index] = !newShowRuns[index];
-    setShowRun(newShowRuns);
+    setShowRuns(newShowRuns);
   };
 
-  const toggleTricksVisibility = (runIndex: number, resultIndex: number) => {
-    const newShowTricks = [...showTricks];
-    newShowTricks[runIndex][resultIndex] =
-      !newShowTricks[runIndex][resultIndex];
-    setShowTricks(newShowTricks);
+  const toggleRunDetails = (runIndex: number, resultIndex: number) => {
+    const newShowDetails = [...showRunDetails];
+    newShowDetails[runIndex][resultIndex] =
+      !newShowDetails[runIndex][resultIndex];
+    setShowRunDetails(newShowDetails);
   };
 
   return (
@@ -88,7 +89,9 @@ const CompetitionDetails = ({ competition }: Props) => {
         >
           <article>
             <header
-              className={classNames("flex cursor-pointer items-baseline p-4")}
+              className={classNames(
+                "flex cursor-pointer items-baseline pl-4 pt-4"
+              )}
               onClick={() => setShowOverall(!showOverall)}
             >
               <h3>Overall Results</h3>
@@ -99,31 +102,32 @@ const CompetitionDetails = ({ competition }: Props) => {
                 )}
               />
             </header>
-            <table
-              className={classNames(
-                "w-full origin-top",
-                !showOverall && "collapse scale-y-0"
-              )}
-            >
-              <thead>
-                <tr>
-                  <th className="text-left">Pilot</th>
-                  <th className="text-right">Score</th>
-                </tr>
-              </thead>
-              <tbody>
-                {overallResults.map((result) => {
-                  const { pilot, score } = result;
-                  const roundedScore = score.toFixed(3);
-                  return (
-                    <tr key={pilot!.name}>
-                      <td>{pilot!.name}</td>
-                      <td className="text-right">{roundedScore}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            {showOverall && (
+              <table className="w-full origin-top">
+                <thead>
+                  <tr>
+                    <th className="text-left">Pilot</th>
+                    <th className="text-right">Score</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {overallResults.map((result) => {
+                    const { pilot, score } = result;
+                    const roundedScore = score.toFixed(3);
+                    return (
+                      <tr key={pilot!.name}>
+                        <td>
+                          <p>{pilot!.name}</p>
+                        </td>
+                        <td className="text-right">
+                          <p>{roundedScore}</p>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
           </article>
 
           {runsResults.map((run, runIndex) => {
@@ -133,24 +137,19 @@ const CompetitionDetails = ({ competition }: Props) => {
               <article key={runNumber}>
                 <header
                   className={classNames(
-                    "flex cursor-pointer items-baseline p-4"
+                    "flex cursor-pointer items-baseline pl-4 pt-4"
                   )}
-                  onClick={() => toggleRunVisibility(runIndex)}
+                  onClick={() => toggleRun(runIndex)}
                 >
                   <h3>{`Run ${runNumber}`}</h3>
                   <ChevronIcon
                     className={classNames(
                       "ml-2 h-3 w-auto",
-                      !showRun[runIndex] && "-rotate-90"
+                      !showRuns[runIndex] && "-rotate-90"
                     )}
                   />
                 </header>
-                <table
-                  className={classNames(
-                    "w-full origin-top",
-                    !showRun[runIndex] && "collapse scale-y-0"
-                  )}
-                >
+                { showRuns[runIndex] && <table className="w-full origin-top">
                   <thead>
                     <tr>
                       <th className="text-left">Pilot</th>
@@ -167,38 +166,49 @@ const CompetitionDetails = ({ competition }: Props) => {
                       } = result;
                       const roundedScore = final_marks!.score.toFixed(3);
                       return (
-                        <tr
-                          key={resultIndex}
-                        >
-                          <td className={classNames(
+                        <>
+                          <tr key={resultIndex}>
+                            <td
+                              className={classNames(
                                 "flex cursor-pointer items-baseline"
                               )}
-                              onClick={() => toggleTricksVisibility(runIndex, resultIndex)}>
-
+                              onClick={() =>
+                                toggleRunDetails(runIndex, resultIndex)
+                              }
+                            >
                               <p>{pilot?.name}</p>
                               <ChevronIcon
                                 className={classNames(
                                   "ml-2 h-2 w-auto",
-                                  !showTricks[runIndex][resultIndex] &&
+                                  !showRunDetails[runIndex][resultIndex] &&
                                     "-rotate-90"
                                 )}
                               />
-                          </td>
-                          <td className="text-right">{roundedScore}</td>
-                          <td>
-                            {showTricks[runIndex][resultIndex] && (
-                              <ul>
-                                {tricks.map((trick, trickIndex) => (
-                                  <li key={trickIndex}>{trick.name}</li>
-                                ))}
-                              </ul>
-                            )}
-                          </td>
-                        </tr>
+                            </td>
+                            <td className="text-right">
+                              <p>{roundedScore}</p>
+                            </td>
+                          </tr>
+
+                          {showRunDetails[runIndex][resultIndex] && (
+                            <>
+                              <th className="py-2 pl-8 text-left">
+                                <p className="font-semibold">Tricks</p>
+                              </th>
+                              {tricks.map((trick, trickIndex) => (
+                                <tr key={trickIndex}>
+                                  <td colSpan={2} className="py-2 pl-8">
+                                    <small>{capitalise(trick.name)}</small>
+                                  </td>
+                                </tr>
+                              ))}
+                            </>
+                          )}
+                        </>
                       );
                     })}
                   </tbody>
-                </table>
+                </table>}
               </article>
             );
           })}
