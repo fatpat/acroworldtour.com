@@ -21,6 +21,7 @@ const SocialLink = ({ className, link, media }: Props) => {
       title={media}
       target="_blank"
       className={className}
+      rel="noopener noreferrer"
     >
       {(mediaName === "facebook" && <FacebookIcon />) ||
         (mediaName === "instagram" && <InstagramIcon />) ||
