@@ -88,26 +88,42 @@ const Competitions = () => {
     };
 
     return (
-      <div className="mt-4 font-semibold opacity-75">
-        <label htmlFor="year-selector" className="mr-2">
-          Filter by year:
-        </label>
-        <select
-          id="year-selector"
-          className="font-sans border-0"
-          value={selectedYear ?? ""}
-          onChange={handleYearChange}
+      <header className="font-semibold opacity-75">
+        <h2
+          className={classNames(
+            "flex items-baseline",
+            !selectedYear && "flex-row-reverse"
+          )}
         >
-          <option value="">
-            All
-          </option>
-          {years.map((year) => (
-            <option key={year} value={year}>
-              {year}
+          <label htmlFor="year-selector">
+            {selectedYear
+              ? filteredCompetitions.length === 0
+                ? `No competitions in `
+                : `Competitions in `
+              : "competitions"}
+          </label>
+          <select
+            id="year-selector"
+            title="Select a year"
+            value={selectedYear ?? ""}
+            className="border-0 font-sans text-xl sm:text-2xl"
+            onChange={handleYearChange}
+          >
+            <option value="" className="text-lg text-awtgrey-600">
+              All
             </option>
-          ))}
-        </select>
-      </div>
+            {years.map((year) => (
+              <option
+                key={year}
+                value={year}
+                className="text-lg text-awtgrey-600"
+              >
+                {year}
+              </option>
+            ))}
+          </select>
+        </h2>
+      </header>
     );
   };
 
@@ -122,21 +138,15 @@ const Competitions = () => {
         ]}
         onChange={setSelectedYear}
       />
-      <h2 className="-mb-6">
-        {selectedYear
-          ? filteredCompetitions.length === 0
-            ? `No competition in ${selectedYear}`
-            : `Competitions in ${selectedYear}`
-          : "All competitions"}
-      </h2>
+
       {soloSeasons
         .sort((a, b) => b.year - a.year || b.code.localeCompare(a.code))
         .map((season) => {
           const { code, competitions, name } = season;
           return (
             <>
-              <h3 className="mb-6 mt-12 opacity-50">{name}</h3>
-              <section key={code} className={classNames("wrapper")}>
+              <h3 className="mb-6 mt-6 opacity-50">{name}</h3>
+              <section key={code} className={classNames("wrapper mb-8")}>
                 {competitions.map((competition) => (
                   <CompetitionCard
                     key={competition.code}
@@ -149,8 +159,8 @@ const Competitions = () => {
         })}
       {offSeasonCompetitions.length > 0 && (
         <>
-          <h3 className="mb-6 mt-12 opacity-50">Off Season</h3>
-          <section className={classNames("wrapper")}>
+          <h3 className="mb-6 mt-6 opacity-50">Off Season</h3>
+          <section className={classNames("wrapper mb-8")}>
             {offSeasonCompetitions
               .sort((a, b) => b.start_date.localeCompare(a.start_date))
               .map((competition) => (

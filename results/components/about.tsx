@@ -25,9 +25,7 @@ const About = () => {
           hideAbout && "-translate-x-3/4 opacity-50"
         )}
         onClick={() => setHideAbout(!hideAbout)}
-        onKeyDown={({ key }) =>
-          (key === "Enter" || key === "Space") && setHideAbout(!hideAbout)
-        }
+        onKeyDown={({ key }) => key === "Enter" && setHideAbout(!hideAbout)}
       >
         <h2 className={classNames("m-2", hideAbout && "text-sm")}>About</h2>
         <ChevronIcon

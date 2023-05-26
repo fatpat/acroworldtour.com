@@ -30,7 +30,7 @@
   }
 
   h2 {
-    @apply mt-4 text-2xl font-bold leading-loose;
+    @apply mt-4 text-xl font-bold leading-loose sm:text-2xl;
   }
 
   h3 {
@@ -46,11 +46,12 @@
   }
 
   tbody > tr {
-    @apply odd:bg-white
+    @apply odd:bg-white;
   }
 
-  th, td {
-    @apply p-4
+  th,
+  td {
+    @apply p-4;
   }
 }
 
@@ -102,16 +103,18 @@
 
   @keyframes animloader {
     0% {
-      box-shadow: 25px 0 lightgrey, 50px 0 lightgrey, 75px 0 lightgrey, 100px 0 lightgrey,
-        125px 0 lightgrey, 150px 0 lightgrey, 25px 0 lightgrey, 50px 0 lightgrey, 75px 0 lightgrey,
-        100px 0 lightgrey, 125px 0 lightgrey, 150px 0 lightgrey;
+      box-shadow: 25px 0 lightgrey, 50px 0 lightgrey, 75px 0 lightgrey,
+        100px 0 lightgrey, 125px 0 lightgrey, 150px 0 lightgrey,
+        25px 0 lightgrey, 50px 0 lightgrey, 75px 0 lightgrey, 100px 0 lightgrey,
+        125px 0 lightgrey, 150px 0 lightgrey;
     }
     50% {
       box-shadow: 25px 20px lightgrey, 50px 60px rgba(255, 255, 255, 0),
         75px 30px rgba(255, 255, 255, 0), 100px 70px rgba(255, 255, 255, 0),
-        125px 40px lightgrey, 150px 60px rgba(255, 255, 255, 0), 25px 20px lightgrey,
-        50px 30px lightgrey, 75px 10px lightgrey, 100px 30px lightgrey,
-        125px 30px rgba(255, 255, 255, 0), 150px 30px rgba(255, 255, 255, 0);
+        125px 40px lightgrey, 150px 60px rgba(255, 255, 255, 0),
+        25px 20px lightgrey, 50px 30px lightgrey, 75px 10px lightgrey,
+        100px 30px lightgrey, 125px 30px rgba(255, 255, 255, 0),
+        150px 30px rgba(255, 255, 255, 0);
     }
     100% {
       box-shadow: 25px 60px rgba(255, 255, 255, 0),

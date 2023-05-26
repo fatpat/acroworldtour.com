@@ -96,8 +96,7 @@ const CompetitionDetails = ({ competition }: Props) => {
               )}
               onClick={() => setShowOverall(!showOverall)}
               onKeyDown={({ key }) =>
-                (key === "Enter" || key === "Space") &&
-                setShowOverall(!showOverall)
+                key === "Enter" && setShowOverall(!showOverall)
               }
             >
               <h3>Overall Results</h3>
@@ -149,7 +148,7 @@ const CompetitionDetails = ({ competition }: Props) => {
                   )}
                   onClick={() => toggleRun(runIndex)}
                   onKeyDown={({ key }) =>
-                    (key === "Enter" || key === "Space") && toggleRun(runIndex)
+                    key === "Enter" && toggleRun(runIndex)
                   }
                 >
                   <h3>{`Run ${runNumber}`}</h3>
@@ -191,7 +190,7 @@ const CompetitionDetails = ({ competition }: Props) => {
                                   toggleRunDetails(runIndex, resultIndex)
                                 }
                                 onKeyDown={({ key }) =>
-                                  (key === "Enter" || key === "Space") &&
+                                  key === "Enter" &&
                                   toggleRunDetails(runIndex, resultIndex)
                                 }
                               >
