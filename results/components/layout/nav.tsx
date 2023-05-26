@@ -11,14 +11,14 @@ const Nav = ({ activeNav, fontClass }: Props) => (
   <nav
     className={classNames(
       fontClass,
-      "sticky bottom-0 z-10 w-full bg-white py-2",
-      "lg:fixed lg:left-0 lg:h-full lg:w-52 lg:pl-4 lg:pt-32 lg:shadow-lg"
+      "sticky bottom-0 z-10 w-full bg-white",
+      "shadow-lg shadow-awtgrey-900 lg:fixed lg:left-0 lg:h-full lg:w-52 lg:pl-4 lg:pt-32 lg:shadow-awtgrey-300"
     )}
   >
     <ul
       className={classNames(
-        "mb-2 flex w-full items-center justify-evenly",
-        "lg:h-auto lg:flex-col lg:items-end lg:justify-start lg:gap-4"
+        "flex w-full justify-evenly pt-4",
+        "lg:flex-col lg:items-end lg:gap-4"
       )}
     >
       <li>
@@ -36,8 +36,8 @@ const Nav = ({ activeNav, fontClass }: Props) => (
     </ul>
     <ul
       className={classNames(
-        "flex w-full items-center justify-evenly",
-        "lg:h-auto lg:flex-col lg:items-end lg:justify-start lg:gap-4"
+        "flex w-full justify-evenly py-4",
+        "lg:flex-col lg:items-end lg:gap-4"
       )}
     >
       <li>
