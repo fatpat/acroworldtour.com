@@ -63,19 +63,20 @@ const CompetitionDetails = ({ competition }: Props) => {
       >
         <section
           className={classNames(
-            "flex min-w-max flex-col rounded-xl bg-awt-dark-50",
+            "flex min-w-max flex-col gap-2 rounded-xl bg-awt-dark-50",
             "lg:p-4"
           )}
         >
-          <Image
-            src={image!}
-            alt="Competition Image"
-            width={512}
-            height={0}
-            className="h-auto w-full"
-          />
-          <h3>Details</h3>
-          <p>{`Type: ${type}`}</p>
+          {image && (
+            <Image
+              src={image}
+              alt="Competition Image"
+              width={512}
+              height={0}
+              className="h-auto w-full rounded-xl my-2"
+            />
+          )}
+          <p>{`Type: ${capitalise(type)}`}</p>
           <p>{`Location: ${location}`}</p>
           <p>{`Pilots: ${numberOfPilots}`}</p>
           <p>{`Start Date: ${startDate}`}</p>
@@ -174,7 +175,8 @@ const CompetitionDetails = ({ competition }: Props) => {
                           pilot,
                           final_marks,
                           tricks,
-                          // marks
+                          // marks,
+                          // warnings,
                         } = result;
                         const roundedScore =
                           final_marks?.score.toFixed(3) ?? "No score record";
@@ -215,13 +217,16 @@ const CompetitionDetails = ({ competition }: Props) => {
                                 <th className="py-2 pl-8 text-left">
                                   <p className="font-semibold">Tricks</p>
                                 </th>
-                                {tricks.map((trick, trickIndex) => (
-                                  <tr key={trickIndex}>
-                                    <td colSpan={2} className="py-2 pl-8">
-                                      <small>{capitalise(trick.name)}</small>
-                                    </td>
-                                  </tr>
-                                ))}
+                                {tricks.map((trick, trickIndex) => {
+                                  const {} = trick;
+                                  return (
+                                    <tr key={trickIndex}>
+                                      <td colSpan={2} className="py-2 pl-8">
+                                        <small>{capitalise(trick.name)}</small>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
                               </>
                             )}
                           </>
