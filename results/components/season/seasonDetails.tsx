@@ -7,9 +7,7 @@ interface Props {
 }
 
 const CompetitionDetails = ({ season }: Props) => {
-  // eslint-disable-next-line no-unused-vars
-  const { code, name, competitions, image, results, number_of_pilots, year } =
-    season;
+  const { name, image } = season;
 
   return (
     <div
@@ -38,9 +36,10 @@ const CompetitionDetails = ({ season }: Props) => {
               {/* {results.overall_results.map((result) => {
                 const { pilot, score, result_per_run } = result;
                 const roundedScore = Math.round(score * 100) / 100;
+                if (!pilot) return;
                 return (
-                  <tr key={pilot?.name}>
-                    <td>{pilot?.name}</td>
+                  <tr key={pilot.name}>
+                    <td>{pilot.name}</td>
                     <td className="text-right">{roundedScore}</td>
                   </tr>
                 );

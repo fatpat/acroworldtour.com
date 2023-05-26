@@ -113,10 +113,10 @@ const PilotDetails = ({ pilot }: Props) => {
           </div>
         </article>
       )}
-      {(sortedCompetitionsResults!.length > 0 ||
-        sortedSeasonsResults!.length > 0) && (
+      {((sortedCompetitionsResults?.length ?? 0 > 0) ||
+        (sortedSeasonsResults?.length ?? 0 > 0)) && (
         <div className="mt-4 w-full bg-awt-dark-50 p-2">
-          {sortedCompetitionsResults!.length > 0 && (
+          {(sortedCompetitionsResults?.length ?? 0 > 0) && (
             <table className="w-full">
               <thead>
                 <tr className="h-12">
@@ -140,7 +140,7 @@ const PilotDetails = ({ pilot }: Props) => {
               </tbody>
             </table>
           )}
-          {sortedSeasonsResults!.length > 0 && (
+          {(sortedSeasonsResults?.length ?? 0 > 0) && (
             <table className="mt-4 w-full">
               <thead>
                 <tr className="h-12">
@@ -148,18 +148,19 @@ const PilotDetails = ({ pilot }: Props) => {
                 </tr>
               </thead>
               <tbody>
-                {sortedSeasonsResults!.map(({ season, rank }) => {
-                  const { code, name } = season;
-                  return (
-                    <tr
-                      key={code}
-                      className="h-8 cursor-pointer hover:bg-awt-dark-200"
-                    >
-                      <td className="pl-2">{name}</td>
-                      <td className="pr-2 text-right">#{rank}</td>
-                    </tr>
-                  );
-                })}
+                {sortedSeasonsResults &&
+                  sortedSeasonsResults.map(({ season, rank }) => {
+                    const { code, name } = season;
+                    return (
+                      <tr
+                        key={code}
+                        className="h-8 cursor-pointer hover:bg-awt-dark-200"
+                      >
+                        <td className="pl-2">{name}</td>
+                        <td className="pr-2 text-right">#{rank}</td>
+                      </tr>
+                    );
+                  })}
               </tbody>
             </table>
           )}

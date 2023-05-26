@@ -119,10 +119,11 @@ const CompetitionDetails = ({ competition }: Props) => {
                   {overallResults.map((result) => {
                     const { pilot, score } = result;
                     const roundedScore = score.toFixed(3);
+                    if (!pilot) return;
                     return (
-                      <tr key={pilot!.name}>
+                      <tr key={pilot.name}>
                         <td>
-                          <p>{pilot!.name}</p>
+                          <p>{pilot.name}</p>
                         </td>
                         <td className="text-right">
                           <p>{roundedScore}</p>
@@ -175,7 +176,8 @@ const CompetitionDetails = ({ competition }: Props) => {
                           tricks,
                           // marks
                         } = result;
-                        const roundedScore = final_marks!.score.toFixed(3);
+                        const roundedScore =
+                          final_marks?.score.toFixed(3) ?? "No score record";
                         return (
                           <>
                             <tr key={resultIndex}>
@@ -194,7 +196,7 @@ const CompetitionDetails = ({ competition }: Props) => {
                                   toggleRunDetails(runIndex, resultIndex)
                                 }
                               >
-                                <p>{pilot?.name}</p>
+                                <p>{pilot ? pilot.name : "No name record"}</p>
                                 <ChevronIcon
                                   className={classNames(
                                     "ml-2 h-2 w-auto",

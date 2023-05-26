@@ -37,11 +37,11 @@ const CompetitionPage = () => {
 
   useEffect(() => {
     if (competition) {
-      setPageTitle(competition?.name || "");
-      setPageDescription(`Competition page for ${competition?.name}`);
-      setHeaderTitle(competition?.name || "");
+      setPageTitle(competition.name || "");
+      setPageDescription(`Competition page for ${competition.name}`);
+      setHeaderTitle(competition.name || "");
       setHeaderSubtitle(
-        `${capitalise(competition.type)} - ${competition?.location}` || ""
+        `${capitalise(competition.type)} - ${competition.location}` || ""
       );
       setActiveNav("competitions");
     }

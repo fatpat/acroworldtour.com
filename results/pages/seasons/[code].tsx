@@ -36,9 +36,9 @@ const SeasonPage = () => {
 
   useEffect(() => {
     if (season) {
-      setPageTitle(season?.name || "");
-      setPageDescription(`Season page for ${season?.name}`);
-      setHeaderTitle(season?.name || "");
+      setPageTitle(season.name || "");
+      setPageDescription(`Season page for ${season.name}`);
+      setHeaderTitle(season.name || "");
       setHeaderSubtitle(`${capitalise(season.type)} - ${season.year}` || "");
       setActiveNav("seasons");
     }
