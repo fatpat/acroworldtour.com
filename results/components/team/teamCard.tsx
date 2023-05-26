@@ -7,7 +7,7 @@ interface Props {
 
 const TeamCard = ({ team }: Props) => {
   const { name, pilots } = team;
-  pilots.map((pilot) => console.log(pilot));
+  // pilots.map((pilot) => console.log(pilot));
   return (
     <div>
       <figcaption className="px-2">

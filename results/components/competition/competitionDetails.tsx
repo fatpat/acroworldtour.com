@@ -1,6 +1,7 @@
+/* eslint-disable no-unused-vars */
 import classNames from "classnames";
 import Image from "next/image";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 
 import { components } from "@/types";
 import { capitalise } from "@/utils/capitalise";
@@ -11,6 +12,38 @@ import { ChevronIcon } from "../ui/icons";
 interface Props {
   competition: components["schemas"]["CompetitionPublicExportWithResults"];
 }
+
+interface trProps {
+  left: string;
+  right?: string;
+}
+
+const TrDuo = ({ left, right }: trProps) => (
+  <tr>
+    <td className="py-2 pl-8">
+      <small>{left}</small>
+    </td>
+    <td className="py-2 pl-8 text-right">
+      <small>{right}</small>
+    </td>
+  </tr>
+);
+
+const TrPrimaryTitle = ({ left }: trProps) => (
+  <tr className="text-left font-semibold">
+    <td colSpan={2} className="bg-awt-dark-800 py-2 pl-6 text-white">
+      <p>{left}</p>
+    </td>
+  </tr>
+);
+
+const TrSecondaryTitle = ({ left }: trProps) => (
+  <tr>
+    <td colSpan={2} className="bg-awt-dark-600 py-2 pl-6 text-white">
+      <small>{left}</small>
+    </td>
+  </tr>
+);
 
 const CompetitionDetails = ({ competition }: Props) => {
   const {
@@ -73,7 +106,7 @@ const CompetitionDetails = ({ competition }: Props) => {
               alt="Competition Image"
               width={512}
               height={0}
-              className="h-auto w-full rounded-xl my-2"
+              className="my-2 h-auto w-full rounded-xl"
             />
           )}
           <p>{`Type: ${capitalise(type)}`}</p>
@@ -165,8 +198,12 @@ const CompetitionDetails = ({ competition }: Props) => {
                   <table className="w-full origin-top">
                     <thead>
                       <tr>
-                        <th className="text-left">Pilot</th>
-                        <th className="text-right">Score</th>
+                        <th className="bg-awt-dark-800 text-left text-white">
+                          Pilot
+                        </th>
+                        <th className="bg-awt-dark-800 text-right text-white">
+                          Score
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -178,11 +215,35 @@ const CompetitionDetails = ({ competition }: Props) => {
                           // marks,
                           // warnings,
                         } = result;
+
                         const roundedScore =
-                          final_marks?.score.toFixed(3) ?? "No score record";
+                          final_marks?.score?.toFixed(3) ?? "No score record";
+
+                        const {
+                          score,
+                          technicity,
+                          bonus_percentage: bonusPercentage,
+                          malus,
+                          judges_mark,
+                          technical: technicalFinal,
+                          choreography: choreographyFinal,
+                          landing: landingFinal,
+                          synchro: synchroFinal,
+                          bonus,
+                          warnings,
+                          notes,
+                        } = final_marks ?? {};
+
+                        const {
+                          technical: technicalJudge,
+                          choreography: choreographyJudge,
+                          landing: landingJudge,
+                          synchro: synchroJudge,
+                        } = judges_mark ?? {};
+
                         return (
-                          <>
-                            <tr key={resultIndex}>
+                          <Fragment key={resultIndex}>
+                            <tr>
                               <td
                                 // eslint-disable-next-line jsx-a11y/no-noninteractive-element-to-interactive-role
                                 role="button"
@@ -214,9 +275,7 @@ const CompetitionDetails = ({ competition }: Props) => {
 
                             {showRunDetails[runIndex][resultIndex] && (
                               <>
-                                <th className="py-2 pl-8 text-left">
-                                  <p className="font-semibold">Tricks</p>
-                                </th>
+                                <TrPrimaryTitle left="Tricks" />
                                 {tricks.map((trick, trickIndex) => {
                                   const {} = trick;
                                   return (
@@ -227,9 +286,75 @@ const CompetitionDetails = ({ competition }: Props) => {
                                     </tr>
                                   );
                                 })}
+                                <TrPrimaryTitle left="Marks" />
+                                <TrDuo
+                                  left="Technicity"
+                                  right={`${technicity}%`}
+                                />
+                                <TrDuo
+                                  left="Bonus Percentage"
+                                  right={`${bonusPercentage}%`}
+                                />
+                                <TrDuo left="Malus" right={`${malus}%`} />
+                                <TrSecondaryTitle left="Judge's Marks" />
+                                <TrDuo
+                                  left="Technical"
+                                  right={`${technicalJudge}%`}
+                                />
+                                <TrDuo
+                                  left="Choreography"
+                                  right={`${choreographyJudge}%`}
+                                />
+                                <TrDuo
+                                  left="Landing"
+                                  right={`${landingJudge}%`}
+                                />
+                                {run.type === "synchro" && (
+                                  <TrDuo
+                                    left="Synchro"
+                                    right={`${synchroJudge}%`}
+                                  />
+                                )}
+                                <TrSecondaryTitle left="Final Marks" />
+                                <TrDuo
+                                  left="Technical"
+                                  right={`${technicalFinal}%`}
+                                />
+                                <TrDuo
+                                  left="Choreography"
+                                  right={`${choreographyFinal}%`}
+                                />
+                                <TrDuo
+                                  left="Landing"
+                                  right={`${landingFinal}%`}
+                                />
+                                {run.type === "synchro" && (
+                                  <TrDuo
+                                    left="Synchro"
+                                    right={`${synchroFinal}%`}
+                                  />
+                                )}
+                                <TrDuo left="Bonus" right={`${bonus}%`} />
+                                <TrSecondaryTitle
+                                  left={
+                                    warnings?.length ?? 0 > 0
+                                      ? "Warnings"
+                                      : "No Warnings"
+                                  }
+                                />
+                                {warnings &&
+                                  warnings.map((warning, warningIndex) => {
+                                    return (
+                                      <TrDuo
+                                        key={warningIndex}
+                                        left="Warning"
+                                        right={warning}
+                                      />
+                                    );
+                                  })}
                               </>
                             )}
-                          </>
+                          </Fragment>
                         );
                       })}
                     </tbody>
