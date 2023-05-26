@@ -63,7 +63,7 @@ const About = () => {
           media={"instagram"}
         />
         <SocialLink
-          link="https://www.facebook.com/acroworldtour"
+          link="https://www.facebook.com/groups/120757714620928"
           media={"facebook"}
         />
         <SocialLink
