@@ -23,10 +23,13 @@ const NavItem: React.FC<Props> = ({ link, active }) => {
     <Link
       href={`/${link.toLowerCase()}`}
       className={classNames(
-        "flex flex-col items-center justify-center fill-awtgrey-400 text-xs font-semibold text-awtgrey-400",
-        "lg:flex-row lg:justify-start lg:rounded-l-xl lg:px-6 lg:py-3 lg:hover:bg-awtgrey-200 lg:hover:shadow-md",
-        "hover:fill-sky-600 hover:text-sky-600",
-        active && "fill-current text-current lg:bg-awtgrey-100"
+        "flex flex-col items-center justify-center rounded-xl p-2 text-xs font-semibold text-awt-dark-600",
+        "lg:flex-row lg:justify-start lg:rounded-r-none lg:py-3 lg:pl-6 lg:text-base",
+        !active &&
+          "hover:bg-awt-accent-700 hover:fill-white hover:text-white hover:shadow-md",
+        active
+          ? "bg-awt-dark-900 fill-white text-white shadow-md"
+          : "fill-awt-dark-600"
       )}
     >
       {link === "" && <HomeIcon className={iconClasses} />}

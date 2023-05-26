@@ -12,12 +12,12 @@ const Nav = ({ activeNav, fontClass }: Props) => (
     className={classNames(
       fontClass,
       "sticky bottom-0 z-10 w-full bg-white",
-      "shadow-lg shadow-awtgrey-900 lg:fixed lg:left-0 lg:h-full lg:w-52 lg:pl-4 lg:pt-32 lg:shadow-awtgrey-300"
+      "shadow-lg shadow-awt-dark-900 lg:fixed lg:left-0 lg:h-full lg:w-52 lg:pt-32 lg:shadow-awt-dark-300"
     )}
   >
     <ul
       className={classNames(
-        "flex w-full justify-evenly pt-4",
+        "flex w-full justify-evenly pt-2",
         "lg:flex-col lg:items-end lg:gap-4"
       )}
     >
@@ -36,7 +36,7 @@ const Nav = ({ activeNav, fontClass }: Props) => (
     </ul>
     <ul
       className={classNames(
-        "flex w-full justify-evenly py-4",
+        "flex w-full justify-evenly py-2",
         "lg:flex-col lg:items-end lg:gap-4"
       )}
     >

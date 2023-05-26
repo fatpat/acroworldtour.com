@@ -63,7 +63,7 @@ const CompetitionDetails = ({ competition }: Props) => {
       >
         <section
           className={classNames(
-            "flex min-w-max flex-col rounded-xl bg-awtgrey-50",
+            "flex min-w-max flex-col rounded-xl bg-awt-dark-50",
             "lg:p-4"
           )}
         >
@@ -84,7 +84,7 @@ const CompetitionDetails = ({ competition }: Props) => {
 
         <section
           className={classNames(
-            "flex w-full flex-col rounded-xl bg-awtgrey-50"
+            "flex w-full flex-col rounded-xl bg-awt-dark-50"
           )}
         >
           <article>
@@ -235,7 +235,7 @@ const CompetitionDetails = ({ competition }: Props) => {
 
         <section
           className={classNames(
-            "flex flex-col rounded-xl bg-awtgrey-50",
+            "flex flex-col rounded-xl bg-awt-dark-50",
             "lg:p-4"
           )}
         >

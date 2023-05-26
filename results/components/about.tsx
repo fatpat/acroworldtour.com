@@ -22,7 +22,7 @@ const About = () => {
         tabIndex={0}
         className={classNames(
           "z-10 mb-1 flex w-1/2 cursor-pointer items-center justify-center",
-          hideAbout && "-translate-x-3/4 opacity-50"
+          hideAbout && "-translate-x-3/4"
         )}
         onClick={() => setHideAbout(!hideAbout)}
         onKeyDown={({ key }) => key === "Enter" && setHideAbout(!hideAbout)}
@@ -37,7 +37,7 @@ const About = () => {
       </header>
       <div
         className={classNames(
-          "flex h-56 flex-col items-center justify-evenly rounded-xl bg-awtgrey-100 px-4 font-medium shadow",
+          "flex h-56 flex-col items-center justify-evenly rounded-xl bg-awt-dark-100 px-4 font-medium shadow",
           hideAbout && "-mt-64 opacity-0"
         )}
       >

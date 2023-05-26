@@ -62,7 +62,7 @@ const PilotDetails = ({ pilot }: Props) => {
         <Link
           href={civlLink}
           target="_blank"
-          className="flex w-full max-w-sm flex-wrap items-baseline justify-between self-center px-4 text-sky-800 hover:underline"
+          className="flex w-full max-w-sm flex-wrap items-baseline justify-between self-center px-4 text-awt-accent-800 hover:underline"
         >
           <h2 className="text-800">{name}</h2>
           <h3 className="font-semibold">
@@ -89,7 +89,7 @@ const PilotDetails = ({ pilot }: Props) => {
           {socialLinks.map((link) => {
             const { name: linkName, link: linkUrl } = link;
             return (
-              <li key={linkName} className="hover:fill-sky-500">
+              <li key={linkName} className="hover:fill-awt-accent-500">
                 <SocialLink link={linkUrl} media={linkName} />
               </li>
             );
@@ -107,7 +107,7 @@ const PilotDetails = ({ pilot }: Props) => {
                 title={sponsor.name}
                 style={{ backgroundImage: `url('${sponsor.img}')` }}
                 target="_blank"
-                className="m-4 aspect-video w-20 bg-contain bg-center bg-no-repeat hover:fill-sky-500"
+                className="m-4 aspect-video w-20 bg-contain bg-center bg-no-repeat hover:fill-awt-accent-500"
               />
             ))}
           </div>
@@ -115,7 +115,7 @@ const PilotDetails = ({ pilot }: Props) => {
       )}
       {(sortedCompetitionsResults!.length > 0 ||
         sortedSeasonsResults!.length > 0) && (
-        <div className="mt-4 w-full bg-awtgrey-50 p-2">
+        <div className="mt-4 w-full bg-awt-dark-50 p-2">
           {sortedCompetitionsResults!.length > 0 && (
             <table className="w-full">
               <thead>
@@ -130,7 +130,7 @@ const PilotDetails = ({ pilot }: Props) => {
                   return (
                     <tr
                       key={code}
-                      className="h-8 cursor-pointer hover:bg-awtgrey-200"
+                      className="h-8 cursor-pointer hover:bg-awt-dark-200"
                     >
                       <td className="pl-2">{name}</td>
                       <td className="pr-2 text-right">#{rank}</td>
@@ -153,7 +153,7 @@ const PilotDetails = ({ pilot }: Props) => {
                   return (
                     <tr
                       key={code}
-                      className="h-8 cursor-pointer hover:bg-awtgrey-200"
+                      className="h-8 cursor-pointer hover:bg-awt-dark-200"
                     >
                       <td className="pl-2">{name}</td>
                       <td className="pr-2 text-right">#{rank}</td>

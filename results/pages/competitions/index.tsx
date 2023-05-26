@@ -109,14 +109,14 @@ const Competitions = () => {
             className="border-0 font-sans text-xl sm:text-2xl"
             onChange={handleYearChange}
           >
-            <option value="" className="text-lg text-awtgrey-600">
+            <option value="" className="text-lg text-awt-dark-600">
               All
             </option>
             {years.map((year) => (
               <option
                 key={year}
                 value={year}
-                className="text-lg text-awtgrey-600"
+                className="text-lg text-awt-dark-600"
               >
                 {year}
               </option>

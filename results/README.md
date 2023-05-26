@@ -16,5 +16,5 @@ First, run the development server:
 - Use the /public API endpoints.
 - We are using next's [page router](https://nextjs.org/docs/pages) (not the app router).
 - The website is static, and the data fetching happens on the client, using [SWR](https://swr.vercel.app/).
-- Check the [tailwind config file](./tailwind.config.js) for the custom 'awtgrey' colour alias used throughout the project. This permits a global colour change from one place.
+- Check the [tailwind config file](./tailwind.config.js) for the custom 'awt-dark' colour alias used throughout the project. This permits a global colour change from one place.
 - If the API changes, please run `pnpm interface` tu update the typescript interfaces.

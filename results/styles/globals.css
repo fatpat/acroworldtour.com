@@ -11,18 +11,17 @@
   }
 
   #__next {
-    @apply flex min-h-screen flex-col text-awtgrey-700;
+    @apply flex min-h-screen flex-col text-awt-dark-700;
   }
 
   nav > ul > li {
     @apply lg:w-11/12;
   }
 
-  h1,
   h2,
   h3,
   h4 {
-    @apply drop-shadow-sm;
+    @apply leading-loose drop-shadow-sm;
   }
 
   h1 {
@@ -30,19 +29,23 @@
   }
 
   h2 {
-    @apply mt-4 text-xl font-bold leading-loose sm:text-2xl;
+    @apply mt-4 text-xl font-bold sm:text-2xl;
   }
 
   h3 {
-    @apply text-xl font-bold leading-loose;
+    @apply text-xl font-bold;
   }
 
   h4 {
-    @apply text-lg font-semibold leading-loose;
+    @apply text-lg font-semibold;
   }
 
   p {
-    @apply text-sm font-medium leading-loose drop-shadow-sm;
+    @apply text-base font-semibold leading-loose;
+  }
+
+  small {
+    @apply text-sm font-medium;
   }
 
   tbody > tr {
@@ -61,11 +64,11 @@
   }
 
   .card {
-    @apply rounded-xl bg-white/95 bg-cover bg-center bg-no-repeat bg-blend-screen shadow shadow-awtgrey-400;
+    @apply rounded-xl bg-white/95 bg-cover bg-center bg-no-repeat bg-blend-screen shadow shadow-awt-dark-400;
   }
 
   .pilot-card {
-    @apply rounded-xl bg-cover bg-center bg-no-repeat shadow shadow-awtgrey-400;
+    @apply rounded-xl bg-cover bg-center bg-no-repeat shadow shadow-awt-dark-400;
   }
 }
 
