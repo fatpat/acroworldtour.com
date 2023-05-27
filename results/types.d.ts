@@ -364,6 +364,11 @@ export interface components {
       name: string;
       /** Bonus */
       bonus: number;
+      /**
+       * Sample Video 
+       * Format: uri
+       */
+      sample_video?: string;
     };
     /**
      * CompetitionConfig 
@@ -1700,6 +1705,11 @@ export interface components {
        * Format: date-time
        */
       deleted?: string;
+      /**
+       * Sample Video 
+       * Format: uri
+       */
+      sample_video?: string;
     };
     /**
      * UniqueTrick 

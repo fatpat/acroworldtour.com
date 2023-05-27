@@ -1,6 +1,9 @@
 import { Col, Row, Table } from "@nextui-org/react";
+import Link from "next/link";
 
 import { components } from "@/types";
+
+import { YouTubeIcon } from "../ui/icons";
 
 interface Props {
   tricks: components["schemas"]["Trick"][];
@@ -21,7 +24,7 @@ const TricksTable = ({ tricks }: Props) => {
           .sort((a, b) => a.technical_coefficient - b.technical_coefficient)
           .map((trick) => (
             <Table.Row key={trick._id}>
-              <Table.Cell>{trick.name}</Table.Cell>
+              <Table.Cell>{trick.name}{trick.sample_video && <Link href={trick.sample_video}><YouTubeIcon /></Link>}</Table.Cell>
               <Table.Cell>{trick.acronym}</Table.Cell>
               <Table.Cell>
                 {trick.directions.includes("left") && (
