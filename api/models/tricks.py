@@ -1,6 +1,6 @@
 import logging
 import sys
-from pydantic import BaseModel, Field, validator, root_validator
+from pydantic import BaseModel, Field, validator, root_validator, AnyHttpUrl
 from bson import ObjectId
 from typing import List, Optional
 from fastapi.encoders import jsonable_encoder
@@ -18,6 +18,7 @@ collection = db.tricks
 class Bonus(BaseModel):
     name: str = Field(..., min_length=1)
     bonus: float = Field(..., ge=0.0)
+    sample_video: Optional[AnyHttpUrl]
 
     class Config:
         schema_extra = {
@@ -74,6 +75,7 @@ class Trick(BaseModel):
     tricks: List[UniqueTrick] = Field([], description="List of all the variant of the trick (this is automatically generated)")
     repeatable: bool = Field(False, description="Is this trick can be repeatable")
     deleted: Optional[datetime]
+    sample_video: Optional[AnyHttpUrl]
 
     @validator('directions')
     def check_directions(cls, v):
