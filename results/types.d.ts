@@ -496,6 +496,11 @@ export interface components {
        * Format: uri
        */
       image?: string;
+      /**
+       * Logo 
+       * Format: uri
+       */
+      logo?: string;
       /** Seasons */
       seasons: (string)[];
     };
@@ -522,6 +527,8 @@ export interface components {
       type: components["schemas"]["CompetitionType"];
       /** Image */
       image?: string;
+      /** Logo */
+      logo?: string;
       /**
        * Seasons 
        * @default []
@@ -574,6 +581,11 @@ export interface components {
        * Format: uri
        */
       image?: string;
+      /**
+       * Logo 
+       * Format: uri
+       */
+      logo?: string;
       /** Seasons */
       seasons: (string)[];
     };
@@ -614,6 +626,11 @@ export interface components {
        * Format: uri
        */
       image?: string;
+      /**
+       * Logo 
+       * Format: uri
+       */
+      logo?: string;
       /** Seasons */
       seasons: (string)[];
       results: components["schemas"]["CompetitionResultsExport"];

@@ -1,14 +1,13 @@
 /* eslint-disable no-unused-vars */
 import classNames from "classnames";
-import Image from "next/image";
 import Link from "next/link";
 import { Fragment, useState } from "react";
 
 import { components } from "@/types";
 import { capitalise } from "@/utils/capitalise";
 
-import JudgeCard from "../judge/judgeCard";
 import { ChevronIcon, ThumbDownIcon, WarningIcon } from "../ui/icons";
+import CompetitionJudges from "./competitionJudges";
 import CompetitionSummary from "./competitionSummary";
 
 interface Props {
@@ -48,19 +47,11 @@ const TrSecondaryTitle = ({ left }: trProps) => (
 );
 
 const CompetitionDetails = ({ competition }: Props) => {
-  const {
-    end_date: endDate,
-    image,
-    judges,
-    location,
-    name,
-    number_of_pilots: numberOfPilots,
-    results,
-    start_date: startDate,
-    type,
-  } = competition;
+  const { judges, name, results } = competition;
 
   const overallResults = results.overall_results;
+  overallResults.sort((a, b) => b.score - a.score);
+
   const runsResults = results.runs_results;
 
   const [showOverall, setShowOverall] = useState(false);
@@ -146,76 +137,74 @@ const CompetitionDetails = ({ competition }: Props) => {
                 </tr>
               </thead>
               <tbody>
-                {overallResults
-                  .sort((a, b) => b.score - a.score)
-                  .map((result, index) => {
-                    const { pilot, score, result_per_run } = result;
-                    if (!pilot) return;
-                    let data = [];
-                    if (result_per_run.length == 0) {
-                      data.push({
-                        rank: index + 1,
-                        pilot: pilot.name,
-                        score: score.toFixed(3),
-                        run_number: null,
-                        run_rank: null,
-                        run_score: null,
-                      });
-                    } else {
-                      result_per_run.map((r, i) => {
-                        data.push({
-                          rank: i == 0 ? index + 1 : null,
-                          pilot: i == 0 ? pilot.name : null,
-                          score: i == 0 ? score.toFixed(3) : null,
-                          run_number: i + 1,
-                          run_rank: r.rank,
-                          run_score: r.score.toFixed(3),
-                        });
-                      });
-                    }
-                    return data.map((r, i) => {
-                      return (
-                        <tr
-                          key={`${pilot.name}-${i}`}
-                          className={
-                            index % 2 == 0 ? "!bg-white" : "!bg-awt-dark-50"
-                          }
-                        >
-                          <td className="text-left">
-                            <p>{r["rank"]}</p>
-                          </td>
-                          <td className="text-left">
-                            {r["pilot"] && (
-                              <p>
-                                <Link
-                                  key={pilot.name}
-                                  title={`See ${pilot.name}'s profile`}
-                                  href={`/pilots/${pilot.civlid}/${pilot.name
-                                    .toLowerCase()
-                                    .replace(/\s/g, "-")}`}
-                                >
-                                  {pilot.name}
-                                </Link>
-                              </p>
-                            )}
-                          </td>
-                          <td className="text-center font-extralight italic">
-                            <p>{r["run_number"]}</p>
-                          </td>
-                          <td className="text-center font-extralight italic">
-                            <p>{r["run_rank"]}</p>
-                          </td>
-                          <td className="text-center font-extralight italic">
-                            <p>{r["run_score"]}</p>
-                          </td>
-                          <td className="text-right">
-                            <p>{r["score"]}</p>
-                          </td>
-                        </tr>
-                      );
+                {overallResults.map((result, index) => {
+                  const { pilot, score, result_per_run } = result;
+                  if (!pilot) return;
+                  let data = [];
+                  if (result_per_run.length == 0) {
+                    data.push({
+                      rank: index + 1,
+                      pilot: pilot.name,
+                      score: score.toFixed(3),
+                      run_number: null,
+                      run_rank: null,
+                      run_score: null,
                     });
-                    {
-                      /*
+                  } else {
+                    result_per_run.map((r, i) => {
+                      data.push({
+                        rank: i == 0 ? index + 1 : null,
+                        pilot: i == 0 ? pilot.name : null,
+                        score: i == 0 ? score.toFixed(3) : null,
+                        run_number: i + 1,
+                        run_rank: r.rank,
+                        run_score: r.score.toFixed(3),
+                      });
+                    });
+                  }
+                  return data.map((r, i) => {
+                    return (
+                      <tr
+                        key={`${pilot.name}-${i}`}
+                        className={
+                          index % 2 == 0 ? "!bg-white" : "!bg-awt-dark-50"
+                        }
+                      >
+                        <td className="text-left">
+                          <p>{r["rank"]}</p>
+                        </td>
+                        <td className="text-left">
+                          {r["pilot"] && (
+                            <p>
+                              <Link
+                                key={pilot.name}
+                                title={`See ${pilot.name}'s profile`}
+                                href={`/pilots/${pilot.civlid}/${pilot.name
+                                  .toLowerCase()
+                                  .replace(/\s/g, "-")}`}
+                              >
+                                {pilot.name}
+                              </Link>
+                            </p>
+                          )}
+                        </td>
+                        <td className="text-center font-extralight italic">
+                          <p>{r["run_number"]}</p>
+                        </td>
+                        <td className="text-center font-extralight italic">
+                          <p>{r["run_rank"]}</p>
+                        </td>
+                        <td className="text-center font-extralight italic">
+                          <p>{r["run_score"]}</p>
+                        </td>
+                        <td className="text-right">
+                          <p>{r["score"]}</p>
+                        </td>
+                      </tr>
+                    );
+                  });
+                  {
+                    /*
                     return ({
                       data.map((r, i) => {
 console.log(r, i)
@@ -239,8 +228,8 @@ console.log(r, i)
                       })
                     });
 */
-                    }
-                  })}
+                  }
+                })}
               </tbody>
             </table>
           )}
@@ -471,23 +460,8 @@ console.log(r, i)
           })}
         </section>
 
-        <section
-          className={classNames(
-            "flex flex-col rounded-xl bg-awt-dark-50",
-            "lg:p-4"
-          )}
-        >
-          <h3>Judges</h3>
-          <article
-            className={classNames(
-              "mt-4 flex w-full flex-wrap justify-evenly gap-4"
-            )}
-          >
-            {judges.map((judge) => (
-              <JudgeCard key={judge.name} judge={judge} />
-            ))}
-          </article>
-        </section>
+        <CompetitionJudges judges={judges} />
+
       </div>
     </div>
   );
