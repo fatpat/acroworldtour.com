@@ -8,7 +8,8 @@ import { components } from "@/types";
 import { capitalise } from "@/utils/capitalise";
 
 import JudgeCard from "../judge/judgeCard";
-import { ChevronIcon, ThumbDownIcon,WarningIcon } from "../ui/icons";
+import { ChevronIcon, ThumbDownIcon, WarningIcon } from "../ui/icons";
+import CompetitionSummary from "./competitionSummary";
 
 interface Props {
   competition: components["schemas"]["CompetitionPublicExportWithResults"];
@@ -81,7 +82,6 @@ const CompetitionDetails = ({ competition }: Props) => {
     setShowRunDetails(newShowDetails);
   };
 
-
   return (
     <div
       className={classNames(
@@ -96,129 +96,126 @@ const CompetitionDetails = ({ competition }: Props) => {
           "lg:flex-row "
         )}
       >
-        <section
-          className={classNames(
-            "flex min-w-max flex-col gap-2 rounded-xl bg-awt-dark-50",
-            "lg:p-4"
-          )}
-        >
-          {image && (
-            <Image
-              src={image}
-              alt="Competition Image"
-              width={512}
-              height={0}
-              className="my-2 h-auto w-full rounded-xl"
-            />
-          )}
-          <p>{`Type: ${capitalise(type)}`}</p>
-          <p>{`Location: ${location}`}</p>
-          <p>{`Pilots: ${numberOfPilots}`}</p>
-          <p>{`Start Date: ${startDate}`}</p>
-          <p>{`End Date: ${endDate}`}</p>
-        </section>
+        <CompetitionSummary competition={competition} />
 
         <section
           className={classNames(
             "flex w-full flex-col rounded-xl bg-awt-dark-50"
           )}
         >
-          <article>
-            <header
-              role="button"
-              tabIndex={0}
+          <header
+            role="button"
+            tabIndex={0}
+            className={classNames(
+              "flex cursor-pointer items-baseline pl-4 pt-4"
+            )}
+            onClick={() => setShowOverall(!showOverall)}
+            onKeyDown={({ key }) =>
+              key === "Enter" && setShowOverall(!showOverall)
+            }
+          >
+            <h3>Overall Results</h3>
+            <ChevronIcon
               className={classNames(
-                "flex cursor-pointer items-baseline pl-4 pt-4"
+                "ml-2 h-3 w-auto",
+                !showOverall && "-rotate-90"
               )}
-              onClick={() => setShowOverall(!showOverall)}
-              onKeyDown={({ key }) =>
-                key === "Enter" && setShowOverall(!showOverall)
-              }
-            >
-              <h3>Overall Results</h3>
-              <ChevronIcon
-                className={classNames(
-                  "ml-2 h-3 w-auto",
-                  !showOverall && "-rotate-90"
-                )}
-              />
-            </header>
-            {showOverall && (
-              <table className="w-full origin-top table-auto">
-                <thead>
-                  <tr>
-                    <th className="text-left align-top" rowSpan={2}>Rank</th>
-                    <th className="text-left align-top" rowSpan={2}>Pilot</th>
-                    <th className="text-center align-top" colSpan={3}>Runs Results</th>
-                    <th className="text-right align-top" rowSpan={2}>Score</th>
-                  </tr>
-                  <tr>
-                    <th className="text-center">Run</th>
-                    <th className="text-center">Rank</th>
-                    <th className="text-center">Score</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {overallResults.sort((a,b) => b.score - a.score).map((result, index) => {
+            />
+          </header>
+          {showOverall && (
+            <table className="w-full table-auto origin-top">
+              <thead>
+                <tr>
+                  <th className="text-left align-top" rowSpan={2}>
+                    Rank
+                  </th>
+                  <th className="text-left align-top" rowSpan={2}>
+                    Pilot
+                  </th>
+                  <th className="text-center align-top" colSpan={3}>
+                    Runs Results
+                  </th>
+                  <th className="text-right align-top" rowSpan={2}>
+                    Score
+                  </th>
+                </tr>
+                <tr>
+                  <th className="text-center">Run</th>
+                  <th className="text-center">Rank</th>
+                  <th className="text-center">Score</th>
+                </tr>
+              </thead>
+              <tbody>
+                {overallResults
+                  .sort((a, b) => b.score - a.score)
+                  .map((result, index) => {
                     const { pilot, score, result_per_run } = result;
                     if (!pilot) return;
                     let data = [];
                     if (result_per_run.length == 0) {
-                        data.push({
-                          rank: index+1,
-                          pilot: pilot.name,
-                          score: score.toFixed(3),
-                          run_number: null,
-                          run_rank: null,
-                          run_score: null
-                        })
+                      data.push({
+                        rank: index + 1,
+                        pilot: pilot.name,
+                        score: score.toFixed(3),
+                        run_number: null,
+                        run_rank: null,
+                        run_score: null,
+                      });
                     } else {
-                        result_per_run.map((r, i) => {
-                          data.push({
-                            rank: i == 0 ? index+1 : null,
-                            pilot: i == 0 ? pilot.name : null,
-                            score: i == 0 ? score.toFixed(3) : null,
-                            run_number: i+1,
-                            run_rank: r.rank,
-                            run_score: r.score.toFixed(3),
-                          })
-                        })
+                      result_per_run.map((r, i) => {
+                        data.push({
+                          rank: i == 0 ? index + 1 : null,
+                          pilot: i == 0 ? pilot.name : null,
+                          score: i == 0 ? score.toFixed(3) : null,
+                          run_number: i + 1,
+                          run_rank: r.rank,
+                          run_score: r.score.toFixed(3),
+                        });
+                      });
                     }
-                    return(
-                      data.map((r,i) => {
-                        return(
-                          <tr key={`${pilot.name}-${i}`} className={index%2 == 0 ? '!bg-white' : '!bg-awt-dark-50'}>
-                            <td className="text-left">
-                              <p>{r['rank']}</p>
-                            </td>
-                            <td className="text-left">
-                              { r['pilot'] &&
-                                <p>
-                                  <Link
-                                    key={pilot.name}
-                                    title={`See ${pilot.name}'s profile`}
-                                    href={`/pilots/${pilot.civlid}/${pilot.name.toLowerCase().replace(/\s/g, "-")}`}
-                                  >{pilot.name}</Link>
-                                </p>
-                              }
-                            </td>
-                            <td className="italic font-extralight text-center">
-                              <p>{r['run_number']}</p>
-                            </td>
-                            <td className="italic font-extralight text-center">
-                              <p>{r['run_rank']}</p>
-                            </td>
-                            <td className="italic font-extralight text-center">
-                              <p>{r['run_score']}</p>
-                            </td>
-                            <td className="text-right">
-                              <p>{r['score']}</p>
-                            </td>
-                          </tr>
-                        )
-                      })
-                    )
-{/*
+                    return data.map((r, i) => {
+                      return (
+                        <tr
+                          key={`${pilot.name}-${i}`}
+                          className={
+                            index % 2 == 0 ? "!bg-white" : "!bg-awt-dark-50"
+                          }
+                        >
+                          <td className="text-left">
+                            <p>{r["rank"]}</p>
+                          </td>
+                          <td className="text-left">
+                            {r["pilot"] && (
+                              <p>
+                                <Link
+                                  key={pilot.name}
+                                  title={`See ${pilot.name}'s profile`}
+                                  href={`/pilots/${pilot.civlid}/${pilot.name
+                                    .toLowerCase()
+                                    .replace(/\s/g, "-")}`}
+                                >
+                                  {pilot.name}
+                                </Link>
+                              </p>
+                            )}
+                          </td>
+                          <td className="text-center font-extralight italic">
+                            <p>{r["run_number"]}</p>
+                          </td>
+                          <td className="text-center font-extralight italic">
+                            <p>{r["run_rank"]}</p>
+                          </td>
+                          <td className="text-center font-extralight italic">
+                            <p>{r["run_score"]}</p>
+                          </td>
+                          <td className="text-right">
+                            <p>{r["score"]}</p>
+                          </td>
+                        </tr>
+                      );
+                    });
+                    {
+                      /*
                     return ({
                       data.map((r, i) => {
 console.log(r, i)
@@ -241,12 +238,12 @@ console.log(r, i)
                           </>
                       })
                     });
-*/}
+*/
+                    }
                   })}
-                </tbody>
-              </table>
-            )}
-          </article>
+              </tbody>
+            </table>
+          )}
 
           {runsResults.map((run, runIndex) => {
             const runNumber = runIndex + 1;
@@ -291,180 +288,181 @@ console.log(r, i)
                       </tr>
                     </thead>
                     <tbody>
-                      {run.results.sort((a,b) => (b.final_marks?.score || 0) - (a.final_marks?.score || 0)).map((result, resultIndex) => {
-                        const {
-                          pilot,
-                          final_marks,
-                          tricks,
-                          // marks,
-                          // warnings,
-                        } = result;
+                      {run.results
+                        .sort(
+                          (a, b) =>
+                            (b.final_marks?.score || 0) -
+                            (a.final_marks?.score || 0)
+                        )
+                        .map((result, resultIndex) => {
+                          const {
+                            pilot,
+                            final_marks,
+                            tricks,
+                            // marks,
+                            // warnings,
+                          } = result;
 
-                        const roundedScore =
-                          final_marks?.score?.toFixed(3) ?? "No score record";
+                          const roundedScore =
+                            final_marks?.score?.toFixed(3) ?? "No score record";
 
-                        const {
-                          score,
-                          technicity,
-                          bonus_percentage: bonusPercentage,
-                          malus,
-                          judges_mark,
-                          technical: technicalFinal,
-                          choreography: choreographyFinal,
-                          landing: landingFinal,
-                          synchro: synchroFinal,
-                          bonus,
-                          warnings,
-                          notes,
-                        } = final_marks ?? {};
+                          const {
+                            score,
+                            technicity,
+                            bonus_percentage: bonusPercentage,
+                            malus,
+                            judges_mark,
+                            technical: technicalFinal,
+                            choreography: choreographyFinal,
+                            landing: landingFinal,
+                            synchro: synchroFinal,
+                            bonus,
+                            warnings,
+                            notes,
+                          } = final_marks ?? {};
 
-                        const {
-                          technical: technicalJudge,
-                          choreography: choreographyJudge,
-                          landing: landingJudge,
-                          synchro: synchroJudge,
-                        } = judges_mark ?? {};
+                          const {
+                            technical: technicalJudge,
+                            choreography: choreographyJudge,
+                            landing: landingJudge,
+                            synchro: synchroJudge,
+                          } = judges_mark ?? {};
 
-                        return (
-                          <Fragment key={resultIndex}>
-                            <tr>
-                              <td
-                                // eslint-disable-next-line jsx-a11y/no-noninteractive-element-to-interactive-role
-                                role="button"
-                                tabIndex={0}
-                                className={classNames(
-                                  "flex cursor-pointer items-baseline"
-                                )}
-                                onClick={() =>
-                                  toggleRunDetails(runIndex, resultIndex)
-                                }
-                                onKeyDown={({ key }) =>
-                                  key === "Enter" &&
-                                  toggleRunDetails(runIndex, resultIndex)
-                                }
-                              >
-                                <p>{pilot ? pilot.name : "No name record"}</p>
-                                <ChevronIcon
+                          return (
+                            <Fragment key={resultIndex}>
+                              <tr>
+                                <td
+                                  // eslint-disable-next-line jsx-a11y/no-noninteractive-element-to-interactive-role
+                                  role="button"
+                                  tabIndex={0}
                                   className={classNames(
-                                    "ml-2 h-2 w-auto",
-                                    !showRunDetails[runIndex][resultIndex] &&
-                                      "-rotate-90"
+                                    "flex cursor-pointer items-baseline"
                                   )}
-                                />
-                              </td>
-                              <td className="text-right">
-                                <p>
-                                  {technicalJudge?.toFixed(3)}
-                                  &nbsp;/&nbsp;
-                                  {choreographyJudge?.toFixed(3)}
-                                  &nbsp;/&nbsp;
-                                  {landingJudge?.toFixed(3)}
-                                  {run.type === "synchro" &&
-                                    <>
-                                      &nbsp;/&nbsp;
-                                      {synchroJudge?.toFixed(3)}
-                                    </>
+                                  onClick={() =>
+                                    toggleRunDetails(runIndex, resultIndex)
                                   }
-                                  { (warnings?.length || 0) > 0 &&
-                                    <>
-                                      &nbsp;/&nbsp;
-                                      <WarningIcon />
-                                    </>
+                                  onKeyDown={({ key }) =>
+                                    key === "Enter" &&
+                                    toggleRunDetails(runIndex, resultIndex)
                                   }
-                                </p>
-                              </td>
-                              <td className="text-right">
-                                <p>
-                                  {bonusPercentage}%
-                                </p>
-                                { (malus || 0) > 0 && <ThumbDownIcon />}
-                              </td>
-                              <td className="text-right">
-                                <p>{roundedScore}</p>
-                              </td>
-                            </tr>
+                                >
+                                  <p>{pilot ? pilot.name : "No name record"}</p>
+                                  <ChevronIcon
+                                    className={classNames(
+                                      "ml-2 h-2 w-auto",
+                                      !showRunDetails[runIndex][resultIndex] &&
+                                        "-rotate-90"
+                                    )}
+                                  />
+                                </td>
+                                <td className="text-right">
+                                  <p>
+                                    {technicalJudge?.toFixed(3)}
+                                    &nbsp;/&nbsp;
+                                    {choreographyJudge?.toFixed(3)}
+                                    &nbsp;/&nbsp;
+                                    {landingJudge?.toFixed(3)}
+                                    {run.type === "synchro" && (
+                                      <>
+                                        &nbsp;/&nbsp;
+                                        {synchroJudge?.toFixed(3)}
+                                      </>
+                                    )}
+                                    {(warnings?.length || 0) > 0 && (
+                                      <>
+                                        &nbsp;/&nbsp;
+                                        <WarningIcon />
+                                      </>
+                                    )}
+                                  </p>
+                                </td>
+                                <td className="text-right">
+                                  <p>{bonusPercentage}%</p>
+                                  {(malus || 0) > 0 && <ThumbDownIcon />}
+                                </td>
+                                <td className="text-right">
+                                  <p>{roundedScore}</p>
+                                </td>
+                              </tr>
 
-                            {showRunDetails[runIndex][resultIndex] && (
-                              <>
-                                <TrPrimaryTitle left="Tricks" />
-                                {tricks.map((trick, trickIndex) => {
-                                  const {} = trick;
-                                  return (
-                                    <tr key={trickIndex}>
-                                      <td colSpan={2} className="py-2 pl-8">
-                                        <small>{capitalise(trick.name)}</small>
-                                      </td>
-                                    </tr>
-                                  );
-                                })}
-                                <TrPrimaryTitle left="Details" />
-                                <TrDuo
-                                  left="Technicity"
-                                  right={`${technicity?.toFixed(3)}`}
-                                />
-                                <TrDuo
-                                  left="Malus"
-                                  right={`${malus}%`}
-                                />
-                                <TrDuo
-                                  left="Final Technical"
-                                  right={`${technicalFinal?.toFixed(3)}`}
-                                />
-                                <TrDuo
-                                  left="Final Choreography"
-                                  right={`${choreographyFinal?.toFixed(3)}`}
-                                />
-                                <TrDuo
-                                  left="Final Landing"
-                                  right={`${landingFinal?.toFixed(3)}`}
-                                />
-                                {run.type === "synchro" && (
+                              {showRunDetails[runIndex][resultIndex] && (
+                                <>
+                                  <TrPrimaryTitle left="Tricks" />
+                                  {tricks.map((trick, trickIndex) => {
+                                    const {} = trick;
+                                    return (
+                                      <tr key={trickIndex}>
+                                        <td colSpan={2} className="py-2 pl-8">
+                                          <small>
+                                            {capitalise(trick.name)}
+                                          </small>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                  <TrPrimaryTitle left="Details" />
                                   <TrDuo
-                                    left="Final Synchro"
-                                    right={`${synchroFinal?.toFixed(3)}`}
+                                    left="Technicity"
+                                    right={`${technicity?.toFixed(3)}`}
                                   />
-                                )}
-                                <TrDuo
-                                  left="Final Bonus"
-                                  right={`${bonus?.toFixed(3)}`}
-                                />
-                                { (warnings?.length || 0) > 0 &&
-                                  <>
-                                  <TrSecondaryTitle
-                                    left="Warnings"
+                                  <TrDuo left="Malus" right={`${malus}%`} />
+                                  <TrDuo
+                                    left="Final Technical"
+                                    right={`${technicalFinal?.toFixed(3)}`}
                                   />
-                                  {warnings?.map((warning, warningIndex) => {
-                                    return (
-                                      <TrDuo
-                                        key={warningIndex}
-                                        left="Warning"
-                                        right={warning}
-                                      />
-                                    );
-                                  })}
-                                  </>
-                                }
-                                { (notes?.length || 0) > 0 &&
-                                  <>
-                                  <TrSecondaryTitle
-                                    left="Notes"
+                                  <TrDuo
+                                    left="Final Choreography"
+                                    right={`${choreographyFinal?.toFixed(3)}`}
                                   />
-                                  {notes?.map((note, noteIndex) => {
-                                    return (
-                                      <TrDuo
-                                        key={noteIndex}
-                                        left="Note"
-                                        right={note}
-                                      />
-                                    );
-                                  })}
-                                  </>
-                                }
-                              </>
-                            )}
-                          </Fragment>
-                        );
-                      })}
+                                  <TrDuo
+                                    left="Final Landing"
+                                    right={`${landingFinal?.toFixed(3)}`}
+                                  />
+                                  {run.type === "synchro" && (
+                                    <TrDuo
+                                      left="Final Synchro"
+                                      right={`${synchroFinal?.toFixed(3)}`}
+                                    />
+                                  )}
+                                  <TrDuo
+                                    left="Final Bonus"
+                                    right={`${bonus?.toFixed(3)}`}
+                                  />
+                                  {(warnings?.length || 0) > 0 && (
+                                    <>
+                                      <TrSecondaryTitle left="Warnings" />
+                                      {warnings?.map(
+                                        (warning, warningIndex) => {
+                                          return (
+                                            <TrDuo
+                                              key={warningIndex}
+                                              left="Warning"
+                                              right={warning}
+                                            />
+                                          );
+                                        }
+                                      )}
+                                    </>
+                                  )}
+                                  {(notes?.length || 0) > 0 && (
+                                    <>
+                                      <TrSecondaryTitle left="Notes" />
+                                      {notes?.map((note, noteIndex) => {
+                                        return (
+                                          <TrDuo
+                                            key={noteIndex}
+                                            left="Note"
+                                            right={note}
+                                          />
+                                        );
+                                      })}
+                                    </>
+                                  )}
+                                </>
+                              )}
+                            </Fragment>
+                          );
+                        })}
                     </tbody>
                   </table>
                 )}
