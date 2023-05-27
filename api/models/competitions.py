@@ -54,6 +54,7 @@ class CompetitionExport(BaseModel):
     config: CompetitionConfig
     runs: List[RunExport]
     image: Optional[AnyHttpUrl]
+    logo: Optional[AnyHttpUrl]
     seasons: List[str]
 
     class Config:
@@ -75,6 +76,7 @@ class CompetitionPublicExport(BaseModel):
     number_of_judges: int
     number_of_runs: int
     image: Optional[AnyHttpUrl]
+    logo: Optional[AnyHttpUrl]
     seasons: List[str]
 
     class Config:
@@ -95,6 +97,7 @@ class CompetitionNew(BaseModel):
     published: bool
     type: CompetitionType
     image: Optional[str]
+    logo: Optional[str]
     seasons: List[str] = Field([])
 
 
@@ -120,6 +123,7 @@ class CompetitionNew(BaseModel):
             runs = [],
             deleted = None,
             image = self.image,
+            logo = self.logo,
             seasons = self.seasons,
         )
 
@@ -136,6 +140,7 @@ class Competition(CompetitionNew):
     runs: List[Run]
     deleted: Optional[datetime]
     image: Optional[str]
+    logo: Optional[str]
     seasons: List[str] = Field([])
 
     class Config:
@@ -211,6 +216,12 @@ class Competition(CompetitionNew):
             return f"{settings.SERVER_HOST}/files/{self.image}"
         return None
 
+    def logo_url(self):
+        if self.logo is not None:
+            return f"{settings.SERVER_HOST}/files/{self.logo}"
+        return None
+
+
     async def export(self, cache:Cache = None) -> CompetitionExport:
 
         pilots = []
@@ -253,6 +264,7 @@ class Competition(CompetitionNew):
             config = self.config,
             runs = runs,
             image = self.image_url(),
+            logo = self.logo_url(),
             seasons = self.seasons,
         )
 
@@ -275,6 +287,7 @@ class Competition(CompetitionNew):
             number_of_runs = len(self.runs),
             state = self.state,
             image = self.image_url(),
+            logo = self.logo_url(),
             seasons = self.seasons,
         )
 
@@ -307,6 +320,7 @@ class Competition(CompetitionNew):
             state = comp.state,
             results = await results.export(cache=cache),
             image = comp.image,
+            logo = comp.logo,
             seasons = comp.seasons,
         )
 
@@ -331,6 +345,9 @@ class Competition(CompetitionNew):
         self.image = updated_comp.image
         if self.image is not None:
             self.image = self.image.split('/')[-1]
+        self.logo = updated_comp.logo
+        if self.logo is not None:
+            self.logo = self.logo.split('/')[-1]
         self.seasons = updated_comp.seasons
 
         if self.type != updated_comp.type and self.state != CompetitionState.init:
