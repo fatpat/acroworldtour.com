@@ -1,0 +1,32 @@
+{
+  "name": "Mac Twist to Tumbling",
+  "acronym": "MCT",
+  "directions": ["left", "right"],
+  "solo": true,
+  "synchro": true,
+  "repeatable": false,
+  "description": "1 turn (360°) Mac Twist rotation (half a Mac Twist) followed by a high Tumbling",
+  "criterias": {
+    "normal": "energy on entry, timing, flow",
+    "twisted": "twisted on the entry, untwisted by the rotation of the glider",
+    "cab slide": "get twisted during the turns",
+    "devil twist": "from a twisted situation, change of twist direction (within one turn)"
+  },
+  "connection": "Forbidden connection to Infinite Tumbling nor Anty-rhythmic",
+  "forbid_last_two": true,
+  "technical_coefficient": 1.95,
+  "bonuses": [
+    {"name": "twisted","bonus": 2.5},
+    {"name": "cab slide","bonus": 2},
+    {"name": "devil twist","bonus": 2},
+    {"name": "twisted exit","bonus": 6}
+  ],
+  "bonus_constraints": [
+    ["twisted", "cab slide"],
+    ["devil twist", "cab slide"]
+  ],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 2
+}

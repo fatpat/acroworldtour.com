@@ -1,0 +1,23 @@
+{
+  "name": "Tail Slide",
+  "acronym": "TS",
+  "directions": [],
+  "solo": true,
+  "synchro": true,
+  "repeatable": true,
+  "description": "Stabilised backward flying with open glider",
+  "minimum": "5 seconds",
+  "criterias": {
+    "normal": "maintenance of the shape, stability, perceptible backwards flight, control of direction, duration, exit or connection",
+    "twisted": "twisted all the way from entry to exit"
+  },
+  "repetition_allowed": true,
+  "technical_coefficient": 1.15,
+  "bonuses": [
+    {"name": "twisted","bonus": 6}
+  ],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

@@ -1,0 +1,32 @@
+{
+  "name": "Flat Stall to Infinity Tumbling",
+  "acronym": "FSI",
+  "directions": [],
+  "solo": true,
+  "synchro": true,
+  "repeatable": false,
+  "name_short": "Flat Stall to Infinity",
+  "description": "Full Stall directly connected into an Infinite Tumbling. The Full Stall must not necessarily be high but shall be perfectly straight. The pilot must not take any energy before the stall. It must come from a straight flying scenario, no pitch before the stall",
+  "minimum": "entry\\ + 3 rotation",
+  "criterias": {
+    "normal": "rhythm, flow, trajectory (no roll movement), tension in the lines and glider, duration, exit or connection",
+    "twisted": "twisted on the entry, untwist after the stall and proceed into the Infinity Tumbling without twist",
+    "full twisted": "twisted on the entry, stay twisted after the stall and proceed into the Infinity Tumbling twisted and untwist at exit (not during the turns)",
+    "devil twist": "twisted on the entry, untwist during the stall and immediately twist to the other direction and proceed into the Infinity Tumbling twisted",
+    "twisted exit": "stay twisted during the exit of the Infinity Tumbling",
+    "flip": "the pilot performs a flip just after the glider stalled, proceed into the Infinity Tumbling"
+  },
+  "connection": "Forbidden connection to Tumbling or Anti-Rhythmic SAT",
+  "technical_coefficient": 2.1,
+  "bonuses": [
+    {"name": "twisted","bonus": 2.5},
+    {"name": "twisted exit","bonus": 2},
+    {"name": "full twisted","bonus": 8.5},
+    {"name": "devil twist","bonus": 8.5},
+    {"name": "flip","bonus": 6.5}
+  ],
+  "first_maneuver": 1,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 2
+}

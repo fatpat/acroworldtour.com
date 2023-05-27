@@ -1,0 +1,20 @@
+{
+  "name": "360° Synchro Spiral to Half Pipe Combo",
+  "acronym": "S36HPC",
+  "directions": ["left", "right"],
+  "solo": false,
+  "synchro": true,
+  "repeatable": false,
+  "description": "Combination of a Synchro Spiral and Half Pipe Combo",
+  "minimum": null,
+  "criterias": {
+    "normal": "after a turn – 360° – of Synchro Spiral the pilots connect to a half pipe and exit it towards each other and start another 360° turn to the other direction in Synchro Spiral, after the turn another connection to a Half Pipe"
+  },
+  "technical_coefficient": 1.85,
+  "bonuses": [],
+  "bonus_constraints": [],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

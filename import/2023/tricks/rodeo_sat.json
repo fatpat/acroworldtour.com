@@ -1,0 +1,23 @@
+{
+  "name": "Rodeo SAT",
+  "acronym": "RS",
+  "directions": ["left", "right", "opposite"],
+  "solo": false,
+  "synchro": true,
+  "repeatable": false,
+  "description": "One pilot is performing a SAT while the other is spiralling around",
+  "minimum": "2 revolutions around the SAT at the same altitude",
+  "criterias": {
+    "normal": "same criteria of the SAT",
+    "twisted": "same criteria of the SAT"
+  },
+  "technical_coefficient": 1.65,
+  "bonuses": [
+    {"name": "twisted","bonus": 2.5}
+  ],
+  "bonus_constraints": [],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

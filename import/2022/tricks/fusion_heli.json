@@ -1,0 +1,20 @@
+{
+  "name": "Fusion Helicopter",
+  "acronym": "FH",
+  "directions": ["left", "right"],
+  "solo": false,
+  "synchro": true,
+  "repeatable": false,
+  "name_short": "Fusion Heli",
+  "description": "Start from Fusion position into Helicopter",
+  "minimum": "1 rotation",
+  "criterias": {
+    "normal": "maintenance of the shape, flow, entry, minimum 1 rotation, disconnection"
+  },
+  "technical_coefficient": 2.25,
+  "bonuses": [],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

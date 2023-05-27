@@ -1,0 +1,23 @@
+{
+  "name": "Mac Twist to Tumbling",
+  "acronym": "MCT",
+  "directions": ["left", "right"],
+  "solo": true,
+  "synchro": true,
+  "repeatable": false,
+  "description": "1 turn (360°) Mac Twist rotation (half a Mac Twist) followed by a high Tumbling",
+  "criterias": {
+    "normal": "energy on entry, timing, flow",
+    "twisted": "twisted on the entry, untwisted by the rotation of the glider"
+  },
+  "connection": "Forbidden connection to Infinite Tumbling nor Anty-rhythmic",
+  "forbid_last_two": true,
+  "technical_coefficient": 1.95,
+  "bonuses": [
+    {"name": "twisted","bonus": 2.5}
+  ],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 2
+}

@@ -1,0 +1,23 @@
+{
+  "name": "Misty to Misty",
+  "acronym": "MM",
+  "directions": [],
+  "solo": true,
+  "synchro": true,
+  "repeatable": false,
+  "description": "Misty chained with another misty on the other side using the exit energy of the first one",
+  "criterias": {
+    "normal": "same criteria as of Misty Flip",
+    "twisted": "twisted on the entry, untwisted by the rotation of the glider",
+    "twist_ext": "the twist shall be kept for at least 3 seconds"
+  },
+  "technical_coefficient": 1.75,
+  "bonuses": [
+    {"name": "twisted","bonus": 3.5},
+    {"name": "twisted exit","bonus": 5.5}
+  ],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

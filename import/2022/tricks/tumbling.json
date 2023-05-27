@@ -1,0 +1,25 @@
+{
+  "name": "Tumbling",
+  "acronym": "T",
+  "directions": ["left", "right"],
+  "solo": true,
+  "synchro": true,
+  "repeatable": false,
+  "description": "Asymmetric or inversion entry, perfect pitch movement",
+  "minimum": "1 rotation, 135° angle",
+  "criterias": {
+    "normal": "energy on entry, timing, flow, trajectory (pitch movement), angle (180° for maximum score), exit or connection",
+    "twisted": "twisted on the entry, must stay twisted, untwist at the exit NOT during the turns"
+  },
+  "connection": "Forbidden connection to Infinite and Anti-Rythmic",
+  "technical_coefficient": 1.8,
+  "bonuses": [
+    {"name": "twisted","bonus": 3.5},
+    {"name": "devil twist","bonus": 5},
+    {"name": "twisted exit","bonus": 6}
+  ],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 2
+}

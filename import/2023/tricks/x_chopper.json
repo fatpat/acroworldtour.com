@@ -1,0 +1,24 @@
+{
+  "name": "X-Chopper",
+  "acronym": "X",
+  "directions": ["left", "right"],
+  "solo": true,
+  "synchro": true,
+  "repeatable": false,
+  "description": "Entry with high energy, constant & rapid climb, spin, strong dive, exit",
+  "minimums": "90° climb, 360° spin dive not more than 270° from the direction of entry",
+  "criterias": {
+    "normal": "importance of pitch on entry, minimum 360° rotation, energy, maintenance of shape, strong dive",
+    "twisted": "twisted on the entry, untwisted by the rotation of the glider"
+  },
+  "technical_coefficient": 1.7,
+  "bonuses": [
+    {"name": "twisted","bonus": 3.5},
+    {"name": "twisted exit","bonus": 6}
+  ],
+  "bonus_constraints": [],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

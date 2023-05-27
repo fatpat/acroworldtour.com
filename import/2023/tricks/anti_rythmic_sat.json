@@ -1,0 +1,24 @@
+{
+  "name": "Anti-Rythmic SAT",
+  "acronym": "A",
+  "directions": ["left", "right"],
+  "solo": true,
+  "synchro": true,
+  "repeatable": false,
+  "name_short": "Anti-Rythmic",
+  "description": "Entry by Tumbling, 180° in the first rotation for maximum points + 1 SAT rotation at the end",
+  "minimum": "135° angle for the first rotation",
+  "criterias": {
+    "normal": "rhythm and regularity of the decreasing angle of the axis, flow, exit or connection",
+    "twisted": "from Cab Slide: twist during the Infinite turns, must stay twisted until the SAT. Must stay twisted for 1 SAT rotation, can untwist for the exit. From Tumbling: twisted on the entry, must stay twisted until the SAT. Must stay twisted for 1 SAT turn, can untwist for the exit"
+  },
+  "technical_coefficient": 1.8,
+  "bonuses": [
+    {"name": "twisted","bonus": 4.5}
+  ],
+  "bonus_constraints": [],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 2
+}

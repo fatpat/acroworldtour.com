@@ -1,0 +1,23 @@
+{
+  "name": "Wingovers Opposite",
+  "acronym": "WOO",
+  "directions": [],
+  "solo": false,
+  "synchro": true,
+  "repeatable": true,
+  "description": "Series of pendulum turns with change of direction each time",
+  "minimum": "twice to one side, twice to the other side with high angle (minimum 135°) the pilots perform the turns to the opposite direction of each other",
+  "criterias": {
+    "normal": "rhythm, flow, trajectory, angle (the higher the better)",
+    "twisted": "must be twisted during the entry and stay twisted until the glider stabilises"
+  },
+  "repetition_allowed": true,
+  "technical_coefficient": 1.6,
+  "bonuses": [
+    {"name": "twisted","bonus": 3.5}
+  ],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

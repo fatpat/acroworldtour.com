@@ -1,0 +1,24 @@
+{
+  "name": "SAT",
+  "acronym": "S",
+  "directions": ["left", "right"],
+  "solo": true,
+  "synchro": true,
+  "repeatable": false,
+  "description": "Evenly balanced SAT rotation",
+  "minimum": "2 rotations",
+  "criterias": {
+    "normal": "entry, angle of wing (90° for max score), low sink rate exit or connection (no collapse penalty for tip collapse during exit)",
+    "twisted": "twisted on the entry, must stay twisted for 2 turns can be exited untwisted"
+  },
+  "connection": "Forbidden connection to combo manoeuvres",
+  "technical_coefficient": 1.25,
+  "bonuses": [
+    {"name": "twisted","bonus": 2.5}
+  ],
+  "bonus_constraints": [],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

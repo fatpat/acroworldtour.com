@@ -1,0 +1,19 @@
+{
+  "name": "Bro Hook Lateral Wings",
+  "acronym": "BHLW",
+  "directions": [],
+  "solo": false,
+  "synchro": true,
+  "repeatable": true,
+  "description": "One pilot flies straight twisted, the other approaches from behind and connects. After the connection both pilots must position their wings in lateral position – inside tip touch",
+  "minimum": "4 seconds",
+  "criterias": {},
+  "connection": "No connection to other Bro Hook manoeuvres",
+  "repetition_allowed": true,
+  "technical_coefficient": 1.85,
+  "bonuses": [],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

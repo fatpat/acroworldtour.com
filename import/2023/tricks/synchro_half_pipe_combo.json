@@ -1,0 +1,24 @@
+{
+  "name": "Synchro Half Pipe Combo",
+  "acronym": "HPC",
+  "directions": [],
+  "solo": false,
+  "synchro": true,
+  "repeatable": false,
+  "description": "Straight entry, minimum 45° climb before rotation & 180° spin, straight horizontal dive, exit 180° from the direction of entry, in transition use the exit energy of the first Half Pipe for the next one. Direction must be changed",
+  "criterias": {
+    "normal": "importance of pitch on entry, 180° rotation, maintenance of shape, strong dive, no rotation on entry and exit",
+    "twisted": "twisted on the entry, untwisted by the rotation of the glider",
+    "full twisted": "keep the twist during the whole manoeuvre from beginning till exit as well as during the whole rotation. No change of direction of the twist. Twist shall be kept for at least 3 seconds or until the next trick"
+  },
+  "technical_coefficient": 1.75,
+  "bonuses": [
+    {"name": "twisted","bonus": 3.5},
+    {"name": "twisted exit","bonus": 5.5}
+  ],
+  "bonus_constraints": [],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

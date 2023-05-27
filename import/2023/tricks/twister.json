@@ -1,0 +1,22 @@
+{
+  "name": "Twister",
+  "acronym": "HH",
+  "directions": [],
+  "solo": true,
+  "synchro": true,
+  "repeatable": false,
+  "name_alt": "Helicopter to Helicopter",
+  "description": "Helicopter to one side, Heliptcopter to the other side",
+  "minimum": "3 rotations each side",
+  "criterias": {
+    "normal": "speed of transition"
+  },
+  "connection": "Forbidden connection to Helicopter",
+  "technical_coefficient": 1.8,
+  "bonuses": [],
+  "bonus_constraints": [],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

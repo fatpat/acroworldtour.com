@@ -1,0 +1,20 @@
+{
+  "name": "Bitch Switch",
+  "acronym": "BS",
+  "directions": ["left", "right", "opposite"],
+  "solo": false,
+  "synchro": true,
+  "repeatable": false,
+  "description": "Rodeo SAT + connection to Rodeo SAT with pilots replacing each other",
+  "minimum": "2 spiral revolutions around the SAT at the same altitude for each pilot",
+  "criterias": {
+    "normal": "same as for SAT"
+  },
+  "technical_coefficient": 1.75,
+  "bonuses": [],
+  "bonus_constraints": [],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

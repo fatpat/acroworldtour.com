@@ -1,0 +1,27 @@
+{
+  "name": "Corkscrew",
+  "acronym": "K",
+  "directions": ["left", "right"],
+  "solo": true,
+  "synchro": true,
+  "repeatable": false,
+  "name_short": "Cork",
+  "description": "Spin during the entry over the glider into a Helicopter",
+  "minimum": "120°",
+  "criterias": {
+    "normal": "energy on entry, timing, flow. Stable entry into the Helicopter",
+    "twisted": "twisted during the entry, untwisted by the rotation of the cork",
+    "reverse": "immediate transition to a Helicopter in the opposite direction"
+  },
+  "connection": "Forbidden connection to helicopter",
+  "technical_coefficient": 1.9,
+  "bonuses": [
+    {"name": "twisted","bonus": 4.5},
+    {"name": "reverse","bonus": 4}
+  ],
+  "bonus_constraints": [],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

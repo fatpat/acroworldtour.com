@@ -1,0 +1,40 @@
+{
+  "name": "Tail Slide to Infinity Tumbling",
+  "acronym": "TSI",
+  "directions": [],
+  "solo": true,
+  "synchro": true,
+  "repeatable": false,
+  "name_short": "Tail Slide to Infinity",
+  "description": "Tail Slide or Deep Stall directly connected into an Infinite Tumbling. The Tail Slide/Deep Stall must not necessarily be long but shall be entered from either straight flying or from the exit of another trick.",
+  "minimum": "entry + 3 rotation",
+  "criterias": {
+    "normal": "Rhythm, flow, trajectory (no roll movement), tension in the lines and glider, duration, exit or connection",
+    "twisted": "Twisted on the entry, untwist after the Tail Slide/Deep Stall and proceed into the Infinity Tumbling without twist",
+    "full twisted": "Twisted on the entry, stay twisted after the Tail Slide/Deep Stall and proceed into the Infinity Tumbling twisted and untwist at exit (not during the turns)",
+    "twisted exit": "stay twisted during the exit of the Infinity Tumbling",
+    "cab slide": "get twisted during the turns",
+    "devil twist": "from a twisted situation, change of twist direction (within one turn)"
+  },
+  "connection": "Forbidden connection to Tumbling or Anti-Rhythmic SAT",
+  "technical_coefficient": 2.25,
+  "bonuses": [
+    {"name": "twisted","bonus": 2.5},
+    {"name": "twisted exit","bonus": 2},
+    {"name": "full twisted","bonus": 8.5},
+    {"name": "cab slide","bonus": 2},
+    {"name": "devil twist","bonus": 2}
+  ],
+  "bonus_constraints": [
+    ["twisted", "full twisted"],
+    ["twisted", "devil twist"],
+    ["twisted", "cab slide"],
+    ["full twisted", "devil twist"],
+    ["full twisted", "cab slide"],
+    ["devil twist", "cab slide"]
+  ],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 2
+}

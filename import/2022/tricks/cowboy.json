@@ -1,0 +1,23 @@
+{
+  "name": "Cowboy",
+  "acronym": "C",
+  "directions": ["left", "right"],
+  "solo": true,
+  "synchro": true,
+  "repeatable": false,
+  "description": "Misty Flip to dive to Helicopter",
+  "minimum": "45° climb before rotation",
+  "criterias": {
+    "normal": "misty Flip criteria + forward dive + short SAT move + transition to Helicopter + Helicopter criteria",
+    "twisted": "must be twisted during the entry, untwisted by the rotation of the Misty"
+  },
+  "connection": "Forbidden connection to Helicopter",
+  "technical_coefficient": 1.9,
+  "bonuses": [
+    {"name": "twisted","bonus": 4}
+  ],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

@@ -1,0 +1,24 @@
+{
+  "name": "Bro Hook Wingovers",
+  "acronym": "BHWO",
+  "directions": [],
+  "solo": false,
+  "synchro": true,
+  "repeatable": true,
+  "description": "Wingover but in Bro Hook position. Both pilots must stay connected during the manoeuvre until the gliders stabilise. Series of pendulum turns with change of direction each time",
+  "minimum": "twice to one side, twice to the other side with 135° angle",
+  "criterias": {
+    "normal": "rhythm, flow, trajectory, angle (the higher the better)",
+    "twisted": "one pilot has to stay twisted from entry until exit"
+  },
+  "repetition_allowed": true,
+  "technical_coefficient": 1.95,
+  "bonuses": [
+    {"name": "twisted","bonus": 2}
+  ],
+  "bonus_constraints": [],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

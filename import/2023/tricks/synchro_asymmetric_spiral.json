@@ -1,0 +1,18 @@
+{
+  "name": "Synchro Asymmetric Spiral",
+  "acronym": "SA3",
+  "directions": ["left", "right", "opposite"],
+  "solo": false,
+  "synchro": true,
+  "repeatable": false,
+  "minimum": "Series of pendulum turns in the same time and direction during a synchro spiral, twice to the same side",
+  "criterias": {},
+  "technical_coefficient": 1.65,
+  "bonuses": [
+  ],
+  "bonus_constraints": [],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

@@ -1,0 +1,38 @@
+{
+  "name": "Full Stall",
+  "acronym": "FS",
+  "directions": [],
+  "solo": true,
+  "synchro": true,
+  "repeatable": true,
+  "alt_name": "Dynamic Full Stall",
+  "description": "Optional straight climb <90° + stall",
+  "criterias": {
+    "normal": "entry, control of pendulum movement, control of direction and exit or connection",
+    "twisted": "twisted on the entry, stay twisted when the glider stalls, untwist during the dive",
+    "devil twist": "twisted on the entry, untwist during the stall and immediately twist to the other direction"
+  },
+  "repetition_allowed": true,
+  "technical_coefficient": 1,
+  "bonuses": [
+    {"name": "twisted","bonus": 1.5},
+    {"name": "twisted exit","bonus": 3},
+    {"name": "devil twist","bonus": 4.5},
+    {"name": "flip","bonus": 4.5},
+    {"name": "double flip","bonus": 5.5}
+  ],
+  "bonus_constraints": [
+    ["twisted", "devil twist"],
+    ["twisted", "flip"],
+    ["twisted", "double flip"],
+    ["twisted exit", "flip"],
+    ["twisted exit", "double flip"],
+    ["devil twist", "flip"],
+    ["devil twist", "double flip"],
+    ["flip", "double flip"]
+  ],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

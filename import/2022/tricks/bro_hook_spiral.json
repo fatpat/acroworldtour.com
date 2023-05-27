@@ -1,0 +1,22 @@
+{
+  "name": "Bro Hook Spiral",
+  "acronym": "BHS",
+  "directions": ["left", "right"],
+  "solo": false,
+  "synchro": true,
+  "repeatable": true,
+  "description": "Start as a Bro Hook. After the connection the pilots must dive into a spiral",
+  "minimum": "4 seconds",
+  "criterias": {
+    "twisted": "one pilot has to stay twisted from entry until exit"
+  },
+  "repetition_allowed": true,
+  "technical_coefficient": 1.9,
+  "bonuses": [
+    {"name": "twisted","bonus": 2}
+  ],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

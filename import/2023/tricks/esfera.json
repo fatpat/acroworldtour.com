@@ -1,0 +1,22 @@
+{
+  "name": "Esfera",
+  "acronym": "E",
+  "directions": ["left", "right"],
+  "solo": true,
+  "synchro": true,
+  "repeatable": false,
+  "description": "Rhythmic SAT pulled to the vertical and followed by an Anti-Rhythmic SAT to the other side",
+  "criterias": {
+    "normal": "same as for Rythmic SAT and as for Anti-Rythmic SAT",
+    "twisted": "twisted on the entry. Must stay twisted until going vertical, untwist when vertical and twist again on the other side for the Anti -Rhythmic. Must stay twisted for at least one SAT rotation. Can exit untwisted. The pilot must twist immediately after untwisting. Untwist during 1 rotation and twist again during the next rotation"
+  },
+  "technical_coefficient": 1.95,
+  "bonuses": [
+    {"name": "twisted","bonus": 6}
+  ],
+  "bonus_constraints": [],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 2
+}

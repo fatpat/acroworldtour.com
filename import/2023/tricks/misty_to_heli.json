@@ -1,0 +1,26 @@
+{
+  "name": "Misty to Helicopter",
+  "acronym": "MH",
+  "directions": ["left", "right"],
+  "solo": true,
+  "synchro": true,
+  "repeatable": false,
+  "name_short": "Misty Heli",
+  "description": "Misty Flip + transition to Helicopter",
+  "criterias": {
+    "normal": "flow and speed of transition",
+    "twisted": "must be twisted during the entry, untwisted by the rotation of the Misty",
+    "reverse": "immediate transition to a Helicopter in the opposite direction"
+  },
+  "connection": "Forbidden connection to Helicopter",
+  "technical_coefficient": 1.75,
+  "bonuses": [
+    {"name": "twisted","bonus": 3},
+    {"name": "reverse","bonus": 3}
+  ],
+  "bonus_constraints": [],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

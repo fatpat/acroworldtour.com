@@ -1,0 +1,21 @@
+{
+  "name": "Fusion",
+  "acronym": "FU",
+  "directions": [],
+  "solo": false,
+  "synchro": true,
+  "repeatable": false,
+  "description": "Start from Bro Hook Lateral position. Both pilots spin the wings into deep stall with the leading edge facing each other",
+  "minimum": "4 seconds",
+  "criterias": {
+    "normal": "maintenance of the shape, flow, entry, duration (min\\ 4 sec.), disconnection"
+  },
+  "forbid_last_two": true,
+  "repetition_allowed": true,
+  "technical_coefficient": 2.2,
+  "bonuses": [],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

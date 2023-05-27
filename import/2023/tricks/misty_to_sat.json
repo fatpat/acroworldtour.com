@@ -1,0 +1,38 @@
+{
+  "name": "Misty to SAT",
+  "acronym": "MS",
+  "directions": ["left", "right"],
+  "solo": true,
+  "synchro": true,
+  "repeatable": false,
+  "name_short": "Misty SAT",
+  "description": "Misty + transition to SAT",
+  "minimum": "45° climb before rotation",
+  "criterias": {
+    "normal": "same criteria as for Misty Flip and SAT + flow and speed of transition",
+    "twisted": "must be twisted during the entry, untwisted by the rotation of the Misty flip",
+    "devil twist": "twisted during the entry, untwisted by the spinning of the glider and twisted to the opposite direction, then connected to a twisted SAT. (FYI for this manoeuvre the pilot then has 3/4 twists during the SAT)",
+    "full twisted": "must stay twisted during the rotation of the Misty Flip, keep the twist during the exit and stay twisted during the SAT until the exit",
+    "to_twisted_sat": "Misty to Twisted SAT: normal (not twisted) Misty Flip, twisted during the end of the rotation of the misty connected into a twisted SAT"
+  },
+  "connection": "Forbidden connection to SAT",
+  "technical_coefficient": 1.7,
+  "bonuses": [
+    {"name": "twisted","bonus": 3},
+    {"name": "devil twist","bonus": 6},
+    {"name": "full twisted","bonus": 6},
+    {"name": "to twisted sat","bonus": 3}
+  ],
+  "bonus_constraints": [
+    ["twisted", "full twisted"],
+    ["twisted", "to twisted sat"],
+    ["twisted", "devil twist"],
+    ["full twisted", "to twisted sat"],
+    ["full twisted", "devil twist"],
+    ["to twisted sat", "devil twist"]
+  ],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

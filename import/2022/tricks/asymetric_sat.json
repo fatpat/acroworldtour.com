@@ -1,0 +1,22 @@
+{
+  "name": "Asymetric SAT",
+  "acronym": "AS",
+  "directions": ["left", "right"],
+  "solo": true,
+  "synchro": true,
+  "repeatable": false,
+  "name_short": "Asym SAT",
+  "description": "entry from, say, spiral or wingover in same direction (old school)",
+  "criterias": {
+    "normal": "energy, timing, flow, trajectory (SAT rotation), angle (135° for maximum score), asymmetric dynamic exit (no collapse, no stall)",
+    "twisted": "twisted all the way from entry to exit"
+  },
+  "technical_coefficient": 1.55,
+  "bonuses": [
+    {"name": "twisted","bonus": 2.5}
+  ],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

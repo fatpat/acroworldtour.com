@@ -1,0 +1,17 @@
+{
+  "name": "Synchro Spiral",
+  "acronym": "S36",
+  "directions": ["left", "right", "mirror", "opposite"],
+  "solo": false,
+  "synchro": true,
+  "repeatable": false,
+  "minimum": "2 revolutions and a maximum distance of one paraglider line length between (approx. 10 metres)",
+  "criterias": {},
+  "technical_coefficient": 1.8,
+  "bonuses": [
+  ],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

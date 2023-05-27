@@ -1,0 +1,29 @@
+{
+  "name": "Infinity Tumbling",
+  "acronym": "I",
+  "directions": ["left", "right"],
+  "solo": true,
+  "synchro": true,
+  "repeatable": false,
+  "name_short": "Infinity",
+  "description": "Series of perfect Tumbling (pitch movement)",
+  "minimum": "entry plus 5 rotations",
+  "criterias": {
+    "normal": "rhythm, flow, trajectory (no roll movement), tension in the lines and glider, duration, exit or connection",
+    "twisted": "twisted on the entry, must stay twisted, untwist at exit and NOT during the turns",
+    "flip": "body flip either forward or backwards during the Infinite Tumbling. Flip must begin and end at the same point of one full rotation"
+  },
+  "connection": "Forbidden connection to Tumbling or Anti-Rhythmic SAT",
+  "forbid_last_two": true,
+  "technical_coefficient": 1.85,
+  "bonuses": [
+    {"name": "twisted","bonus": 3.5},
+    {"name": "twisted exit","bonus": 6},
+    {"name": "devil twist","bonus": 5},
+    {"name": "flip","bonus": 6}
+  ],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 2
+}

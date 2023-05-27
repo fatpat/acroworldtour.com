@@ -1,0 +1,24 @@
+{
+  "name": "Mac Twist",
+  "acronym": "MC",
+  "directions": ["left", "right"],
+  "solo": true,
+  "synchro": true,
+  "repeatable": false,
+  "name_short": "Mac",
+  "description": "Spin from spiral maintained until pendulum stabilised",
+  "Minimum": "90°",
+  "criterias": {
+    "normal": "energy and asymmetry on entry, speed and importance of rotation, pendulum stabilisation, fast exit or connection",
+    "twisted": "must be twisted during the entry, untwisted by the rotation of the Mac Twist Twisted"
+  },
+  "technical_coefficient": 1.7,
+  "bonuses": [
+    {"name": "twisted","bonus": 3.5}
+  ],
+  "bonus_constraints": [],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

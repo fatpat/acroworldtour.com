@@ -1,0 +1,25 @@
+{
+  "name": "Pitch Pendulum Synchro",
+  "acronym": "PP",
+  "directions": [],
+  "solo": false,
+  "synchro": true,
+  "repeatable": true,
+  "name_short": "Pitch Pendulum",
+  "name_alt": "Molineti",
+  "description": null,
+  "minimum": "twice, one over the other",
+  "criterias": {
+    "twisted": "both pilots must stay twisted during at least 2 revolutions"
+  },
+  "only_last_two": true,
+  "repetition_allowed": true,
+  "technical_coefficient": 1.95,
+  "bonuses": [
+    {"name": "twisted","bonus": 6}
+  ],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}
