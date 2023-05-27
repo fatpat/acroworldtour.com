@@ -1,6 +1,5 @@
 /* eslint-disable no-unused-vars */
 import classNames from "classnames";
-import Link from "next/link";
 import { Fragment, useState } from "react";
 
 import { components } from "@/types";
@@ -8,6 +7,7 @@ import { capitalise } from "@/utils/capitalise";
 
 import { ChevronIcon, ThumbDownIcon, WarningIcon } from "../ui/icons";
 import CompetitionJudges from "./competitionJudges";
+import CompetitionOverallResults from "./competitionOverallResults";
 import CompetitionSummary from "./competitionSummary";
 
 interface Props {
@@ -74,17 +74,12 @@ const CompetitionDetails = ({ competition }: Props) => {
   };
 
   return (
-    <div
-      className={classNames(
-        "bg-white/95 bg-cover bg-center bg-no-repeat bg-blend-overlay",
-        "flex min-h-screen w-full flex-col items-center"
-      )}
-    >
-      <h2>{name}</h2>
+    <>
+      <h2 className="text-center">{name}</h2>
       <div
         className={classNames(
-          "mt-4 flex w-full flex-col justify-evenly gap-6 px-4",
-          "lg:flex-row "
+          "mt-4 flex w-full flex-col justify-evenly gap-6 px-4 overflow-x-scroll",
+          "lg:flex-row"
         )}
       >
         <CompetitionSummary competition={competition} />
@@ -113,125 +108,9 @@ const CompetitionDetails = ({ competition }: Props) => {
               )}
             />
           </header>
-          {showOverall && (
-            <table className="w-full table-auto origin-top">
-              <thead>
-                <tr>
-                  <th className="text-left align-top" rowSpan={2}>
-                    Rank
-                  </th>
-                  <th className="text-left align-top" rowSpan={2}>
-                    Pilot
-                  </th>
-                  <th className="text-center align-top" colSpan={3}>
-                    Runs Results
-                  </th>
-                  <th className="text-right align-top" rowSpan={2}>
-                    Score
-                  </th>
-                </tr>
-                <tr>
-                  <th className="text-center">Run</th>
-                  <th className="text-center">Rank</th>
-                  <th className="text-center">Score</th>
-                </tr>
-              </thead>
-              <tbody>
-                {overallResults.map((result, index) => {
-                  const { pilot, score, result_per_run } = result;
-                  if (!pilot) return;
-                  let data = [];
-                  if (result_per_run.length == 0) {
-                    data.push({
-                      rank: index + 1,
-                      pilot: pilot.name,
-                      score: score.toFixed(3),
-                      run_number: null,
-                      run_rank: null,
-                      run_score: null,
-                    });
-                  } else {
-                    result_per_run.map((r, i) => {
-                      data.push({
-                        rank: i == 0 ? index + 1 : null,
-                        pilot: i == 0 ? pilot.name : null,
-                        score: i == 0 ? score.toFixed(3) : null,
-                        run_number: i + 1,
-                        run_rank: r.rank,
-                        run_score: r.score.toFixed(3),
-                      });
-                    });
-                  }
-                  return data.map((r, i) => {
-                    return (
-                      <tr
-                        key={`${pilot.name}-${i}`}
-                        className={
-                          index % 2 == 0 ? "!bg-white" : "!bg-awt-dark-50"
-                        }
-                      >
-                        <td className="text-left">
-                          <p>{r["rank"]}</p>
-                        </td>
-                        <td className="text-left">
-                          {r["pilot"] && (
-                            <p>
-                              <Link
-                                key={pilot.name}
-                                title={`See ${pilot.name}'s profile`}
-                                href={`/pilots/${pilot.civlid}/${pilot.name
-                                  .toLowerCase()
-                                  .replace(/\s/g, "-")}`}
-                              >
-                                {pilot.name}
-                              </Link>
-                            </p>
-                          )}
-                        </td>
-                        <td className="text-center font-extralight italic">
-                          <p>{r["run_number"]}</p>
-                        </td>
-                        <td className="text-center font-extralight italic">
-                          <p>{r["run_rank"]}</p>
-                        </td>
-                        <td className="text-center font-extralight italic">
-                          <p>{r["run_score"]}</p>
-                        </td>
-                        <td className="text-right">
-                          <p>{r["score"]}</p>
-                        </td>
-                      </tr>
-                    );
-                  });
-                  {
-                    /*
-                    return ({
-                      data.map((r, i) => {
-console.log(r, i)
-                        return (
-                          <tr key={`${pilot.name}-${r.run}`}">
 
-                            <td className="text-right">
-                              <p>Run {i+1}</p>
-                            </td>
-                            <td className="text-right">
-                              <p>P{r[3]}</p>
-                            </td>
-                            <td className="text-right">
-                              <p>{r[5]}</p>
-                            </td>
-                            <td className="text-right">
-                              <p>{r[2]}</p>
-                            </td>
-                          </tr>
-                          </>
-                      })
-                    });
-*/
-                  }
-                })}
-              </tbody>
-            </table>
+          {showOverall && (
+            <CompetitionOverallResults results={overallResults} />
           )}
 
           {runsResults.map((run, runIndex) => {
@@ -461,9 +340,8 @@ console.log(r, i)
         </section>
 
         <CompetitionJudges judges={judges} />
-
       </div>
-    </div>
+    </>
   );
 };
 

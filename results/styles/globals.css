@@ -7,7 +7,7 @@
     @apply transition-all duration-300 ease-in-out;
 
     /* DEV ONLY */
-    /* @apply outline outline-1 outline-red-200; */
+    @apply outline outline-1 outline-red-200;
   }
 
   #__next {
@@ -20,8 +20,10 @@
 
   h2,
   h3,
-  h4 {
-    @apply leading-loose drop-shadow-sm;
+  h4,
+  h5,
+  h6 {
+    @apply leading-loose drop-shadow-sm text-center;
   }
 
   h1 {
@@ -37,7 +39,11 @@
   }
 
   h4 {
-    @apply text-lg font-semibold;
+    @apply text-base sm:text-lg font-semibold;
+  }
+
+  h5 {
+    @apply text-sm sm:text-base font-semibold;
   }
 
   p {
@@ -52,10 +58,10 @@
     @apply odd:bg-white;
   }
 
-  th,
+  /* th,
   td {
     @apply p-4;
-  }
+  } */
 }
 
 @layer utilities {
