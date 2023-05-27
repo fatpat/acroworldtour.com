@@ -6,7 +6,6 @@ import { components } from "@/types";
 import { capitalise } from "@/utils/capitalise";
 
 import { ChevronIcon, ThumbDownIcon, WarningIcon } from "../ui/icons";
-import CompetitionJudges from "./competitionJudges";
 import CompetitionOverallResults from "./competitionOverallResults";
 import CompetitionSummary from "./competitionSummary";
 
@@ -47,7 +46,7 @@ const TrSecondaryTitle = ({ left }: trProps) => (
 );
 
 const CompetitionDetails = ({ competition }: Props) => {
-  const { judges, name, results } = competition;
+  const { name, results } = competition;
 
   const overallResults = results.overall_results;
   overallResults.sort((a, b) => b.score - a.score);
@@ -338,8 +337,6 @@ const CompetitionDetails = ({ competition }: Props) => {
             );
           })}
         </section>
-
-        <CompetitionJudges judges={judges} />
       </div>
     </>
   );

@@ -4,8 +4,10 @@ import Image from "next/image";
 import { components } from "@/types";
 import { capitalise } from "@/utils/capitalise";
 
+import JudgeCard from "../judge/judgeCard";
+
 interface Props {
-  competition: components["schemas"]["CompetitionPublicExport"];
+  competition: components["schemas"]["CompetitionPublicExportWithResults"];
 }
 
 const CompetitionSummary = ({ competition }: Props) => {
@@ -16,6 +18,7 @@ const CompetitionSummary = ({ competition }: Props) => {
     number_of_pilots: numberOfPilots,
     start_date: startDate,
     type,
+    judges,
   } = competition;
 
   return (
@@ -39,6 +42,14 @@ const CompetitionSummary = ({ competition }: Props) => {
       <p>{`Pilots: ${numberOfPilots}`}</p>
       <p>{`Start Date: ${startDate}`}</p>
       <p>{`End Date: ${endDate}`}</p>
+      <h3>Judges</h3>
+      <article
+        className={classNames("mt-4 flex w-full flex-wrap justify-evenly gap-4")}
+      >
+        {judges.map((judge) => (
+          <JudgeCard key={judge.name} judge={judge} />
+        ))}
+      </article>
     </section>
   );
 };
