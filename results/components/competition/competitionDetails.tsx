@@ -8,7 +8,7 @@ import { components } from "@/types";
 import { capitalise } from "@/utils/capitalise";
 
 import JudgeCard from "../judge/judgeCard";
-import { ChevronIcon } from "../ui/icons";
+import { ChevronIcon, ThumbDownIcon,WarningIcon } from "../ui/icons";
 
 interface Props {
   competition: components["schemas"]["CompetitionPublicExportWithResults"];
@@ -159,7 +159,7 @@ const CompetitionDetails = ({ competition }: Props) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {overallResults.map((result, index) => {
+                  {overallResults.sort((a,b) => b.score - a.score).map((result, index) => {
                     const { pilot, score, result_per_run } = result;
                     if (!pilot) return;
                     let data = [];
@@ -280,12 +280,18 @@ console.log(r, i)
                           Pilot
                         </th>
                         <th className="bg-awt-dark-800 text-right text-white">
+                          Judge&apos;s Marks
+                        </th>
+                        <th className="bg-awt-dark-800 text-right text-white">
+                          Bonus
+                        </th>
+                        <th className="bg-awt-dark-800 text-right text-white">
                           Score
                         </th>
                       </tr>
                     </thead>
                     <tbody>
-                      {run.results.map((result, resultIndex) => {
+                      {run.results.sort((a,b) => (b.final_marks?.score || 0) - (a.final_marks?.score || 0)).map((result, resultIndex) => {
                         const {
                           pilot,
                           final_marks,
@@ -347,6 +353,33 @@ console.log(r, i)
                                 />
                               </td>
                               <td className="text-right">
+                                <p>
+                                  {technicalJudge?.toFixed(3)}
+                                  &nbsp;/&nbsp;
+                                  {choreographyJudge?.toFixed(3)}
+                                  &nbsp;/&nbsp;
+                                  {landingJudge?.toFixed(3)}
+                                  {run.type === "synchro" &&
+                                    <>
+                                      &nbsp;/&nbsp;
+                                      {synchroJudge?.toFixed(3)}
+                                    </>
+                                  }
+                                  { (warnings?.length || 0) > 0 &&
+                                    <>
+                                      &nbsp;/&nbsp;
+                                      <WarningIcon />
+                                    </>
+                                  }
+                                </p>
+                              </td>
+                              <td className="text-right">
+                                <p>
+                                  {bonusPercentage}%
+                                </p>
+                                { (malus || 0) > 0 && <ThumbDownIcon />}
+                              </td>
+                              <td className="text-right">
                                 <p>{roundedScore}</p>
                               </td>
                             </tr>
@@ -364,64 +397,43 @@ console.log(r, i)
                                     </tr>
                                   );
                                 })}
-                                <TrPrimaryTitle left="Marks" />
+                                <TrPrimaryTitle left="Details" />
                                 <TrDuo
                                   left="Technicity"
-                                  right={`${technicity}%`}
+                                  right={`${technicity?.toFixed(3)}`}
                                 />
                                 <TrDuo
-                                  left="Bonus Percentage"
-                                  right={`${bonusPercentage}%`}
-                                />
-                                <TrDuo left="Malus" right={`${malus}%`} />
-                                <TrSecondaryTitle left="Judge's Marks" />
-                                <TrDuo
-                                  left="Technical"
-                                  right={`${technicalJudge}%`}
+                                  left="Malus"
+                                  right={`${malus}%`}
                                 />
                                 <TrDuo
-                                  left="Choreography"
-                                  right={`${choreographyJudge}%`}
+                                  left="Final Technical"
+                                  right={`${technicalFinal?.toFixed(3)}`}
                                 />
                                 <TrDuo
-                                  left="Landing"
-                                  right={`${landingJudge}%`}
+                                  left="Final Choreography"
+                                  right={`${choreographyFinal?.toFixed(3)}`}
+                                />
+                                <TrDuo
+                                  left="Final Landing"
+                                  right={`${landingFinal?.toFixed(3)}`}
                                 />
                                 {run.type === "synchro" && (
                                   <TrDuo
-                                    left="Synchro"
-                                    right={`${synchroJudge}%`}
+                                    left="Final Synchro"
+                                    right={`${synchroFinal?.toFixed(3)}`}
                                   />
                                 )}
-                                <TrSecondaryTitle left="Final Marks" />
                                 <TrDuo
-                                  left="Technical"
-                                  right={`${technicalFinal}%`}
+                                  left="Final Bonus"
+                                  right={`${bonus?.toFixed(3)}`}
                                 />
-                                <TrDuo
-                                  left="Choreography"
-                                  right={`${choreographyFinal}%`}
-                                />
-                                <TrDuo
-                                  left="Landing"
-                                  right={`${landingFinal}%`}
-                                />
-                                {run.type === "synchro" && (
-                                  <TrDuo
-                                    left="Synchro"
-                                    right={`${synchroFinal}%`}
+                                { (warnings?.length || 0) > 0 &&
+                                  <>
+                                  <TrSecondaryTitle
+                                    left="Warnings"
                                   />
-                                )}
-                                <TrDuo left="Bonus" right={`${bonus}%`} />
-                                <TrSecondaryTitle
-                                  left={
-                                    warnings?.length ?? 0 > 0
-                                      ? "Warnings"
-                                      : "No Warnings"
-                                  }
-                                />
-                                {warnings &&
-                                  warnings.map((warning, warningIndex) => {
+                                  {warnings?.map((warning, warningIndex) => {
                                     return (
                                       <TrDuo
                                         key={warningIndex}
@@ -430,6 +442,24 @@ console.log(r, i)
                                       />
                                     );
                                   })}
+                                  </>
+                                }
+                                { (notes?.length || 0) > 0 &&
+                                  <>
+                                  <TrSecondaryTitle
+                                    left="Notes"
+                                  />
+                                  {notes?.map((note, noteIndex) => {
+                                    return (
+                                      <TrDuo
+                                        key={noteIndex}
+                                        left="Note"
+                                        right={note}
+                                      />
+                                    );
+                                  })}
+                                  </>
+                                }
                               </>
                             )}
                           </Fragment>
