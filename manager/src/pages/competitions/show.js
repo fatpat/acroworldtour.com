@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 
 // ** nextjs
 import { useRouter } from 'next/router'
+import Image from 'next/image';
 
 // ** auth
 import { withPageAuthRequired, useUser } from '@auth0/nextjs-auth0';
@@ -11,6 +12,7 @@ import { withPageAuthRequired, useUser } from '@auth0/nextjs-auth0';
 import Grid from '@mui/material/Grid'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
+import IconButton from '@mui/material/IconButton'
 import Modal from '@mui/material/Modal'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import TextField from '@mui/material/TextField'
@@ -51,7 +53,8 @@ import SettingsIcon from '@mui/icons-material/Settings'
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents'
 import FlightIcon from '@mui/icons-material/Flight'
 import AccountGroup from 'mdi-material-ui/AccountGroup'
-
+import NoPhotographyIcon from '@mui/icons-material/NoPhotography';
+import ClearIcon from '@mui/icons-material/Clear';
 
 // ** others
 import Moment from 'react-moment'
@@ -120,7 +123,8 @@ const CompetitionPage = () => {
   const startDateRef = useRef()
   const endDateRef = useRef()
   const locationRef = useRef()
-  const inputRef = useRef()
+  const inputLogo = useRef()
+  const inputImage = useRef()
   const seasonsRef = useRef()
 
   const loadCompetition = async () => {
@@ -146,10 +150,14 @@ const CompetitionPage = () => {
   }
 
   const updateImage = async(event) => {
-    inputRef.current.click()
+    inputImage.current.click()
   }
 
-  const uploadImage = async(event) => {
+  const updateLogo = async(event) => {
+    inputLogo.current.click()
+  }
+
+  const uploadFile = async(event) => {
     const file = event.target.files && event.target.files[0]
     if (!file) return
 
@@ -171,15 +179,51 @@ const CompetitionPage = () => {
     })
 
     if (err) {
-        error(`error while updating competition ${cid}: ${err}`)
-        return
+        return error(`error while updating competition ${cid}: ${err}`)
     }
     console.log(retData)
 
-    tempComp.image = retData.id
+    return retData
+  }
+
+  const uploadImage = async(event) => {
+
+    const image = await uploadFile(event)
+    if (typeof(image) !== 'object') {
+      return
+    }
+
+    tempComp.image = image.id
     setTempComp(tempComp)
-    
+
     await updateCompetition(new Event('image'))
+  }
+
+  const uploadLogo = async(event) => {
+
+    const logo = await uploadFile(event)
+    if (typeof(logo) !== 'object') {
+      return
+    }
+
+    tempComp.logo = logo.id
+    setTempComp(tempComp)
+
+    await updateCompetition(new Event('logo'))
+  }
+
+  const removeImage = async(event) => {
+    if (!confirm(`Are you sure to remove the image of the competition ?`)) return
+    tempComp.image = null
+    setTempComp(tempComp)
+    await updateCompetition(new Event('remove image'))
+  }
+
+  const removeLogo = async(event) => {
+    if (!confirm(`Are you sure to remove the logo of the competition ?`)) return
+    tempComp.logo = null
+    setTempComp(tempComp)
+    await updateCompetition(new Event('remove logo'))
   }
 
   const updateCompetition = async(event) => {
@@ -194,6 +238,11 @@ const CompetitionPage = () => {
       image = tempComp.image.split('/').at(-1)
     }
 
+    var logo = null
+    if (tempComp.logo != null) {
+      logo = tempComp.logo.split('/').at(-1)
+    }
+
     const updatedCompetition = {
         name: tempComp.name,
         code: tempComp.code,
@@ -203,6 +252,7 @@ const CompetitionPage = () => {
         published: tempComp.published,
         type: tempComp.type,
         image: image,
+        logo: logo,
         seasons: tempComp.seasons,
     }
 
@@ -316,7 +366,7 @@ const CompetitionPage = () => {
 
     alert('No yet implemented! #TODO')
     return
-    
+
     const id = e.target.dataset.id
     if (!confirm(`Are you sure you want to delete Competition ${name} (${id}) ?`)) return
 
@@ -355,18 +405,19 @@ const CompetitionPage = () => {
       <Grid item xs={12}>
         <input
           style={{display: 'none'}}
-          ref={inputRef}
+          ref={inputLogo}
           type="file"
-          onChange={uploadImage}
-        />  
+          onChange={uploadLogo}
+        />
         <Typography variant='h5' sx={{display: 'flex'}}>
-          <Avatar src={comp.image} onClick={updateImage}>{comp.acronym}</Avatar>
+          <Avatar src={comp.logo} onClick={updateLogo}>{comp.acronym}</Avatar>
           &nbsp;
           {comp.name}<RefreshIcon className="hideToPrint" onClick={loadCompetition} />
+          {comp.logo && <ClearIcon className="hideToPrint" onClick={() => removeLogo() } />}
         </Typography>
       </Grid>
 
-      <Grid item xs={12} md={6} sx={{ paddingBottom: 4 }}>
+      <Grid item xs={12} md={4} sx={{ paddingBottom: 4 }}>
         <Typography>
           <Editable
             text={tempComp.name}
@@ -441,7 +492,7 @@ const CompetitionPage = () => {
         </Typography>
       </Grid>
 
-      <Grid item xs={12} md={6} sx={{ paddingBottom: 4 }}>
+      <Grid item xs={12} md={4} sx={{ paddingBottom: 4 }}>
         <Typography>
           <Editable
             text={tempComp.start_date}
@@ -505,8 +556,8 @@ const CompetitionPage = () => {
           <section>
             <div>
               <span>
-                Published: 
-                <Checkbox checked={tempComp.published} 
+                Published:
+                <Checkbox checked={tempComp.published}
                   onChange={(e) => {
                     if (!confirm(`Are you sure to ${e.target.checked ? 'publish' : 'unpublish'} the competition ?`)) {
                         e.target.checked = !e.target.checked
@@ -520,6 +571,16 @@ const CompetitionPage = () => {
             </div>
           </section>
         </Typography>
+      </Grid>
+      <Grid item xs={12} md={4} sx={{ paddingBottom: 4 }}>
+        <input
+          style={{display: 'none'}}
+          ref={inputImage}
+          type="file"
+          onChange={uploadImage}
+        />
+        <Avatar src={comp.image} onClick={updateImage} variant="square"><NoPhotographyIcon /></Avatar>
+        { comp.image && <ClearIcon className="hideToPrint" onClick={() => removeImage() } />}
       </Grid>
 
       <Grid item xs={12}>
