@@ -114,11 +114,13 @@ const SeasonPage = () => {
   const yearRef = useRef()
   const endDateRef = useRef()
   const locationRef = useRef()
-  const inputRef = useRef()
+  const imageRef = useRef()
+  const countryRef = useRef()
 
   const loadSeason = async () => {
     setLoading(true)
     sid = sid ?? router.query['sid']
+    setSid(sid)
 
     const [err, data, headers] = await APIRequest(`/seasons/${sid}/export`, {expect_json: true})
 
@@ -153,7 +155,7 @@ const SeasonPage = () => {
   }
 
   const updateImage = async(event) => {
-    inputRef.current.click()
+    imageRef.current.click()
   }
 
   const uploadImage = async(event) => {
@@ -190,7 +192,6 @@ const SeasonPage = () => {
 
   const updateSeason = async(event) => {
     event.preventDefault()
-
     var route = `/seasons/${sid}`
     var method = 'put'
     var expected_status = 204
@@ -205,6 +206,7 @@ const SeasonPage = () => {
         name: tempSeason.name,
         code: tempSeason.code,
         year: tempSeason.year,
+        country: tempSeason.country,
         image: image,
     }
 
@@ -262,7 +264,7 @@ const SeasonPage = () => {
       <Grid item xs={12}>
         <input
           style={{display: 'none'}}
-          ref={inputRef}
+          ref={imageRef}
           type="file"
           onChange={uploadImage}
         />  
@@ -328,6 +330,31 @@ const SeasonPage = () => {
                 tempSeason.year = parseInt(e.target.value)
                 setTempSeason(tempSeason)
               }}
+            />
+          </Editable>
+        </Typography>
+        <Typography>
+          <Editable
+            text={tempSeason.country || "none"}
+            title="Country"
+            onChange={updateSeason}
+            onCancel={(e) => {
+              setTempSeason(season)
+            }}
+            childRef={countryRef}
+          >
+            <Autocomplete
+              disablePortal
+              id="autocomplete-country"
+              options={countryListAllIsoData}
+              getOptionLabel={c => `${c.name} (${c.code3})`}
+              defaultValue={countryListAllIsoData.find(c => c.code3.toLowerCase() == tempSeason.country)}
+              renderInput={(params) => <TextField {...params} name="country" label="Country"/>}
+              onChange={(e, v) => {
+                tempSeason.country = v?.code3?.toLowerCase()
+                setTempSeason(tempSeason)
+              }}
+               inputProps={ {ref:countryRef} }
             />
           </Editable>
         </Typography>

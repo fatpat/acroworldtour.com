@@ -141,6 +141,9 @@ const SeasonsPage = () => {
       id: 'year',
     },
     {
+      id: 'country',
+    },
+    {
       id: 'number_of_competitions',
     },
     {
@@ -206,7 +209,7 @@ const SeasonsPage = () => {
                       }}
                     />
                   </Grid>
-                  <Grid item xs={6}>
+                  <Grid item xs={4}>
                     <TextField
                       fullWidth name="code" label='code' placeholder='Code' defaultValue={newSeason.code ?? ""}
                       onChange={(e) => {
@@ -215,13 +218,27 @@ const SeasonsPage = () => {
                       }}
                     />
                   </Grid>
-                  <Grid item xs={6}>
+                  <Grid item xs={4}>
                     <ResponsiveDatePicker
                       views={['year']}
                       label="Year"
                       default={new Date(newSeason.year, 1, 1)}
                       onChange={(v) => {
                         newSeason.year = parseInt(v.getFullYear())
+                        setNewSeason(newSeason)
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={4}>
+                    <Autocomplete
+                      disablePortal
+                      id="autocomplete-country"
+                      options={countryListAllIsoData}
+                      getOptionLabel={c => `${c.name} (${c.code3})`}
+                      defaultValue={countryListAllIsoData.find(c => c.code3.toLowerCase() == newSeason.country)}
+                      renderInput={(params) => <TextField {...params} name="country" label="Country" />}
+                      onChange={(e, v) => {
+                        newSeason.country = v.code3.toLowerCase()
                         setNewSeason(newSeason)
                       }}
                     />
