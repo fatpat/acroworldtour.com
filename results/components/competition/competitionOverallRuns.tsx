@@ -10,9 +10,9 @@ const CompetitionOverallHeader = ({ run, index }: Props) => {
 
   return (
     <>
-      <p className="col-span-2 col-start-3">{index + 1}</p>
-      <p className="col-span-3">{rank}</p>
-      <p className="col-span-3">{score}</p>
+      <p className="col-span-2 col-start-3 text-center border-[1px]">{index + 1}</p>
+      <p className="col-span-3 text-center border-[1px]">{rank}</p>
+      <p className="col-span-3 text-center border-[1px]">{score}</p>
     </>
   );
 };

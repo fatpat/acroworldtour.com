@@ -25,23 +25,29 @@ const CompetitionDetails = ({ competition }: Props) => {
 
   return (
     <>
-      <h2 className="text-center">{name}</h2>
-      <div className={classNames("mt-4 grid w-full gap-4 lg:grid-cols-12")}>
+      <h2>{name}</h2>
+      <div
+        className={classNames(
+          "mt-4 grid w-full grid-cols-1 justify-items-center gap-4",
+          "lg:grid-cols-12"
+        )}
+      >
         <CompetitionSummary
           competition={competition}
-          className="lg:col-span-3"
+          className="col-span-full w-3/4 lg:col-span-3 lg:w-full"
         />
 
         <section
           className={classNames(
-            "col-start-4 rounded-xl bg-awt-dark-50 px-4 lg:col-span-7"
+            "rounded-xl bg-awt-dark-50 lg:col-span-7 lg:col-start-4",
+            showOverall ? "w-full" : "w-3/4"
           )}
         >
           <header
             role="button"
             tabIndex={0}
             className={classNames(
-              "col-span-full flex cursor-pointer items-baseline"
+              "col-span-full flex cursor-pointer items-baseline justify-center"
             )}
             onClick={() => setShowOverall(!showOverall)}
             onKeyDown={({ key }) =>
@@ -58,7 +64,10 @@ const CompetitionDetails = ({ competition }: Props) => {
           </header>
 
           {showOverall && (
-            <CompetitionOverallResults results={overallResults} />
+            <CompetitionOverallResults
+              results={overallResults}
+              className="mt-4 grid grid-cols-12"
+            />
           )}
 
           {/* {runsResults.map((run, runIndex) => {
@@ -286,7 +295,10 @@ const CompetitionDetails = ({ competition }: Props) => {
             );
           })} */}
         </section>
-        <CompetitionJudges judges={judges} className="lg:col-span-2" />
+        <CompetitionJudges
+          judges={judges}
+          className="w-2/3 lg:col-span-2 lg:w-full"
+        />
       </div>
     </>
   );

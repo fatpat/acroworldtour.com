@@ -39,8 +39,8 @@ const CompetitionCard = ({ competition }: Props) => {
         className="card flex h-48 flex-col justify-between p-4"
       >
         <hgroup>
-          <h3>{name}</h3>
-          <h4>{location}</h4>
+          <h3 className="text-left">{name}</h3>
+          <h4 className="text-left">{location}</h4>
         </hgroup>
         <div className="flex justify-between">
           <small>{`${startDay} ${startMonth !== endMonth ? startMonth : ""} ${

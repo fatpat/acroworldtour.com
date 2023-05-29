@@ -9,7 +9,7 @@ import Layout from "@/components/layout/layout";
 
 const font = Montserrat({
   subsets: ["latin"],
-})
+});
 
 const App = ({ Component, pageProps }: AppProps) => {
   return (
@@ -17,8 +17,8 @@ const App = ({ Component, pageProps }: AppProps) => {
       <main
         className={classNames(
           font.className,
-          "flex w-full flex-1 flex-col items-center pb-8",
-          "lg:pl-52 lg:pt-24"
+          "flex min-h-screen w-full flex-col items-center overflow-y-scroll px-2 pb-8 pt-4",
+          "lg:h-screen lg:pb-4 lg:pl-52 lg:pr-4 lg:pt-28"
         )}
       >
         <Component {...pageProps} />

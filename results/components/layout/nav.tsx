@@ -11,8 +11,8 @@ const Nav = ({ activeNav, fontClass }: Props) => (
   <nav
     className={classNames(
       fontClass,
-      "sticky bottom-0 z-10 w-full bg-white",
-      "shadow-lg shadow-awt-dark-900 lg:fixed lg:left-0 lg:h-full lg:w-52 lg:pt-32 lg:shadow-awt-dark-300"
+      "sticky bottom-0 z-10 w-full bg-white shadow-lg shadow-awt-dark-900",
+      "lg:fixed lg:left-0 lg:h-full lg:w-48 lg:pt-32 lg:shadow-awt-dark-300"
     )}
   >
     <ul

@@ -12,7 +12,7 @@ type Competition = components["schemas"]["CompetitionPublicExport"];
 
 const pluralH2 = "Current Competitions";
 const singularH2 = "Current Competition";
-const noCompetitionH2 = "There is no ongoing competition.";
+const noCompetitionH2 = "There are no ongoing competitions.";
 
 const CurrentCompetitions = () => {
   const { data: competitions, error } = useSWR<Competition[], Error>(
@@ -24,14 +24,14 @@ const CurrentCompetitions = () => {
   if (!competitions) return <FetchLoading />;
 
   // DEV ONLY
-  const currentCompetitions = [...competitions]; // to test multiple competitions
+  // const currentCompetitions = [...competitions]; // to test multiple competitions
   // const currentCompetitions = [competitions[0]]; // to test single competition
   // const currentCompetitions: Competition[] = []; // to test no competition
 
   // ACTUAL BELOW
-  // const currentCompetitions = competitions.filter(
-  //   (competition) => competition.state === "open"
-  // );
+  const currentCompetitions = competitions.filter(
+    (competition) => competition.state === "open"
+  );
 
   const ongoing = currentCompetitions.length > 0;
   const isPlural = currentCompetitions.length > 1;

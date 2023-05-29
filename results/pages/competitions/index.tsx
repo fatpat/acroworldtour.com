@@ -91,7 +91,7 @@ const Competitions = () => {
       <header className="font-semibold opacity-75">
         <h2
           className={classNames(
-            "flex items-baseline",
+            "-mt-4 flex items-baseline",
             !selectedYear && "flex-row-reverse"
           )}
         >

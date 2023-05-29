@@ -9,7 +9,7 @@ interface Props {
 
 const CompetitionJudges = ({ judges, className }: Props) => (
   <section className={className}>
-    <h3>Judges</h3>
+    <h3 className="mb-4">Judges</h3>
     {judges.map((judge) => (
       <JudgeCard key={judge.name} judge={judge} />
     ))}

@@ -20,7 +20,7 @@ const CompetitionSummary = ({ competition, className }: Props) => {
 
   return (
     <div className={className}>
-      <h3>Summary</h3>
+      <h3 className="mb-4">Summary</h3>
         {image && (
           <Image
             src={image}
