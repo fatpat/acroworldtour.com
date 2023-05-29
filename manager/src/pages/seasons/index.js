@@ -257,11 +257,16 @@ const SeasonsPage = () => {
           </Card>
         </Modal>
       </Grid>
-      <Grid item xs={12}>
-        <Card>
-          <EnhancedTable rows={data} headCells={headCells} orderById='year' defaultOrder='desc' pagination={false}/>
-        </Card>
-      </Grid>
+      { [...new Set(data.map(s => s.year))].sort((a,b) => b-a).map(year => {
+        return(
+          <Grid key={year} item xs={12}>
+            <h2>{year}</h2>
+            <Card>
+              <EnhancedTable rows={data.filter(d => d.year == year)} headCells={headCells} orderById='name' defaultOrder='asc' pagination={false}/>
+            </Card>
+          </Grid>
+        )
+      })}
     </Grid>
   )
 }
