@@ -46,6 +46,7 @@ class SeasonExport(BaseModel):
     code: str
     year: int
     image: Optional[AnyHttpUrl]
+    country: Optional[str]
     type: CompetitionType
     number_of_pilots: int
     number_of_teams: int
@@ -61,10 +62,11 @@ class SeasonExport(BaseModel):
 class Season(BaseModel):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     name: str = Field(..., description="The name of the season", min_length=2)
-    code: str = Field(description="The short code of the season", min_length=2)
+    code: str = Field(description="The short code of the season", regex=r"^[a-z]{3}-[0-9]{4}$")
     year: int = Field(..., description="The year of the season", gt=1900)
     image: Optional[str]
     image_url: Optional[AnyHttpUrl]
+    country: Optional[str] = Field(regex=r"^[a-z]{3}")
     deleted: Optional[datetime]
 
 
@@ -210,8 +212,13 @@ class Season(BaseModel):
                         for pilot in res.team.pilots:
                             pilots[pilot.civlid] = 0
                     else:
+                        # if the season is limit to a country (eg national championship)
+                        # skip the pilot if its country does not match season's
+                        if self.country is not None and self.country != res.pilot.country:
+                            continue
                         pilot_or_team = res.pilot.civlid
                         pilots[res.pilot.civlid] = 0
+
                     if pilot_or_team not in results:
                         results[pilot_or_team] = 0
                     results[pilot_or_team] += res.score
@@ -240,6 +247,7 @@ class Season(BaseModel):
             code = self.code,
             year = self.year,
             image = self.get_image_url(),
+            country = self.country,
             type = _type or CompetitionType.solo,
             number_of_pilots = len(pilots.keys()),
             number_of_teams = len(teams.keys()),
