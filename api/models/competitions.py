@@ -55,6 +55,7 @@ class CompetitionExport(BaseModel):
     runs: List[RunExport]
     image: Optional[AnyHttpUrl]
     logo: Optional[AnyHttpUrl]
+    website: Optional[AnyHttpUrl]
     seasons: List[str]
 
     class Config:
@@ -77,6 +78,7 @@ class CompetitionPublicExport(BaseModel):
     number_of_runs: int
     image: Optional[AnyHttpUrl]
     logo: Optional[AnyHttpUrl]
+    website: Optional[AnyHttpUrl]
     seasons: List[str]
 
     class Config:
@@ -98,6 +100,7 @@ class CompetitionNew(BaseModel):
     type: CompetitionType
     image: Optional[str]
     logo: Optional[str]
+    website: Optional[AnyHttpUrl]
     seasons: List[str] = Field([])
 
 
@@ -124,6 +127,7 @@ class CompetitionNew(BaseModel):
             deleted = None,
             image = self.image,
             logo = self.logo,
+            website = self.website,
             seasons = self.seasons,
         )
 
@@ -141,6 +145,7 @@ class Competition(CompetitionNew):
     deleted: Optional[datetime]
     image: Optional[str]
     logo: Optional[str]
+    website: Optional[AnyHttpUrl]
     seasons: List[str] = Field([])
 
     class Config:
@@ -265,6 +270,7 @@ class Competition(CompetitionNew):
             runs = runs,
             image = self.image_url(),
             logo = self.logo_url(),
+            website = self.website,
             seasons = self.seasons,
         )
 
@@ -288,6 +294,7 @@ class Competition(CompetitionNew):
             state = self.state,
             image = self.image_url(),
             logo = self.logo_url(),
+            website = self.website,
             seasons = self.seasons,
         )
 
@@ -321,6 +328,7 @@ class Competition(CompetitionNew):
             results = await results.export(cache=cache),
             image = comp.image,
             logo = comp.logo,
+            website = comp.website,
             seasons = comp.seasons,
         )
 
@@ -348,6 +356,7 @@ class Competition(CompetitionNew):
         self.logo = updated_comp.logo
         if self.logo is not None:
             self.logo = self.logo.split('/')[-1]
+        self.website = updated_comp.website
         self.seasons = updated_comp.seasons
 
         if self.type != updated_comp.type and self.state != CompetitionState.init:
