@@ -27,8 +27,8 @@ const JudgeCard = ({ judge }: Props) => {
     fetcher
   );
 
-  if (error) return <FetchError />;
-  if (!pilot) return <FetchLoading />;
+  if (civlid && error) return <FetchError />;
+  if (civlid && !pilot) return <FetchLoading />;
 
   const photo = pilot?.photo;
 
