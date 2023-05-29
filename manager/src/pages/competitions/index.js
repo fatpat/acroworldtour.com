@@ -289,11 +289,16 @@ const CompetitionsPage = () => {
           </Card>
         </Modal>
       </Grid>
-      <Grid item xs={12}>
-        <Card>
-          <EnhancedTable rows={data} headCells={headCells} orderById='start_date' orderId='desc' pagination={false}/>
-        </Card>
-      </Grid>
+      { [...new Set(data.map(d => (new Date(d.start_date)).getFullYear()))].sort((a,b) => b-a).map(year => {
+        return(
+          <Grid key={year} item xs={12}>
+            <h2>{year}</h2>
+            <Card>
+              <EnhancedTable rows={data.filter(d => (new Date(d.start_date)).getFullYear() == year)} headCells={headCells} orderById='start_date' orderId='desc' pagination={false}/>
+            </Card>
+          </Grid>
+        )
+      })}
     </Grid>
   )
 }
