@@ -16,7 +16,7 @@ const Header = ({ fontClass, headerTitle, headerSubtitle }: Props) => {
     <header
       className={classNames(
         fontClass,
-        "z-20 flex h-24 w-full items-center justify-between bg-awt-dark-900 bg-contain bg-right bg-no-repeat px-6",
+        "z-20 flex h-24 w-full items-center justify-between bg-awt-dark-900 bg-contain bg-right bg-no-repeat px-6 text-white",
         "lg:fixed lg:top-0"
       )}
       style={{
@@ -32,13 +32,11 @@ const Header = ({ fontClass, headerTitle, headerSubtitle }: Props) => {
           className="h-11 w-auto"
         />
       </Link>
-      <hgroup className="text-right">
-        <h2 className="m-0 text-base font-medium text-awt-dark-400">
+      <hgroup>
+        <h2 className="opacity-70 text-right text-base lg:text-lg">
           {headerSubtitle}
         </h2>
-        <h1 className={classNames("m-0 text-lg text-white", "lg:text-2xl")}>
-          {headerTitle}
-        </h1>
+        <h1 className="text-right">{headerTitle}</h1>
       </hgroup>
     </header>
   );

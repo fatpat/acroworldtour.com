@@ -4,7 +4,7 @@
 
 @layer base {
   * {
-    @apply transition-all duration-300 ease-in-out;
+    /* @apply transition-all duration-300 ease-in-out; */
 
     /* DEV ONLY */
     @apply outline outline-1 outline-red-200;
@@ -18,6 +18,7 @@
     @apply lg:w-11/12;
   }
 
+  h1,
   h2,
   h3,
   h4,
@@ -27,41 +28,32 @@
   }
 
   h1 {
-    @apply text-2xl font-bold text-white;
+    @apply text-xl lg:text-2xl font-bold;
   }
 
   h2 {
-    @apply mt-4 text-xl font-bold sm:text-2xl;
+    @apply text-lg lg:text-xl font-bold;
   }
 
   h3 {
-    @apply text-xl font-bold;
+    @apply text-base lg:text-lg font-bold;
   }
 
   h4 {
-    @apply text-base sm:text-lg font-semibold;
+    @apply text-sm lg:text-base font-bold;
   }
 
   h5 {
-    @apply text-sm sm:text-base font-semibold;
+    @apply text-sm lg:text-base font-semibold;
   }
 
   p {
-    @apply text-base font-semibold leading-loose;
+    @apply text-sm lg:text-base font-medium leading-loose;
   }
 
   small {
-    @apply text-sm font-medium;
+    @apply text-xs lg:text-sm font-normal;
   }
-
-  tbody > tr {
-    @apply odd:bg-white;
-  }
-
-  /* th,
-  td {
-    @apply p-4;
-  } */
 }
 
 @layer utilities {
