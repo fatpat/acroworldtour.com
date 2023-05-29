@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 import classNames from "classnames";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 
 import { components } from "@/types";
 
@@ -22,29 +22,35 @@ const CompetitionDetails = ({ competition }: Props) => {
   const runsResults = results.runs_results;
 
   const [showOverall, setShowOverall] = useState(false);
+  const [showRuns, setShowRuns] = useState(runsResults.map(() => false));
+
+  const toggleRun = (index: number) => {
+    const newShowRuns = [...showRuns];
+    newShowRuns[index] = !newShowRuns[index];
+    setShowRuns(newShowRuns);
+  };
 
   return (
     <>
       <h2>{name}</h2>
       <div
         className={classNames(
-          "mt-4 grid w-full grid-cols-1 justify-items-center gap-4",
+          "mt-4 grid w-full grid-cols-1 items-start justify-items-center gap-4",
           "lg:grid-cols-12"
         )}
       >
         <CompetitionSummary
           competition={competition}
-          className="col-span-full w-3/4 lg:col-span-3 lg:w-full"
+          className="col-span-full w-3/4 rounded-xl border-[1px] bg-awt-dark-50 px-2 pb-2 lg:col-span-3 lg:w-full"
         />
 
         <section
           className={classNames(
-            "rounded-xl bg-awt-dark-50 lg:col-span-7 lg:col-start-4",
+            "flex flex-col rounded-xl border-[1px] bg-awt-dark-50 lg:col-span-7 lg:col-start-4 lg:w-full",
             showOverall ? "w-full" : "w-3/4"
           )}
         >
-          <header
-            role="button"
+          <button
             tabIndex={0}
             className={classNames(
               "col-span-full flex cursor-pointer items-baseline justify-center"
@@ -61,7 +67,7 @@ const CompetitionDetails = ({ competition }: Props) => {
                 !showOverall && "-rotate-90"
               )}
             />
-          </header>
+          </button>
 
           {showOverall && (
             <CompetitionOverallResults
@@ -70,16 +76,16 @@ const CompetitionDetails = ({ competition }: Props) => {
             />
           )}
 
-          {/* {runsResults.map((run, runIndex) => {
+          {runsResults.map((run, runIndex) => {
             const runNumber = runIndex + 1;
 
             return (
-              <article key={runNumber}>
+              <Fragment key={runIndex}>
                 <header
                   role="button"
                   tabIndex={0}
                   className={classNames(
-                    "flex cursor-pointer items-baseline pl-4 pt-4"
+                    "col-span-full flex cursor-pointer items-baseline justify-center"
                   )}
                   onClick={() => toggleRun(runIndex)}
                   onKeyDown={({ key }) =>
@@ -95,21 +101,47 @@ const CompetitionDetails = ({ competition }: Props) => {
                   />
                 </header>
                 {showRuns[runIndex] && (
+                  <article className="mt-4 grid grid-cols-12 border-[1px]">
+                    <h4 className="col-span-5 col-start-1 bg-awt-dark-900 text-white">
+                      Pilot
+                    </h4>
+                    <h4 className="col-span-3 col-start-6 bg-awt-dark-900 text-white">
+                      Judge&apos;s Marks
+                    </h4>
+                    <h4 className="col-span-2 col-start-9 bg-awt-dark-900 text-white">
+                      Bonus
+                    </h4>
+                    <h4 className="col-span-2 col-start-11 bg-awt-dark-900 text-white">
+                      Score
+                    </h4>
+
+                    {/* {run.results.map((result, runIndex) => (
+        <RunOverallHeader key={runIndex} result={result} rank={runIndex + 1} />
+      ))} */}
+                  </article>
+                )}
+              </Fragment>
+            );
+          })}
+        </section>
+        <CompetitionJudges
+          judges={judges}
+          className="w-2/3 rounded-xl border-[1px] bg-awt-dark-50 px-2 pb-2 lg:col-span-2 lg:w-full"
+        />
+      </div>
+    </>
+  );
+};
+
+export default CompetitionDetails;
+
+{
+  /* {
+              showRuns[runIndex] && (
                   <table className="w-full origin-top">
                     <thead>
                       <tr>
-                        <th className="bg-awt-dark-800 text-left text-white">
-                          Pilot
-                        </th>
-                        <th className="bg-awt-dark-800 text-right text-white">
-                          Judge&apos;s Marks
-                        </th>
-                        <th className="bg-awt-dark-800 text-right text-white">
-                          Bonus
-                        </th>
-                        <th className="bg-awt-dark-800 text-right text-white">
-                          Score
-                        </th>
+
                       </tr>
                     </thead>
                     <tbody>
@@ -289,19 +321,5 @@ const CompetitionDetails = ({ competition }: Props) => {
                           );
                         })}
                     </tbody>
-                  </table>
-                )}
-              </article>
-            );
-          })} */}
-        </section>
-        <CompetitionJudges
-          judges={judges}
-          className="w-2/3 lg:col-span-2 lg:w-full"
-        />
-      </div>
-    </>
-  );
-};
-
-export default CompetitionDetails;
+                  </table> */
+}

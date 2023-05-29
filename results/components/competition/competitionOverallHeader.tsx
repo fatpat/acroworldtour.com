@@ -18,32 +18,41 @@ const CompetitionOverallHeader = ({ result, rank }: Props) => {
 
   return (
     <>
-      <p className="col-span-2 col-start-1 pl-2 border-[1px]">{rank}</p>
+      <p className="col-span-2 col-start-1 border-[1px] pl-2">{rank}</p>
 
       <header
         role="button"
         tabIndex={0}
-        className={classNames("col-span-8 flex cursor-pointer items-baseline pt-1 border-[1px]")}
+        className={classNames(
+          "col-span-8 flex cursor-pointer items-baseline border-[1px] pt-1"
+        )}
         onClick={() => setShowMore(!showMore)}
         onKeyDown={({ key }) => key === "Enter" && setShowMore(!showMore)}
       >
-        <h5 className="text-left pl-2">{pilot?.name || "Pilot Unknown"}</h5>
+        <h5 className="pl-2 text-left">{pilot?.name || "Pilot Unknown"}</h5>
         <ChevronIcon
           className={classNames("ml-2 h-2 w-auto", !showMore && "-rotate-90")}
         />
       </header>
 
-      <p className="col-span-2 text-center border-[1px]">{roundedScore}</p>
+      <p className="col-span-2 border-[1px] text-center">{roundedScore}</p>
 
       {showMore && (
         <>
-          <h6 className="col-span-2 col-start-3 bg-awt-dark-700 text-white">Run#</h6>
-          <h6 className="col-span-3 col-start-5 bg-awt-dark-700 text-white">Rank</h6>
-          <h6 className="col-span-3 col-start-8 bg-awt-dark-700 text-white">Score</h6>
+          <h6 className="col-span-2 col-start-3 bg-awt-dark-500 text-white">
+            Run#
+          </h6>
+          <h6 className="col-span-3 col-start-5 bg-awt-dark-500 text-white">
+            Rank
+          </h6>
+          <h6 className="col-span-3 col-start-8 bg-awt-dark-500 text-white">
+            Score
+          </h6>
 
           {runs.map((run, index) => (
             <CompetitionOverallRuns key={index} run={run} index={index} />
           ))}
+          <div className="col-start-3 col-span-8 h-8" />
         </>
       )}
     </>
