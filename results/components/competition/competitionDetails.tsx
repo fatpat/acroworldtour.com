@@ -1,11 +1,11 @@
 /* eslint-disable no-unused-vars */
 import classNames from "classnames";
-import { Fragment, useState } from "react";
+import { useState } from "react";
 
 import { components } from "@/types";
-import { capitalise } from "@/utils/capitalise";
 
 import { ChevronIcon, ThumbDownIcon, WarningIcon } from "../ui/icons";
+import CompetitionJudges from "./competitionJudges";
 import CompetitionOverallResults from "./competitionOverallResults";
 import CompetitionSummary from "./competitionSummary";
 
@@ -13,40 +13,8 @@ interface Props {
   competition: components["schemas"]["CompetitionPublicExportWithResults"];
 }
 
-interface trProps {
-  left: string;
-  right?: string;
-}
-
-const TrDuo = ({ left, right }: trProps) => (
-  <tr>
-    <td className="py-2 pl-8">
-      <small>{left}</small>
-    </td>
-    <td className="py-2 pl-8 text-right">
-      <small>{right}</small>
-    </td>
-  </tr>
-);
-
-const TrPrimaryTitle = ({ left }: trProps) => (
-  <tr className="text-left font-semibold">
-    <td colSpan={2} className="bg-awt-dark-800 py-2 pl-6 text-white">
-      <p>{left}</p>
-    </td>
-  </tr>
-);
-
-const TrSecondaryTitle = ({ left }: trProps) => (
-  <tr>
-    <td colSpan={2} className="bg-awt-dark-600 py-2 pl-6 text-white">
-      <small>{left}</small>
-    </td>
-  </tr>
-);
-
 const CompetitionDetails = ({ competition }: Props) => {
-  const { name, results } = competition;
+  const { name, results, judges } = competition;
 
   const overallResults = results.overall_results;
   overallResults.sort((a, b) => b.score - a.score);
@@ -54,45 +22,26 @@ const CompetitionDetails = ({ competition }: Props) => {
   const runsResults = results.runs_results;
 
   const [showOverall, setShowOverall] = useState(false);
-  const [showRuns, setShowRuns] = useState(runsResults.map(() => false));
-  const [showRunDetails, setShowRunDetails] = useState(
-    runsResults.map((run) => run.results.map(() => false))
-  );
-
-  const toggleRun = (index: number) => {
-    const newShowRuns = [...showRuns];
-    newShowRuns[index] = !newShowRuns[index];
-    setShowRuns(newShowRuns);
-  };
-
-  const toggleRunDetails = (runIndex: number, resultIndex: number) => {
-    const newShowDetails = [...showRunDetails];
-    newShowDetails[runIndex][resultIndex] =
-      !newShowDetails[runIndex][resultIndex];
-    setShowRunDetails(newShowDetails);
-  };
 
   return (
     <>
       <h2 className="text-center">{name}</h2>
-      <div
-        className={classNames(
-          "mt-4 flex w-full flex-col justify-evenly gap-6 px-4 overflow-x-scroll",
-          "lg:flex-row"
-        )}
-      >
-        <CompetitionSummary competition={competition} />
+      <div className={classNames("mt-4 grid w-full gap-4 lg:grid-cols-12")}>
+        <CompetitionSummary
+          competition={competition}
+          className="lg:col-span-3"
+        />
 
         <section
           className={classNames(
-            "flex w-full flex-col rounded-xl bg-awt-dark-50"
+            "col-start-4 rounded-xl bg-awt-dark-50 px-4 lg:col-span-7"
           )}
         >
           <header
             role="button"
             tabIndex={0}
             className={classNames(
-              "flex cursor-pointer items-baseline pl-4 pt-4"
+              "col-span-full flex cursor-pointer items-baseline"
             )}
             onClick={() => setShowOverall(!showOverall)}
             onKeyDown={({ key }) =>
@@ -112,7 +61,7 @@ const CompetitionDetails = ({ competition }: Props) => {
             <CompetitionOverallResults results={overallResults} />
           )}
 
-          {runsResults.map((run, runIndex) => {
+          {/* {runsResults.map((run, runIndex) => {
             const runNumber = runIndex + 1;
 
             return (
@@ -335,8 +284,9 @@ const CompetitionDetails = ({ competition }: Props) => {
                 )}
               </article>
             );
-          })}
+          })} */}
         </section>
+        <CompetitionJudges judges={judges} className="lg:col-span-2" />
       </div>
     </>
   );
