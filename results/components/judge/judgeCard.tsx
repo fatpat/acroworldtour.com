@@ -37,7 +37,7 @@ const JudgeCard = ({ judge }: Props) => {
       title={`See ${name}'s profile`}
       href={`/pilots/${civlid}/${urlName}`}
       className={classNames(
-        "flex w-full min-w-[200px] max-w-xs flex-col rounded-xl pb-4",
+        "flex w-full flex-col rounded-xl pb-4",
         "hover:-translate-y-2 hover:shadow-xl",
         !civlid && "pointer-events-none"
       )}
