@@ -12,14 +12,13 @@ const PilotCard = ({ pilot }: Props) => {
   const {
     civlid,
     name,
-//    photo,
+    photo: photo,
+    photo_highres: photoHighres,
     country,
     rank,
   } = pilot;
   const urlName = name.toLowerCase().replace(/\s/g, "-");
   const alpha2country = alpha3ToAlpha2(country?.toUpperCase())?.toLowerCase();
-
-  const photo = "/martin-wyall-RYAUYkia-cI-unsplash.jpg";
 
   return (
     <Link
@@ -29,7 +28,7 @@ const PilotCard = ({ pilot }: Props) => {
       className="flex w-full flex-col rounded-xl pb-4 hover:-translate-y-2 hover:shadow-xl sm:w-48"
     >
       <figure
-        style={{ backgroundImage: `url('${photo}')` }}
+        style={{ backgroundImage: `url('${photoHighres || photo}')` }}
         className="pilot-card relative flex aspect-square flex-col justify-between"
       >
         <i

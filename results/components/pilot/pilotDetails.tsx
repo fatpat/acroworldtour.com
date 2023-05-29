@@ -17,8 +17,8 @@ const PilotDetails = ({ pilot }: Props) => {
     civlid,
     name,
     civl_link: civlLink,
-    //photo: photo,
-    //photo_highres: photoHighres,
+    photo: photo,
+    photo_highres: photoHighres,
     country,
     rank,
     about,
@@ -41,9 +41,6 @@ const PilotDetails = ({ pilot }: Props) => {
   const sortedSeasonsResults = seasonsResults?.sort(
     (a, b) => a.season.year - b.season.year || a.rank - b.rank
   );
-
-  const photoHighres = null;
-  const photo = "/martin-wyall-RYAUYkia-cI-unsplash.jpg";
 
   return (
     <section
