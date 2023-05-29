@@ -492,25 +492,6 @@ const CompetitionPage = () => {
                     />
           </Editable>
         </Typography>
-        <Typography>
-          <Editable
-            text={tempComp.website || "none"}
-            title="Website"
-            onChange={updateCompetition}
-            onCancel={(e) => {
-              setTempComp(comp)
-            }}
-            childRef={websiteRef}
-          >
-                    <TextField
-                      fullWidth name="website" label='Webstie' placeholder='Webstites' defaultValue={tempComp.website} inputProps={ {ref:websiteRef} }
-                      onChange={(e) => {
-                        tempComp.website = e.target.value ? e.target.value : null
-                        setTempComp(tempComp)
-                      }}
-                    />
-          </Editable>
-        </Typography>
       </Grid>
 
       <Grid item xs={12} md={4} sx={{ paddingBottom: 4 }}>
@@ -570,6 +551,26 @@ const CompetitionPage = () => {
                 setTempComp(tempComp)
               }}
             />
+          </Editable>
+        </Typography>
+
+        <Typography>
+          <Editable
+            text={tempComp.website || "none"}
+            title="Website"
+            onChange={updateCompetition}
+            onCancel={(e) => {
+              setTempComp(comp)
+            }}
+            childRef={websiteRef}
+          >
+                    <TextField
+                      fullWidth name="website" label='Webstie' placeholder='Webstites' defaultValue={tempComp.website} inputProps={ {ref:websiteRef} }
+                      onChange={(e) => {
+                        tempComp.website = e.target.value ? e.target.value : null
+                        setTempComp(tempComp)
+                      }}
+                    />
           </Editable>
         </Typography>
 
