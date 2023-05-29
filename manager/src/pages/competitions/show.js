@@ -126,6 +126,7 @@ const CompetitionPage = () => {
   const inputLogo = useRef()
   const inputImage = useRef()
   const seasonsRef = useRef()
+  const websiteRef = useRef()
 
   const loadCompetition = async () => {
     setLoading(true)
@@ -253,6 +254,7 @@ const CompetitionPage = () => {
         type: tempComp.type,
         image: image,
         logo: logo,
+        website: tempComp.website,
         seasons: tempComp.seasons,
     }
 
@@ -485,6 +487,25 @@ const CompetitionPage = () => {
                       fullWidth name="seasons" label='Seasons' placeholder='Seasons' defaultValue={tempComp.seasons.join(', ')} inputProps={ {ref:seasonsRef} }
                       onChange={(e) => {
                         tempComp.seasons = e.target.value.split(/[, ]+/).filter(t => t != "")
+                        setTempComp(tempComp)
+                      }}
+                    />
+          </Editable>
+        </Typography>
+        <Typography>
+          <Editable
+            text={tempComp.website || "none"}
+            title="Website"
+            onChange={updateCompetition}
+            onCancel={(e) => {
+              setTempComp(comp)
+            }}
+            childRef={websiteRef}
+          >
+                    <TextField
+                      fullWidth name="website" label='Webstie' placeholder='Webstites' defaultValue={tempComp.website} inputProps={ {ref:websiteRef} }
+                      onChange={(e) => {
+                        tempComp.website = e.target.value ? e.target.value : null
                         setTempComp(tempComp)
                       }}
                     />
