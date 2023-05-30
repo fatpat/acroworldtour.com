@@ -47,6 +47,7 @@ class SeasonExport(BaseModel):
     year: int
     image: Optional[AnyHttpUrl]
     country: Optional[str]
+    index: int = Field(999)
     type: CompetitionType
     number_of_pilots: int
     number_of_teams: int
@@ -67,6 +68,7 @@ class Season(BaseModel):
     image: Optional[str]
     image_url: Optional[AnyHttpUrl]
     country: Optional[str] = Field(regex=r"^[a-z]{3}")
+    index: int = Field(999)
     deleted: Optional[datetime]
 
 
@@ -248,6 +250,7 @@ class Season(BaseModel):
             year = self.year,
             image = self.get_image_url(),
             country = self.country,
+            index = self.index,
             type = _type or CompetitionType.solo,
             number_of_pilots = len(pilots.keys()),
             number_of_teams = len(teams.keys()),
