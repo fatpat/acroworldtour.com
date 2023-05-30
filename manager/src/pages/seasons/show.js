@@ -116,6 +116,7 @@ const SeasonPage = () => {
   const locationRef = useRef()
   const imageRef = useRef()
   const countryRef = useRef()
+  const indexRef = useRef()
 
   const loadSeason = async () => {
     setLoading(true)
@@ -207,6 +208,7 @@ const SeasonPage = () => {
         code: tempSeason.code,
         year: tempSeason.year,
         country: tempSeason.country,
+        index: tempSeason.index,
         image: image,
     }
 
@@ -355,6 +357,25 @@ const SeasonPage = () => {
                 setTempSeason(tempSeason)
               }}
                inputProps={ {ref:countryRef} }
+            />
+          </Editable>
+        </Typography>
+        <Typography>
+          <Editable
+            text={tempSeason.index || "999"}
+            title="index"
+            onChange={updateSeason}
+            onCancel={(e) => {
+              setTempSeason(season)
+            }}
+            childRef={indexRef}
+          >
+            <TextField
+              fullWidth name="index" label='Index' placeholder='Index' defaultValue={tempSeason.index || "999"} inputProps={ {ref:indexRef} }
+              onChange={(e) => {
+                tempSeason.index = parseInt(e.target.value)
+                setTempSeason(tempSeason)
+              }}
             />
           </Editable>
         </Typography>

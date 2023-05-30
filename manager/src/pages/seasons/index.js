@@ -144,6 +144,9 @@ const SeasonsPage = () => {
       id: 'country',
     },
     {
+      id: 'index',
+    },
+    {
       id: 'number_of_competitions',
     },
     {
@@ -209,7 +212,7 @@ const SeasonsPage = () => {
                       }}
                     />
                   </Grid>
-                  <Grid item xs={4}>
+                  <Grid item xs={3}>
                     <TextField
                       fullWidth name="code" label='code' placeholder='Code' defaultValue={newSeason.code ?? ""}
                       onChange={(e) => {
@@ -218,7 +221,7 @@ const SeasonsPage = () => {
                       }}
                     />
                   </Grid>
-                  <Grid item xs={4}>
+                  <Grid item xs={3}>
                     <ResponsiveDatePicker
                       views={['year']}
                       label="Year"
@@ -229,7 +232,7 @@ const SeasonsPage = () => {
                       }}
                     />
                   </Grid>
-                  <Grid item xs={4}>
+                  <Grid item xs={3}>
                     <Autocomplete
                       disablePortal
                       id="autocomplete-country"
@@ -239,6 +242,15 @@ const SeasonsPage = () => {
                       renderInput={(params) => <TextField {...params} name="country" label="Country" />}
                       onChange={(e, v) => {
                         newSeason.country = v.code3.toLowerCase()
+                        setNewSeason(newSeason)
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={3}>
+                    <TextField
+                      fullWidth name="index" label='index' placeholder='Index' defaultValue={newSeason.index ?? 999}
+                      onChange={(e) => {
+                        newSeason.index = e.target.value
                         setNewSeason(newSeason)
                       }}
                     />
@@ -262,7 +274,7 @@ const SeasonsPage = () => {
           <Grid key={year} item xs={12}>
             <h2>{year}</h2>
             <Card>
-              <EnhancedTable rows={data.filter(d => d.year == year)} headCells={headCells} orderById='name' defaultOrder='asc' pagination={false}/>
+              <EnhancedTable rows={data.filter(d => d.year == year)} headCells={headCells} orderById='index' defaultOrder='asc' pagination={false}/>
             </Card>
           </Grid>
         )
