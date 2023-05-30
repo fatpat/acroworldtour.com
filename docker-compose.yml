@@ -37,9 +37,17 @@ services:
     volumes:
       - ./results:/app
     environment:
-      - NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
-#      - NEXT_PUBLIC_API_URL=https://api.acroworldtour.com
+      - NEXT_PUBLIC_API_URL=http://127.0.0.1:8000/public
+#      - NEXT_PUBLIC_API_URL=https://api.acroworldtour.com/public
       - NEXT_CACHE_DURATION=1
+
+  www:
+    image: nginx
+    ports:
+      - 3002:80
+    volumes:
+      - ./www:/usr/share/nginx/html:ro
+      - ./utils/nginx.vhost.www.conf:/etc/nginx/conf.d/default.conf:ro
 
   mongodb:
     image: mongo:5.0
