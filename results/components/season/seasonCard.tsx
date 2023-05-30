@@ -1,7 +1,6 @@
 import Link from "next/link";
 
 import { components } from "@/types";
-import { capitalise } from "@/utils/capitalise";
 
 interface Props {
   season: components["schemas"]["SeasonExport"];
@@ -31,7 +30,7 @@ const SeasonCard = ({ season }: Props) => {
           <h4>{year}</h4>
         </hgroup>
         <div className="flex justify-between">
-          <small>{`${capitalise(type)}`}</small>
+          <small className="capitalize">{type}</small>
           <small>{`${numberOfPilots} pilots`}</small>
         </div>
       </article>

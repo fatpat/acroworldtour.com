@@ -1,7 +1,6 @@
 import Image from "next/image";
 
 import { components } from "@/types";
-import { capitalise } from "@/utils/capitalise";
 
 interface Props {
   competition: components["schemas"]["CompetitionPublicExportWithResults"];
@@ -19,23 +18,38 @@ const CompetitionSummary = ({ competition, className }: Props) => {
   } = competition;
 
   return (
-    <div className={className}>
+    <article className={className}>
       <h3 className="mb-4">Summary</h3>
-        {image && (
-          <Image
-            src={image}
-            alt="Competition Image"
-            width={512}
-            height={0}
-            className="my-2 h-auto w-full rounded-xl"
-          />
-        )}
-        <p>{`Type: ${capitalise(type)}`}</p>
-        <p>{`Location: ${location}`}</p>
-        <p>{`Pilots: ${numberOfPilots}`}</p>
-        <p>{`Start Date: ${startDate}`}</p>
-        <p>{`End Date: ${endDate}`}</p>
-    </div>
+      {image && (
+        <Image
+          src={image}
+          alt="Competition Image"
+          width={512}
+          height={0}
+          className="my-2 h-auto w-full rounded-xl"
+        />
+      )}
+      <div>
+        <h5 className="inline-block py-2 pl-4 text-left capitalize">Type:</h5>
+        <p className="inline-block py-2 pl-4 text-left capitalize">{type}</p>
+      </div>
+      <div>
+        <h5 className="inline-block py-2 pl-4 text-left capitalize">Location:</h5>
+        <p className="inline-block py-2 pl-4 text-left capitalize">{location}</p>
+      </div>
+      <div>
+        <h5 className="inline-block py-2 pl-4 text-left capitalize">Pilots:</h5>
+        <p className="inline-block py-2 pl-4 text-left capitalize">{numberOfPilots}</p>
+      </div>
+      <div>
+        <h5 className="inline-block py-2 pl-4 text-left capitalize">Start Date:</h5>
+        <p className="inline-block py-2 pl-4 text-left capitalize">{startDate}</p>
+      </div>
+      <div>
+        <h5 className="inline-block py-2 pl-4 text-left capitalize">End Date:</h5>
+        <p className="inline-block py-2 pl-4 text-left capitalize">{endDate}</p>
+      </div>
+    </article>
   );
 };
 

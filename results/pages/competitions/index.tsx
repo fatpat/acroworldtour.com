@@ -88,7 +88,7 @@ const Competitions = () => {
     };
 
     return (
-      <header className="font-semibold opacity-75">
+      <header className="font-semibold opacity-95">
         <h2
           className={classNames(
             "-mt-4 flex items-baseline",
@@ -144,7 +144,7 @@ const Competitions = () => {
           const { code, competitions, name } = season;
           return (
             <>
-              <h3 className="mb-6 mt-6 opacity-50">{name}</h3>
+              <h3 className="mb-6 mt-6 opacity-80">{name}</h3>
               <section key={code} className={classNames("wrapper mb-8")}>
                 {competitions.map((competition) => (
                   <CompetitionCard
@@ -158,7 +158,7 @@ const Competitions = () => {
         })}
       {offSeasonCompetitions.length > 0 && (
         <>
-          <h3 className="mb-6 mt-6 opacity-50">Off Season</h3>
+          <h3 className="mb-6 mt-6 opacity-80">Off Season</h3>
           <section className={classNames("wrapper mb-8")}>
             {offSeasonCompetitions
               .sort((a, b) => b.start_date.localeCompare(a.start_date))

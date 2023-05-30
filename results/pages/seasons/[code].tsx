@@ -8,7 +8,6 @@ import FetchError from "@/components/ui/fetchError";
 import FetchLoading from "@/components/ui/fetchLoading";
 import { API_URL } from "@/constants";
 import { components } from "@/types";
-import { capitalise } from "@/utils/capitalise";
 import { fetcher } from "@/utils/fetcher";
 
 type Season = components["schemas"]["SeasonExport"];
@@ -39,7 +38,7 @@ const SeasonPage = () => {
       setPageTitle(season.name || "");
       setPageDescription(`Season page for ${season.name}`);
       setHeaderTitle(season.name || "");
-      setHeaderSubtitle(`${capitalise(season.type)} - ${season.year}` || "");
+      setHeaderSubtitle(`${season.type} - ${season.year}` || "");
       setActiveNav("seasons");
     }
   }, [

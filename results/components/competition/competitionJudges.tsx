@@ -9,10 +9,12 @@ interface Props {
 
 const CompetitionJudges = ({ judges, className }: Props) => (
   <section className={className}>
-    <h3 className="mb-4">Judges</h3>
-    {judges.map((judge) => (
-      <JudgeCard key={judge.name} judge={judge} />
-    ))}
+      <h3 className="mb-4">Judges</h3>
+    <article className="flex flex-wrap justify-center">
+      {judges.map((judge) => (
+        <JudgeCard key={judge.name} judge={judge} />
+      ))}
+    </article>
   </section>
 );
 

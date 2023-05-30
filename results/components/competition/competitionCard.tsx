@@ -1,3 +1,4 @@
+import classNames from "classnames";
 import Link from "next/link";
 
 import { components } from "@/types";
@@ -32,21 +33,30 @@ const CompetitionCard = ({ competition }: Props) => {
     <Link
       key={code}
       href={`/competitions/${code}`}
-      className="w-full max-w-lg hover:-translate-y-2 hover:invert"
+      className={classNames(
+        "max-w-lg flex-grow",
+      )}
     >
       <article
         style={{ backgroundImage: `url(${image})` }}
-        className="card flex h-48 flex-col justify-between p-4"
+        className={classNames(
+          "flex flex-col justify-between rounded-xl text-white h-48",
+          "bg-black/60 bg-cover bg-center bg-no-repeat p-4 bg-blend-multiply",
+          "shadow shadow-awt-dark-400",
+          "hover:-translate-y-2 hover:bg-white/90 hover:text-current hover:bg-blend-screen",
+          "hover:shadow-md"
+        )}
+
       >
         <hgroup>
           <h3 className="text-left">{name}</h3>
           <h4 className="text-left">{location}</h4>
         </hgroup>
         <div className="flex justify-between">
-          <small>{`${startDay} ${startMonth !== endMonth ? startMonth : ""} ${
+          <p>{`${startDay} ${startMonth !== endMonth ? startMonth : ""} ${
             startYear !== endYear ? startYear : ""
-          } to ${endDay} ${endMonth} ${endYear}`}</small>
-          <small>{`${numberOfPilots} pilots`}</small>
+          } to ${endDay} ${endMonth} ${endYear}`}</p>
+          <p>{`${numberOfPilots} pilots`}</p>
         </div>
       </article>
     </Link>

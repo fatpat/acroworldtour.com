@@ -2,9 +2,8 @@ import classNames from "classnames";
 import { Fragment, useState } from "react";
 
 import { components } from "@/types";
-import { capitalise } from "@/utils/capitalise";
 
-import { ChevronIcon, ThumbDownIcon, WarningIcon } from "../ui/icons";
+import { ChevronIcon } from "../ui/icons";
 
 interface Props {
   results: components["schemas"]["FlightExport"][];
@@ -111,15 +110,10 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
                 )}
               </div>
 
-              <div className="col-span-2 flex flex-col items-center justify-center border-[1px] py-2">
-                <p>{bonusPercentage}%</p>
-                {(warnings?.length || 0) > 0 && (
-                  <WarningIcon className="h-4 fill-orange-600" />
-                )}
-                {(malus || 0) > 0 && (
-                  <ThumbDownIcon className="h-4 fill-red-600" />
-                )}
-              </div>
+              <p className="col-span-2 flex flex-col items-center justify-center border-[1px] py-2">
+                {bonusPercentage}%{(warnings?.length || 0) > 0 && " ⚠️"}
+                {(malus || 0) > 0 && "🔻"}
+              </p>
 
               <p className="col-span-2 border-[1px] py-2 text-center">
                 {roundedScore}
@@ -130,64 +124,100 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
                   <h5 className="col-span-full col-start-1 border-[1px] border-awt-dark-500 bg-awt-dark-600 py-1 text-white">
                     Tricks
                   </h5>
-                  <ul className="col-span-full col-start-1 pl-4">
+                  <ul className="col-span-full col-start-1 pb-4 pl-4 pt-2">
                     {tricks.map((trick, trickIndex) => (
-                      <li
-                        key={trickIndex}
-                      >
-                       <p className="">{capitalise(trick.name)}</p>
+                      <li key={trickIndex}>
+                        <p className="list-item list-inside list-disc pt-2 capitalize">
+                          {trick.name}
+                        </p>
                       </li>
                     ))}
                   </ul>
-                  <h5>Details</h5>
-                  <h5>Technicity</h5>
-                  <p>{technicity?.toFixed(3)}</p>
-                  <h5>Malus</h5>
-                  <p>{malus}%</p>
-                  <h5>Final Technical</h5>
-                  <p>{technicalFinal?.toFixed(3)}</p>
-                  <h5>Final Choreography</h5>
-                  <p>{choreographyFinal?.toFixed(3)}</p>
-                  <h5>Final Landing</h5>
-                  <p>{landingFinal?.toFixed(3)}</p>
+                  <h5 className="col-span-full col-start-1 border-[1px] border-awt-dark-500 bg-awt-dark-500 py-1 text-white">
+                    Details
+                  </h5>
+                  <h5 className="col-span-2 col-start-1 border-[1px] py-1">
+                    Technicity
+                  </h5>
+                  <h5 className="col-span-2 col-start-3 border-[1px] py-1">
+                    Malus
+                  </h5>
+                  <h5 className="col-span-2 col-start-5 border-[1px] py-1">
+                    Final Technical
+                  </h5>
+                  <h5 className="col-span-2 col-start-7 border-[1px] py-1">
+                    Final Choreography
+                  </h5>
+                  <h5 className="col-span-2 col-start-9 border-[1px] py-1">
+                    Final Landing
+                  </h5>
+                  <h5 className="col-span-2 col-start-11 border-[1px] py-1">
+                    Final Bonus
+                  </h5>
+                  <p className="col-span-2 col-start-1 border-[1px] py-1 text-center">
+                    {technicity?.toFixed(3)}
+                  </p>
+                  <p className="col-span-2 col-start-3 border-[1px] py-1 text-center">
+                    {malus}%
+                  </p>
 
+                  <p className="col-span-2 col-start-5 border-[1px] py-1 text-center">
+                    {technicalFinal?.toFixed(3)}
+                  </p>
+                  <p className="col-span-2 col-start-7 border-[1px] py-1 text-center">
+                    {choreographyFinal?.toFixed(3)}
+                  </p>
+                  <p className="col-span-2 col-start-9 border-[1px] py-1 text-center">
+                    {landingFinal?.toFixed(3)}
+                  </p>
+
+                  <p className="col-span-2 col-start-11 border-[1px] py-1 text-center">
+                    {bonus?.toFixed(3)}
+                  </p>
                   {type === "synchro" && (
                     <>
-                      <h5>Final Synchro</h5>
-                      <p>{synchroFinal?.toFixed(3)}</p>
+                      <h5 className="col-span-full col-start-1 border-[1px] py-1">
+                        Final Synchro
+                      </h5>
+                      <p className="col-span-full col-start-1 border-[1px] py-1 text-center">
+                        {synchroFinal?.toFixed(3)}
+                      </p>
                     </>
                   )}
-                  <h5>Final Bonus</h5>
-                  <p>{bonus?.toFixed(3)}</p>
-
                   {(warnings?.length || 0) > 0 && (
                     <>
-                      <h5>Warnings</h5>
+                      <h5 className="col-span-full col-start-1 border-[1px] py-1">
+                        Warnings
+                      </h5>
 
-                      {warnings?.map((warning, warningIndex) => {
-                        return (
-                          <Fragment key={warningIndex}>
-                            <h5>Warning</h5>
-                            <p>{warning}</p>
-                          </Fragment>
-                        );
-                      })}
+                      <ul className="col-span-full col-start-1 border-[1px] py-1 text-center">
+                        {warnings?.map((warning, warningIndex) => {
+                          return (
+                            <li key={warningIndex}>
+                              <p className="py-1">⚠️ {warning}</p>
+                            </li>
+                          );
+                        })}
+                      </ul>
                     </>
                   )}
                   {(notes?.length || 0) > 0 && (
                     <>
-                      <h5>Notes</h5>
-
-                      {notes?.map((note, noteIndex) => {
-                        return (
-                          <Fragment key={noteIndex}>
-                            <h5>Note</h5>
-                            <p>{note}</p>
-                          </Fragment>
-                        );
-                      })}
+                      <h5 className="col-span-full col-start-1 border-[1px] py-1">
+                        Notes
+                      </h5>
+                      <ul className="col-span-full col-start-1 border-[1px] py-1 pl-4">
+                        {notes?.map((note, noteIndex) => {
+                          return (
+                            <li key={noteIndex}>
+                              <p className="py-1">📝 {note}</p>
+                            </li>
+                          );
+                        })}
+                      </ul>
                     </>
                   )}
+                  <div className="col-span-full col-start-1 h-8 bg-white" />
                 </>
               )}
             </Fragment>

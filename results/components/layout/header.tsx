@@ -33,10 +33,10 @@ const Header = ({ fontClass, headerTitle, headerSubtitle }: Props) => {
         />
       </Link>
       <hgroup>
-        <h2 className="opacity-70 text-right text-base lg:text-lg">
+        <h2 className="opacity-70 text-right text-base lg:text-lg capitalize">
           {headerSubtitle}
         </h2>
-        <h1 className="text-right">{headerTitle}</h1>
+        <h1 className="text-right capitalize">{headerTitle}</h1>
       </hgroup>
     </header>
   );

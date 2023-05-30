@@ -23,10 +23,12 @@ const CurrentCompetitions = () => {
   if (error) return <FetchError />;
   if (!competitions) return <FetchLoading />;
 
+
   // DEV ONLY
   // const currentCompetitions = [...competitions]; // to test multiple competitions
   // const currentCompetitions = [competitions[0]]; // to test single competition
   // const currentCompetitions: Competition[] = []; // to test no competition
+
 
   // ACTUAL BELOW
   const currentCompetitions = competitions.filter(
@@ -41,12 +43,10 @@ const CurrentCompetitions = () => {
       <h2 className="mt-6">
         {ongoing ? (isPlural ? pluralH2 : singularH2) : noCompetitionH2}
       </h2>
-      <section className="my-8 w-full">
-        <div className="wrapper">
-          {currentCompetitions.map((competition) =>
-            CompetitionCard({ competition })
-          )}
-        </div>
+      <section className="wrapper my-8">
+        {currentCompetitions.map((competition) =>
+          CompetitionCard({ competition })
+        )}
       </section>
     </>
   );

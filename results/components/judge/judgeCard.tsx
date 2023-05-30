@@ -5,7 +5,6 @@ import useSWR from "swr";
 
 import { API_URL } from "@/constants";
 import { components } from "@/types";
-import { capitalise } from "@/utils/capitalise";
 import { fetcher } from "@/utils/fetcher";
 
 import FetchError from "../ui/fetchError";
@@ -38,14 +37,14 @@ const JudgeCard = ({ judge }: Props) => {
       title={`See ${name}'s profile`}
       href={`/pilots/${civlid}/${urlName}`}
       className={classNames(
-        "flex flex-col rounded-xl pb-4",
+        "flex flex-col items-center rounded-xl pb-4",
         "hover:-translate-y-2 hover:shadow-xl",
         !civlid && "pointer-events-none"
       )}
     >
       <figure
         style={{ backgroundImage: `url('${photo}')` }}
-        className="pilot-card relative flex aspect-square flex-col justify-between"
+        className="relative flex aspect-square flex-col justify-between rounded-xl bg-cover bg-center bg-no-repeat shadow shadow-awt-dark-400 w-28"
       >
         <i
           className={classNames(
@@ -55,9 +54,9 @@ const JudgeCard = ({ judge }: Props) => {
           )}
         />
       </figure>
-      <figcaption className="mt-4 px-4 w-max self-center">
-        <h3 className="text-sm text-left">{name}</h3>
-        <small>{capitalise(level)}</small>
+      <figcaption className="mt-4 self-center px-4">
+        <h6 className="text-left text-sm">{name}</h6>
+        <small className="capitalize">{level}</small>
       </figcaption>
     </Link>
   );
