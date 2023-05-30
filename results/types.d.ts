@@ -501,6 +501,11 @@ export interface components {
        * Format: uri
        */
       logo?: string;
+      /**
+       * Website 
+       * Format: uri
+       */
+      website?: string;
       /** Seasons */
       seasons: (string)[];
     };
@@ -529,6 +534,11 @@ export interface components {
       image?: string;
       /** Logo */
       logo?: string;
+      /**
+       * Website 
+       * Format: uri
+       */
+      website?: string;
       /**
        * Seasons 
        * @default []
@@ -586,6 +596,11 @@ export interface components {
        * Format: uri
        */
       logo?: string;
+      /**
+       * Website 
+       * Format: uri
+       */
+      website?: string;
       /** Seasons */
       seasons: (string)[];
     };
@@ -631,6 +646,11 @@ export interface components {
        * Format: uri
        */
       logo?: string;
+      /**
+       * Website 
+       * Format: uri
+       */
+      website?: string;
       /** Seasons */
       seasons: (string)[];
       results: components["schemas"]["CompetitionResultsExport"];
@@ -1455,6 +1475,13 @@ export interface components {
        * Format: uri
        */
       image_url?: string;
+      /** Country */
+      country?: string;
+      /**
+       * Index 
+       * @default 999
+       */
+      index?: number;
       /**
        * Deleted 
        * Format: date-time
@@ -1476,6 +1503,13 @@ export interface components {
        * Format: uri
        */
       image?: string;
+      /** Country */
+      country?: string;
+      /**
+       * Index 
+       * @default 999
+       */
+      index?: number;
       type: components["schemas"]["CompetitionType"];
       /** Number Of Pilots */
       number_of_pilots: number;
