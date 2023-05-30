@@ -20,7 +20,7 @@ interface YearSelectorProps {
 }
 
 const Competitions = () => {
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [selectedYear, setSelectedYear] = useState<number | null>(new Date().getFullYear());
 
   const {
     setPageTitle,
@@ -109,9 +109,6 @@ const Competitions = () => {
             className="border-0 font-sans text-xl sm:text-2xl"
             onChange={handleYearChange}
           >
-            <option value="" className="text-lg text-awt-dark-600">
-              All
-            </option>
             {years.map((year) => (
               <option
                 key={year}
@@ -132,7 +129,7 @@ const Competitions = () => {
       <YearSelector
         years={[
           ...new Set(
-            competitions.map((comp) => new Date(comp.start_date).getFullYear())
+            competitions.map(comp => new Date(comp.start_date).getFullYear()).concat(new Date().getFullYear())
           ),
         ].sort((a,b) => b-a)}
         onChange={setSelectedYear}
