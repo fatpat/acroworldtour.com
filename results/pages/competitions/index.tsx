@@ -131,16 +131,15 @@ const Competitions = () => {
     <>
       <YearSelector
         years={[
-          1970, // TESTING ONLY
           ...new Set(
             competitions.map((comp) => new Date(comp.start_date).getFullYear())
           ),
-        ]}
+        ].sort((a,b) => b-a)}
         onChange={setSelectedYear}
       />
 
       {soloSeasons
-        .sort((a, b) => b.year - a.year || b.code.localeCompare(a.code))
+        .sort((a, b) => b.year - a.year || (a.index || 999) - (b.index || 999) || a.name.localeCompare(b.name))
         .map((season) => {
           const { code, competitions, name } = season;
           return (
