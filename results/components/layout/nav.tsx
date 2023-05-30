@@ -15,6 +15,8 @@ const Nav = ({ activeNav, fontClass }: Props) => (
       "lg:fixed lg:left-0 lg:h-full lg:w-48 lg:pt-32 lg:shadow-awt-dark-300"
     )}
   >
+    {/* This div forces mobile browsers to update the screen size correctly
+        when the top address bar collapses */}
     <div className="fixed" />
     <ul
       className={classNames(
