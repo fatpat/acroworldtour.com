@@ -112,7 +112,7 @@ const Competitions = () => {
             id="year-selector"
             title="Select a year"
             value={selectedYear ?? ""}
-            className="border-0 font-sans text-xl sm:text-xl"
+            className="border-0 font-sans text-lg sm:text-xl"
             onChange={handleYearChange}
           >
             {years.map((year) => (

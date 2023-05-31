@@ -63,7 +63,7 @@ const CompetitionDetails = ({ competition }: Props) => {
           >
             {overallResults.length > 0 && (
               <button
-                tabIndex={0}
+                title="Click to open/close overall results"
                 className={classNames(
                   "col-span-full flex cursor-pointer items-baseline justify-center"
                 )}
@@ -94,9 +94,8 @@ const CompetitionDetails = ({ competition }: Props) => {
 
               return (
                 <Fragment key={runIndex}>
-                  <header
-                    role="button"
-                    tabIndex={0}
+                  <button
+                    title="Click to open/close run results"
                     className={classNames(
                       "col-span-full flex cursor-pointer items-baseline justify-center"
                     )}
@@ -112,7 +111,7 @@ const CompetitionDetails = ({ competition }: Props) => {
                         !showRuns[runIndex] && "-rotate-90"
                       )}
                     />
-                  </header>
+                  </button>
                   {showRuns[runIndex] && (
                     <CompetitionRunMain
                       results={run.results}
