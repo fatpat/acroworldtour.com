@@ -47,12 +47,10 @@ const Pilots = () => {
   return (
     <>
       <h2>All Ranked Pilots</h2>
-      <section className="mt-8 px-2">
-        <div className="wrapper">
-          {rankedPilots.map((pilot) => (
-            <PilotCard key={pilot.civlid} pilot={pilot} />
-          ))}
-        </div>
+      <section className="wrapper mt-8 px-2">
+        {rankedPilots.map((pilot) => (
+          <PilotCard key={pilot.civlid} pilot={pilot} />
+        ))}
       </section>
     </>
   );
