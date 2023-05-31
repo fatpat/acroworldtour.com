@@ -2,6 +2,8 @@ import Image from "next/image";
 
 import { components } from "@/types";
 
+import CompetitionJudges from "./competitionJudges";
+
 interface Props {
   competition: components["schemas"]["CompetitionPublicExportWithResults"];
   className?: string;
@@ -49,6 +51,14 @@ const CompetitionSummary = ({ competition, className }: Props) => {
         <h5 className="inline-block py-2 pl-4 text-left capitalize">End Date:</h5>
         <p className="inline-block py-2 pl-4 text-left capitalize">{endDate}</p>
       </div>
+            {competition.judges.length > 0 && (
+              <>
+                <hr />
+                <CompetitionJudges
+                  judges={competition.judges}
+                />
+              </>
+            )}
     </article>
   );
 };

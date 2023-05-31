@@ -4,7 +4,6 @@ import { Fragment, useEffect, useState } from "react";
 import { components } from "@/types";
 
 import { ChevronIcon } from "../ui/icons";
-import CompetitionJudges from "./competitionJudges";
 import CompetitionOverallResults from "./competitionOverallResults";
 import CompetitionRunMain from "./competitionRunMain";
 import CompetitionSummary from "./competitionSummary";
@@ -14,7 +13,7 @@ interface Props {
 }
 
 const CompetitionDetails = ({ competition }: Props) => {
-  const { name, results, judges } = competition;
+  const { name, results } = competition;
 
   const overallResults = results.overall_results;
   overallResults.sort((a, b) => b.score - a.score);
@@ -55,7 +54,7 @@ const CompetitionDetails = ({ competition }: Props) => {
           )}
         />
 
-        {overallResults.length > 0 && judges.length > 0 && (
+        {overallResults.length > 0 && (
           <section
             className={classNames(
               "flex w-full flex-grow flex-col gap-4 rounded-xl bg-awt-dark-50 py-2 shadow-inner",
@@ -124,15 +123,6 @@ const CompetitionDetails = ({ competition }: Props) => {
                 </Fragment>
               );
             })}
-            {judges.length > 0 && (
-              <>
-                <hr />
-                <CompetitionJudges
-                  judges={judges}
-                  className={classNames(hideExtra && "landscape:hidden")}
-                />
-              </>
-            )}
           </section>
         )}
       </div>
