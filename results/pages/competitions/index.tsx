@@ -143,7 +143,7 @@ const Competitions = () => {
             <>
               <h3 className="mb-6 mt-6 opacity-80">{name}</h3>
               <section key={code} className={classNames("wrapper mb-8")}>
-                {competitions.map((competition) => (
+                {competitions.sort((a,b) => (new Date(a.start_date).getTime() - new Date(b.start_date).getTime())).map((competition) => (
                   <CompetitionCard
                     key={competition.code}
                     competition={competition}
