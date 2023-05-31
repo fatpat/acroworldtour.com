@@ -17,11 +17,11 @@ const CompetitionSummary = ({ competition, className }: Props) => {
     number_of_pilots: numberOfPilots,
     start_date: startDate,
     type,
+    website,
   } = competition;
 
   return (
     <article className={className}>
-      <h3 className="mb-4">Summary</h3>
       {image && (
         <Image
           src={image}
@@ -30,6 +30,13 @@ const CompetitionSummary = ({ competition, className }: Props) => {
           height={0}
           className="my-2 h-auto w-full rounded-xl"
         />
+      )}
+      { website && (
+        <div>
+          <h5 className="inline-block py-2 pl-4 text-left capitalize">
+            <a href={website} target="_blank">Official Website</a>
+          </h5>
+        </div>
       )}
       <div>
         <h5 className="inline-block py-2 pl-4 text-left capitalize">Type:</h5>
