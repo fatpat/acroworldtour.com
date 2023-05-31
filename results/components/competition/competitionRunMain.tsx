@@ -70,6 +70,8 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
           synchro: synchroJudge,
         } = judges_mark ?? {};
 
+        const rank = resultIndex+1
+
         return (
           <Fragment key={resultIndex}>
             <button
@@ -84,6 +86,7 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
             >
               <h4 className="my-auto text-left">
                 {pilot ? pilot.name : "No name record"}
+                  {["🥇", "🥈", "🥉"][rank - 1]}
               </h4>
               <ChevronIcon
                 className={classNames(

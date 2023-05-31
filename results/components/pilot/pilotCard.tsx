@@ -43,8 +43,8 @@ const PilotCard = ({ pilot }: Props) => {
         />
       </figure>
       <figcaption className="self-center pt-3">
-        <h3 className="text-left">{name}</h3>
-        <p>Overall Rank: #{rank}</p>
+        <h3 className="text-left">{name} {["🥇", "🥈", "🥉"][rank - 1]}</h3>
+        <p>FAI Rank: #{rank}</p>
       </figcaption>
     </Link>
   );

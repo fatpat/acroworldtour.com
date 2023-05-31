@@ -13,9 +13,7 @@ const CompetitionOverallHeader = ({ run, index }: Props) => {
       <p className="col-span-2 col-start-3 border-[1px] text-center">
         {index + 1}
       </p>
-      <p className="col-span-3 border-[1px] text-center">
-        {["🥇", "🥈", "🥉"][rank - 1] || rank}
-      </p>
+      <p className="col-span-3 border-[1px] text-center">{rank}</p>
       <p className="col-span-3 border-[1px] text-center">{score}</p>
     </>
   );

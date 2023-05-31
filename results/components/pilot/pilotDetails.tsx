@@ -63,7 +63,7 @@ const PilotDetails = ({ pilot }: Props) => {
           )}
         >
           <h2 className="text-800">
-            {name}
+            {name} {["🥇", "🥈", "🥉"][rank - 1]}
             <i
               className={classNames(
                 country && alpha2country,
@@ -71,7 +71,7 @@ const PilotDetails = ({ pilot }: Props) => {
               )}
             />
           </h2>
-          <h3 className="font-semibold">{`FAI Rank #${rank}`}</h3>
+          <h3 className="font-semibold">FAI Rank #{rank}</h3>
         </Link>
       </article>
       <article className="mt-8 p-4">
@@ -129,7 +129,7 @@ const PilotDetails = ({ pilot }: Props) => {
                       key={code}
                       className="h-8 cursor-pointer hover:bg-awt-dark-200"
                     >
-                      <td className="pl-2">{name}</td>
+                      <td className="pl-2">{name} {["🥇", "🥈", "🥉"][rank - 1]}</td>
                       <td className="pr-2 text-right">#{rank}</td>
                     </tr>
                   );
@@ -153,7 +153,7 @@ const PilotDetails = ({ pilot }: Props) => {
                         key={code}
                         className="h-8 cursor-pointer hover:bg-awt-dark-200"
                       >
-                        <td className="pl-2">{name}</td>
+                        <td className="pl-2">{name} {["🥇", "🥈", "🥉"][rank - 1]}</td>
                         <td className="pr-2 text-right">#{rank}</td>
                       </tr>
                     );
