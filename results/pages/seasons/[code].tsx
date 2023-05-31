@@ -29,7 +29,7 @@ const SeasonPage = () => {
   }, [router.isReady, router.query.code]);
 
   const { data: season, error } = useSWR<Season, Error>(
-    code ? `${API_URL}/season/${code}` : null,
+    code ? `${API_URL}/seasons/${code}` : null,
     fetcher
   );
 
