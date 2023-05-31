@@ -19,8 +19,10 @@ interface YearSelectorProps {
   onChange: (year: number) => void;
 }
 
+const currentYear = new Date().getFullYear();
+
 const Competitions = () => {
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState(currentYear);
 
   const {
     setPageTitle,
@@ -85,10 +87,11 @@ const Competitions = () => {
 
   const years = [
     ...new Set(
-      competitions
-        .map((comp) => new Date(comp.start_date).getFullYear())
-        .concat(new Date().getFullYear())
-    ),
+      competitions.flatMap((comp) => [
+        new Date(comp.start_date).getFullYear(),
+        new Date(comp.end_date).getFullYear(),
+      ])
+    ).add(currentYear),
   ].sort((a, b) => b - a);
 
   const YearSelector: React.FC<YearSelectorProps> = ({ years, onChange }) => {
