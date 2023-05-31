@@ -33,20 +33,17 @@ const CompetitionCard = ({ competition }: Props) => {
     <Link
       key={code}
       href={`/competitions/${code}`}
-      className={classNames(
-        "max-w-lg flex-grow",
-      )}
+      className={classNames("max-w-lg flex-grow")}
     >
       <article
         style={{ backgroundImage: `url(${image})` }}
         className={classNames(
-          "flex flex-col justify-between rounded-xl text-white h-48",
+          "flex h-48 flex-col justify-between rounded-xl text-white",
           "bg-black/60 bg-cover bg-center bg-no-repeat p-4 bg-blend-multiply",
           "shadow shadow-awt-dark-400",
           "hover:-translate-y-2 hover:bg-white/90 hover:text-current hover:bg-blend-screen",
           "hover:shadow-md"
         )}
-
       >
         <hgroup>
           <h3 className="text-left">{name}</h3>

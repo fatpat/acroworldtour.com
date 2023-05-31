@@ -18,7 +18,9 @@ const CompetitionOverallHeader = ({ result, rank }: Props) => {
 
   return (
     <>
-      <p className="col-span-2 col-start-1 border-[1px] pl-2 py-2">{["🥇", "🥈", "🥉"][rank-1] || rank}</p>
+      <p className="col-span-2 col-start-1 border-[1px] py-2 pl-2">
+        {["🥇", "🥈", "🥉"][rank - 1] || rank}
+      </p>
 
       <header
         role="button"
@@ -29,13 +31,18 @@ const CompetitionOverallHeader = ({ result, rank }: Props) => {
         onClick={() => setShowMore(!showMore)}
         onKeyDown={({ key }) => key === "Enter" && setShowMore(!showMore)}
       >
-        <h5 className="pl-2 text-left my-auto">{pilot?.name || "Pilot Unknown"}</h5>
+        <h5 className="my-auto pl-2 text-left">
+          {pilot?.name || "Pilot Unknown"}
+        </h5>
         <ChevronIcon
-          className={classNames("ml-1 h-2 w-2 my-auto", !showMore && "-rotate-90")}
+          className={classNames(
+            "my-auto ml-1 h-2 w-2",
+            !showMore && "-rotate-90"
+          )}
         />
       </header>
 
-      <p className="col-span-2 border-[1px] text-center py-2">{roundedScore}</p>
+      <p className="col-span-2 border-[1px] py-2 text-center">{roundedScore}</p>
 
       {showMore && (
         <>
@@ -52,7 +59,7 @@ const CompetitionOverallHeader = ({ result, rank }: Props) => {
           {runs.map((run, index) => (
             <CompetitionOverallRuns key={index} run={run} index={index} />
           ))}
-          <div className="col-start-3 col-span-8 h-8" />
+          <div className="col-span-8 col-start-3 h-8" />
         </>
       )}
     </>

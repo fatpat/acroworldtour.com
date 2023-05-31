@@ -20,7 +20,9 @@ interface YearSelectorProps {
 }
 
 const Competitions = () => {
-  const [selectedYear, setSelectedYear] = useState<number | null>(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState<number | null>(
+    new Date().getFullYear()
+  );
 
   const {
     setPageTitle,
@@ -129,26 +131,39 @@ const Competitions = () => {
       <YearSelector
         years={[
           ...new Set(
-            competitions.map(comp => new Date(comp.start_date).getFullYear()).concat(new Date().getFullYear())
+            competitions
+              .map((comp) => new Date(comp.start_date).getFullYear())
+              .concat(new Date().getFullYear())
           ),
-        ].sort((a,b) => b-a)}
+        ].sort((a, b) => b - a)}
         onChange={setSelectedYear}
       />
 
       {soloSeasons
-        .sort((a, b) => b.year - a.year || (a.index || 999) - (b.index || 999) || a.name.localeCompare(b.name))
+        .sort(
+          (a, b) =>
+            b.year - a.year ||
+            (a.index || 999) - (b.index || 999) ||
+            a.name.localeCompare(b.name)
+        )
         .map((season) => {
           const { code, competitions, name } = season;
           return (
             <>
               <h3 className="mb-6 mt-6 opacity-80">{name}</h3>
               <section key={code} className={classNames("wrapper mb-8")}>
-                {competitions.sort((a,b) => (new Date(a.start_date).getTime() - new Date(b.start_date).getTime())).map((competition) => (
-                  <CompetitionCard
-                    key={competition.code}
-                    competition={competition}
-                  />
-                ))}
+                {competitions
+                  .sort(
+                    (a, b) =>
+                      new Date(a.start_date).getTime() -
+                      new Date(b.start_date).getTime()
+                  )
+                  .map((competition) => (
+                    <CompetitionCard
+                      key={competition.code}
+                      competition={competition}
+                    />
+                  ))}
               </section>
             </>
           );

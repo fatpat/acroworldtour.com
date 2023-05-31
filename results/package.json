@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "clear && next dev",
-    "build": "next build",
+    "build": "prettier --write . && next build",
     "start": "next start",
     "lint": "next lint",
+    "format": "prettier --write .",
     "interface": "openapi-typescript https://api.acroworldtour.com/openapi.json --output types.d.ts",
     "prepare": "husky install"
   },

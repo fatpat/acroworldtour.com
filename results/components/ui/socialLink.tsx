@@ -1,6 +1,14 @@
 import Link from "next/link";
 
-import { FacebookIcon, InstagramIcon, TikTokIcon, TwitterIcon, WebsiteIcon,WikipediaIcon, YouTubeIcon} from "./icons";
+import {
+  FacebookIcon,
+  InstagramIcon,
+  TikTokIcon,
+  TwitterIcon,
+  WebsiteIcon,
+  WikipediaIcon,
+  YouTubeIcon,
+} from "./icons";
 
 interface Props {
   className?: string;

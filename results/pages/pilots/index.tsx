@@ -47,9 +47,11 @@ const Pilots = () => {
       <h2>All Pilots</h2>
       <section className="mt-8 px-2">
         <div className="wrapper">
-          {pilots.filter(p => p.rank < 9999).map((pilot) => (
-            <PilotCard key={pilot.civlid} pilot={pilot} />
-          ))}
+          {pilots
+            .filter((p) => p.rank < 9999)
+            .map((pilot) => (
+              <PilotCard key={pilot.civlid} pilot={pilot} />
+            ))}
         </div>
       </section>
     </>

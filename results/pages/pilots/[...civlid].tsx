@@ -39,8 +39,7 @@ const PilotPage = () => {
       setPageDescription(`Pilot page for ${pilot.name}`);
       setHeaderTitle(pilot.name || "");
       setHeaderSubtitle(
-        `${pilot.rank === 9999 ? "" : "#" + pilot.rank + " -"} ${civlid}` ||
-          ""
+        `${pilot.rank === 9999 ? "" : "#" + pilot.rank + " -"} ${civlid}` || ""
       );
       setActiveNav("pilots");
     }
