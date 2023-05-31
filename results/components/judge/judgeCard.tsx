@@ -37,7 +37,7 @@ const JudgeCard = ({ judge }: Props) => {
       title={`See ${name}'s profile`}
       href={`/pilots/${civlid}/${urlName}`}
       className={classNames(
-        "flex flex-col items-center rounded-xl pb-4",
+        "flex flex-col items-center rounded-xl pb-4 w-28",
         "hover:-translate-y-2 hover:shadow-xl",
         !civlid && "pointer-events-none"
       )}
@@ -54,9 +54,9 @@ const JudgeCard = ({ judge }: Props) => {
           )}
         />
       </figure>
-      <figcaption className="mt-4 self-center px-4">
-        <h6 className="text-left text-sm">{name}</h6>
-        <small className="capitalize">{level}</small>
+      <figcaption className="mt-4 self-center">
+        <h6 className="text-sm">{name}</h6>
+        <p className="capitalize text-center font-normal">{level}</p>
       </figcaption>
     </Link>
   );

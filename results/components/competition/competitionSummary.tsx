@@ -75,7 +75,7 @@ const CompetitionSummary = ({ competition, className }: Props) => {
       {competition.judges.length > 0 && (
         <>
           <hr />
-          <CompetitionJudges judges={competition.judges} />
+          <CompetitionJudges judges={competition.judges} className="pt-4 " />
         </>
       )}
     </article>
