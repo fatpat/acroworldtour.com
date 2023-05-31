@@ -14,7 +14,6 @@ interface Props {
 
 const PilotDetails = ({ pilot }: Props) => {
   const {
-    civlid,
     name,
     civl_link: civlLink,
     photo: photo,
@@ -30,7 +29,6 @@ const PilotDetails = ({ pilot }: Props) => {
   const alpha2country = countries
     .alpha3ToAlpha2(country?.toUpperCase())
     ?.toLowerCase();
-  const countryName = country ? countries.getName(country, "en") : "Unknown";
 
   const sortedCompetitionsResults = competitionsResults?.sort(
     (a, b) =>
@@ -59,22 +57,20 @@ const PilotDetails = ({ pilot }: Props) => {
         <Link
           href={civlLink}
           target="_blank"
-          className="flex w-full max-w-sm flex-wrap items-baseline justify-between self-center px-4 text-awt-accent-800 hover:underline"
+          className="flex w-full max-w-sm flex-wrap items-baseline justify-between self-center px-4 text-awt-accent-800 hover:nounderline"
         >
-          <h2 className="text-800">{name}</h2>
-          <h3 className="font-semibold">
-            {countryName}
+          <h2 className="text-800">
+            {name}
             <i
               className={classNames(
                 country && alpha2country,
                 "flag translate-x-2"
               )}
             />
-          </h3>
+          </h2>
           <h3 className="font-semibold">
-            {rank === 9999 ? "Unranked" : `Overall Rank #${rank}`}
+            {rank === 9999 ? "Unranked" : `FAI Rank #${rank}`}
           </h3>
-          <h3 className="text-sm">CIVL ID: {civlid}</h3>
         </Link>
       </article>
       <article className="mt-8 p-4">
