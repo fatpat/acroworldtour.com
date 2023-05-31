@@ -41,7 +41,7 @@ const PilotCard = ({ pilot }: Props) => {
       </figure>
       <figcaption className="px-2">
         <h3>{name}</h3>
-        <small>{rank === 9999 ? "Unranked" : `Overall Rank: #${rank}`}</small>
+        <small>Overall Rank: #${rank}</small>
       </figcaption>
     </Link>
   );
