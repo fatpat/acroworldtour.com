@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import useSWR from "swr";
 
 import { useLayout } from "@/components/layout/layoutContext";
-import TeamCard from "@/components/team/teamCard";
+import PilotCard from "@/components/pilot/pilotCard";
 import FetchError from "@/components/ui/fetchError";
 import FetchLoading from "@/components/ui/fetchLoading";
 import { API_URL } from "@/constants";
@@ -46,13 +46,22 @@ const Teams = () => {
   return (
     <>
       <h2>All Teams</h2>
-      <section className="mt-8 px-2">
-        <div className="wrapper">
-          {teams.map((team) => (
-            <TeamCard key={team._id} team={team} />
-          ))}
-        </div>
-      </section>
+      <article className="grid grid-cols-12">
+        <h4 className="col-span-4 col-start-1 bg-awt-dark-900 text-white border-[1px] border-awt-dark-500 py-1">Team</h4>
+        <h4 className="col-span-8 col-start-5 bg-awt-dark-900 text-white border-[1px] border-awt-dark-500 py-1">Pilots</h4>
+        {teams
+          .sort((a, b) => a.name.localeCompare(b.name))
+          .map(team => (
+            <>
+              <h5 className="col-span-4 col-start-1 border-[1px] pl-2 py-2 text-left">{team.name}</h5>
+              <p className="col-span-8 col-start-5 border-[1px] pl-2 py-2 text-center">
+                {/* TODO DEV: make <PilotCard> to be display side by side when enough space if available */}
+                <PilotCard pilot={team.pilots[0]} />
+                <PilotCard pilot={team.pilots[1]} />
+              </p>
+            </>
+        ))}
+      </article>
     </>
   );
 };
