@@ -26,7 +26,7 @@ const NavItem: React.FC<Props> = ({ link, active }) => {
         "flex flex-col items-center justify-center rounded-xl p-2 text-xs font-semibold text-awt-dark-600",
         "lg:flex-row lg:justify-start lg:rounded-r-none lg:py-3 lg:pl-6 lg:text-base",
         !active &&
-          "hover:bg-awt-accent-700 hover:fill-white hover:text-white hover:shadow-md",
+          "hover:bg-awt-accent-600 hover:fill-white hover:text-white hover:shadow-md",
         active
           ? "bg-awt-dark-900 fill-white text-white shadow-md"
           : "fill-awt-dark-600"

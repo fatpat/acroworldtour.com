@@ -23,7 +23,7 @@ const Header = ({ fontClass, headerTitle, headerSubtitle }: Props) => {
         backgroundImage: `url(${lines.src})`,
       }}
     >
-      <Link href="/">
+      <Link href="/" title="Navigate Home">
         <Image
           src={awtLogo}
           alt="Acro World Tour logo"

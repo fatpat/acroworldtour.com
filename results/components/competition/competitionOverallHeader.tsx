@@ -22,12 +22,8 @@ const CompetitionOverallHeader = ({ result, rank }: Props) => {
         {["🥇", "🥈", "🥉"][rank - 1] || rank}
       </p>
 
-      <header
-        role="button"
-        tabIndex={0}
-        className={classNames(
-          "col-span-8 flex cursor-pointer items-baseline border-[1px] py-2"
-        )}
+      <button
+        className="col-span-8 flex cursor-pointer items-baseline border-[1px] py-2"
         onClick={() => setShowMore(!showMore)}
         onKeyDown={({ key }) => key === "Enter" && setShowMore(!showMore)}
       >
@@ -40,7 +36,7 @@ const CompetitionOverallHeader = ({ result, rank }: Props) => {
             !showMore && "-rotate-90"
           )}
         />
-      </header>
+      </button>
 
       <p className="col-span-2 border-[1px] py-2 text-center">{roundedScore}</p>
 

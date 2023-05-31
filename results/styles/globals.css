@@ -58,6 +58,10 @@
   small {
     @apply text-xs font-normal md:text-sm;
   }
+
+  button {
+    @apply hover:bg-awt-accent-600 hover:fill-white hover:text-white;
+  }
 }
 
 @layer utilities {

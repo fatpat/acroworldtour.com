@@ -17,9 +17,7 @@ const About = () => {
 
   return (
     <section className="flex flex-col items-center">
-      <header
-        role="button"
-        tabIndex={0}
+      <button
         className={classNames(
           "z-10 mb-1 flex w-1/2 cursor-pointer items-center justify-center",
           hideAbout && "-translate-x-3/4"
@@ -34,7 +32,7 @@ const About = () => {
             hideAbout && "-rotate-90"
           )}
         />
-      </header>
+      </button>
       <div
         className={classNames(
           "flex h-56 flex-col items-center justify-evenly rounded-xl bg-awt-dark-100 px-4 font-medium shadow",

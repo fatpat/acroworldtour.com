@@ -236,10 +236,7 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
                 )}
                 <button
                   title="Close run details"
-                  className={classNames(
-                    "col-span-full col-start-1 bg-white py-3",
-                    "hover:bg-awt-accent-600 hover:fill-white"
-                  )}
+                  className="col-span-full col-start-1 bg-white py-3"
                   onClick={() => toggleDetails(resultIndex)}
                   onKeyDown={({ key }) =>
                     key === "Enter" && toggleDetails(resultIndex)
