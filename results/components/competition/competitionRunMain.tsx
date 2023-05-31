@@ -27,6 +27,14 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
       </h4>
       <h4 className="col-span-5 col-start-4 border-[1px] border-awt-dark-500 bg-awt-dark-900 py-1 text-white">
         Judge&apos;s Marks
+              <div className="col-span-5 grid grid-cols-3 text-center">
+                <p className="py-2">Tech.</p>
+                <p className="py-2">Choreo.</p>
+                <p className="py-2">Land.</p>
+                {type === "synchro" && (
+                  <p className="border-[1px] py-2">Sync.</p>
+                )}
+              </div>
       </h4>
       <h4 className="col-span-2 col-start-9 border-[1px] border-awt-dark-500 bg-awt-dark-900 py-1 text-white">
         Bonus
