@@ -42,16 +42,16 @@ const Pilots = () => {
   if (error) return <FetchError />;
   if (!pilots) return <FetchLoading />;
 
+  const rankedPilots = pilots.filter((pilot) => pilot.rank < 9999);
+
   return (
     <>
-      <h2>All Pilots</h2>
+      <h2>All Ranked Pilots</h2>
       <section className="mt-8 px-2">
         <div className="wrapper">
-          {pilots
-            .filter((p) => p.rank < 9999)
-            .map((pilot) => (
-              <PilotCard key={pilot.civlid} pilot={pilot} />
-            ))}
+          {rankedPilots.map((pilot) => (
+            <PilotCard key={pilot.civlid} pilot={pilot} />
+          ))}
         </div>
       </section>
     </>

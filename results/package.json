@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "clear && next dev",
-    "build": "prettier --write . && next build",
+    "dev": "pnpm format && clear && next dev",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "format": "prettier --write .",

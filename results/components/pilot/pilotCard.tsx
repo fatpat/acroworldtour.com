@@ -25,7 +25,10 @@ const PilotCard = ({ pilot }: Props) => {
       key={civlid}
       title={`See ${name}'s profile`}
       href={`/pilots/${civlid}/${urlName}`}
-      className="flex w-full flex-col rounded-xl pb-4 hover:-translate-y-2 hover:shadow-xl sm:w-48"
+      className={classNames(
+        "flex w-48 flex-col rounded-xl pb-4",
+        "hover:-translate-y-2 hover:shadow-md"
+      )}
     >
       <figure
         style={{ backgroundImage: `url('${photoHighres || photo}')` }}
@@ -39,9 +42,9 @@ const PilotCard = ({ pilot }: Props) => {
           )}
         />
       </figure>
-      <figcaption className="px-2">
-        <h3>{name}</h3>
-        <small>Overall Rank: #${rank}</small>
+      <figcaption className="self-center pt-3">
+        <h3 className="text-left">{name}</h3>
+        <p>Overall Rank: #{rank}</p>
       </figcaption>
     </Link>
   );

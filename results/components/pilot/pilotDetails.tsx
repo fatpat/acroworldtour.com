@@ -30,13 +30,13 @@ const PilotDetails = ({ pilot }: Props) => {
     .alpha3ToAlpha2(country?.toUpperCase())
     ?.toLowerCase();
 
-  const sortedCompetitionsResults = competitionsResults?.sort(
+  competitionsResults?.sort(
     (a, b) =>
       new Date(b.competition.start_date).getTime() -
         new Date(a.competition.start_date).getTime() || a.rank - b.rank
   );
 
-  const sortedSeasonsResults = seasonsResults?.sort(
+  seasonsResults?.sort(
     (a, b) => b.season.year - a.season.year || a.rank - b.rank
   );
 
@@ -57,7 +57,10 @@ const PilotDetails = ({ pilot }: Props) => {
         <Link
           href={civlLink}
           target="_blank"
-          className="flex w-full max-w-sm flex-wrap items-baseline justify-between self-center px-4 text-awt-accent-800 hover:nounderline"
+          className={classNames(
+            "flex w-full max-w-sm flex-wrap items-baseline justify-between self-center px-4",
+            "hover:bg-awt-accent-600 hover:text-white"
+          )}
         >
           <h2 className="text-800">
             {name}
@@ -68,9 +71,7 @@ const PilotDetails = ({ pilot }: Props) => {
               )}
             />
           </h2>
-          <h3 className="font-semibold">
-            {rank === 9999 ? "Unranked" : `FAI Rank #${rank}`}
-          </h3>
+          <h3 className="font-semibold">{`FAI Rank #${rank}`}</h3>
         </Link>
       </article>
       <article className="mt-8 p-4">
@@ -100,16 +101,19 @@ const PilotDetails = ({ pilot }: Props) => {
                 title={sponsor.name}
                 style={{ backgroundImage: `url('${sponsor.img}')` }}
                 target="_blank"
-                className="m-4 aspect-video w-20 bg-contain bg-center bg-no-repeat hover:fill-awt-accent-500"
+                className={classNames(
+                  "m-4 aspect-video w-20 bg-contain bg-center bg-no-repeat",
+                  "hover:fill-awt-accent-500"
+                )}
               />
             ))}
           </div>
         </article>
       )}
-      {((sortedCompetitionsResults?.length ?? 0 > 0) ||
-        (sortedSeasonsResults?.length ?? 0 > 0)) && (
+      {((competitionsResults?.length ?? 0 > 0) ||
+        (seasonsResults?.length ?? 0 > 0)) && (
         <div className="mt-4 w-full bg-awt-dark-50 p-2">
-          {(sortedCompetitionsResults?.length ?? 0 > 0) && (
+          {(competitionsResults?.length ?? 0 > 0) && (
             <table className="w-full">
               <thead>
                 <tr className="h-12">
@@ -118,7 +122,7 @@ const PilotDetails = ({ pilot }: Props) => {
                 </tr>
               </thead>
               <tbody>
-                {sortedCompetitionsResults?.map(({ competition, rank }) => {
+                {competitionsResults?.map(({ competition, rank }) => {
                   const { code, name } = competition;
                   return (
                     <tr
@@ -133,7 +137,7 @@ const PilotDetails = ({ pilot }: Props) => {
               </tbody>
             </table>
           )}
-          {(sortedSeasonsResults?.length ?? 0 > 0) && (
+          {(seasonsResults?.length ?? 0 > 0) && (
             <table className="mt-4 w-full">
               <thead>
                 <tr className="h-12">
@@ -141,8 +145,8 @@ const PilotDetails = ({ pilot }: Props) => {
                 </tr>
               </thead>
               <tbody>
-                {sortedSeasonsResults &&
-                  sortedSeasonsResults.map(({ season, rank }) => {
+                {seasonsResults &&
+                  seasonsResults.map(({ season, rank }) => {
                     const { code, name } = season;
                     return (
                       <tr
