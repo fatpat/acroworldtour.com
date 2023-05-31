@@ -49,9 +49,9 @@ const Tricks = () => {
   return (
     <>
       <h2>Solo and Synchro Tricks</h2>
-      <TricksTable tricks={solo_tricks} />
+      <TricksTable tricks={solo_tricks} className="grid grid-cols-12" />
       <h2>Synchro only Tricks</h2>
-      <TricksTable tricks={synchro_tricks} />
+      <TricksTable tricks={synchro_tricks} className="grid grid-cols-12" />
     </>
   );
 };
