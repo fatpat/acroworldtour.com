@@ -34,12 +34,12 @@ const PilotDetails = ({ pilot }: Props) => {
 
   const sortedCompetitionsResults = competitionsResults?.sort(
     (a, b) =>
-      new Date(a.competition.start_date).getTime() -
-        new Date(b.competition.start_date).getTime() || a.rank - b.rank
+      new Date(b.competition.start_date).getTime() -
+        new Date(a.competition.start_date).getTime() || a.rank - b.rank
   );
 
   const sortedSeasonsResults = seasonsResults?.sort(
-    (a, b) => a.season.year - b.season.year || a.rank - b.rank
+    (a, b) => b.season.year - a.season.year || a.rank - b.rank
   );
 
   return (
