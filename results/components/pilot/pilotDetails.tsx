@@ -129,7 +129,9 @@ const PilotDetails = ({ pilot }: Props) => {
                       key={code}
                       className="h-8 cursor-pointer hover:bg-awt-dark-200"
                     >
-                      <td className="pl-2">{name} {["🥇", "🥈", "🥉"][rank - 1]}</td>
+                      <td className="pl-2">
+                        {name} {["🥇", "🥈", "🥉"][rank - 1]}
+                      </td>
                       <td className="pr-2 text-right">#{rank}</td>
                     </tr>
                   );
@@ -153,7 +155,9 @@ const PilotDetails = ({ pilot }: Props) => {
                         key={code}
                         className="h-8 cursor-pointer hover:bg-awt-dark-200"
                       >
-                        <td className="pl-2">{name} {["🥇", "🥈", "🥉"][rank - 1]}</td>
+                        <td className="pl-2">
+                          {name} {["🥇", "🥈", "🥉"][rank - 1]}
+                        </td>
                         <td className="pr-2 text-right">#{rank}</td>
                       </tr>
                     );

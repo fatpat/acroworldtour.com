@@ -13,6 +13,9 @@ interface Props {
 
 /* TODO: Simplify/extract this component, group markup in flex headers */
 
+const capitalise = (string: string) =>
+  string.charAt(0).toUpperCase() + string.slice(1);
+
 const CompetitionRunMain = ({ results, type, className }: Props) => {
   const [showDetails, setShowDetails] = useState(results.map(() => false));
 
@@ -28,13 +31,13 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
 
   return (
     <article className={className}>
-      <h4 className="col-span-6 col-start-1 border-[1px] border-awt-dark-500 bg-awt-dark-900 py-3 text-white">
+      <h4 className="col-span-2 col-start-1 border-awt-dark-500 bg-awt-dark-900 py-3 text-white">
+        Rank
+      </h4>
+      <h4 className="col-span-7 border-x-[1px] border-awt-dark-500 bg-awt-dark-900 py-3 text-white">
         Pilot
       </h4>
-      <h4 className="col-span-3 col-start-7 border-[1px] border-awt-dark-500 bg-awt-dark-900 py-3 text-white">
-        Bonus
-      </h4>
-      <h4 className="col-span-3 col-start-10 border-[1px] border-awt-dark-500 bg-awt-dark-900 py-3 text-white">
+      <h4 className="col-span-3 border-awt-dark-500 bg-awt-dark-900 py-3 text-white">
         Score
       </h4>
       {results.map((result, resultIndex) => {
@@ -70,14 +73,15 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
           synchro: synchroJudge,
         } = judges_mark ?? {};
 
-        const rank = resultIndex+1
+        const rank = resultIndex + 1;
 
         return (
           <Fragment key={resultIndex}>
+            <p className="col-span-2 col-start-1 py-2 text-center">{rank}</p>
             <button
               title="Click to open/close run details"
               className={classNames(
-                "col-span-6 col-start-1 flex cursor-pointer items-baseline border-[1px] py-2 pl-1"
+                "col-span-7 flex cursor-pointer items-baseline border-x-[1px] py-2 pl-1"
               )}
               onClick={() => toggleDetails(resultIndex)}
               onKeyDown={({ key }) =>
@@ -86,7 +90,7 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
             >
               <h4 className="my-auto text-left">
                 {pilot ? pilot.name : "No name record"}
-                  {["🥇", "🥈", "🥉"][rank - 1]}
+                {["🥇", "🥈", "🥉"][rank - 1]}
               </h4>
               <ChevronIcon
                 className={classNames(
@@ -96,48 +100,31 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
               />
             </button>
 
-            <p className="col-span-3 flex flex-col items-center justify-center border-[1px] py-2">
-              {bonusPercentage}%{(warnings?.length || 0) > 0 && " ⚠️"}
-              {(malus || 0) > 0 && "🔻"}
-            </p>
-
-            <p className="col-span-3 border-[1px] py-2 text-center">
-              {roundedScore}
-            </p>
+            <p className="col-span-3 py-2 text-center">{roundedScore}</p>
 
             {showDetails[resultIndex] && (
               <>
-                <h4 className="col-span-full col-start-1 bg-awt-dark-700 py-3 text-white">
-                  Judge&apos;s Marks
+                <h4 className="col-span-4 col-start-1 bg-awt-dark-700 py-3 text-white">
+                  Technicity
                 </h4>
-                <h5 className="col-span-3 border-[1px] py-2">Technical</h5>
-                <h5 className="col-span-4 border-[1px] py-2">Choreography</h5>
-                <h5 className="col-span-3 border-[1px] py-2">Landing</h5>
-                <h5
-                  className={classNames(
-                    "col-span-2 border-[1px] bg-awt-dark-100 py-2 text-center",
-                    type === "solo" && "text-awt-dark-400"
-                  )}
-                >
-                  Synchro
-                </h5>
-                <p className="col-span-3 border-[1px] py-1 text-center">
-                  {technicalJudge?.toFixed(3)}
+                <h4 className="col-span-4 border-x-[1px] border-awt-dark-500 bg-awt-dark-700 py-3 text-white">
+                  Bonus
+                </h4>
+                <h4 className="col-span-4 bg-awt-dark-700 py-3 text-white">
+                  Malus
+                </h4>
+
+                <p className="col-span-4 col-start-1 py-1 text-center">
+                  {technicity?.toFixed(3)}
                 </p>
-                <p className="col-span-4 border-[1px] py-1 text-center">
-                  {choreographyJudge?.toFixed(3)}
+                <p className="col-span-4 flex flex-col items-center justify-center border-x-[1px] py-1">
+                  {bonusPercentage}%{(warnings?.length || 0) > 0 && " ⚠️"}
+                  {(malus || 0) > 0 && "🔻"}
                 </p>
-                <p className="col-span-3 border-[1px] py-1 text-center">
-                  {landingJudge?.toFixed(3)}
+                <p className="col-span-4 py-1 text-center">
+                  {(malus || 0) > 0 ? `${malus}%` : "NIL"}
                 </p>
-                <p
-                  className={classNames(
-                    "col-span-2 border-[1px] py-1 text-center",
-                    type === "solo" && "text-awt-dark-400"
-                  )}
-                >
-                  {type === "synchro" ? synchroJudge?.toFixed(3) : "N/A"}
-                </p>
+
                 <h4 className="col-span-full col-start-1 bg-awt-dark-700 py-3 text-white">
                   Tricks
                 </h4>
@@ -150,96 +137,124 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
                     </li>
                   ))}
                 </ul>
+
                 <h4 className="col-span-full col-start-1 bg-awt-dark-700 py-3 text-white">
-                  Details
+                  Judge&apos;s Marks
                 </h4>
-                <h5 className="col-span-6 col-start-1 border-[1px] py-2">
-                  Technicity
-                </h5>
-                <h5 className="col-span-6 border-[1px] py-2">Malus</h5>
-
-                <p className="col-span-6 col-start-1 border-[1px] py-1 text-center">
-                  {technicity?.toFixed(3)}
-                </p>
-                <p className="col-span-6 border-[1px] py-1 text-center">
-                  {malus}%
-                </p>
-                <h5 className="col-span-full col-start-1 bg-awt-dark-500 py-2 text-white">
-                  Final Marks
-                </h5>
-                <h6 className="col-span-4 col-start-1 border-[1px] py-2">
-                  Technical
-                </h6>
-                <h6 className="col-span-4 border-[1px] py-2">Choreography</h6>
-                <h6 className="col-span-4 border-[1px] py-2">Landing</h6>
-                <p className="col-span-4 col-start-1 border-[1px] py-1 text-center">
-                  {technicalFinal?.toFixed(3)}
-                </p>
-                <p className="col-span-4 border-[1px] py-1 text-center">
-                  {choreographyFinal?.toFixed(3)}
-                </p>
-                <p className="col-span-4 border-[1px] py-1 text-center">
-                  {landingFinal?.toFixed(3)}
-                </p>
-
-                <h6 className="col-span-6 col-start-1 border-[1px] py-2">
-                  Bonus
-                </h6>
-                <h6
+                <h5 className="col-span-3 py-2">Technical</h5>
+                <h5 className="col-span-4 border-x-[1px] py-2">Choreography</h5>
+                <h5 className="col-span-3 py-2">Landing</h5>
+                <h5
                   className={classNames(
-                    "col-span-6 border-[1px] py-2",
+                    "col-span-2 border-x-[1px] py-2 text-center",
                     type === "solo" && "text-awt-dark-400"
                   )}
                 >
                   Synchro
-                </h6>
-                <p className="col-span-6 col-start-1 border-[1px] py-1 text-center">
-                  {bonus?.toFixed(3)}
+                </h5>
+
+                <p className="col-span-3 py-1 text-center">
+                  {technicalJudge?.toFixed(3)}
+                </p>
+                <p className="col-span-4 border-x-[1px] py-1 text-center">
+                  {choreographyJudge?.toFixed(3)}
+                </p>
+                <p className="col-span-3 py-1 text-center">
+                  {landingJudge?.toFixed(3)}
                 </p>
                 <p
                   className={classNames(
-                    "col-span-6 border-[1px] py-1 text-center",
+                    "col-span-2 border-x-[1px] py-1 text-center",
+                    type === "solo" && "text-awt-dark-400"
+                  )}
+                >
+                  {type === "synchro" ? synchroJudge?.toFixed(3) : "N/A"}
+                </p>
+
+                <h4 className="col-span-full col-start-1 bg-awt-dark-700 py-3 text-white">
+                  Final Marks
+                </h4>
+                <h5 className="col-span-3 py-2">Technical</h5>
+                <h5 className="col-span-4 border-x-[1px] py-2">Choreography</h5>
+                <h5 className="col-span-3 py-2">Landing</h5>
+                <h5
+                  className={classNames(
+                    "col-span-2 border-x-[1px] py-2 text-center",
+                    type === "solo" && "text-awt-dark-400"
+                  )}
+                >
+                  Synchro
+                </h5>
+
+                <p className="col-span-3 py-1 text-center">
+                  {technicalFinal?.toFixed(3)}
+                </p>
+                <p className="col-span-4 border-x-[1px] py-1 text-center">
+                  {choreographyFinal?.toFixed(3)}
+                </p>
+                <p className="col-span-3 py-1 text-center">
+                  {landingFinal?.toFixed(3)}
+                </p>
+                <p
+                  className={classNames(
+                    "col-span-2 border-x-[1px] py-1 text-center",
                     type === "solo" && "text-awt-dark-400"
                   )}
                 >
                   {type === "synchro" ? synchroFinal?.toFixed(3) : "N/A"}
                 </p>
-                {(warnings?.length || 0) > 0 && (
-                  <>
-                    <h5 className="col-span-full col-start-1 border-[1px] py-1">
-                      Warnings
-                    </h5>
 
-                    <ul className="col-span-full col-start-1 border-[1px] py-1 text-center">
-                      {warnings?.map((warning, warningIndex) => {
-                        return (
-                          <li key={warningIndex}>
-                            <p className="py-1">⚠️ {warning}</p>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </>
+                <h5 className="col-span-full col-start-1 border-t-[1px] py-2">
+                  Bonus
+                </h5>
+
+                <p className="col-span-full col-start-1 py-1 text-center">
+                  {(bonus || 0) > 0 ? `${bonus}` : "NIL"}
+                </p>
+
+                <h5 className="col-span-full col-start-1 border-t-[1px] py-2">
+                  Warnings
+                </h5>
+
+                {(warnings?.length || 0) > 0 ? (
+                  <ul className="col-span-full col-start-1 py-1 text-center">
+                    {warnings?.map((warning, warningIndex) => {
+                      return (
+                        <li key={warningIndex}>
+                          <p className="py-1 pl-6 pr-2 text-left -indent-5">
+                            ⚠️ {capitalise(warning)}
+                          </p>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  <p className="col-span-full py-1 text-center">NIL</p>
                 )}
-                {(notes?.length || 0) > 0 && (
-                  <>
-                    <h5 className="col-span-full col-start-1 border-[1px] py-1">
-                      Notes
-                    </h5>
-                    <ul className="col-span-full col-start-1 border-[1px] py-1 pl-4">
-                      {notes?.map((note, noteIndex) => {
-                        return (
-                          <li key={noteIndex}>
-                            <p className="py-1">📝 {note}</p>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </>
+
+                <h5 className="col-span-full col-start-1 border-t-[1px] py-2">
+                  Notes
+                </h5>
+
+                {(notes?.length || 0) > 0 ? (
+                  <ul className="col-span-full col-start-1 py-1 text-center">
+                    {notes?.map((note, noteIndex) => {
+                      return (
+                        <li key={noteIndex}>
+                          <p className="py-1 pl-6 pr-2 text-left -indent-5">
+                            📝 {capitalise(note)}
+                          </p>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  <p className="col-span-full py-1 text-center">NIL</p>
                 )}
+
                 <button
                   title="Close run details"
-                  className="col-span-full col-start-1 bg-white py-3"
+                  className="col-span-full col-start-1 border-y-[1px] bg-white py-3"
                   onClick={() => toggleDetails(resultIndex)}
                   onKeyDown={({ key }) =>
                     key === "Enter" && toggleDetails(resultIndex)
