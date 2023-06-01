@@ -81,7 +81,7 @@ const Seasons = () => {
     };
     return (
       <header className="font-semibold opacity-95">
-        <h2 className="-mt-4 flex items-baseline">
+        <h2 className="-mt-2 mb-6 flex items-baseline">
           <label htmlFor="year-selector">
             {filteredSeasons.length === 0 ? `No seasons in ` : `Seasons in `}
           </label>

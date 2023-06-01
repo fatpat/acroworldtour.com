@@ -13,9 +13,23 @@ const SeasonCard = ({ season }: Props) => {
     name,
     image,
     number_of_pilots: numberOfPilots,
-    year,
     type,
+    competitions,
   } = season;
+
+  const competitionsCount = competitions.length;
+  const compsPlural = competitionsCount > 1;
+  const competitionsString = competitionsCount
+    ? `${competitionsCount} competition${compsPlural ? "s" : ""}`
+    : "No competitions data";
+
+  const pilotsPlural = numberOfPilots > 1;
+  const pilotsString = numberOfPilots
+    ? `${numberOfPilots} pilot${pilotsPlural ? "s" : ""}`
+    : "No pilot data";
+
+  const seasonCover = image ?? "";
+
   return (
     <Link
       key={code}
@@ -23,23 +37,46 @@ const SeasonCard = ({ season }: Props) => {
       className={classNames("max-w-lg flex-grow")}
     >
       <article
-        style={{ backgroundImage: `url(${image})` }}
+        style={{ backgroundImage: `url(${seasonCover})` }}
         className={classNames(
-          "flex h-48 flex-col justify-between rounded-xl text-white",
-          "bg-black/60 bg-cover bg-center bg-no-repeat p-4 bg-blend-multiply",
+          "relative flex flex-col justify-between",
+          "h-48 overflow-hidden rounded-xl p-4 text-white",
+          "bg-black/60 bg-cover bg-center bg-no-repeat bg-blend-multiply",
           "shadow shadow-awt-dark-400",
           "hover:-translate-y-2 hover:bg-white/90 hover:text-current hover:bg-blend-screen",
-          "hover:shadow-md"
+          "hover:shadow-md",
+          !seasonCover && "relative"
         )}
       >
-        <hgroup>
-          <h3 className="text-left">{name}</h3>
-          <h4 className="text-left">{year}</h4>
-        </hgroup>
-        <div className="flex justify-between">
+        <h3 className="">{name}</h3>
+
+        {!seasonCover && (
+          <div
+            className={classNames(
+              "absolute inset-0 flex flex-grow overflow-hidden",
+              "scale-105 rounded-xl mix-blend-overlay"
+            )}
+          >
+            {competitions.map((competition) => {
+              const { code, image } = competition;
+              return (
+                <div
+                  key={code}
+                  style={{ backgroundImage: `url(${image})` }}
+                  className={classNames(
+                    "h-full w-full scale-110",
+                    "bg-cover bg-center bg-no-repeat"
+                  )}
+                />
+              );
+            })}
+          </div>
+        )}
+        <footer>
           <p className="capitalize">{type}</p>
-          <p>{`${numberOfPilots} pilots`}</p>
-        </div>
+          <p className="">{competitionsString}</p>
+          <p className="absolute bottom-4 right-4">{pilotsString}</p>
+        </footer>
       </article>
     </Link>
   );

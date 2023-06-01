@@ -1,5 +1,5 @@
 import classNames from "classnames";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import useSWR from "swr";
 
 import CompetitionCard from "@/components/competition/competitionCard";
@@ -85,6 +85,10 @@ const Competitions = () => {
     (competition) => competition.seasons.length === 0
   );
 
+  offSeasonCompetitions.sort((a, b) =>
+    b.start_date.localeCompare(a.start_date)
+  );
+
   const years = [
     ...new Set(
       competitions.flatMap((comp) => [
@@ -105,7 +109,7 @@ const Competitions = () => {
 
     return (
       <header className="font-semibold opacity-95">
-        <h2 className="-mt-4 flex items-baseline">
+        <h2 className="-mt-2 flex items-baseline">
           <label htmlFor="year-selector">
             {filteredCompetitions.length === 0
               ? `No competitions in `
@@ -139,38 +143,35 @@ const Competitions = () => {
 
       {soloSeasons.map((season) => {
         const { code, competitions, name } = season;
+        competitions.sort(
+          (a, b) =>
+            new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
+        );
+
         return (
-          <>
-            <h3 className="mb-6 mt-6 opacity-80">{name}</h3>
+          <Fragment key={code}>
+            <h3 className="mb-6 mt-4 opacity-80">{name}</h3>
             <section key={code} className={classNames("wrapper mb-8")}>
-              {competitions
-                .sort(
-                  (a, b) =>
-                    new Date(a.start_date).getTime() -
-                    new Date(b.start_date).getTime()
-                )
-                .map((competition) => (
-                  <CompetitionCard
-                    key={competition.code}
-                    competition={competition}
-                  />
-                ))}
+              {competitions.map((competition) => (
+                <CompetitionCard
+                  key={competition.code}
+                  competition={competition}
+                />
+              ))}
             </section>
-          </>
+          </Fragment>
         );
       })}
       {offSeasonCompetitions.length > 0 && (
         <>
           <h3 className="mb-6 mt-6 opacity-80">Off Season</h3>
           <section className={classNames("wrapper mb-8")}>
-            {offSeasonCompetitions
-              .sort((a, b) => b.start_date.localeCompare(a.start_date))
-              .map((competition) => (
-                <CompetitionCard
-                  key={competition.code}
-                  competition={competition}
-                />
-              ))}
+            {offSeasonCompetitions.map((competition) => (
+              <CompetitionCard
+                key={competition.code}
+                competition={competition}
+              />
+            ))}
           </section>
         </>
       )}
