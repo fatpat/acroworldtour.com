@@ -30,10 +30,17 @@ const CompetitionDetails = ({ competition }: Props) => {
     setHideExtra(shouldHide);
   }, [showOverall, showRuns]);
 
+  // toggle overall and hide all runs
+  const toggleOverall = () => {
+    !showOverall && toggleRun(-1)
+    setShowOverall(!showOverall)
+  }
+
+  // toggle index run and hide all others
   const toggleRun = (index: number) => {
-    const newShowRuns = [...showRuns];
-    newShowRuns[index] = !newShowRuns[index];
+    const newShowRuns = showRuns.map((v, i) => i == index ? !v : false)
     setShowRuns(newShowRuns);
+    index >= 0 && setShowOverall(false)
   };
 
   return (
@@ -67,9 +74,9 @@ const CompetitionDetails = ({ competition }: Props) => {
                 className={classNames(
                   "col-span-full flex cursor-pointer items-baseline justify-center"
                 )}
-                onClick={() => setShowOverall(!showOverall)}
+                onClick={() => toggleOverall() }
                 onKeyDown={({ key }) =>
-                  key === "Enter" && setShowOverall(!showOverall)
+                  key === "Enter" && toggleOverall()
                 }
               >
                 <h3>Overall Results</h3>
