@@ -40,7 +40,7 @@ const SeasonCard = ({ season }: Props) => {
         style={{ backgroundImage: `url(${seasonCover})` }}
         className={classNames(
           "relative flex flex-col justify-between",
-          "h-48 overflow-hidden rounded-xl p-4 text-white",
+          "h-48 min-w-[220px] overflow-hidden rounded-xl p-4 text-white",
           "bg-black/60 bg-cover bg-center bg-no-repeat bg-blend-multiply",
           "shadow shadow-awt-dark-400",
           "hover:-translate-y-2 hover:bg-white/90 hover:text-current hover:bg-blend-screen",
