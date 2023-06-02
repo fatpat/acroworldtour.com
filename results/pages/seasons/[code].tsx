@@ -20,6 +20,7 @@ const SeasonPage = () => {
     setHeaderSubtitle,
     setActiveNav,
   } = useLayout();
+
   const router = useRouter();
   const [code, setCode] = useState<string>("");
 

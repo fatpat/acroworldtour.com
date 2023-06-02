@@ -1,5 +1,5 @@
 import classNames from "classnames";
-import { Fragment, useEffect, useState } from "react";
+import { ChangeEvent, Fragment, useEffect, useState } from "react";
 import useSWR from "swr";
 
 import CompetitionCard from "@/components/competition/competitionCard";
@@ -12,12 +12,6 @@ import { fetcher } from "@/utils/fetcher";
 
 type Competition = components["schemas"]["CompetitionPublicExport"];
 type Season = components["schemas"]["SeasonExport"];
-
-interface YearSelectorProps {
-  years: number[];
-  // eslint-disable-next-line no-unused-vars
-  onChange: (year: number) => void;
-}
 
 const currentYear = new Date().getFullYear();
 
@@ -98,13 +92,10 @@ const Competitions = () => {
     ).add(currentYear),
   ].sort((a, b) => b - a);
 
-  const YearSelector: React.FC<YearSelectorProps> = ({ years, onChange }) => {
-    const handleYearChange = ({
-      target,
-    }: React.ChangeEvent<HTMLSelectElement>) => {
+  const YearSelector = ({ years }: { years: number[] }) => {
+    const handleYearChange = ({ target }: ChangeEvent<HTMLSelectElement>) => {
       const year = parseInt(target.value);
       setSelectedYear(year);
-      onChange(year);
     };
 
     return (
@@ -139,7 +130,7 @@ const Competitions = () => {
 
   return (
     <>
-      <YearSelector years={years} onChange={setSelectedYear} />
+      <YearSelector years={years} />
 
       {soloSeasons.map((season) => {
         const { code, competitions, name } = season;

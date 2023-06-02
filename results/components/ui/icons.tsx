@@ -2,7 +2,7 @@ interface Props {
   className?: string;
 }
 
-// All the following icons: Font Awesome Pro 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) © 2023 Fonticons, Inc.
+/* Prefer icons from https://fontawesome.com/icons for consistency */
 
 export const HomeIcon = ({ className }: Props) => (
   <svg

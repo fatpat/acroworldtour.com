@@ -1,12 +1,12 @@
 import Head from "next/head";
-import { useState } from "react";
+import { ReactNode, useState } from "react";
 
 import Header from "./header";
 import LayoutContext from "./layoutContext";
 import Nav from "./nav";
 
 interface LayoutProps {
-  children: React.ReactNode;
+  children: ReactNode;
   fontClass: string;
 }
 

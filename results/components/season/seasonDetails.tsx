@@ -6,7 +6,7 @@ interface Props {
   season: components["schemas"]["SeasonExport"];
 }
 
-const CompetitionDetails = ({ season }: Props) => {
+const SeasonDetails = ({ season }: Props) => {
   const { name, image } = season;
 
   return (
@@ -26,25 +26,6 @@ const CompetitionDetails = ({ season }: Props) => {
         <section>
           <h3>Overall Results</h3>
           <table>
-            <thead>
-              <tr>
-                <th>Pilot</th>
-                <th>Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              {/* {results.overall_results.map((result) => {
-                const { pilot, score, result_per_run } = result;
-                const roundedScore = Math.round(score * 100) / 100;
-                if (!pilot) return;
-                return (
-                  <tr key={pilot.name}>
-                    <td>{pilot.name}</td>
-                    <td className="text-right">{roundedScore}</td>
-                  </tr>
-                );
-              })} */}
-            </tbody>
           </table>
         </section>
         <section>
@@ -68,4 +49,4 @@ const CompetitionDetails = ({ season }: Props) => {
   );
 };
 
-export default CompetitionDetails;
+export default SeasonDetails;

@@ -61,7 +61,9 @@ const Teams = () => {
                 {team.name}
               </h5>
               <p className="col-span-8 col-start-5 border-[1px] py-2 pl-2 text-center">
-                {/* TODO DEV: make <PilotCard> to be display side by side when enough space if available */}
+                {
+                  // TODO: make <PilotCard> to be displayed side by side when enough space is available
+                }
                 <PilotCard pilot={team.pilots[0]} />
                 <PilotCard pilot={team.pilots[1]} />
               </p>

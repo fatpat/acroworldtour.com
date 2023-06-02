@@ -11,7 +11,7 @@ interface Props {
   className?: string;
 }
 
-/* TODO: Simplify/extract this component, group markup in flex headers */
+// TODO: Simplify/extract this component, group markup in flex headers
 
 const capitalise = (string: string) =>
   string.charAt(0).toUpperCase() + string.slice(1);
@@ -45,8 +45,6 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
           pilot,
           final_marks,
           tricks,
-          // marks,
-          // warnings,
         } = result;
 
         const roundedScore =

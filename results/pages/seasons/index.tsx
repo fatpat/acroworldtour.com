@@ -1,5 +1,5 @@
 import classNames from "classnames";
-import { Fragment, useEffect, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
 import useSWR from "swr";
 
 import { useLayout } from "@/components/layout/layoutContext";
@@ -11,12 +11,6 @@ import { components } from "@/types";
 import { fetcher } from "@/utils/fetcher";
 
 type Season = components["schemas"]["SeasonExport"];
-
-interface YearSelectorProps {
-  years: number[];
-  // eslint-disable-next-line no-unused-vars
-  onChange: (year: number) => void;
-}
 
 const currentYear = new Date().getFullYear();
 
@@ -30,6 +24,12 @@ const Seasons = () => {
     setHeaderSubtitle,
     setActiveNav,
   } = useLayout();
+
+  const { data: seasons, error } = useSWR<Season[]>(
+    `${API_URL}/seasons`,
+    fetcher
+  );
+
   useEffect(() => {
     setPageTitle("Acro World Tour | Seasons");
     setPageDescription(`All the seasons of the Acro World Tour.`);
@@ -44,12 +44,7 @@ const Seasons = () => {
     setPageTitle,
   ]);
 
-  const { data: seasons, error: seasonsError } = useSWR<Season[]>(
-    `${API_URL}/seasons`,
-    fetcher
-  );
-
-  if (seasonsError) return <FetchError />;
+  if (error) return <FetchError />;
   if (!seasons) return <FetchLoading />;
 
   const filteredSeasons = seasons.filter(
@@ -71,13 +66,10 @@ const Seasons = () => {
     ...new Set(seasons.map((season) => Number(season.year))).add(currentYear),
   ].sort((a, b) => b - a);
 
-  const YearSelector: React.FC<YearSelectorProps> = ({ years, onChange }) => {
-    const handleYearChange = ({
-      target,
-    }: React.ChangeEvent<HTMLSelectElement>) => {
+  const YearSelector = ({ years }: { years: number[] }) => {
+    const handleYearChange = ({ target }: ChangeEvent<HTMLSelectElement>) => {
       const year = parseInt(target.value);
       setSelectedYear(year);
-      onChange(year);
     };
     return (
       <header className="font-semibold opacity-95">
@@ -108,7 +100,7 @@ const Seasons = () => {
   };
   return (
     <>
-      <YearSelector years={years} onChange={setSelectedYear} />
+      <YearSelector years={years} />
       <section className={classNames("wrapper mb-8")}>
         {soloSeasons.map((season) => (
           <SeasonCard key={season.code} season={season} />

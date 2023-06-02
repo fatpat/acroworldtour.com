@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { createContext, useContext } from "react";
 
 interface ILayoutContext {
@@ -7,11 +6,11 @@ interface ILayoutContext {
   headerTitle: string;
   headerSubtitle: string;
   activeNav: string;
-  setPageTitle: (value: string) => void;
-  setPageDescription: (value: string) => void;
-  setHeaderTitle: (value: string) => void;
-  setHeaderSubtitle: (value: string) => void;
-  setActiveNav: (value: string) => void;
+  setPageTitle: Function;
+  setPageDescription: Function;
+  setHeaderTitle: Function;
+  setHeaderSubtitle: Function;
+  setActiveNav: Function;
 }
 
 const LayoutContext = createContext<ILayoutContext>({
