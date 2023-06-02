@@ -17,8 +17,8 @@ const App = ({ Component, pageProps }: AppProps) => {
       <main
         className={classNames(
           font.className,
-          "flex min-h-screen w-full flex-col items-center overflow-y-scroll pb-8 pt-4 sm:px-2",
-          "lg:h-screen lg:pb-4 lg:pl-52 lg:pr-4 lg:pt-28"
+          "flex w-full flex-col items-center overflow-y-scroll pb-40 pt-4 sm:px-2",
+          "lg:pb-4 lg:pl-52 lg:pr-4 lg:pt-28"
         )}
       >
         <Component {...pageProps} />
