@@ -3,10 +3,11 @@
  * Do not make direct changes to the file.
  */
 
+
 export interface paths {
   "/auth/login": {
     /**
-     * Login
+     * Login 
      * @description Get the JWT for a user with data from OAuth2 request form body.
      */
     post: operations["login_auth_login_post"];
@@ -334,7 +335,7 @@ export interface components {
       /** Password */
       password: string;
       /**
-       * Scope
+       * Scope 
        * @default
        */
       scope?: string;
@@ -346,13 +347,13 @@ export interface components {
     /** Body_post_file_files_new_post */
     Body_post_file_files_new_post: {
       /**
-       * File
+       * File 
        * Format: binary
        */
       file: string;
     };
     /**
-     * Bonus
+     * Bonus 
      * @example {
      *   "name": "twisted",
      *   "bonus": 2.5
@@ -364,13 +365,13 @@ export interface components {
       /** Bonus */
       bonus: number;
       /**
-       * Sample Video
+       * Sample Video 
        * Format: uri
        */
       sample_video?: string;
     };
     /**
-     * CompetitionConfig
+     * CompetitionConfig 
      * @example {
      *   "warning": 0.5,
      *   "malus_repetition": 13,
@@ -402,25 +403,25 @@ export interface components {
      */
     CompetitionConfig: {
       /**
-       * Warning
-       * @description The point deduction for a warning
+       * Warning 
+       * @description The point deduction for a warning 
        * @default 0.5
        */
       warning?: number;
       /**
-       * Malus Repetition
-       * @description % reduction malus of choreography for repetition
+       * Malus Repetition 
+       * @description % reduction malus of choreography for repetition 
        * @default 13
        */
       malus_repetition?: number;
       /**
-       * Warnings To Dsq
-       * @description number of warnings in a comp that lead to DSQ
+       * Warnings To Dsq 
+       * @description number of warnings in a comp that lead to DSQ 
        * @default 3
        */
       warnings_to_dsq?: number;
       /**
-       * Judge Weights
+       * Judge Weights 
        * @default {
        *   "senior": 100,
        *   "certified": 100,
@@ -429,7 +430,7 @@ export interface components {
        */
       judge_weights?: components["schemas"]["JudgeWeights"];
       /**
-       * Mark Percentages
+       * Mark Percentages 
        * @default {
        *   "solo": {
        *     "technical": 40,
@@ -446,7 +447,7 @@ export interface components {
        */
       mark_percentages?: components["schemas"]["MarkPercentages"];
       /**
-       * Max Bonus Per Run
+       * Max Bonus Per Run 
        * @default {
        *   "twist": 5,
        *   "reverse": 3,
@@ -464,12 +465,12 @@ export interface components {
       /** Code */
       code: string;
       /**
-       * Start Date
+       * Start Date 
        * Format: date
        */
       start_date: string;
       /**
-       * End Date
+       * End Date 
        * Format: date
        */
       end_date: string;
@@ -479,34 +480,34 @@ export interface components {
       published: boolean;
       type: components["schemas"]["CompetitionType"];
       /** Pilots */
-      pilots: components["schemas"]["Pilot"][];
+      pilots: (components["schemas"]["Pilot"])[];
       /** Teams */
-      teams: components["schemas"]["TeamExport"][];
+      teams: (components["schemas"]["TeamExport"])[];
       /** Judges */
-      judges: components["schemas"]["Judge"][];
+      judges: (components["schemas"]["Judge"])[];
       /** Repeatable Tricks */
-      repeatable_tricks: components["schemas"]["Trick"][];
+      repeatable_tricks: (components["schemas"]["Trick"])[];
       state: components["schemas"]["CompetitionState"];
       config: components["schemas"]["CompetitionConfig"];
       /** Runs */
-      runs: components["schemas"]["RunExport"][];
+      runs: (components["schemas"]["RunExport"])[];
       /**
-       * Image
+       * Image 
        * Format: uri
        */
       image?: string;
       /**
-       * Logo
+       * Logo 
        * Format: uri
        */
       logo?: string;
       /**
-       * Website
+       * Website 
        * Format: uri
        */
       website?: string;
       /** Seasons */
-      seasons: string[];
+      seasons: (string)[];
     };
     /** CompetitionNew */
     CompetitionNew: {
@@ -515,12 +516,12 @@ export interface components {
       /** Code */
       code?: string;
       /**
-       * Start Date
+       * Start Date 
        * Format: date
        */
       start_date: string;
       /**
-       * End Date
+       * End Date 
        * Format: date
        */
       end_date: string;
@@ -534,22 +535,22 @@ export interface components {
       /** Logo */
       logo?: string;
       /**
-       * Website
+       * Website 
        * Format: uri
        */
       website?: string;
       /**
-       * Seasons
+       * Seasons 
        * @default []
        */
-      seasons?: string[];
+      seasons?: (string)[];
     };
     /** CompetitionPilotResultsExport */
     CompetitionPilotResultsExport: {
       pilot?: components["schemas"]["Pilot"];
       team?: components["schemas"]["TeamExport"];
       /** Result Per Run */
-      result_per_run: components["schemas"]["RunResultSummary"][];
+      result_per_run: (components["schemas"]["RunResultSummary"])[];
       /** Score */
       score: number;
     };
@@ -562,12 +563,12 @@ export interface components {
       /** Code */
       code: string;
       /**
-       * Start Date
+       * Start Date 
        * Format: date
        */
       start_date: string;
       /**
-       * End Date
+       * End Date 
        * Format: date
        */
       end_date: string;
@@ -586,22 +587,22 @@ export interface components {
       /** Number Of Runs */
       number_of_runs: number;
       /**
-       * Image
+       * Image 
        * Format: uri
        */
       image?: string;
       /**
-       * Logo
+       * Logo 
        * Format: uri
        */
       logo?: string;
       /**
-       * Website
+       * Website 
        * Format: uri
        */
       website?: string;
       /** Seasons */
-      seasons: string[];
+      seasons: (string)[];
     };
     /** CompetitionPublicExportWithResults */
     CompetitionPublicExportWithResults: {
@@ -612,12 +613,12 @@ export interface components {
       /** Code */
       code: string;
       /**
-       * Start Date
+       * Start Date 
        * Format: date
        */
       start_date: string;
       /**
-       * End Date
+       * End Date 
        * Format: date
        */
       end_date: string;
@@ -636,29 +637,29 @@ export interface components {
       /** Number Of Runs */
       number_of_runs: number;
       /**
-       * Image
+       * Image 
        * Format: uri
        */
       image?: string;
       /**
-       * Logo
+       * Logo 
        * Format: uri
        */
       logo?: string;
       /**
-       * Website
+       * Website 
        * Format: uri
        */
       website?: string;
       /** Seasons */
-      seasons: string[];
+      seasons: (string)[];
       results: components["schemas"]["CompetitionResultsExport"];
       /** Pilots */
-      pilots: components["schemas"]["Pilot"][];
+      pilots: (components["schemas"]["Pilot"])[];
       /** Teams */
-      teams: components["schemas"]["TeamExport"][];
+      teams: (components["schemas"]["TeamExport"])[];
       /** Judges */
-      judges: components["schemas"]["Judge"][];
+      judges: (components["schemas"]["Judge"])[];
     };
     /** CompetitionResult */
     CompetitionResult: {
@@ -673,19 +674,19 @@ export interface components {
       /** Type */
       type: string;
       /** Overall Results */
-      overall_results: components["schemas"]["CompetitionPilotResultsExport"][];
+      overall_results: (components["schemas"]["CompetitionPilotResultsExport"])[];
       /** Runs Results */
-      runs_results: components["schemas"]["RunResultsExport"][];
+      runs_results: (components["schemas"]["RunResultsExport"])[];
     };
     /**
-     * CompetitionState
-     * @description An enumeration.
+     * CompetitionState 
+     * @description An enumeration. 
      * @enum {string}
      */
     CompetitionState: "init" | "open" | "closed";
     /**
-     * CompetitionType
-     * @description An enumeration.
+     * CompetitionType 
+     * @description An enumeration. 
      * @enum {string}
      */
     CompetitionType: "solo" | "synchro";
@@ -695,7 +696,7 @@ export interface components {
       id: string;
     };
     /**
-     * FinalMark
+     * FinalMark 
      * @example {
      *   "judges_mark": {
      *     "judge": "Average of the judges marks",
@@ -741,14 +742,14 @@ export interface components {
       /** Score */
       score: number;
       /** Warnings */
-      warnings: string[];
+      warnings: (string)[];
       /** Malus */
       malus: number;
       /**
-       * Notes
+       * Notes 
        * @default []
        */
-      notes?: string[];
+      notes?: (string)[];
     };
     /** FinalMarkExport */
     FinalMarkExport: {
@@ -770,14 +771,14 @@ export interface components {
       /** Score */
       score: number;
       /** Warnings */
-      warnings: string[];
+      warnings: (string)[];
       /** Malus */
       malus: number;
       /** Notes */
-      notes: string[];
+      notes: (string)[];
     };
     /**
-     * Flight
+     * Flight 
      * @example {
      *   "pilot": 1234,
      *   "tricks": [],
@@ -794,47 +795,47 @@ export interface components {
       /** Team */
       team?: string;
       /** Tricks */
-      tricks: components["schemas"]["UniqueTrick"][];
+      tricks: (components["schemas"]["UniqueTrick"])[];
       /** Marks */
-      marks: components["schemas"]["JudgeMark"][];
+      marks: (components["schemas"]["JudgeMark"])[];
       /**
-       * Did Not Start
+       * Did Not Start 
        * @default false
        */
       did_not_start?: boolean;
       final_marks?: components["schemas"]["FinalMark"];
       /**
-       * Published
+       * Published 
        * @default false
        */
       published?: boolean;
       /** Warnings */
-      warnings: string[];
+      warnings: (string)[];
     };
     /** FlightExport */
     FlightExport: {
       pilot?: components["schemas"]["Pilot"];
       team?: components["schemas"]["TeamExport"];
       /** Tricks */
-      tricks: components["schemas"]["UniqueTrick"][];
+      tricks: (components["schemas"]["UniqueTrick"])[];
       /** Marks */
-      marks: components["schemas"]["JudgeMarkExport"][];
+      marks: (components["schemas"]["JudgeMarkExport"])[];
       /**
-       * Did Not Start
+       * Did Not Start 
        * @default false
        */
       did_not_start?: boolean;
       final_marks?: components["schemas"]["FinalMarkExport"];
       /**
-       * Published
+       * Published 
        * @default false
        */
       published?: boolean;
       /** Warnings */
-      warnings: string[];
+      warnings: (string)[];
     };
     /**
-     * FlightNew
+     * FlightNew 
      * @example {
      *   "tricks": [
      *     "LM",
@@ -847,33 +848,33 @@ export interface components {
      */
     FlightNew: {
       /** Tricks */
-      tricks: string[];
+      tricks: (string)[];
       /** Marks */
-      marks: components["schemas"]["JudgeMark"][];
+      marks: (components["schemas"]["JudgeMark"])[];
       /**
-       * Did Not Start
+       * Did Not Start 
        * @default false
        */
       did_not_start?: boolean;
       /**
-       * Warnings
+       * Warnings 
        * @default []
        */
-      warnings?: string[];
+      warnings?: (string)[];
     };
     /**
-     * GenderEnum
-     * @description An enumeration.
+     * GenderEnum 
+     * @description An enumeration. 
      * @enum {string}
      */
     GenderEnum: "man" | "woman" | "none";
     /** HTTPValidationError */
     HTTPValidationError: {
       /** Detail */
-      detail?: components["schemas"]["ValidationError"][];
+      detail?: (components["schemas"]["ValidationError"])[];
     };
     /**
-     * Judge
+     * Judge 
      * @example {
      *   "name": "Jerry The Judge",
      *   "country": "fra",
@@ -885,36 +886,36 @@ export interface components {
       /** Id */
       _id?: string;
       /**
-       * Name
+       * Name 
        * @description The full name of the judge
        */
       name: string;
       /**
-       * Country
+       * Country 
        * @description The country of the judge using the 3 letter acronym of the country
        */
       country: string;
       /** @description The level of the judge */
       level: components["schemas"]["JudgeLevel"];
       /**
-       * Civlid
+       * Civlid 
        * @description The CIVL ID if any (must be registered in the pilot database
        */
       civlid?: number;
       /**
-       * Deleted
+       * Deleted 
        * Format: date-time
        */
       deleted?: string;
     };
     /**
-     * JudgeLevel
-     * @description An enumeration.
+     * JudgeLevel 
+     * @description An enumeration. 
      * @enum {unknown}
      */
     JudgeLevel: "trainee" | "certified" | "senior";
     /**
-     * JudgeMark
+     * JudgeMark 
      * @example {
      *   "judge": "Jerry The Judge",
      *   "technical": 2.5,
@@ -948,7 +949,7 @@ export interface components {
       synchro?: number;
     };
     /**
-     * JudgeWeights
+     * JudgeWeights 
      * @example {
      *   "senior": 100,
      *   "certified": 100,
@@ -957,20 +958,20 @@ export interface components {
      */
     JudgeWeights: {
       /**
-       * Senior
-       * @description weight of a senior judge's mark
+       * Senior 
+       * @description weight of a senior judge's mark 
        * @default 100
        */
       senior?: number;
       /**
-       * Certified
-       * @description weight of a certified judge's mark
+       * Certified 
+       * @description weight of a certified judge's mark 
        * @default 100
        */
       certified?: number;
       /**
-       * Trainee
-       * @description weight of a trainee judge's mark
+       * Trainee 
+       * @description weight of a trainee judge's mark 
        * @default 20
        */
       trainee?: number;
@@ -980,13 +981,13 @@ export interface components {
       /** Name */
       name: string;
       /**
-       * Link
+       * Link 
        * Format: uri
        */
       link: string;
     };
     /**
-     * MarkPercentageSolo
+     * MarkPercentageSolo 
      * @example {
      *   "technical": 40,
      *   "choreography": 40,
@@ -995,26 +996,26 @@ export interface components {
      */
     MarkPercentageSolo: {
       /**
-       * Technical
-       * @description % of the technical part in the final score for solo runs
+       * Technical 
+       * @description % of the technical part in the final score for solo runs 
        * @default 40
        */
       technical?: number;
       /**
-       * Choreography
-       * @description % of the choreography part in the final score for solo runs
+       * Choreography 
+       * @description % of the choreography part in the final score for solo runs 
        * @default 40
        */
       choreography?: number;
       /**
-       * Landing
-       * @description % of the landing part in the final score for solo runs
+       * Landing 
+       * @description % of the landing part in the final score for solo runs 
        * @default 20
        */
       landing?: number;
     };
     /**
-     * MarkPercentageSynchro
+     * MarkPercentageSynchro 
      * @example {
      *   "technical": 25,
      *   "choreography": 25,
@@ -1024,32 +1025,32 @@ export interface components {
      */
     MarkPercentageSynchro: {
       /**
-       * Technical
-       * @description % of the technical part in the final score for synchro runs
+       * Technical 
+       * @description % of the technical part in the final score for synchro runs 
        * @default 20
        */
       technical?: number;
       /**
-       * Choreography
-       * @description % of the choreography part in the final score for synchro runs
+       * Choreography 
+       * @description % of the choreography part in the final score for synchro runs 
        * @default 20
        */
       choreography?: number;
       /**
-       * Landing
-       * @description % of the landing part in the final score for synchro runs
+       * Landing 
+       * @description % of the landing part in the final score for synchro runs 
        * @default 20
        */
       landing?: number;
       /**
-       * Synchro
-       * @description % of the synchro part in the final score for synchro runs
+       * Synchro 
+       * @description % of the synchro part in the final score for synchro runs 
        * @default 40
        */
       synchro?: number;
     };
     /**
-     * MarkPercentages
+     * MarkPercentages 
      * @example {
      *   "solo": {
      *     "technical": 40,
@@ -1066,7 +1067,7 @@ export interface components {
      */
     MarkPercentages: {
       /**
-       * Solo
+       * Solo 
        * @default {
        *   "technical": 40,
        *   "choreography": 40,
@@ -1075,7 +1076,7 @@ export interface components {
        */
       solo?: components["schemas"]["MarkPercentageSolo"];
       /**
-       * Synchro
+       * Synchro 
        * @default {
        *   "technical": 20,
        *   "choreography": 20,
@@ -1086,7 +1087,7 @@ export interface components {
       synchro?: components["schemas"]["MarkPercentageSynchro"];
     };
     /**
-     * MaxBonusPerRun
+     * MaxBonusPerRun 
      * @example {
      *   "twist": 5,
      *   "reverse": 3,
@@ -1095,26 +1096,26 @@ export interface components {
      */
     MaxBonusPerRun: {
       /**
-       * Twist
-       * @description maximum number of twisted tricks per run
+       * Twist 
+       * @description maximum number of twisted tricks per run 
        * @default 5
        */
       twist?: number;
       /**
-       * Reverse
-       * @description maximum number of reverse tricks per run
+       * Reverse 
+       * @description maximum number of reverse tricks per run 
        * @default 3
        */
       reverse?: number;
       /**
-       * Flip
-       * @description maximum number of flip tricks per run
+       * Flip 
+       * @description maximum number of flip tricks per run 
        * @default 2
        */
       flip?: number;
     };
     /**
-     * Pilot
+     * Pilot 
      * @example {
      *   "civlid": 67619,
      *   "name": "Luke de Weert",
@@ -1180,78 +1181,78 @@ export interface components {
       /** Id */
       _id: number;
       /**
-       * Civlid
+       * Civlid 
        * @description The CIVL ID of the pilot
        */
       civlid: number;
       /**
-       * Name
+       * Name 
        * @description The complete name of the pilot
        */
       name: string;
       /**
-       * Civl Link
-       * Format: uri
+       * Civl Link 
+       * Format: uri 
        * @description The link to the CIVL pilot page
        */
       civl_link: string;
       /**
-       * Country
+       * Country 
        * @description The country of the pilot
        */
       country: string;
       /**
-       * About
+       * About 
        * @description About text of the pilot
        */
       about: string;
       /**
-       * Social Links
+       * Social Links 
        * @description List of pilot's links (socials medias, ...)
        */
-      social_links: components["schemas"]["Link"][];
+      social_links: (components["schemas"]["Link"])[];
       /**
-       * Sponsors
+       * Sponsors 
        * @description List of the pilot's sponsors
        */
-      sponsors: components["schemas"]["Sponsor"][];
+      sponsors: (components["schemas"]["Sponsor"])[];
       /**
-       * Photo
-       * Format: uri
+       * Photo 
+       * Format: uri 
        * @description Link to the profile image of the pilot
        */
       photo: string;
       /**
-       * Photo Highres
-       * Format: uri
+       * Photo Highres 
+       * Format: uri 
        * @description Link to the highres profile image of the pilot
        */
       photo_highres?: string;
       /**
-       * Background Picture
-       * Format: uri
+       * Background Picture 
+       * Format: uri 
        * @description Link to the background profile image of the pilot
        */
       background_picture: string;
       /**
-       * Last Update
-       * Format: date-time
+       * Last Update 
+       * Format: date-time 
        * @description Last time the pilot has been updated
        */
       last_update?: string;
       /**
-       * Rank
+       * Rank 
        * @description Current pilot's ranking in the aerobatic solo overwall world ranking
        */
       rank: number;
       /**
-       * @description Pilot's sex
+       * @description Pilot's sex 
        * @default man
        */
       gender?: components["schemas"]["GenderEnum"];
     };
     /**
-     * PilotWithResults
+     * PilotWithResults 
      * @example {
      *   "civlid": 67619,
      *   "name": "Luke de Weert",
@@ -1317,105 +1318,105 @@ export interface components {
       /** Id */
       _id: number;
       /**
-       * Civlid
+       * Civlid 
        * @description The CIVL ID of the pilot
        */
       civlid: number;
       /**
-       * Name
+       * Name 
        * @description The complete name of the pilot
        */
       name: string;
       /**
-       * Civl Link
-       * Format: uri
+       * Civl Link 
+       * Format: uri 
        * @description The link to the CIVL pilot page
        */
       civl_link: string;
       /**
-       * Country
+       * Country 
        * @description The country of the pilot
        */
       country: string;
       /**
-       * About
+       * About 
        * @description About text of the pilot
        */
       about: string;
       /**
-       * Social Links
+       * Social Links 
        * @description List of pilot's links (socials medias, ...)
        */
-      social_links: components["schemas"]["Link"][];
+      social_links: (components["schemas"]["Link"])[];
       /**
-       * Sponsors
+       * Sponsors 
        * @description List of the pilot's sponsors
        */
-      sponsors: components["schemas"]["Sponsor"][];
+      sponsors: (components["schemas"]["Sponsor"])[];
       /**
-       * Photo
-       * Format: uri
+       * Photo 
+       * Format: uri 
        * @description Link to the profile image of the pilot
        */
       photo: string;
       /**
-       * Photo Highres
-       * Format: uri
+       * Photo Highres 
+       * Format: uri 
        * @description Link to the highres profile image of the pilot
        */
       photo_highres?: string;
       /**
-       * Background Picture
-       * Format: uri
+       * Background Picture 
+       * Format: uri 
        * @description Link to the background profile image of the pilot
        */
       background_picture: string;
       /**
-       * Last Update
-       * Format: date-time
+       * Last Update 
+       * Format: date-time 
        * @description Last time the pilot has been updated
        */
       last_update?: string;
       /**
-       * Rank
+       * Rank 
        * @description Current pilot's ranking in the aerobatic solo overwall world ranking
        */
       rank: number;
       /**
-       * @description Pilot's sex
+       * @description Pilot's sex 
        * @default man
        */
       gender?: components["schemas"]["GenderEnum"];
       /**
-       * Competitions Results
-       * @description List of competitions results
+       * Competitions Results 
+       * @description List of competitions results 
        * @default []
        */
-      competitions_results?: components["schemas"]["CompetitionResult"][];
+      competitions_results?: (components["schemas"]["CompetitionResult"])[];
       /**
-       * Seasons Results
-       * @description List of seasons results
+       * Seasons Results 
+       * @description List of seasons results 
        * @default []
        */
-      seasons_results?: components["schemas"]["models__pilots_with_results__SeasonResult"][];
+      seasons_results?: (components["schemas"]["models__pilots_with_results__SeasonResult"])[];
     };
     /** RunExport */
     RunExport: {
       state: components["schemas"]["RunState"];
       /** Pilots */
-      pilots: components["schemas"]["Pilot"][];
+      pilots: (components["schemas"]["Pilot"])[];
       /** Teams */
-      teams: components["schemas"]["TeamExport"][];
+      teams: (components["schemas"]["TeamExport"])[];
       /** Judges */
-      judges: components["schemas"]["Judge"][];
+      judges: (components["schemas"]["Judge"])[];
       /** Repeatable Tricks */
-      repeatable_tricks: components["schemas"]["Trick"][];
+      repeatable_tricks: (components["schemas"]["Trick"])[];
       config: components["schemas"]["CompetitionConfig"];
       /** Flights */
-      flights: components["schemas"]["FlightExport"][];
+      flights: (components["schemas"]["FlightExport"])[];
     };
     /**
-     * RunResultSummary
+     * RunResultSummary 
      * @example {
      *   "rank": "1",
      *   "score": 12.5
@@ -1434,16 +1435,16 @@ export interface components {
       /** Type */
       type: string;
       /** Results */
-      results: components["schemas"]["FlightExport"][];
+      results: (components["schemas"]["FlightExport"])[];
     };
     /**
-     * RunState
-     * @description An enumeration.
+     * RunState 
+     * @description An enumeration. 
      * @enum {string}
      */
     RunState: "init" | "open" | "closed";
     /**
-     * Season
+     * Season 
      * @example {
      *   "name": "Acro World Tour 2022",
      *   "code": "awt-2022"
@@ -1453,36 +1454,36 @@ export interface components {
       /** Id */
       _id?: string;
       /**
-       * Name
+       * Name 
        * @description The name of the season
        */
       name: string;
       /**
-       * Code
+       * Code 
        * @description The short code of the season
        */
       code: string;
       /**
-       * Year
+       * Year 
        * @description The year of the season
        */
       year: number;
       /** Image */
       image?: string;
       /**
-       * Image Url
+       * Image Url 
        * Format: uri
        */
       image_url?: string;
       /** Country */
       country?: string;
       /**
-       * Index
+       * Index 
        * @default 999
        */
       index?: number;
       /**
-       * Deleted
+       * Deleted 
        * Format: date-time
        */
       deleted?: string;
@@ -1498,14 +1499,14 @@ export interface components {
       /** Year */
       year: number;
       /**
-       * Image
+       * Image 
        * Format: uri
        */
       image?: string;
       /** Country */
       country?: string;
       /**
-       * Index
+       * Index 
        * @default 999
        */
       index?: number;
@@ -1515,23 +1516,23 @@ export interface components {
       /** Number Of Teams */
       number_of_teams: number;
       /** Competitions */
-      competitions: components["schemas"]["CompetitionPublicExportWithResults"][];
+      competitions: (components["schemas"]["CompetitionPublicExportWithResults"])[];
       /** Results */
-      results: components["schemas"]["SeasonResults"][];
+      results: (components["schemas"]["SeasonResults"])[];
     };
     /** SeasonResults */
     SeasonResults: {
       /** Type */
       type: string;
       /** Results */
-      results: components["schemas"]["models__seasons__SeasonResult"][];
+      results: (components["schemas"]["models__seasons__SeasonResult"])[];
     };
     /** Sponsor */
     Sponsor: {
       /** Name */
       name: string;
       /**
-       * Link
+       * Link 
        * Format: uri
        */
       link: string;
@@ -1539,7 +1540,7 @@ export interface components {
       img: string;
     };
     /**
-     * Status
+     * Status 
      * @example {
      *   "project": "Acropyx2",
      *   "version": "2.0.1"
@@ -1552,7 +1553,7 @@ export interface components {
       version: string;
     };
     /**
-     * Team
+     * Team 
      * @example {
      *   "_id": "687687687687aze",
      *   "name": "Team Rocket",
@@ -1566,17 +1567,17 @@ export interface components {
       /** Id */
       _id?: string;
       /**
-       * Name
+       * Name 
        * @description The name of the team
        */
       name: string;
       /**
-       * Pilots
+       * Pilots 
        * @description The 2 pilots composing the team (by CIVLID)
        */
-      pilots: number[];
+      pilots: (number)[];
       /**
-       * Deleted
+       * Deleted 
        * Format: date-time
        */
       deleted?: string;
@@ -1588,10 +1589,10 @@ export interface components {
       /** Name */
       name: string;
       /** Pilots */
-      pilots: components["schemas"]["Pilot"][];
+      pilots: (components["schemas"]["Pilot"])[];
     };
     /**
-     * Trick
+     * Trick 
      * @example {
      *   "_id": "bababababaabababababab",
      *   "name": "Misty to Helicopter",
@@ -1674,95 +1675,95 @@ export interface components {
       /** Id */
       _id?: string;
       /**
-       * Name
+       * Name 
        * @description The name of the trick (without bonuses)
        */
       name: string;
       /**
-       * Acronym
+       * Acronym 
        * @description The acronym of the trick (without bonuses)
        */
       acronym: string;
       /**
-       * Solo
+       * Solo 
        * @description Is this trick valid for solo competitions
        */
       solo: boolean;
       /**
-       * Synchro
+       * Synchro 
        * @description Is this trick valid for synchro competitions
        */
       synchro: boolean;
       /**
-       * Directions
+       * Directions 
        * @description List of allowed diredctions for the trick. Empty list implies a trick with a unique direction
        */
-      directions: string[];
+      directions: (string)[];
       /**
-       * Technical Coefficient
+       * Technical Coefficient 
        * @description The technical coefficient of the trick
        */
       technical_coefficient: number;
       /**
-       * Bonuses
+       * Bonuses 
        * @description List of all bonuses that can apply to this trick
        */
-      bonuses: components["schemas"]["Bonus"][];
+      bonuses: (components["schemas"]["Bonus"])[];
       /**
-       * Bonus Constraints
-       * @description List of bonuses that are exclusive to each other
+       * Bonus Constraints 
+       * @description List of bonuses that are exclusive to each other 
        * @default []
        */
-      bonus_constraints?: string[][];
+      bonus_constraints?: ((string)[])[];
       /**
-       * First Maneuver
-       * @description If positive, indicates that the trick must be performed in the first N tricks of the run
+       * First Maneuver 
+       * @description If positive, indicates that the trick must be performed in the first N tricks of the run 
        * @default 0
        */
       first_maneuver?: number;
       /**
-       * No First Maneuver
-       * @description If positive, indicates that the trick must not be performed in the first N tricks of the run
+       * No First Maneuver 
+       * @description If positive, indicates that the trick must not be performed in the first N tricks of the run 
        * @default 0
        */
       no_first_maneuver?: number;
       /**
-       * Last Maneuver
-       * @description If positive, indicates that the trick must be performed in the last N tricks of the run
+       * Last Maneuver 
+       * @description If positive, indicates that the trick must be performed in the last N tricks of the run 
        * @default 0
        */
       last_maneuver?: number;
       /**
-       * No Last Maneuver
-       * @description If positive, indicates that the trick must not be performed in the last N tricks of the run
+       * No Last Maneuver 
+       * @description If positive, indicates that the trick must not be performed in the last N tricks of the run 
        * @default 0
        */
       no_last_maneuver?: number;
       /**
-       * Tricks
-       * @description List of all the variant of the trick (this is automatically generated)
+       * Tricks 
+       * @description List of all the variant of the trick (this is automatically generated) 
        * @default []
        */
-      tricks?: components["schemas"]["UniqueTrick"][];
+      tricks?: (components["schemas"]["UniqueTrick"])[];
       /**
-       * Repeatable
-       * @description Is this trick can be repeatable
+       * Repeatable 
+       * @description Is this trick can be repeatable 
        * @default false
        */
       repeatable?: boolean;
       /**
-       * Deleted
+       * Deleted 
        * Format: date-time
        */
       deleted?: string;
       /**
-       * Sample Video
+       * Sample Video 
        * Format: uri
        */
       sample_video?: string;
     };
     /**
-     * UniqueTrick
+     * UniqueTrick 
      * @example {
      *   "name": "twisted left Misty to Helicopter reverse",
      *   "acronym": "/LMHR",
@@ -1789,11 +1790,11 @@ export interface components {
       /** Bonus */
       bonus: number;
       /** Bonus Types */
-      bonus_types: string[];
+      bonus_types: (string)[];
       /** Base Trick */
       base_trick: string;
       /** Uniqueness */
-      uniqueness: string[];
+      uniqueness: (string)[];
     };
     /** ValidationError */
     ValidationError: {
@@ -1828,8 +1829,9 @@ export interface components {
 export type external = Record<string, never>;
 
 export interface operations {
+
   /**
-   * Login
+   * Login 
    * @description Get the JWT for a user with data from OAuth2 request form body.
    */
   login_auth_login_post: {
@@ -1881,7 +1883,7 @@ export interface operations {
       /** @description List all pilots */
       200: {
         content: {
-          "application/json": components["schemas"]["Pilot"][];
+          "application/json": (components["schemas"]["Pilot"])[];
         };
       };
     };
@@ -1977,7 +1979,7 @@ export interface operations {
       /** @description List all judges */
       200: {
         content: {
-          "application/json": components["schemas"]["Judge"][];
+          "application/json": (components["schemas"]["Judge"])[];
         };
       };
       /** @description Validation Error */
@@ -1994,7 +1996,7 @@ export interface operations {
       /** @description Get list of judges levels */
       200: {
         content: {
-          "application/json": components["schemas"]["JudgeLevel"][];
+          "application/json": (components["schemas"]["JudgeLevel"])[];
         };
       };
     };
@@ -2101,7 +2103,7 @@ export interface operations {
       /** @description List all teams */
       200: {
         content: {
-          "application/json": components["schemas"]["TeamExport"][];
+          "application/json": (components["schemas"]["TeamExport"])[];
         };
       };
       /** @description Validation Error */
@@ -2215,7 +2217,7 @@ export interface operations {
       /** @description List all tricks */
       200: {
         content: {
-          "application/json": components["schemas"]["Trick"][];
+          "application/json": (components["schemas"]["Trick"])[];
         };
       };
       /** @description Validation Error */
@@ -2238,7 +2240,7 @@ export interface operations {
       /** @description Get all unique tricks */
       200: {
         content: {
-          "application/json": components["schemas"]["UniqueTrick"][];
+          "application/json": (components["schemas"]["UniqueTrick"])[];
         };
       };
       /** @description Validation Error */
@@ -2255,7 +2257,7 @@ export interface operations {
       /** @description Get available bonuses */
       200: {
         content: {
-          "application/json": Record<string, never>[];
+          "application/json": (Record<string, never>)[];
         };
       };
     };
@@ -2266,7 +2268,7 @@ export interface operations {
       /** @description Get available directions */
       200: {
         content: {
-          "application/json": Record<string, never>[];
+          "application/json": (Record<string, never>)[];
         };
       };
     };
@@ -2388,7 +2390,7 @@ export interface operations {
   create_import_tricks_import_post: {
     requestBody: {
       content: {
-        "application/json": components["schemas"]["Trick"][];
+        "application/json": (components["schemas"]["Trick"])[];
       };
     };
     responses: {
@@ -2412,7 +2414,7 @@ export interface operations {
       /** @description List all competitions */
       200: {
         content: {
-          "application/json": components["schemas"]["CompetitionPublicExport"][];
+          "application/json": (components["schemas"]["CompetitionPublicExport"])[];
         };
       };
     };
@@ -2517,7 +2519,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": number[];
+        "application/json": (number)[];
       };
     };
     responses: {
@@ -2540,7 +2542,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": string[];
+        "application/json": (string)[];
       };
     };
     responses: {
@@ -2563,7 +2565,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": string[];
+        "application/json": (string)[];
       };
     };
     responses: {
@@ -2586,7 +2588,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": string[];
+        "application/json": (string)[];
       };
     };
     responses: {
@@ -2735,7 +2737,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": number[];
+        "application/json": (number)[];
       };
     };
     responses: {
@@ -2759,7 +2761,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": string[];
+        "application/json": (string)[];
       };
     };
     responses: {
@@ -2783,7 +2785,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": string[];
+        "application/json": (string)[];
       };
     };
     responses: {
@@ -2807,7 +2809,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": string[];
+        "application/json": (string)[];
       };
     };
     responses: {
@@ -3091,7 +3093,7 @@ export interface operations {
       /** @description List all public */
       200: {
         content: {
-          "application/json": components["schemas"]["Pilot"][];
+          "application/json": (components["schemas"]["Pilot"])[];
         };
       };
     };
@@ -3124,7 +3126,7 @@ export interface operations {
       /** @description List all teams */
       200: {
         content: {
-          "application/json": components["schemas"]["TeamExport"][];
+          "application/json": (components["schemas"]["TeamExport"])[];
         };
       };
     };
@@ -3157,7 +3159,7 @@ export interface operations {
       /** @description List all judges */
       200: {
         content: {
-          "application/json": components["schemas"]["Judge"][];
+          "application/json": (components["schemas"]["Judge"])[];
         };
       };
     };
@@ -3190,7 +3192,7 @@ export interface operations {
       /** @description List all competitions */
       200: {
         content: {
-          "application/json": components["schemas"]["CompetitionPublicExport"][];
+          "application/json": (components["schemas"]["CompetitionPublicExport"])[];
         };
       };
     };
@@ -3228,7 +3230,7 @@ export interface operations {
       /** @description List all seasons */
       200: {
         content: {
-          "application/json": components["schemas"]["SeasonExport"][];
+          "application/json": (components["schemas"]["SeasonExport"])[];
         };
       };
       /** @description Validation Error */
@@ -3275,7 +3277,7 @@ export interface operations {
       /** @description List all tricks */
       200: {
         content: {
-          "application/json": components["schemas"]["Trick"][];
+          "application/json": (components["schemas"]["Trick"])[];
         };
       };
       /** @description Validation Error */
@@ -3373,7 +3375,7 @@ export interface operations {
       /** @description List all seasons */
       200: {
         content: {
-          "application/json": components["schemas"]["SeasonExport"][];
+          "application/json": (components["schemas"]["SeasonExport"])[];
         };
       };
       /** @description Validation Error */

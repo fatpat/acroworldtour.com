@@ -39,7 +39,7 @@ const SeasonPage = () => {
       setPageTitle(season.name || "");
       setPageDescription(`Season page for ${season.name}`);
       setHeaderTitle(season.name || "");
-      setHeaderSubtitle(`${season.type} - ${season.year}` || "");
+      setHeaderSubtitle(`${season.type} season` || "");
       setActiveNav("seasons");
     }
   }, [

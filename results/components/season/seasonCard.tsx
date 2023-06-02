@@ -13,6 +13,7 @@ const SeasonCard = ({ season }: Props) => {
     name,
     image,
     number_of_pilots: numberOfPilots,
+    number_of_teams: numberOfTeams,
     type,
     competitions,
   } = season;
@@ -27,6 +28,11 @@ const SeasonCard = ({ season }: Props) => {
   const pilotsString = numberOfPilots
     ? `${numberOfPilots} pilot${pilotsPlural ? "s" : ""}`
     : "No pilot data";
+
+  const teamsPlural = numberOfTeams > 1;
+  const teamsString = numberOfTeams
+    ? `${numberOfTeams} team${teamsPlural ? "s" : ""}`
+    : "No team data";
 
   const seasonCover = image ?? "";
 
@@ -75,7 +81,9 @@ const SeasonCard = ({ season }: Props) => {
         <footer>
           <p className="capitalize">{type}</p>
           <p className="">{competitionsString}</p>
-          <p className="absolute bottom-4 right-4">{pilotsString}</p>
+          <p className="absolute bottom-4 right-4">
+            {type === "solo" ? pilotsString : teamsString}
+          </p>
         </footer>
       </article>
     </Link>

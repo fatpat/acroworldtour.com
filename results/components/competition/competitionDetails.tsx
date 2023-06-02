@@ -21,21 +21,21 @@ const CompetitionDetails = ({ competition }: Props) => {
   const runsResults = results.runs_results;
 
   const [showOverall, setShowOverall] = useState(false);
-  const [showRuns, setShowRuns] = useState(runsResults.map(() => false));
+  const [showRun, setShowRun] = useState(runsResults.map(() => false));
 
   const [hideExtra, setHideExtra] = useState(false);
 
   useEffect(() => {
-    const shouldHide = showOverall || showRuns.some((showRun) => showRun);
+    const shouldHide = showOverall || showRun.some((showRun) => showRun);
     setHideExtra(shouldHide);
-  }, [showOverall, showRuns]);
+  }, [showOverall, showRun]);
 
   const toggleResults = (index: "overall" | number) => {
-    const newShowRuns = [...showRuns].fill(false);
-    if (index !== "overall") newShowRuns[index] = !showRuns[index];
+    const newShowRuns = [...showRun].fill(false);
+    if (index !== "overall") newShowRuns[index] = !showRun[index];
 
     setShowOverall(index === "overall" ? !showOverall : false);
-    setShowRuns(newShowRuns);
+    setShowRun(newShowRuns);
   };
 
   return (
@@ -110,11 +110,11 @@ const CompetitionDetails = ({ competition }: Props) => {
                     <ChevronIcon
                       className={classNames(
                         "ml-2 h-3 w-auto",
-                        !showRuns[runIndex] && "-rotate-90"
+                        !showRun[runIndex] && "-rotate-90"
                       )}
                     />
                   </button>
-                  {showRuns[runIndex] && (
+                  {showRun[runIndex] && (
                     <CompetitionRunMain
                       results={run.results}
                       type={run.type}

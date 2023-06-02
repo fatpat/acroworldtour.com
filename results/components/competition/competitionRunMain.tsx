@@ -41,11 +41,7 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
         Score
       </h4>
       {results.map((result, resultIndex) => {
-        const {
-          pilot,
-          final_marks,
-          tricks,
-        } = result;
+        const { pilot, final_marks, tricks } = result;
 
         const roundedScore =
           final_marks?.score?.toFixed(3) ?? "No score record";
