@@ -65,7 +65,7 @@ const SeasonDetails = ({ season }: Props) => {
                 <button
                   title={`Click to open/close ${category} results`}
                   className={classNames(
-                    "col-span-full flex cursor-pointer items-baseline justify-center"
+                    "col-span-full flex items-baseline justify-center"
                   )}
                   onClick={() => toggleCategories(catIndex)}
                   onKeyDown={({ key }) =>

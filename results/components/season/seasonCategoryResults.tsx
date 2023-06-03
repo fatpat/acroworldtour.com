@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Fragment } from "react";
 
 import { components } from "@/types";
@@ -29,8 +30,14 @@ const SeasonCategoryResults = ({ results, className }: Props) => (
             {rank}
           </p>
           <h5 className="col-span-8 flex cursor-pointer items-baseline border-[1px] py-2">
-            {pilot?.name || "Pilot Unknown"}
-            {["🥇", "🥈", "🥉"][rank - 1]}
+            {pilot ? (
+              <Link href={`/pilots/${pilot.civlid}/${pilot.name}`}>
+                {pilot.name}
+                {["🥇", "🥈", "🥉"][rank - 1]}
+              </Link>
+            ) : (
+              "Pilot Unknown"
+            )}
           </h5>
           <p className="col-span-2 border-[1px] py-2 text-center">
             {roundedScore}
