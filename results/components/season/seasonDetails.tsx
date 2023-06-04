@@ -14,22 +14,24 @@ interface Props {
 const SeasonDetails = ({ season }: Props) => {
   const { name, results: resultCategories } = season;
 
-  const [showCategories, setShowCategories] = useState(
-    resultCategories.map(() => false)
+  const [hideSummary, setHideSummary] = useState(false);
+  const [showCategory, setShowCategory] = useState(
+    JSON.parse(localStorage.getItem("showCategories") || "false") ||
+      resultCategories.map(() => false)
   );
 
-  const [hideExtra, setHideExtra] = useState(false);
+  const changeCategory = (index: number) => {
+    const newShowCat = [...showCategory].fill(false);
+    newShowCat[index] = !showCategory[index];
+
+    setShowCategory(newShowCat);
+  };
 
   useEffect(() => {
-    setHideExtra(showCategories.some((showCat) => showCat));
-  }, [showCategories]);
+    localStorage.setItem("showCategories", JSON.stringify(showCategory));
 
-  const toggleCategories = (index: number) => {
-    const newShowCat = [...showCategories].fill(false);
-    newShowCat[index] = !showCategories[index];
-
-    setShowCategories(newShowCat);
-  };
+    setHideSummary(showCategory.some((showCat: boolean) => showCat));
+  }, [showCategory]);
 
   return (
     <>
@@ -45,15 +47,21 @@ const SeasonDetails = ({ season }: Props) => {
           className={classNames(
             "w-1/2 max-w-lg rounded-xl bg-awt-dark-50 px-2 py-2 pb-2 shadow-inner",
             "portrait:w-full",
-            hideExtra && "landscape:hidden"
+            hideSummary && "landscape:hidden"
           )}
         />
         <section
           className={classNames(
             "flex w-full flex-grow flex-col gap-4 rounded-xl bg-awt-dark-50 py-2 shadow-inner",
-            hideExtra ? "lg:col-span-full" : "lg:col-span-6 lg:col-start-4"
+            hideSummary ? "lg:col-span-full" : "lg:col-span-6 lg:col-start-4"
           )}
         >
+          {hideSummary && (
+            <small className="text-center">
+              Results are updated automatically.
+            </small>
+          )}
+
           {resultCategories.map((resultCategory, catIndex) => {
             const category = resultCategory.type;
             const categoryResults = resultCategory.results.sort(
@@ -67,20 +75,20 @@ const SeasonDetails = ({ season }: Props) => {
                   className={classNames(
                     "col-span-full flex items-baseline justify-center"
                   )}
-                  onClick={() => toggleCategories(catIndex)}
+                  onClick={() => changeCategory(catIndex)}
                   onKeyDown={({ key }) =>
-                    key === "Enter" && toggleCategories(catIndex)
+                    key === "Enter" && changeCategory(catIndex)
                   }
                 >
                   <h3 className="capitalize">{`${category} results`}</h3>
                   <ChevronIcon
                     className={classNames(
                       "ml-2 h-3 w-auto",
-                      !showCategories[catIndex] && "-rotate-90"
+                      !showCategory[catIndex] && "-rotate-90"
                     )}
                   />
                 </button>
-                {showCategories[catIndex] && (
+                {showCategory[catIndex] && (
                   <SeasonCategoryResults
                     results={categoryResults}
                     className="grid grid-cols-12 border-[1px]"

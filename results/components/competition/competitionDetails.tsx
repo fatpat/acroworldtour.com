@@ -14,29 +14,33 @@ interface Props {
 
 const CompetitionDetails = ({ competition }: Props) => {
   const { name, results } = competition;
-
   const overallResults = results.overall_results;
   overallResults.sort((a, b) => b.score - a.score);
-
   const runsResults = results.runs_results;
 
-  const [showOverall, setShowOverall] = useState(false);
-  const [showRun, setShowRun] = useState(runsResults.map(() => false));
+  const [hideSummary, setHideSummary] = useState(false);
+  const [showOverall, setShowOverall] = useState(
+    JSON.parse(localStorage.getItem("showOverall") || "false") || false
+  );
+  const [showRun, setShowRun] = useState(
+    JSON.parse(localStorage.getItem("showRun") || "false") ||
+      runsResults.map(() => false)
+  );
 
-  const [hideExtra, setHideExtra] = useState(false);
-
-  useEffect(() => {
-    const shouldHide = showOverall || showRun.some((showRun) => showRun);
-    setHideExtra(shouldHide);
-  }, [showOverall, showRun]);
-
-  const toggleResults = (index: "overall" | number) => {
+  const changeResults = (index: "overall" | number) => {
     const newShowRuns = [...showRun].fill(false);
     if (index !== "overall") newShowRuns[index] = !showRun[index];
 
     setShowOverall(index === "overall" ? !showOverall : false);
     setShowRun(newShowRuns);
   };
+
+  useEffect(() => {
+    localStorage.setItem("showOverall", JSON.stringify(showOverall));
+    localStorage.setItem("showRun", JSON.stringify(showRun));
+
+    setHideSummary(showOverall || showRun.some((showRun: boolean) => showRun));
+  }, [showOverall, showRun]);
 
   return (
     <>
@@ -52,7 +56,7 @@ const CompetitionDetails = ({ competition }: Props) => {
           className={classNames(
             "w-1/2 max-w-lg rounded-xl bg-awt-dark-50 px-2 py-2 pb-2 shadow-inner",
             "portrait:w-full",
-            hideExtra && "landscape:hidden"
+            hideSummary && "landscape:hidden"
           )}
         />
 
@@ -60,18 +64,24 @@ const CompetitionDetails = ({ competition }: Props) => {
           <section
             className={classNames(
               "flex w-full flex-grow flex-col gap-4 rounded-xl bg-awt-dark-50 py-2 shadow-inner",
-              hideExtra ? "lg:col-span-full" : "lg:col-span-6 lg:col-start-4"
+              hideSummary ? "lg:col-span-full" : "lg:col-span-6 lg:col-start-4"
             )}
           >
+            {hideSummary && (
+              <small className="text-center">
+                Results are updated automatically.
+              </small>
+            )}
+
             {overallResults.length > 0 && (
               <button
                 title="Click to open/close overall results"
                 className={classNames(
                   "col-span-full flex cursor-pointer items-baseline justify-center"
                 )}
-                onClick={() => toggleResults("overall")}
+                onClick={() => changeResults("overall")}
                 onKeyDown={({ key }) =>
-                  key === "Enter" && toggleResults("overall")
+                  key === "Enter" && changeResults("overall")
                 }
               >
                 <h3>Overall Results</h3>
@@ -101,9 +111,9 @@ const CompetitionDetails = ({ competition }: Props) => {
                     className={classNames(
                       "col-span-full flex cursor-pointer items-baseline justify-center"
                     )}
-                    onClick={() => toggleResults(runIndex)}
+                    onClick={() => changeResults(runIndex)}
                     onKeyDown={({ key }) =>
-                      key === "Enter" && toggleResults(runIndex)
+                      key === "Enter" && changeResults(runIndex)
                     }
                   >
                     <h3>{`Run ${runNumber}`}</h3>
