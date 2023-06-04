@@ -7,7 +7,6 @@ import FetchError from "@/components/ui/fetchError";
 import FetchLoading from "@/components/ui/fetchLoading";
 import { API_URL } from "@/constants";
 import { components } from "@/types";
-import { fetcher } from "@/utils/fetcher";
 
 type Judge = components["schemas"]["Judge"];
 
@@ -39,7 +38,7 @@ const Judges = () => {
     data: judges,
     error,
     isLoading,
-  } = useSWR<Judge[], Error>(`${API_URL}/judges`, fetcher);
+  } = useSWR<Judge[], Error>(`${API_URL}/judges`);
 
   if (isLoading) return <FetchLoading />;
   if (error) return <FetchError />;

@@ -7,7 +7,6 @@ import FetchError from "@/components/ui/fetchError";
 import FetchLoading from "@/components/ui/fetchLoading";
 import { API_URL } from "@/constants";
 import { components } from "@/types";
-import { fetcher } from "@/utils/fetcher";
 
 type Team = components["schemas"]["TeamExport"];
 
@@ -39,7 +38,7 @@ const Teams = () => {
     data: teams,
     error,
     isLoading,
-  } = useSWR<Team[], Error>(`${API_URL}/teams`, fetcher);
+  } = useSWR<Team[], Error>(`${API_URL}/teams`);
 
   if (isLoading) return <FetchLoading />;
   if (error) return <FetchError />;

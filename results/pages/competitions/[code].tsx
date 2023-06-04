@@ -8,7 +8,6 @@ import FetchError from "@/components/ui/fetchError";
 import FetchLoading from "@/components/ui/fetchLoading";
 import { API_URL } from "@/constants";
 import { components } from "@/types";
-import { fetcher } from "@/utils/fetcher";
 
 type Competition = components["schemas"]["CompetitionPublicExportWithResults"];
 
@@ -34,8 +33,7 @@ const CompetitionPage = () => {
     error,
     isLoading,
   } = useSWR<Competition, Error>(
-    code ? `${API_URL}/competitions/${code}` : null,
-    fetcher
+    code ? `${API_URL}/competitions/${code}` : null
   );
 
   useEffect(() => {

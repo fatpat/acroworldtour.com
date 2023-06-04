@@ -8,7 +8,6 @@ import FetchError from "@/components/ui/fetchError";
 import FetchLoading from "@/components/ui/fetchLoading";
 import { API_URL } from "@/constants";
 import { components } from "@/types";
-import { fetcher } from "@/utils/fetcher";
 
 type Competition = components["schemas"]["CompetitionPublicExport"];
 type Season = components["schemas"]["SeasonExport"];
@@ -44,13 +43,13 @@ const Competitions = () => {
     data: seasons,
     error: seasonsError,
     isLoading: seasonsLoading,
-  } = useSWR<Season[]>(`${API_URL}/seasons`, fetcher);
+  } = useSWR<Season[]>(`${API_URL}/seasons`);
 
   const {
     data: competitions,
     error: competitionsError,
     isLoading: competitionsLoading,
-  } = useSWR<Competition[]>(`${API_URL}/competitions`, fetcher);
+  } = useSWR<Competition[]>(`${API_URL}/competitions`);
 
   if (seasonsLoading || competitionsLoading) return <FetchLoading />;
   if (competitionsError || seasonsError) return <FetchError />;

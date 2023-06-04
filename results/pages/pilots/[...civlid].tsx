@@ -8,7 +8,6 @@ import FetchError from "@/components/ui/fetchError";
 import FetchLoading from "@/components/ui/fetchLoading";
 import { API_URL } from "@/constants";
 import { components } from "@/types";
-import { fetcher } from "@/utils/fetcher";
 
 type Pilot = components["schemas"]["Pilot"];
 
@@ -32,10 +31,7 @@ const PilotPage = () => {
     data: pilot,
     error,
     isLoading,
-  } = useSWR<Pilot, Error>(
-    civlid ? `${API_URL}/pilots/${civlid}` : null,
-    fetcher
-  );
+  } = useSWR<Pilot, Error>(civlid ? `${API_URL}/pilots/${civlid}` : null);
 
   useEffect(() => {
     if (pilot) {

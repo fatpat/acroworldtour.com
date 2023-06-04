@@ -8,7 +8,6 @@ import FetchError from "@/components/ui/fetchError";
 import FetchLoading from "@/components/ui/fetchLoading";
 import { API_URL } from "@/constants";
 import { components } from "@/types";
-import { fetcher } from "@/utils/fetcher";
 
 type Season = components["schemas"]["SeasonExport"];
 
@@ -33,10 +32,7 @@ const SeasonPage = () => {
     data: season,
     error,
     isLoading,
-  } = useSWR<Season, Error>(
-    code ? `${API_URL}/seasons/${code}` : null,
-    fetcher
-  );
+  } = useSWR<Season, Error>(code ? `${API_URL}/seasons/${code}` : null);
 
   useEffect(() => {
     if (season) {

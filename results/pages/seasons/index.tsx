@@ -8,7 +8,6 @@ import FetchError from "@/components/ui/fetchError";
 import FetchLoading from "@/components/ui/fetchLoading";
 import { API_URL } from "@/constants";
 import { components } from "@/types";
-import { fetcher } from "@/utils/fetcher";
 
 type Season = components["schemas"]["SeasonExport"];
 
@@ -29,7 +28,7 @@ const Seasons = () => {
     data: seasons,
     error,
     isLoading,
-  } = useSWR<Season[]>(`${API_URL}/seasons`, fetcher);
+  } = useSWR<Season[]>(`${API_URL}/seasons`);
 
   useEffect(() => {
     setPageTitle("Acro World Tour | Seasons");

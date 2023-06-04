@@ -7,7 +7,6 @@ import FetchError from "@/components/ui/fetchError";
 import FetchLoading from "@/components/ui/fetchLoading";
 import { API_URL } from "@/constants";
 import { components } from "@/types";
-import { fetcher } from "@/utils/fetcher";
 
 type Trick = components["schemas"]["Trick"];
 
@@ -39,7 +38,7 @@ const Tricks = () => {
     data: tricks,
     error,
     isLoading,
-  } = useSWR<Trick[], Error>(`${API_URL}/tricks`, fetcher);
+  } = useSWR<Trick[], Error>(`${API_URL}/tricks`);
 
   if (isLoading) return <FetchLoading />;
   if (error) return <FetchError />;

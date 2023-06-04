@@ -3,7 +3,6 @@ import useSWR from "swr";
 import CompetitionCard from "@/components/competition/competitionCard";
 import { API_URL } from "@/constants";
 import { components } from "@/types";
-import { fetcher } from "@/utils/fetcher";
 
 import FetchError from "../ui/fetchError";
 import FetchLoading from "../ui/fetchLoading";
@@ -19,7 +18,7 @@ const CurrentCompetitions = () => {
     data: competitions,
     error,
     isLoading,
-  } = useSWR<Competition[], Error>(`${API_URL}/competitions`, fetcher);
+  } = useSWR<Competition[], Error>(`${API_URL}/competitions`);
 
   if (isLoading) return <FetchLoading />;
   if (error) return <FetchError />;

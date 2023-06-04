@@ -7,7 +7,6 @@ import FetchError from "@/components/ui/fetchError";
 import FetchLoading from "@/components/ui/fetchLoading";
 import { API_URL } from "@/constants";
 import { components } from "@/types";
-import { fetcher } from "@/utils/fetcher";
 
 type Pilot = components["schemas"]["Pilot"];
 
@@ -38,7 +37,7 @@ const Pilots = () => {
     data: pilots,
     error,
     isLoading,
-  } = useSWR<Pilot[], Error>(`${API_URL}/pilots`, fetcher);
+  } = useSWR<Pilot[], Error>(`${API_URL}/pilots`);
 
   if (isLoading) return <FetchLoading />;
   if (error) return <FetchError />;

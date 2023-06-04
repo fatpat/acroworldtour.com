@@ -5,7 +5,6 @@ import useSWR from "swr";
 
 import { API_URL } from "@/constants";
 import { components } from "@/types";
-import { fetcher } from "@/utils/fetcher";
 
 import FetchError from "../ui/fetchError";
 import FetchLoading from "../ui/fetchLoading";
@@ -25,10 +24,7 @@ const JudgeCard = ({ judge }: Props) => {
     data: pilot,
     error,
     isLoading,
-  } = useSWR<Pilot, Error>(
-    civlid ? `${API_URL}/pilots/${civlid}` : null,
-    fetcher
-  );
+  } = useSWR<Pilot, Error>(civlid ? `${API_URL}/pilots/${civlid}` : null);
 
   if (civlid && isLoading) return <FetchLoading />;
   if (civlid && error) return <FetchError />;

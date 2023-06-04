@@ -4,8 +4,10 @@ import "semantic-ui-flag/flag.min.css";
 import classNames from "classnames";
 import type { AppProps } from "next/app";
 import { Montserrat } from "next/font/google";
+import { SWRConfig } from "swr";
 
 import Layout from "@/components/layout/layout";
+import { fetcher } from "@/utils/fetcher";
 
 const font = Montserrat({
   subsets: ["latin"],
@@ -21,7 +23,9 @@ const App = ({ Component, pageProps }: AppProps) => {
           "lg:pb-4 lg:pl-52 lg:pr-4 lg:pt-28"
         )}
       >
-        <Component {...pageProps} />
+        <SWRConfig value={{ fetcher }}>
+          <Component {...pageProps} />
+        </SWRConfig>
       </main>
     </Layout>
   );
