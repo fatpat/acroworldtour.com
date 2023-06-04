@@ -40,17 +40,21 @@ const Competitions = () => {
     setPageTitle,
   ]);
 
-  const { data: seasons, error: seasonsError } = useSWR<Season[]>(
-    `${API_URL}/seasons`,
-    fetcher
-  );
+  const {
+    data: seasons,
+    error: seasonsError,
+    isLoading: seasonsLoading,
+  } = useSWR<Season[]>(`${API_URL}/seasons`, fetcher);
 
-  const { data: competitions, error: competitionsError } = useSWR<
-    Competition[]
-  >(`${API_URL}/competitions`, fetcher);
+  const {
+    data: competitions,
+    error: competitionsError,
+    isLoading: competitionsLoading,
+  } = useSWR<Competition[]>(`${API_URL}/competitions`, fetcher);
 
+  if (seasonsLoading || competitionsLoading) return <FetchLoading />;
   if (competitionsError || seasonsError) return <FetchError />;
-  if (!competitions || !seasons) return <FetchLoading />;
+  if (!competitions || !seasons) return <h2>Competitions not found</h2>;
 
   const filteredCompetitions = competitions.filter((competition) => {
     const startYear = new Date(competition.start_date).getFullYear();

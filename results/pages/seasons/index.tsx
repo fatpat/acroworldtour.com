@@ -25,10 +25,11 @@ const Seasons = () => {
     setActiveNav,
   } = useLayout();
 
-  const { data: seasons, error } = useSWR<Season[]>(
-    `${API_URL}/seasons`,
-    fetcher
-  );
+  const {
+    data: seasons,
+    error,
+    isLoading,
+  } = useSWR<Season[]>(`${API_URL}/seasons`, fetcher);
 
   useEffect(() => {
     setPageTitle("Acro World Tour | Seasons");
@@ -44,8 +45,9 @@ const Seasons = () => {
     setPageTitle,
   ]);
 
+  if (isLoading) return <FetchLoading />;
   if (error) return <FetchError />;
-  if (!seasons) return <FetchLoading />;
+  if (!seasons) return <h2>Seasons not found</h2>;
 
   const filteredSeasons = seasons.filter(
     (season) => season.year === selectedYear

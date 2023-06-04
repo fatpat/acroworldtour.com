@@ -29,7 +29,11 @@ const SeasonPage = () => {
       setCode(router.query.code);
   }, [router.isReady, router.query.code]);
 
-  const { data: season, error } = useSWR<Season, Error>(
+  const {
+    data: season,
+    error,
+    isLoading,
+  } = useSWR<Season, Error>(
     code ? `${API_URL}/seasons/${code}` : null,
     fetcher
   );
@@ -51,8 +55,9 @@ const SeasonPage = () => {
     setPageTitle,
   ]);
 
+  if (isLoading) return <FetchLoading />;
   if (error) return <FetchError />;
-  if (!season) return <FetchLoading />;
+  if (!season) return <h2>Season not found</h2>;
 
   return <SeasonDetails season={season} />;
 };

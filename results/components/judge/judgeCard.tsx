@@ -21,13 +21,19 @@ const JudgeCard = ({ judge }: Props) => {
   const urlName = name.toLowerCase().replace(/\s/g, "-");
   const alpha2country = alpha3ToAlpha2(country?.toUpperCase())?.toLowerCase();
 
-  const { data: pilot, error } = useSWR<Pilot, Error>(
+  const {
+    data: pilot,
+    error,
+    isLoading,
+  } = useSWR<Pilot, Error>(
     civlid ? `${API_URL}/pilots/${civlid}` : null,
     fetcher
   );
 
+  if (civlid && isLoading) return <FetchLoading />;
   if (civlid && error) return <FetchError />;
-  if (civlid && !pilot) return <FetchLoading />;
+  if (civlid && !pilot) return <h2>Pilot not found</h2>;
+  if (!civlid) return <h2>Unknown pilot</h2>;
 
   const photo = pilot?.photo;
 

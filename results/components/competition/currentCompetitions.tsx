@@ -15,13 +15,15 @@ const singularH2 = "Current Competition";
 const noCompetitionH2 = "There are no ongoing competitions.";
 
 const CurrentCompetitions = () => {
-  const { data: competitions, error } = useSWR<Competition[], Error>(
-    `${API_URL}/competitions`,
-    fetcher
-  );
+  const {
+    data: competitions,
+    error,
+    isLoading,
+  } = useSWR<Competition[], Error>(`${API_URL}/competitions`, fetcher);
 
+  if (isLoading) return <FetchLoading />;
   if (error) return <FetchError />;
-  if (!competitions) return <FetchLoading />;
+  if (!competitions) return <h2>Competitions not found</h2>;
 
   // const currentCompetitions = [...competitions]; // to test multiple competitions
   // const currentCompetitions = [competitions[0]]; // to test single competition

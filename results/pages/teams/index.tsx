@@ -35,13 +35,15 @@ const Teams = () => {
     setPageTitle,
   ]);
 
-  const { data: teams, error } = useSWR<Team[], Error>(
-    `${API_URL}/teams`,
-    fetcher
-  );
+  const {
+    data: teams,
+    error,
+    isLoading,
+  } = useSWR<Team[], Error>(`${API_URL}/teams`, fetcher);
 
+  if (isLoading) return <FetchLoading />;
   if (error) return <FetchError />;
-  if (!teams) return <FetchLoading />;
+  if (!teams) return <h2>No teams found.</h2>;
 
   return (
     <>

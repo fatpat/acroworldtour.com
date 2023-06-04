@@ -28,7 +28,11 @@ const PilotPage = () => {
       setCivlid(router.query.civlid[0]);
   }, [router.isReady, router.query.civlid]);
 
-  const { data: pilot, error } = useSWR<Pilot, Error>(
+  const {
+    data: pilot,
+    error,
+    isLoading,
+  } = useSWR<Pilot, Error>(
     civlid ? `${API_URL}/pilots/${civlid}` : null,
     fetcher
   );
@@ -53,8 +57,9 @@ const PilotPage = () => {
     setPageTitle,
   ]);
 
+  if (isLoading) return <FetchLoading />;
   if (error) return <FetchError />;
-  if (!pilot) return <FetchLoading />;
+  if (!pilot) return <h2>Pilot not found</h2>;
 
   return <PilotDetails pilot={pilot} />;
 };

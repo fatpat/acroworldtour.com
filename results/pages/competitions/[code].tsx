@@ -29,7 +29,11 @@ const CompetitionPage = () => {
       setCode(router.query.code);
   }, [router.isReady, router.query.code]);
 
-  const { data: competition, error } = useSWR<Competition, Error>(
+  const {
+    data: competition,
+    error,
+    isLoading,
+  } = useSWR<Competition, Error>(
     code ? `${API_URL}/competitions/${code}` : null,
     fetcher
   );
@@ -51,8 +55,9 @@ const CompetitionPage = () => {
     setPageTitle,
   ]);
 
+  if (isLoading) return <FetchLoading />;
   if (error) return <FetchError />;
-  if (!competition) return <FetchLoading />;
+  if (!competition) return <h2>Competition not found</h2>;
 
   return <CompetitionDetails competition={competition} />;
 };

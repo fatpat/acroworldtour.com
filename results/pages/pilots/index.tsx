@@ -34,13 +34,15 @@ const Pilots = () => {
     setPageTitle,
   ]);
 
-  const { data: pilots, error } = useSWR<Pilot[], Error>(
-    `${API_URL}/pilots`,
-    fetcher
-  );
+  const {
+    data: pilots,
+    error,
+    isLoading,
+  } = useSWR<Pilot[], Error>(`${API_URL}/pilots`, fetcher);
 
+  if (isLoading) return <FetchLoading />;
   if (error) return <FetchError />;
-  if (!pilots) return <FetchLoading />;
+  if (!pilots) return <h2>No pilots found.</h2>;
 
   const rankedPilots = pilots.filter((pilot) => pilot.rank < 9999);
 

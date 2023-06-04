@@ -35,13 +35,15 @@ const Tricks = () => {
     setPageTitle,
   ]);
 
-  const { data: tricks, error } = useSWR<Trick[], Error>(
-    `${API_URL}/tricks`,
-    fetcher
-  );
+  const {
+    data: tricks,
+    error,
+    isLoading,
+  } = useSWR<Trick[], Error>(`${API_URL}/tricks`, fetcher);
 
+  if (isLoading) return <FetchLoading />;
   if (error) return <FetchError />;
-  if (!tricks) return <FetchLoading />;
+  if (!tricks) return <h2>Tricks not found</h2>;
 
   const solo_tricks = tricks.filter((t) => t.solo);
   const synchro_tricks = tricks.filter((t) => t.synchro && !t.solo);

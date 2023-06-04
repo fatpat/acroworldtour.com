@@ -35,13 +35,15 @@ const Judges = () => {
     setPageTitle,
   ]);
 
-  const { data: judges, error } = useSWR<Judge[], Error>(
-    `${API_URL}/judges`,
-    fetcher
-  );
+  const {
+    data: judges,
+    error,
+    isLoading,
+  } = useSWR<Judge[], Error>(`${API_URL}/judges`, fetcher);
 
+  if (isLoading) return <FetchLoading />;
   if (error) return <FetchError />;
-  if (!judges) return <FetchLoading />;
+  if (!judges) return <h2>Judges not found</h2>;
 
   const seniors = judges
     .filter((j) => j.level == "senior")
