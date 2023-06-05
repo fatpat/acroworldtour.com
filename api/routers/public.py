@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Response
 from typing import List
 from fastapi_cache import FastAPICache
 from fastapi_cache.decorator import cache
+from asyncio import gather
 
 from models.competitions import Competition, CompetitionExport, CompetitionNew, CompetitionState, CompetitionPublicExport, CompetitionPublicExportWithResults
 from models.pilots import Pilot
@@ -60,12 +61,14 @@ async def list_pilots():
 @cache(expire=settings.CACHE_EXPIRES)
 async def get_pilot(civlid: int):
     cache = Cache()
-    await Pilot.getall(cache=cache)
-    await Team.getall(cache=cache)
-    await Judge.getall(cache=cache)
-    await Trick.getall(cache=cache)
-    await Competition.getall(cache=cache)
-    await Season.getall(cache=cache)
+    await gather(
+        Pilot.getall(cache=cache),
+        Team.getall(cache=cache),
+        Judge.getall(cache=cache),
+        Trick.getall(cache=cache),
+        Competition.getall(cache=cache),
+        Season.getall(cache=cache),
+    )
     return await PilotWithResults.get(civlid, cache=cache)
 
 #
@@ -80,6 +83,7 @@ async def get_pilot(civlid: int):
 async def list_teams():
     teams = []
     cache = Cache()
+    await Pilot.getall(cache=cache),
     for team in await Team.getall(deleted=False, cache=cache):
         teams.append(await team.export(cache=cache))
     return teams
@@ -95,6 +99,7 @@ async def list_teams():
 @cache(expire=settings.CACHE_EXPIRES)
 async def get_team(id: str):
     cache = Cache()
+    await Pilot.getall(cache=cache),
     team = await Team.get(id, cache=cache)
     return await team.export(cache=cache)
 
@@ -153,10 +158,12 @@ async def list_competitions():
 @cache(expire=settings.CACHE_EXPIRES)
 async def get_competition(id: str):
     cache = Cache()
-    await Pilot.getall(cache=cache)
-    await Team.getall(cache=cache)
-    await Judge.getall(cache=cache)
-    await Trick.getall(cache=cache)
+    await gather(
+        Pilot.getall(cache=cache),
+        Team.getall(cache=cache),
+        Judge.getall(cache=cache),
+        Trick.getall(cache=cache),
+    )
     comp = await Competition.get(id, cache=cache)
     return await comp.export_public_with_results(cache=cache)
 
@@ -170,11 +177,13 @@ async def get_competition(id: str):
 )
 async def list_seasons(deleted: bool = False):
     cache = Cache()
-    await Pilot.getall(cache=cache)
-    await Team.getall(cache=cache)
-    await Judge.getall(cache=cache)
-    await Competition.getall(cache=cache)
-    await Trick.getall(cache=cache)
+    await gather(
+        Pilot.getall(cache=cache),
+        Team.getall(cache=cache),
+        Judge.getall(cache=cache),
+        Competition.getall(cache=cache),
+        Trick.getall(cache=cache),
+    )
     return [await season.export(cache=cache) for season in await Season.getall(deleted=deleted, cache=cache)]
 
 #
@@ -187,10 +196,12 @@ async def list_seasons(deleted: bool = False):
 )
 async def get_season(id: str, deleted: bool = False):
     cache = Cache()
-    await Pilot.getall(cache=cache)
-    await Team.getall(cache=cache)
-    await Judge.getall(cache=cache)
-    await Trick.getall(cache=cache)
+    await gather(
+        Pilot.getall(cache=cache),
+        Team.getall(cache=cache),
+        Judge.getall(cache=cache),
+        Trick.getall(cache=cache),
+    )
     season = await Season.get(id, deleted=deleted, cache=cache)
     return await season.export(cache=cache)
 
