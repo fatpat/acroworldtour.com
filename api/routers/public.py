@@ -153,6 +153,10 @@ async def list_competitions():
 @cache(expire=settings.CACHE_EXPIRES)
 async def get_competition(id: str):
     cache = Cache()
+    await Pilot.getall(cache=cache)
+    await Team.getall(cache=cache)
+    await Judge.getall(cache=cache)
+    await Trick.getall(cache=cache)
     comp = await Competition.get(id, cache=cache)
     return await comp.export_public_with_results(cache=cache)
 
@@ -166,6 +170,11 @@ async def get_competition(id: str):
 )
 async def list_seasons(deleted: bool = False):
     cache = Cache()
+    await Pilot.getall(cache=cache)
+    await Team.getall(cache=cache)
+    await Judge.getall(cache=cache)
+    await Competition.getall(cache=cache)
+    await Trick.getall(cache=cache)
     return [await season.export(cache=cache) for season in await Season.getall(deleted=deleted, cache=cache)]
 
 #
@@ -178,6 +187,10 @@ async def list_seasons(deleted: bool = False):
 )
 async def get_season(id: str, deleted: bool = False):
     cache = Cache()
+    await Pilot.getall(cache=cache)
+    await Team.getall(cache=cache)
+    await Judge.getall(cache=cache)
+    await Trick.getall(cache=cache)
     season = await Season.get(id, deleted=deleted, cache=cache)
     return await season.export(cache=cache)
 
