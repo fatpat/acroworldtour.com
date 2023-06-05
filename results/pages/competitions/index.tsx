@@ -43,13 +43,13 @@ const Competitions = () => {
     data: seasons,
     error: seasonsError,
     isLoading: seasonsLoading,
-  } = useSWR<Season[]>(`${API_URL}/seasons`);
+  } = useSWR<Season[]>(`${API_URL}/seasons/`);
 
   const {
     data: competitions,
     error: competitionsError,
     isLoading: competitionsLoading,
-  } = useSWR<Competition[]>(`${API_URL}/competitions`);
+  } = useSWR<Competition[]>(`${API_URL}/competitions/`);
 
   if (seasonsLoading || competitionsLoading) return <FetchLoading />;
   if (competitionsError || seasonsError) return <FetchError />;

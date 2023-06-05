@@ -37,7 +37,7 @@ const Pilots = () => {
     data: pilots,
     error,
     isLoading,
-  } = useSWR<Pilot[], Error>(`${API_URL}/pilots`);
+  } = useSWR<Pilot[], Error>(`${API_URL}/pilots/`);
 
   if (isLoading) return <FetchLoading />;
   if (error) return <FetchError />;

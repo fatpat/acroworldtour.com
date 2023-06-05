@@ -28,7 +28,7 @@ const Seasons = () => {
     data: seasons,
     error,
     isLoading,
-  } = useSWR<Season[]>(`${API_URL}/seasons`);
+  } = useSWR<Season[]>(`${API_URL}/seasons/`);
 
   useEffect(() => {
     setPageTitle("Acro World Tour | Seasons");

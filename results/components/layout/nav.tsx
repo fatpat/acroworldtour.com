@@ -1,4 +1,8 @@
 import classNames from "classnames";
+import { preload } from "swr";
+
+import { API_URL } from "@/constants";
+import { fetcher } from "@/utils/fetcher";
 
 import NavItem from "./navItem";
 
@@ -24,16 +28,21 @@ const Nav = ({ activeNav, fontClass }: Props) => (
         "lg:flex-col lg:items-end lg:gap-4"
       )}
     >
-      <li>
+      <li onMouseEnter={() => preload(`${API_URL}/competitions/`, fetcher)}>
         <NavItem link="" active={activeNav === "home"} />
       </li>
-      <li>
+      <li onMouseEnter={() => preload(`${API_URL}/seasons/`, fetcher)}>
         <NavItem link="Seasons" active={activeNav === "seasons"} />
       </li>
-      <li>
+      <li
+        onMouseEnter={() => {
+          preload(`${API_URL}/competitions/`, fetcher);
+          preload(`${API_URL}/seasons/`, fetcher);
+        }}
+      >
         <NavItem link="Competitions" active={activeNav === "competitions"} />
       </li>
-      <li>
+      <li onMouseEnter={() => preload(`${API_URL}/pilots/`, fetcher)}>
         <NavItem link="Pilots" active={activeNav === "pilots"} />
       </li>
     </ul>
@@ -43,13 +52,13 @@ const Nav = ({ activeNav, fontClass }: Props) => (
         "lg:flex-col lg:items-end lg:gap-4"
       )}
     >
-      <li>
+      <li onMouseEnter={() => preload(`${API_URL}/teams/`, fetcher)}>
         <NavItem link="Teams" active={activeNav === "teams"} />
       </li>
-      <li>
+      <li onMouseEnter={() => preload(`${API_URL}/judges/`, fetcher)}>
         <NavItem link="Judges" active={activeNav === "judges"} />
       </li>
-      <li>
+      <li onMouseEnter={() => preload(`${API_URL}/tricks/`, fetcher)}>
         <NavItem link="Tricks" active={activeNav === "tricks"} />
       </li>
     </ul>

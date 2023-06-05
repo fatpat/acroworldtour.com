@@ -266,17 +266,17 @@ export interface paths {
     /** Get Competition */
     get: operations["get_competition_public_competitions__id__get"];
   };
-  "/public/seasons": {
+  "/public/seasons/": {
     /** List Seasons */
-    get: operations["list_seasons_public_seasons_get"];
+    get: operations["list_seasons_public_seasons__get"];
   };
   "/public/seasons/{id}": {
     /** Get Season */
     get: operations["get_season_public_seasons__id__get"];
   };
-  "/public/tricks": {
+  "/public/tricks/": {
     /** List */
-    get: operations["list_public_tricks_get"];
+    get: operations["list_public_tricks__get"];
   };
   "/utils/backup": {
     /** Backup */
@@ -3220,7 +3220,7 @@ export interface operations {
     };
   };
   /** List Seasons */
-  list_seasons_public_seasons_get: {
+  list_seasons_public_seasons__get: {
     parameters: {
       query?: {
         deleted?: boolean;
@@ -3267,7 +3267,7 @@ export interface operations {
     };
   };
   /** List */
-  list_public_tricks_get: {
+  list_public_tricks__get: {
     parameters: {
       query?: {
         repeatable?: boolean;

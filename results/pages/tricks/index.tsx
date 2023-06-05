@@ -38,7 +38,7 @@ const Tricks = () => {
     data: tricks,
     error,
     isLoading,
-  } = useSWR<Trick[], Error>(`${API_URL}/tricks`);
+  } = useSWR<Trick[], Error>(`${API_URL}/tricks/`);
 
   if (isLoading) return <FetchLoading />;
   if (error) return <FetchError />;

@@ -38,7 +38,7 @@ const Teams = () => {
     data: teams,
     error,
     isLoading,
-  } = useSWR<Team[], Error>(`${API_URL}/teams`);
+  } = useSWR<Team[], Error>(`${API_URL}/teams/`);
 
   if (isLoading) return <FetchLoading />;
   if (error) return <FetchError />;

@@ -18,7 +18,7 @@ const CurrentCompetitions = () => {
     data: competitions,
     error,
     isLoading,
-  } = useSWR<Competition[], Error>(`${API_URL}/competitions`);
+  } = useSWR<Competition[], Error>(`${API_URL}/competitions/`);
 
   if (isLoading) return <FetchLoading />;
   if (error) return <FetchError />;

@@ -38,7 +38,7 @@ const Judges = () => {
     data: judges,
     error,
     isLoading,
-  } = useSWR<Judge[], Error>(`${API_URL}/judges`);
+  } = useSWR<Judge[], Error>(`${API_URL}/judges/`);
 
   if (isLoading) return <FetchLoading />;
   if (error) return <FetchError />;
