@@ -9,4 +9,4 @@ COPY . ./
 RUN apk add --update-cache build-base
 RUN pip install --no-cache-dir -r requirements.txt
 
-CMD ["guvicorn", "main:app", "--workers", "2", "--worker-class", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8080","--forwarded-allow-ips", "*"]
+CMD ["gunicorn", "main:app", "--workers", "2", "--worker-class", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8080","--forwarded-allow-ips", "*"]
