@@ -42,6 +42,10 @@ export interface paths {
     /** Change Gender */
     patch: operations["change_gender_pilots__civlid__gender_patch"];
   };
+  "/pilots/{civlid}/awt": {
+    /** Change Gender */
+    patch: operations["change_gender_pilots__civlid__awt_patch"];
+  };
   "/judges/": {
     /** List */
     get: operations["list_judges__get"];
@@ -229,10 +233,6 @@ export interface paths {
   "/scores/simulate/{t}": {
     /** Simulate */
     post: operations["simulate_scores_simulate__t__post"];
-  };
-  "/public/test": {
-    /** Test */
-    get: operations["test_public_test_get"];
   };
   "/public/pilots/": {
     /** List Pilots */
@@ -1250,6 +1250,12 @@ export interface components {
        * @default man
        */
       gender?: components["schemas"]["GenderEnum"];
+      /**
+       * Is Awt 
+       * @description the pilot is part of the current's year pro tour (AWT) 
+       * @default false
+       */
+      is_awt?: boolean;
     };
     /**
      * PilotWithResults 
@@ -1387,6 +1393,12 @@ export interface components {
        * @default man
        */
       gender?: components["schemas"]["GenderEnum"];
+      /**
+       * Is Awt 
+       * @description the pilot is part of the current's year pro tour (AWT) 
+       * @default false
+       */
+      is_awt?: boolean;
       /**
        * Competitions Results 
        * @description List of competitions results 
@@ -1955,6 +1967,28 @@ export interface operations {
     };
     responses: {
       /** @description Change pilot gender */
+      200: {
+        content: {
+          "application/json": components["schemas"]["Pilot"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Change Gender */
+  change_gender_pilots__civlid__awt_patch: {
+    parameters: {
+      path: {
+        civlid: number;
+      };
+    };
+    responses: {
+      /** @description Change pilot AWT */
       200: {
         content: {
           "application/json": components["schemas"]["Pilot"];
@@ -3078,13 +3112,6 @@ export interface operations {
           "application/json": components["schemas"]["HTTPValidationError"];
         };
       };
-    };
-  };
-  /** Test */
-  test_public_test_get: {
-    responses: {
-      /** @description Successful Response */
-      200: never;
     };
   };
   /** List Pilots */

@@ -43,13 +43,21 @@ const Pilots = () => {
   if (error) return <FetchError />;
   if (!pilots) return <h2>No pilots found.</h2>;
 
-  const rankedPilots = pilots.filter((pilot) => pilot.rank < 9999);
+  const awtPilots = pilots.filter((pilot) => pilot.is_awt);
+  const awqPilots = pilots.filter((pilot) => !pilot.is_awt && pilot.rank < 9999);
 
   return (
     <>
-      <h2>All Ranked Pilots</h2>
+      <h2>AWT Pilots</h2>
       <section className="wrapper mt-8 px-2">
-        {rankedPilots.map((pilot) => (
+        {awtPilots.map((pilot) => (
+          <PilotCard key={pilot.civlid} pilot={pilot} />
+        ))}
+      </section>
+
+      <h2>AWQ Pilots</h2>
+      <section className="wrapper mt-8 px-2">
+        {awqPilots.map((pilot) => (
           <PilotCard key={pilot.civlid} pilot={pilot} />
         ))}
       </section>

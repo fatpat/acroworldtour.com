@@ -12,8 +12,7 @@ const PilotCard = ({ pilot }: Props) => {
   const {
     civlid,
     name,
-    photo: photo,
-    photo_highres: photoHighres,
+    photo,
     country,
     rank,
   } = pilot;
