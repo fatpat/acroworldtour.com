@@ -6,13 +6,13 @@ import SocialLink from "./ui/socialLink";
 
 const About = () => {
   const [hideAbout, setHideAbout] = useState(
-    localStorage.getItem("hideAbout") !== null
+    localStorage.getItem("home/hideAbout") !== null
   );
 
   useEffect(() => {
     hideAbout
-      ? localStorage.setItem("hideAbout", "1")
-      : localStorage.removeItem("hideAbout");
+      ? localStorage.setItem("home/hideAbout", "1")
+      : localStorage.removeItem("home/hideAbout");
   }, [hideAbout]);
 
   return (

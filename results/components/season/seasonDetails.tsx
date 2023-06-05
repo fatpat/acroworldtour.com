@@ -12,10 +12,10 @@ interface Props {
 }
 
 const SeasonDetails = ({ season }: Props) => {
-  const { name, results: resultCategories } = season;
+  const { name, results: resultCategories, code } = season;
 
   const [showCategory, setShowCategory] = useState(
-    JSON.parse(localStorage.getItem("showCategories") || "false") ||
+    JSON.parse(localStorage.getItem(`season/${code}/showCategories`) || "false") ||
       resultCategories.map((e) => e.type == "overall")
   );
 
@@ -27,8 +27,8 @@ const SeasonDetails = ({ season }: Props) => {
   };
 
   useEffect(() => {
-    localStorage.setItem("showCategories", JSON.stringify(showCategory));
-  }, [showCategory]);
+    localStorage.setItem(`season/${code}/showCategories`, JSON.stringify(showCategory));
+  }, [showCategory, code]);
 
   return (
     <>
