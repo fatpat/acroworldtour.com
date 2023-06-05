@@ -83,6 +83,21 @@ const PilotsPage = () => {
       setLoading(null)
 
       success(`Pilot #${civlid} gender changed to ${retData.gender}`)
+  }
+
+  const changeAWT = async(civlid) => {
+      if (civlid < 1 || isNaN(civlid)) return
+      setLoading(`Chaging awt status of pilot #${civlid}`)
+      const [err, retData, headers] = await APIRequest(`/pilots/${civlid}/awt`, {method: 'PATCH', expected_status: 200})
+      if (err) {
+          return error(`Error changing awt of pilot #${civlid}: ${err}`)
+      }
+
+      setData(data.map(p => p.civlid == civlid ? retData : p))
+      setFullData(fullData.map(p => p.civlid == civlid ? retData : p))
+      setLoading(null)
+
+      success(`Pilot #${civlid} AWT changed to ${retData.gender}`)
 
   }
 
@@ -172,7 +187,7 @@ const PilotsPage = () => {
       </Grid>
       {data.sort((a,b) => a.rank - b.rank).map(p => (
         <Grid item xs={12} sm={6} md={2} lg={1} key={p.civlid}>
-          <CardPilot pilot={p} updatePilot={updatePilot} changeGender={changeGender}/>
+          <CardPilot pilot={p} updatePilot={updatePilot} changeGender={changeGender} changeAWT={changeAWT}/>
         </Grid>
       ))}
     </Grid>

@@ -45,6 +45,8 @@ const CardPilot = (props) => {
               <Link href={pilot.link} target="_blank" rel="noopener noreferrer">{pilot.name}</Link>{' '}
               <span onClick={() => props.changeGender(pilot.civlid)}>{pilot.gender == "man" ? "♂️" : "♀️"}</span>
               &nbsp;
+              <span onClick={() => props.changeAWT(pilot.civlid)}>{pilot.is_awt ? "⭐" : "🌑"}</span>
+              &nbsp;
               <ReactCountryFlag
                 countryCode={countriesQuery.convertAlphaCode(pilot.country)}
                 svg
