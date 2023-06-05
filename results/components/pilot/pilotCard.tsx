@@ -31,7 +31,7 @@ const PilotCard = ({ pilot }: Props) => {
       )}
     >
       <figure
-        style={{ backgroundImage: `url('${photoHighres || photo}')` }}
+        style={{ backgroundImage: `url('${photo}')` }}
         className="pilot-card relative flex aspect-square flex-col justify-between"
       >
         <i
