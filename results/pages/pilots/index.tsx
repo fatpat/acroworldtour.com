@@ -44,7 +44,9 @@ const Pilots = () => {
   if (!pilots) return <h2>No pilots found.</h2>;
 
   const awtPilots = pilots.filter((pilot) => pilot.is_awt);
-  const awqPilots = pilots.filter((pilot) => !pilot.is_awt && pilot.rank < 9999);
+  const awqPilots = pilots.filter(
+    (pilot) => !pilot.is_awt && pilot.rank < 9999
+  );
 
   return (
     <>

@@ -9,13 +9,7 @@ interface Props {
 }
 
 const PilotCard = ({ pilot }: Props) => {
-  const {
-    civlid,
-    name,
-    photo,
-    country,
-    rank,
-  } = pilot;
+  const { civlid, name, photo, country, rank } = pilot;
   const urlName = name.toLowerCase().replace(/\s/g, "-");
   const alpha2country = alpha3ToAlpha2(country?.toUpperCase())?.toLowerCase();
 

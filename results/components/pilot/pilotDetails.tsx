@@ -110,10 +110,10 @@ const PilotDetails = ({ pilot }: Props) => {
           </div>
         </article>
       )}
-      {((competitionsResults?.length ?? 0 > 0) ||
-        (seasonsResults?.length ?? 0 > 0)) && (
+      {((competitionsResults?.length ?? 0) > 0 ||
+        (seasonsResults?.length ?? 0) > 0) && (
         <div className="mt-4 w-full bg-awt-dark-50 p-2">
-          {(competitionsResults?.length ?? 0 > 0) && (
+          {(competitionsResults?.length ?? 0) > 0 && (
             <table className="w-full">
               <thead>
                 <tr className="h-12">
@@ -139,7 +139,7 @@ const PilotDetails = ({ pilot }: Props) => {
               </tbody>
             </table>
           )}
-          {(seasonsResults?.length ?? 0 > 0) && (
+          {(seasonsResults?.length ?? 0) > 0 && (
             <table className="mt-4 w-full">
               <thead>
                 <tr className="h-12">
