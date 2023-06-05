@@ -160,7 +160,7 @@ async def get_competition(id: str):
 # Get all seasons
 #
 @public.get(
-    "/seasons",
+    "/seasons/",
     response_description="List all seasons",
     response_model=List[SeasonExport],
 )
@@ -185,7 +185,7 @@ async def get_season(id: str, deleted: bool = False):
 # Get all tricks
 #
 @public.get(
-    "/tricks",
+    "/tricks/",
     response_description="List all tricks",
     response_model=List[Trick],
 )
