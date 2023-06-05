@@ -29,7 +29,6 @@ const JudgeCard = ({ judge }: Props) => {
   if (civlid && isLoading) return <FetchLoading />;
   if (civlid && error) return <FetchError />;
   if (civlid && !pilot) return <h2>Pilot not found</h2>;
-  if (!civlid) return <h2>Unknown pilot</h2>;
 
   const photo = pilot?.photo;
 
