@@ -20,23 +20,6 @@ from controllers.utils import UtilsCtrl
 log = logging.getLogger(__name__)
 public = APIRouter()
 
-# test
-@public.get(
-    "/test",
-    response_class=Response,
-)
-async def test():
-    cache = Cache()
-    await Pilot.get(78952, cache=cache)
-    await Pilot.get(78952, cache=cache)
-    await Pilot.get(78952, cache=cache)
-    await Pilot.get(78952, cache=cache)
-    log.debug(cache.get('pilots', 78952))
-    await Team.getall(deleted=False, cache=cache)
-    await Team.getall(deleted=False, cache=cache)
-    await Team.getall(deleted=False, cache=cache)
-    await Team.get('6335d53bd30964166ad55ed8', cache=cache)
-
 #
 # Get all public
 #
@@ -175,6 +158,7 @@ async def get_competition(id: str):
     response_description="List all seasons",
     response_model=List[SeasonExport],
 )
+@cache(expire=settings.CACHE_EXPIRES)
 async def list_seasons(deleted: bool = False):
     cache = Cache()
     await gather(
@@ -194,6 +178,7 @@ async def list_seasons(deleted: bool = False):
     response_description="Get a Season",
     response_model=SeasonExport,
 )
+@cache(expire=settings.CACHE_EXPIRES)
 async def get_season(id: str, deleted: bool = False):
     cache = Cache()
     await gather(
@@ -213,5 +198,6 @@ async def get_season(id: str, deleted: bool = False):
     response_description="List all tricks",
     response_model=List[Trick],
 )
+@cache(expire=settings.CACHE_EXPIRES)
 async def list(repeatable: bool = None):
     return await Trick.getall(deleted = False, repeatable = repeatable)
