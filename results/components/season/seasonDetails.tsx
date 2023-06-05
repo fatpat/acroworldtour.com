@@ -14,10 +14,9 @@ interface Props {
 const SeasonDetails = ({ season }: Props) => {
   const { name, results: resultCategories } = season;
 
-  const [hideSummary, setHideSummary] = useState(false);
   const [showCategory, setShowCategory] = useState(
     JSON.parse(localStorage.getItem("showCategories") || "false") ||
-      resultCategories.map(() => false)
+      resultCategories.map((e) => e.type == "overall")
   );
 
   const changeCategory = (index: number) => {
@@ -29,8 +28,6 @@ const SeasonDetails = ({ season }: Props) => {
 
   useEffect(() => {
     localStorage.setItem("showCategories", JSON.stringify(showCategory));
-
-    setHideSummary(showCategory.some((showCat: boolean) => showCat));
   }, [showCategory]);
 
   return (
@@ -47,20 +44,17 @@ const SeasonDetails = ({ season }: Props) => {
           className={classNames(
             "w-1/2 max-w-lg rounded-xl bg-awt-dark-50 px-2 py-2 pb-2 shadow-inner",
             "portrait:w-full",
-            hideSummary && "landscape:hidden"
           )}
         />
         <section
           className={classNames(
             "flex w-full flex-grow flex-col gap-4 rounded-xl bg-awt-dark-50 py-2 shadow-inner",
-            hideSummary ? "lg:col-span-full" : "lg:col-span-6 lg:col-start-4"
+            "lg:col-span-6 lg:col-start-4"
           )}
         >
-          {hideSummary && (
-            <small className="text-center">
-              Results are updated automatically.
-            </small>
-          )}
+          <small className="text-center">
+            Results are updated automatically.
+          </small>
 
           {resultCategories.map((resultCategory, catIndex) => {
             const category = resultCategory.type;
