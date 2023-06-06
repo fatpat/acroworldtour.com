@@ -9,9 +9,10 @@ import pymongo
 from datetime import datetime
 from fastapi import HTTPException
 
-from models.competitions import Competition, CompetitionPublicExportWithResults, CompetitionState, CompetitionType
+from models.competitions import Competition, CompetitionPublicExport, CompetitionState, CompetitionType
 from models.pilots import Pilot
 from models.teams import Team, TeamExport
+from models.results import CompetitionPilotResultsExport
 from models.cache import Cache
 
 from core.database import db, PyObjectId
@@ -51,8 +52,9 @@ class SeasonExport(BaseModel):
     type: CompetitionType
     number_of_pilots: int
     number_of_teams: int
-    competitions: List[CompetitionPublicExportWithResults]
+    competitions: List[CompetitionPublicExport]
     results: List[SeasonResults]
+    competitions_results: dict[str, list[CompetitionPilotResultsExport]]
 
 
     class Config:
@@ -189,6 +191,7 @@ class Season(BaseModel):
     async def export(self, cache:Cache=None) -> SeasonExport:
         competitions = []
         results = {}
+        competitions_results = {}
         _type = None
         teams = {}
         pilots = {}
@@ -205,14 +208,26 @@ class Season(BaseModel):
             # add the comp to the list of comps
             competitions.append(comp)
 
+            log.debug(f"got comp {comp.code} / {comp.published} / {comp.state} / {comp.results.final}")
             # only count published and closed competitions
             if comp.published and comp.state == CompetitionState.closed and comp.results.final:
+
+                competitions_results.setdefault(comp.code, [])
+
                 for res in comp.results.overall_results:
+
                     if _type == CompetitionType.synchro:
                         pilot_or_team = res.team.id
                         teams[res.team.id] = 0
                         for pilot in res.team.pilots:
                             pilots[pilot.civlid] = 0
+
+                        competitions_results[comp.code].append(CompetitionPilotResultsExport(
+                            pilot = None,
+                            team = res.team,
+                            score = res.score,
+                            result_per_run = [],
+                        ))
                     else:
                         # if the season is limit to a country (eg national championship)
                         # skip the pilot if its country does not match season's
@@ -220,6 +235,13 @@ class Season(BaseModel):
                             continue
                         pilot_or_team = res.pilot.civlid
                         pilots[res.pilot.civlid] = 0
+
+                        competitions_results[comp.code].append(CompetitionPilotResultsExport(
+                            pilot = res.pilot,
+                            team = None,
+                            score = res.score,
+                            result_per_run = [],
+                        ))
 
                     if pilot_or_team not in results:
                         results[pilot_or_team] = 0
@@ -256,4 +278,5 @@ class Season(BaseModel):
             number_of_teams = len(teams.keys()),
             competitions = competitions,
             results = results,
+            competitions_results = competitions_results
         )
