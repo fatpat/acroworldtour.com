@@ -79,7 +79,7 @@ const SeasonCategoryResults = ({
                   pilotId={pilot.civlid}
                 />
                 <button
-                  className="col-span-full col-start-1"
+                  className="col-span-full col-start-1 border-y-[1px]"
                   onClick={() => toggleShowMore(index)}
                   onKeyDown={({ key }) =>
                     key === "Enter" && toggleShowMore(index)

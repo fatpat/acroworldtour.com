@@ -1,3 +1,5 @@
+import classNames from "classnames";
+import Link from "next/link";
 import { Fragment } from "react";
 
 import { components } from "@/types";
@@ -35,15 +37,26 @@ const SeasonOverallPilotResults = ({ results, pilotId }: Props) => {
       {pilotResults.map((result, index) => {
         const { competition, rank, score } = result;
         const roundedScore = score.toFixed(3);
+        const competitionName = competition
+          .split("-")
+          .map((word) => word[0].toUpperCase() + word.slice(1))
+          .join(" ");
         return (
           <Fragment key={index}>
-            <p className="col-span-2 col-start-1 border-[1px] bg-awt-dark-500 py-2 pl-2 text-center text-white">
-              {rank} at
-            </p>
-            <h6 className="col-span-8 flex items-center border-[1px] bg-awt-dark-500 p-2 text-left capitalize text-white">
-              {competition}
-            </h6>
-            <p className="col-span-2 col-start-11 border-[1px] bg-awt-dark-500 py-2 text-center text-white">
+            <Link
+              href={`/competitions/${competition}`}
+              title={`Competition page for ${competitionName}`}
+              className={classNames(
+                "col-span-8 col-start-3",
+                "flex items-center",
+                "border-[1px] bg-awt-dark-300 pl-2",
+              )}
+            >
+              <h6 className="hover:font-bold">
+                {rank} at {competitionName}
+              </h6>
+            </Link>
+            <p className="col-span-2 col-start-11 border-[1px] bg-awt-dark-300 py-2 text-center">
               {roundedScore}
             </p>
           </Fragment>
