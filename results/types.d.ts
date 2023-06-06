@@ -1528,9 +1528,13 @@ export interface components {
       /** Number Of Teams */
       number_of_teams: number;
       /** Competitions */
-      competitions: (components["schemas"]["CompetitionPublicExportWithResults"])[];
+      competitions: (components["schemas"]["CompetitionPublicExport"])[];
       /** Results */
       results: (components["schemas"]["SeasonResults"])[];
+      /** Competitions Results */
+      competitions_results: {
+        [key: string]: (components["schemas"]["CompetitionPilotResultsExport"])[] | undefined;
+      };
     };
     /** SeasonResults */
     SeasonResults: {
