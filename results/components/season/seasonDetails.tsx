@@ -12,8 +12,14 @@ interface Props {
 }
 
 const SeasonDetails = ({ season }: Props) => {
-  const { name, results: resultCategories, code } = season;
+  const {
+    name,
+    results: resultCategories,
+    competitions_results: competitionResults,
+    code,
+  } = season;
 
+  const [showNotice, setShowNotice] = useState(true);
   const [showCategory, setShowCategory] = useState(
     JSON.parse(
       localStorage.getItem(`season/${code}/showCategories`) || "false",
@@ -33,6 +39,10 @@ const SeasonDetails = ({ season }: Props) => {
       JSON.stringify(showCategory),
     );
   }, [showCategory, code]);
+
+  useEffect(() => {
+    setShowNotice(showCategory.some((cat: boolean) => cat));
+  }, [showCategory]);
 
   return (
     <>
@@ -56,9 +66,11 @@ const SeasonDetails = ({ season }: Props) => {
             "lg:col-span-6 lg:col-start-4",
           )}
         >
-          <small className="text-center">
-            Results are updated automatically.
-          </small>
+          {showNotice && (
+            <small className="text-center">
+              Results are updated automatically.
+            </small>
+          )}
 
           {resultCategories.map((resultCategory, catIndex) => {
             const category = resultCategory.type;
@@ -89,6 +101,7 @@ const SeasonDetails = ({ season }: Props) => {
                 {showCategory[catIndex] && (
                   <SeasonCategoryResults
                     results={categoryResults}
+                    competitionResults={competitionResults}
                     className="grid grid-cols-12 border-[1px]"
                   />
                 )}

@@ -18,7 +18,9 @@ const CompetitionOverallHeader = ({ result, rank }: Props) => {
 
   return (
     <>
-      <p className="col-span-2 col-start-1 border-[1px] py-2 pl-2">{rank}</p>
+      <p className="col-span-2 col-start-1 border-[1px] py-2 pl-2 text-center">
+        {rank}
+      </p>
 
       <button
         className="col-span-8 flex cursor-pointer items-baseline border-[1px] py-2"
