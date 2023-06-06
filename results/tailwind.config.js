@@ -10,7 +10,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'awt-dark': colors.neutral,
+        'awt-dark': colors.slate,
         'awt-accent': colors.sky,
       },
     },
