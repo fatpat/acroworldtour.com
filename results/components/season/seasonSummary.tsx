@@ -66,6 +66,14 @@ const SeasonSummary = ({ season, className }: Props) => {
       )}{" "}
       <div>
         <h5 className="inline-block py-2 pl-4 text-left capitalize">
+          {type === "solo" ? "Pilots:" : "Teams:"}
+        </h5>
+        <p className="inline-block py-2 pl-4 text-left">
+          {type === "solo" ? numberOfPilots : numberOfTeams}
+        </p>
+      </div>
+      <div>
+        <h5 className="inline-block py-2 pl-4 text-left capitalize">
           Competitions:
         </h5>
         <p className="inline-block py-2 pl-4 text-left capitalize">
@@ -73,12 +81,16 @@ const SeasonSummary = ({ season, className }: Props) => {
         </p>
       </div>
       <div>
-        <h5 className="inline-block py-2 pl-4 text-left capitalize">
-          {type === "solo" ? "Pilots:" : "Teams:"}
-        </h5>
-        <p className="inline-block py-2 pl-4 text-left">
-          {type === "solo" ? numberOfPilots : numberOfTeams}
-        </p>
+        <ul className="list-disc list-inside py-0 pl-6">
+          { competitions.map((competition) => {
+            const { name, code } = competition;
+            return(
+              <li key={code}>
+                <a href={`/competitions/${code}`}>{name}</a>
+              </li>
+            )
+          })}
+        </ul>
       </div>
     </article>
   );
