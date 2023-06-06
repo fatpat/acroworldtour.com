@@ -4,7 +4,7 @@ import { Fragment, useState } from "react";
 import { components } from "@/types";
 
 import { ChevronIcon } from "../ui/icons";
-import SeasonOverallPilotResults from "./SeasonOverallPilotResults";
+import SeasonOverallPilotResults from "./seasonOverallPilotResults";
 
 type SeasonResult = components["schemas"]["models__seasons__SeasonResult"];
 type CompetitionResult = components["schemas"]["CompetitionPilotResultsExport"];
