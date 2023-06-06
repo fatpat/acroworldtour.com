@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Fragment } from "react";
 
 import { components } from "@/types";
+import { ordinalSuffixOf } from "@/utils/common";
 
 type CompetitionResult = components["schemas"]["CompetitionPilotResultsExport"];
 
@@ -53,7 +54,7 @@ const SeasonOverallPilotResults = ({ results, pilotId }: Props) => {
               )}
             >
               <h6 className="hover:font-bold">
-                {rank} at {competitionName}
+                {ordinalSuffixOf(rank)} at {competitionName}
               </h6>
             </Link>
             <p className="col-span-2 col-start-11 border-[1px] bg-awt-dark-300 py-2 text-center">
