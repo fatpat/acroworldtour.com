@@ -6,12 +6,14 @@ import { components } from "@/types";
 import { ordinalSuffixOf } from "@/utils/common";
 
 type CompetitionResult = components["schemas"]["CompetitionPilotResultsExport"];
+type CompetitionPublicExport = components["schemas"]["CompetitionPublicExport"];
 
 interface Props {
   results: {
     [key: string]: CompetitionResult[] | undefined;
   };
   pilotId: number;
+  competitions: CompetitionPublicExport[];
   className?: string;
 }
 
@@ -21,7 +23,11 @@ type PilotResult = {
   score: number;
 };
 
-const SeasonOverallPilotResults = ({ results, pilotId }: Props) => {
+const SeasonOverallPilotResults = ({
+  results,
+  pilotId,
+  competitions,
+}: Props) => {
   const pilotResults: PilotResult[] = [];
 
   for (const [competition, competitionResults] of Object.entries(results)) {
@@ -36,16 +42,15 @@ const SeasonOverallPilotResults = ({ results, pilotId }: Props) => {
   return (
     <Fragment>
       {pilotResults.map((result, index) => {
-        const { competition, rank, score } = result;
+        const { competition: competitionCode, rank, score } = result;
         const roundedScore = score.toFixed(3);
-        const competitionName = competition
-          .split("-")
-          .map((word) => word[0].toUpperCase() + word.slice(1))
-          .join(" ");
+        const competitionName = competitions.find(
+          (c) => c.code == competitionCode,
+        )?.name;
         return (
           <Fragment key={index}>
             <Link
-              href={`/competitions/${competition}`}
+              href={`/competitions/${competitionCode}`}
               title={`Competition page for ${competitionName}`}
               className={classNames(
                 "col-span-8 col-start-3",

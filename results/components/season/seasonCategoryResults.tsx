@@ -8,18 +8,21 @@ import SeasonOverallPilotResults from "./seasonOverallPilotResults";
 
 type SeasonResult = components["schemas"]["models__seasons__SeasonResult"];
 type CompetitionResult = components["schemas"]["CompetitionPilotResultsExport"];
+type CompetitionPublicExport = components["schemas"]["CompetitionPublicExport"];
 
 interface Props {
   results: SeasonResult[];
   competitionResults: {
     [key: string]: CompetitionResult[] | undefined;
   };
+  competitions: CompetitionPublicExport[];
   className?: string;
 }
 
 const SeasonCategoryResults = ({
   results,
   competitionResults,
+  competitions,
   className,
 }: Props) => {
   const [expandPilot, setExpandPilot] = useState(results.map(() => false));
@@ -77,6 +80,7 @@ const SeasonCategoryResults = ({
                 <SeasonOverallPilotResults
                   results={competitionResults}
                   pilotId={pilot.civlid}
+                  competitions={competitions}
                 />
                 <button
                   className="col-span-full col-start-1 border-y-[1px]"

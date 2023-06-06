@@ -16,6 +16,7 @@ const SeasonDetails = ({ season }: Props) => {
     name,
     results: resultCategories,
     competitions_results: competitionResults,
+    competitions,
     code,
   } = season;
 
@@ -102,6 +103,7 @@ const SeasonDetails = ({ season }: Props) => {
                   <SeasonCategoryResults
                     results={categoryResults}
                     competitionResults={competitionResults}
+                    competitions={competitions}
                     className="grid grid-cols-12 border-[1px]"
                   />
                 )}
