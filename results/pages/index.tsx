@@ -27,7 +27,7 @@ const Home = () => {
     setPageTitle("Acro World Tour | Home");
     setPageDescription(
       `Home page for the official web application of the Acro World Tour.
-      In this app you can find everything you need to know about competition results and your favourite pilots.`
+      In this app you can find everything you need to know about competition results and your favourite pilots.`,
     );
     setHeaderTitle("");
     setHeaderSubtitle("");

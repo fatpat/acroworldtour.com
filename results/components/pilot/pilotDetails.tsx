@@ -33,11 +33,11 @@ const PilotDetails = ({ pilot }: Props) => {
   competitionsResults?.sort(
     (a, b) =>
       new Date(b.competition.start_date).getTime() -
-        new Date(a.competition.start_date).getTime() || a.rank - b.rank
+        new Date(a.competition.start_date).getTime() || a.rank - b.rank,
   );
 
   seasonsResults?.sort(
-    (a, b) => b.season.year - a.season.year || a.rank - b.rank
+    (a, b) => b.season.year - a.season.year || a.rank - b.rank,
   );
 
   return (
@@ -50,7 +50,7 @@ const PilotDetails = ({ pilot }: Props) => {
         style={{ backgroundImage: `url('${photoHighres || photo}')` }}
         className={classNames(
           "aspect-square w-full bg-cover bg-center bg-no-repeat",
-          "lg:fixed lg:right-0 lg:w-5/12"
+          "lg:fixed lg:right-0 lg:w-5/12",
         )}
       />
       <article className={classNames("flex w-full flex-col gap-4 px-4")}>
@@ -59,7 +59,7 @@ const PilotDetails = ({ pilot }: Props) => {
           target="_blank"
           className={classNames(
             "flex w-full max-w-sm flex-wrap items-baseline justify-between self-center px-4",
-            "hover:bg-awt-accent-600 hover:text-white"
+            "hover:bg-awt-accent-600 hover:text-white",
           )}
         >
           <h2 className="text-800">
@@ -67,7 +67,7 @@ const PilotDetails = ({ pilot }: Props) => {
             <i
               className={classNames(
                 country && alpha2country,
-                "flag translate-x-2"
+                "flag translate-x-2",
               )}
             />
           </h2>
@@ -103,7 +103,7 @@ const PilotDetails = ({ pilot }: Props) => {
                 target="_blank"
                 className={classNames(
                   "m-4 aspect-video w-20 bg-contain bg-center bg-no-repeat",
-                  "hover:fill-awt-accent-500"
+                  "hover:fill-awt-accent-500",
                 )}
               />
             ))}

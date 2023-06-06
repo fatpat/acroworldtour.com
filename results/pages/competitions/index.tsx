@@ -66,24 +66,24 @@ const Competitions = () => {
       season.type === "solo" &&
       season.competitions.some((comp) =>
         filteredCompetitions.some(
-          (filteredComp) => filteredComp.code === comp.code
-        )
-      )
+          (filteredComp) => filteredComp.code === comp.code,
+        ),
+      ),
   );
 
   soloSeasons.sort(
     (a, b) =>
       b.year - a.year ||
       (a.index || 999) - (b.index || 999) ||
-      a.name.localeCompare(b.name)
+      a.name.localeCompare(b.name),
   );
 
   const offSeasonCompetitions = filteredCompetitions.filter(
-    (competition) => competition.seasons.length === 0
+    (competition) => competition.seasons.length === 0,
   );
 
   offSeasonCompetitions.sort((a, b) =>
-    b.start_date.localeCompare(a.start_date)
+    b.start_date.localeCompare(a.start_date),
   );
 
   const years = [
@@ -91,7 +91,7 @@ const Competitions = () => {
       competitions.flatMap((comp) => [
         new Date(comp.start_date).getFullYear(),
         new Date(comp.end_date).getFullYear(),
-      ])
+      ]),
     ).add(currentYear),
   ].sort((a, b) => b - a);
 
@@ -139,7 +139,7 @@ const Competitions = () => {
         const { code, competitions, name } = season;
         competitions.sort(
           (a, b) =>
-            new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
+            new Date(a.start_date).getTime() - new Date(b.start_date).getTime(),
         );
 
         return (

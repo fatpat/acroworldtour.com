@@ -25,7 +25,7 @@ const SeasonSummary = ({ season, className }: Props) => {
       <header
         className={classNames(
           "relative flex aspect-video w-full flex-grow overflow-hidden",
-          "rounded-xl"
+          "rounded-xl",
         )}
       >
         {seasonImage ? (
@@ -44,7 +44,7 @@ const SeasonSummary = ({ season, className }: Props) => {
                 style={{ backgroundImage: `url(${competitionImage})` }}
                 className={classNames(
                   "h-full w-full",
-                  "bg-cover bg-center bg-no-repeat"
+                  "bg-cover bg-center bg-no-repeat",
                 )}
               />
             );

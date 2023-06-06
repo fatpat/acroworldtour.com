@@ -51,7 +51,7 @@ const SeasonCard = ({ season }: Props) => {
           "shadow shadow-awt-dark-400",
           "hover:-translate-y-2 hover:bg-white/90 hover:text-current hover:bg-blend-screen",
           "hover:shadow-md",
-          !seasonCover && "relative"
+          !seasonCover && "relative",
         )}
       >
         <h3 className="">{name}</h3>
@@ -60,7 +60,7 @@ const SeasonCard = ({ season }: Props) => {
           <div
             className={classNames(
               "absolute inset-0 flex flex-grow overflow-hidden",
-              "scale-105 rounded-xl mix-blend-overlay"
+              "scale-105 rounded-xl mix-blend-overlay",
             )}
           >
             {competitions.map((competition) => {
@@ -71,7 +71,7 @@ const SeasonCard = ({ season }: Props) => {
                   style={{ backgroundImage: `url(${image})` }}
                   className={classNames(
                     "h-full w-full scale-110",
-                    "bg-cover bg-center bg-no-repeat"
+                    "bg-cover bg-center bg-no-repeat",
                   )}
                 />
               );

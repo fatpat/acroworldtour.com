@@ -6,7 +6,7 @@ import SocialLink from "./ui/socialLink";
 
 const About = () => {
   const [hideAbout, setHideAbout] = useState(
-    localStorage.getItem("home/hideAbout") !== null
+    localStorage.getItem("home/hideAbout") !== null,
   );
 
   useEffect(() => {
@@ -20,7 +20,7 @@ const About = () => {
       <button
         className={classNames(
           "z-10 mb-1 flex w-1/2 cursor-pointer items-center justify-center",
-          hideAbout && "-translate-x-3/4"
+          hideAbout && "-translate-x-3/4",
         )}
         onClick={() => setHideAbout(!hideAbout)}
         onKeyDown={({ key }) => key === "Enter" && setHideAbout(!hideAbout)}
@@ -29,14 +29,14 @@ const About = () => {
         <ChevronIcon
           className={classNames(
             "mt-[1px] h-3 w-auto",
-            hideAbout && "-rotate-90"
+            hideAbout && "-rotate-90",
           )}
         />
       </button>
       <div
         className={classNames(
           "flex h-56 flex-col items-center justify-evenly rounded-xl bg-awt-dark-100 px-4 font-medium shadow",
-          hideAbout && "-mt-64 opacity-0"
+          hideAbout && "-mt-64 opacity-0",
         )}
       >
         <p>
@@ -53,7 +53,7 @@ const About = () => {
         className={classNames(
           "flex w-1/2 max-w-[150px] items-center justify-between",
           "lg: max-w-xs",
-          hideAbout ? "translate-x-1/2" : "mt-2"
+          hideAbout ? "translate-x-1/2" : "mt-2",
         )}
       >
         <SocialLink

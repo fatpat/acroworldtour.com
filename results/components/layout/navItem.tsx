@@ -28,7 +28,7 @@ const NavItem = ({ link, active }: Props) => (
         "hover:bg-awt-accent-600 hover:fill-white hover:text-white hover:shadow-md",
       active
         ? "bg-awt-dark-900 fill-white text-white shadow-md"
-        : "fill-awt-dark-600"
+        : "fill-awt-dark-600",
     )}
   >
     {link === "" && <HomeIcon className={iconClasses} />}

@@ -20,7 +20,7 @@ const PilotCard = ({ pilot }: Props) => {
       href={`/pilots/${civlid}/${urlName}`}
       className={classNames(
         "flex w-48 flex-col rounded-xl pb-4",
-        "hover:-translate-y-2 hover:shadow-md"
+        "hover:-translate-y-2 hover:shadow-md",
       )}
     >
       <figure
@@ -31,7 +31,7 @@ const PilotCard = ({ pilot }: Props) => {
           className={classNames(
             country && alpha2country,
             "flag",
-            "absolute right-4 top-4"
+            "absolute right-4 top-4",
           )}
         />
       </figure>

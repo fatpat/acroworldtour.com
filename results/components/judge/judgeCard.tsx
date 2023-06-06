@@ -40,7 +40,7 @@ const JudgeCard = ({ judge }: Props) => {
       className={classNames(
         "flex w-28 flex-col items-center rounded-xl pb-4",
         "hover:-translate-y-2 hover:shadow-xl",
-        !civlid && "pointer-events-none"
+        !civlid && "pointer-events-none",
       )}
     >
       <figure
@@ -51,7 +51,7 @@ const JudgeCard = ({ judge }: Props) => {
           className={classNames(
             country && alpha2country,
             "flag",
-            "absolute right-1 top-3"
+            "absolute right-1 top-3",
           )}
         />
       </figure>

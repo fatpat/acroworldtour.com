@@ -16,8 +16,8 @@ const SeasonDetails = ({ season }: Props) => {
 
   const [showCategory, setShowCategory] = useState(
     JSON.parse(
-      localStorage.getItem(`season/${code}/showCategories`) || "false"
-    ) || resultCategories.map((cat) => cat.type == "overall")
+      localStorage.getItem(`season/${code}/showCategories`) || "false",
+    ) || resultCategories.map((cat) => cat.type == "overall"),
   );
 
   const changeCategory = (index: number) => {
@@ -30,7 +30,7 @@ const SeasonDetails = ({ season }: Props) => {
   useEffect(() => {
     localStorage.setItem(
       `season/${code}/showCategories`,
-      JSON.stringify(showCategory)
+      JSON.stringify(showCategory),
     );
   }, [showCategory, code]);
 
@@ -40,20 +40,20 @@ const SeasonDetails = ({ season }: Props) => {
       {resultCategories.length === 0 && <h3>No results at the moment.</h3>}
       <div
         className={classNames(
-          "mt-4 flex w-full items-start justify-center gap-4 portrait:flex-col"
+          "mt-4 flex w-full items-start justify-center gap-4 portrait:flex-col",
         )}
       >
         <SeasonSummary
           season={season}
           className={classNames(
             "w-1/2 max-w-lg rounded-xl bg-awt-dark-50 px-2 py-2 pb-2 shadow-inner",
-            "portrait:w-full"
+            "portrait:w-full",
           )}
         />
         <section
           className={classNames(
             "flex w-full flex-grow flex-col gap-4 rounded-xl bg-awt-dark-50 py-2 shadow-inner",
-            "lg:col-span-6 lg:col-start-4"
+            "lg:col-span-6 lg:col-start-4",
           )}
         >
           <small className="text-center">
@@ -63,7 +63,7 @@ const SeasonDetails = ({ season }: Props) => {
           {resultCategories.map((resultCategory, catIndex) => {
             const category = resultCategory.type;
             const categoryResults = resultCategory.results.sort(
-              (a, b) => b.score - a.score
+              (a, b) => b.score - a.score,
             );
 
             return (
@@ -71,7 +71,7 @@ const SeasonDetails = ({ season }: Props) => {
                 <button
                   title={`Click to open/close ${category} results`}
                   className={classNames(
-                    "col-span-full flex items-baseline justify-center"
+                    "col-span-full flex items-baseline justify-center",
                   )}
                   onClick={() => changeCategory(catIndex)}
                   onKeyDown={({ key }) =>
@@ -82,7 +82,7 @@ const SeasonDetails = ({ season }: Props) => {
                   <ChevronIcon
                     className={classNames(
                       "ml-2 h-3 w-auto",
-                      !showCategory[catIndex] && "-rotate-90"
+                      !showCategory[catIndex] && "-rotate-90",
                     )}
                   />
                 </button>

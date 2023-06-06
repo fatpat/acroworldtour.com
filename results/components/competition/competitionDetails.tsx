@@ -21,13 +21,13 @@ const CompetitionDetails = ({ competition }: Props) => {
   const [hideSummary, setHideSummary] = useState(false);
   const [showOverall, setShowOverall] = useState(
     JSON.parse(
-      localStorage.getItem(`competitions/${code}/showOverall`) || "false"
-    ) || false
+      localStorage.getItem(`competitions/${code}/showOverall`) || "false",
+    ) || false,
   );
   const [showRun, setShowRun] = useState(
     JSON.parse(
-      localStorage.getItem(`competitions/${code}/showRun`) || "false"
-    ) || runsResults.map(() => false)
+      localStorage.getItem(`competitions/${code}/showRun`) || "false",
+    ) || runsResults.map(() => false),
   );
 
   const changeResults = (index: "overall" | number) => {
@@ -41,11 +41,11 @@ const CompetitionDetails = ({ competition }: Props) => {
   useEffect(() => {
     localStorage.setItem(
       `competitions/${code}/showOverall`,
-      JSON.stringify(showOverall)
+      JSON.stringify(showOverall),
     );
     localStorage.setItem(
       `competitions/${code}/showRun`,
-      JSON.stringify(showRun)
+      JSON.stringify(showRun),
     );
 
     setHideSummary(showOverall || showRun.some((showRun: boolean) => showRun));
@@ -57,7 +57,7 @@ const CompetitionDetails = ({ competition }: Props) => {
       {overallResults.length === 0 && <h3>No results at the moment.</h3>}
       <div
         className={classNames(
-          "mt-4 flex w-full items-start justify-center gap-4 portrait:flex-col"
+          "mt-4 flex w-full items-start justify-center gap-4 portrait:flex-col",
         )}
       >
         <CompetitionSummary
@@ -65,7 +65,7 @@ const CompetitionDetails = ({ competition }: Props) => {
           className={classNames(
             "w-1/2 max-w-lg rounded-xl bg-awt-dark-50 px-2 py-2 pb-2 shadow-inner",
             "portrait:w-full",
-            hideSummary && "landscape:hidden"
+            hideSummary && "landscape:hidden",
           )}
         />
 
@@ -73,7 +73,7 @@ const CompetitionDetails = ({ competition }: Props) => {
           <section
             className={classNames(
               "flex w-full flex-grow flex-col gap-4 rounded-xl bg-awt-dark-50 py-2 shadow-inner",
-              hideSummary ? "lg:col-span-full" : "lg:col-span-6 lg:col-start-4"
+              hideSummary ? "lg:col-span-full" : "lg:col-span-6 lg:col-start-4",
             )}
           >
             {hideSummary && (
@@ -86,7 +86,7 @@ const CompetitionDetails = ({ competition }: Props) => {
               <button
                 title="Click to open/close overall results"
                 className={classNames(
-                  "col-span-full flex cursor-pointer items-baseline justify-center"
+                  "col-span-full flex cursor-pointer items-baseline justify-center",
                 )}
                 onClick={() => changeResults("overall")}
                 onKeyDown={({ key }) =>
@@ -97,7 +97,7 @@ const CompetitionDetails = ({ competition }: Props) => {
                 <ChevronIcon
                   className={classNames(
                     "ml-2 h-3 w-auto",
-                    !showOverall && "-rotate-90"
+                    !showOverall && "-rotate-90",
                   )}
                 />
               </button>
@@ -118,7 +118,7 @@ const CompetitionDetails = ({ competition }: Props) => {
                   <button
                     title="Click to open/close run results"
                     className={classNames(
-                      "col-span-full flex cursor-pointer items-baseline justify-center"
+                      "col-span-full flex cursor-pointer items-baseline justify-center",
                     )}
                     onClick={() => changeResults(runIndex)}
                     onKeyDown={({ key }) =>
@@ -129,7 +129,7 @@ const CompetitionDetails = ({ competition }: Props) => {
                     <ChevronIcon
                       className={classNames(
                         "ml-2 h-3 w-auto",
-                        !showRun[runIndex] && "-rotate-90"
+                        !showRun[runIndex] && "-rotate-90",
                       )}
                     />
                   </button>

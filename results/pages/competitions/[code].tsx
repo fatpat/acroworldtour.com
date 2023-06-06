@@ -33,7 +33,7 @@ const CompetitionPage = () => {
     error,
     isLoading,
   } = useSWR<Competition, Error>(
-    code ? `${API_URL}/competitions/${code}` : null
+    code ? `${API_URL}/competitions/${code}` : null,
   );
 
   useEffect(() => {

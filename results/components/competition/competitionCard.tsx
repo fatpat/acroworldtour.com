@@ -42,7 +42,7 @@ const CompetitionCard = ({ competition }: Props) => {
           "bg-black/60 bg-cover bg-center bg-no-repeat p-4 bg-blend-multiply",
           "shadow shadow-awt-dark-400",
           "hover:-translate-y-2 hover:bg-white/90 hover:text-current hover:bg-blend-screen",
-          "hover:shadow-md"
+          "hover:shadow-md",
         )}
       >
         <hgroup>

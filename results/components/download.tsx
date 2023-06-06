@@ -15,7 +15,7 @@ const Download = () => (
         rel="noopener noreferrer"
         className={classNames(
           "mt-4 flex flex-col items-start rounded-xl bg-awt-dark-50 p-4 text-sm font-semibold text-orange-500 shadow",
-          "hover:invert"
+          "hover:invert",
         )}
       >
         📑 FAI Sporting Code

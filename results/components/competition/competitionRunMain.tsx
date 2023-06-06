@@ -26,7 +26,7 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
   };
 
   results.sort(
-    (a, b) => (b.final_marks?.score || 0) - (a.final_marks?.score || 0)
+    (a, b) => (b.final_marks?.score || 0) - (a.final_marks?.score || 0),
   );
 
   return (
@@ -75,7 +75,7 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
             <button
               title="Click to open/close run details"
               className={classNames(
-                "col-span-7 flex cursor-pointer items-baseline border-x-[1px] py-3 pl-1"
+                "col-span-7 flex cursor-pointer items-baseline border-x-[1px] py-3 pl-1",
               )}
               onClick={() => toggleDetails(resultIndex)}
               onKeyDown={({ key }) =>
@@ -89,7 +89,7 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
               <ChevronIcon
                 className={classNames(
                   "my-auto ml-1 h-2 w-2",
-                  !showDetails[resultIndex] && "-rotate-90"
+                  !showDetails[resultIndex] && "-rotate-90",
                 )}
               />
             </button>
@@ -104,7 +104,7 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
                 <h5
                   className={classNames(
                     "col-start-1 pt-2",
-                    type === "synchro" ? "col-span-3" : "col-span-4"
+                    type === "synchro" ? "col-span-3" : "col-span-4",
                   )}
                 >
                   Technical
@@ -115,7 +115,7 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
                 <h5
                   className={classNames(
                     "pt-2",
-                    type === "synchro" ? "col-span-2" : "col-span-4"
+                    type === "synchro" ? "col-span-2" : "col-span-4",
                   )}
                 >
                   Landing
@@ -129,14 +129,14 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
                 <p
                   className={classNames(
                     "py-1 text-center",
-                    type === "synchro" ? "col-span-3" : "col-span-4"
+                    type === "synchro" ? "col-span-3" : "col-span-4",
                   )}
                 >
                   {technicalJudge?.toFixed(3)}
                 </p>
                 <p
                   className={classNames(
-                    "col-span-4 border-x-[1px] py-1 text-center"
+                    "col-span-4 border-x-[1px] py-1 text-center",
                   )}
                 >
                   {choreographyJudge?.toFixed(3)}
@@ -144,7 +144,7 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
                 <p
                   className={classNames(
                     "py-1 text-center",
-                    type === "synchro" ? "col-span-2" : "col-span-4"
+                    type === "synchro" ? "col-span-2" : "col-span-4",
                   )}
                 >
                   {landingJudge?.toFixed(3)}
@@ -194,7 +194,7 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
                 <h5
                   className={classNames(
                     "col-start-1 pt-2",
-                    type === "synchro" ? "col-span-3" : "col-span-4"
+                    type === "synchro" ? "col-span-3" : "col-span-4",
                   )}
                 >
                   Technical
@@ -205,7 +205,7 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
                 <h5
                   className={classNames(
                     "pt-2",
-                    type === "synchro" ? "col-span-2" : "col-span-4"
+                    type === "synchro" ? "col-span-2" : "col-span-4",
                   )}
                 >
                   Landing
@@ -219,14 +219,14 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
                 <p
                   className={classNames(
                     "py-1 text-center",
-                    type === "synchro" ? "col-span-3" : "col-span-4"
+                    type === "synchro" ? "col-span-3" : "col-span-4",
                   )}
                 >
                   {technicalFinal?.toFixed(3)}
                 </p>
                 <p
                   className={classNames(
-                    "col-span-4 border-x-[1px] py-1 text-center"
+                    "col-span-4 border-x-[1px] py-1 text-center",
                   )}
                 >
                   {choreographyFinal?.toFixed(3)}
@@ -234,7 +234,7 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
                 <p
                   className={classNames(
                     "py-1 text-center",
-                    type === "synchro" ? "col-span-2" : "col-span-4"
+                    type === "synchro" ? "col-span-2" : "col-span-4",
                   )}
                 >
                   {landingFinal?.toFixed(3)}

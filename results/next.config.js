@@ -4,18 +4,18 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: "/(.*)",
+        source: '/(.*)',
         headers: [
           {
-            key: "X-Content-Type-Options",
-            value: "nosniff",
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
           },
         ],
       },
     ];
   },
   images: {
-    domains: ["api.acroworldtour.com", "civlcomps.org"],
+    domains: ['api.acroworldtour.com', 'civlcomps.org'],
   },
   reactStrictMode: true,
 };

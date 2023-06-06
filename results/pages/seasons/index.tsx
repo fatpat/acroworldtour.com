@@ -49,18 +49,18 @@ const Seasons = () => {
   if (!seasons) return <h2>Seasons not found</h2>;
 
   const filteredSeasons = seasons.filter(
-    (season) => season.year === selectedYear
+    (season) => season.year === selectedYear,
   );
 
   const soloSeasons = filteredSeasons.filter(
-    (season) => season.type === "solo"
+    (season) => season.type === "solo",
   );
 
   soloSeasons.sort(
     (a, b) =>
       b.year - a.year ||
       (a.index || 999) - (b.index || 999) ||
-      a.name.localeCompare(b.name)
+      a.name.localeCompare(b.name),
   );
 
   const years = [

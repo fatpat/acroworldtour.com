@@ -29,7 +29,7 @@ const CurrentCompetitions = () => {
   // const currentCompetitions: Competition[] = []; // to test no competition
 
   const currentCompetitions = competitions.filter(
-    (competition) => competition.state === "open"
+    (competition) => competition.state === "open",
   );
 
   const ongoing = currentCompetitions.length > 0;
@@ -42,7 +42,7 @@ const CurrentCompetitions = () => {
       </h2>
       <section className="wrapper my-8">
         {currentCompetitions.map((competition) =>
-          CompetitionCard({ competition })
+          CompetitionCard({ competition }),
         )}
       </section>
     </>

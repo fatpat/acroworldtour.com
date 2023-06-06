@@ -32,7 +32,7 @@ const CompetitionOverallHeader = ({ result, rank }: Props) => {
         <ChevronIcon
           className={classNames(
             "my-auto ml-1 h-2 w-2",
-            !showMore && "-rotate-90"
+            !showMore && "-rotate-90",
           )}
         />
       </button>
