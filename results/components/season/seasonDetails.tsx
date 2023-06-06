@@ -15,8 +15,9 @@ const SeasonDetails = ({ season }: Props) => {
   const { name, results: resultCategories, code } = season;
 
   const [showCategory, setShowCategory] = useState(
-    JSON.parse(localStorage.getItem(`season/${code}/showCategories`) || "false") ||
-      resultCategories.map((e) => e.type == "overall")
+    JSON.parse(
+      localStorage.getItem(`season/${code}/showCategories`) || "false"
+    ) || resultCategories.map((cat) => cat.type == "overall")
   );
 
   const changeCategory = (index: number) => {
@@ -27,7 +28,10 @@ const SeasonDetails = ({ season }: Props) => {
   };
 
   useEffect(() => {
-    localStorage.setItem(`season/${code}/showCategories`, JSON.stringify(showCategory));
+    localStorage.setItem(
+      `season/${code}/showCategories`,
+      JSON.stringify(showCategory)
+    );
   }, [showCategory, code]);
 
   return (
@@ -43,7 +47,7 @@ const SeasonDetails = ({ season }: Props) => {
           season={season}
           className={classNames(
             "w-1/2 max-w-lg rounded-xl bg-awt-dark-50 px-2 py-2 pb-2 shadow-inner",
-            "portrait:w-full",
+            "portrait:w-full"
           )}
         />
         <section

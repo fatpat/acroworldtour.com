@@ -20,11 +20,14 @@ const CompetitionDetails = ({ competition }: Props) => {
 
   const [hideSummary, setHideSummary] = useState(false);
   const [showOverall, setShowOverall] = useState(
-    JSON.parse(localStorage.getItem(`competitions/${code}/showOverall`) || "false") || false
+    JSON.parse(
+      localStorage.getItem(`competitions/${code}/showOverall`) || "false"
+    ) || false
   );
   const [showRun, setShowRun] = useState(
-    JSON.parse(localStorage.getItem(`competitions/${code}/showRun`) || "false") ||
-      runsResults.map(() => false)
+    JSON.parse(
+      localStorage.getItem(`competitions/${code}/showRun`) || "false"
+    ) || runsResults.map(() => false)
   );
 
   const changeResults = (index: "overall" | number) => {
@@ -36,8 +39,14 @@ const CompetitionDetails = ({ competition }: Props) => {
   };
 
   useEffect(() => {
-    localStorage.setItem(`competitions/${code}/showOverall`, JSON.stringify(showOverall));
-    localStorage.setItem(`competitions/${code}/showRun`, JSON.stringify(showRun));
+    localStorage.setItem(
+      `competitions/${code}/showOverall`,
+      JSON.stringify(showOverall)
+    );
+    localStorage.setItem(
+      `competitions/${code}/showRun`,
+      JSON.stringify(showRun)
+    );
 
     setHideSummary(showOverall || showRun.some((showRun: boolean) => showRun));
   }, [showOverall, showRun, code]);

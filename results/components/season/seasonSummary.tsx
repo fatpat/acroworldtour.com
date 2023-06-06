@@ -10,7 +10,7 @@ interface Props {
 
 const SeasonSummary = ({ season, className }: Props) => {
   const {
-    image,
+    image: seasonImage,
     number_of_pilots: numberOfPilots,
     number_of_teams: numberOfTeams,
     type,
@@ -18,80 +18,79 @@ const SeasonSummary = ({ season, className }: Props) => {
     country,
   } = season;
 
+  const numberOfCompetitions = competitions.length;
+
   return (
     <article className={className}>
-      {image ? (
-        <Image
-          src={image}
-          alt="Competition Image"
-          width={512}
-          height={0}
-          className="my-2 h-auto w-full rounded-xl"
-        />
-      ) : (
-        <div
-          className={classNames(
-            "flex aspect-video w-full flex-grow overflow-hidden",
-            "rounded-xl"
-          )}
-        >
-          {competitions.map((competition) => {
-            const { code, image } = competition;
+      <header
+        className={classNames(
+          "relative flex aspect-video w-full flex-grow overflow-hidden",
+          "rounded-xl"
+        )}
+      >
+        {seasonImage ? (
+          <Image
+            src={seasonImage}
+            alt="Competition Image"
+            fill
+            className="h-auto w-full rounded-xl"
+          />
+        ) : (
+          competitions.map((competition) => {
+            const { code, image: competitionImage } = competition;
             return (
               <div
                 key={code}
-                style={{ backgroundImage: `url(${image})` }}
+                style={{ backgroundImage: `url(${competitionImage})` }}
                 className={classNames(
                   "h-full w-full",
                   "bg-cover bg-center bg-no-repeat"
                 )}
               />
             );
-          })}
+          })
+        )}
+      </header>
+      <section className="grid gap-2 pb-2 pl-5 pt-4">
+        <div className="flex items-baseline gap-1">
+          <h5>Type:</h5>
+          <p>{type}</p>
         </div>
-      )}
-      <div>
-        <h5 className="inline-block py-2 pl-4 text-left capitalize">Type:</h5>
-        <p className="inline-block py-2 pl-4 text-left capitalize">{type}</p>
-      </div>
-      {country && (
-        <div>
-          <h5 className="inline-block py-2 pl-4 text-left capitalize">
-            Country:
-          </h5>
-          <p className="inline-block py-2 pl-4 text-left capitalize">
-            {country}
-          </p>
+        {country && (
+          <div className="flex items-baseline gap-1">
+            <h5>Country:</h5>
+            <p>{country}</p>
+          </div>
+        )}
+        <div className="flex items-baseline gap-1">
+          <h5>{type === "solo" ? "Pilots:" : "Teams:"}</h5>
+          <p>{type === "solo" ? numberOfPilots : numberOfTeams}</p>
         </div>
-      )}{" "}
-      <div>
-        <h5 className="inline-block py-2 pl-4 text-left capitalize">
-          {type === "solo" ? "Pilots:" : "Teams:"}
+        <h5 className="text-left">
+          {numberOfCompetitions
+            ? `${numberOfCompetitions} Competition${
+                numberOfCompetitions > 1 ? "s" : ""
+              }:`
+            : "No competitions yet"}
         </h5>
-        <p className="inline-block py-2 pl-4 text-left">
-          {type === "solo" ? numberOfPilots : numberOfTeams}
-        </p>
-      </div>
-      <div>
-        <h5 className="inline-block py-2 pl-4 text-left capitalize">
-          Competitions:
-        </h5>
-        <p className="inline-block py-2 pl-4 text-left capitalize">
-          {competitions.length}
-        </p>
-      </div>
-      <div>
-        <ul className="list-disc list-inside py-0 pl-6">
-          { competitions.map((competition) => {
+        <ul className="-mt-1">
+          {competitions.map((competition) => {
             const { name, code } = competition;
-            return(
+            return (
               <li key={code}>
-                <a href={`/competitions/${code}`}>{name}</a>
+                <a href={`/competitions/${code}`}>
+                  <p
+                    title={`Navigate to the main page of ${name}`}
+                    className="hover:font-bold"
+                  >
+                    🔹{name}
+                  </p>
+                </a>
               </li>
-            )
+            );
           })}
         </ul>
-      </div>
+      </section>
     </article>
   );
 };
