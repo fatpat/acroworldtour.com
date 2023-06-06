@@ -47,7 +47,7 @@ const SeasonCard = ({ season }: Props) => {
         className={classNames(
           "relative flex flex-col justify-between",
           "h-48 min-w-[240px] overflow-hidden rounded-xl p-4 text-white",
-          "bg-black/60 bg-cover bg-center bg-no-repeat bg-blend-multiply",
+          "bg-awt-dark-900/60 bg-cover bg-center bg-no-repeat bg-blend-multiply",
           "shadow shadow-awt-dark-400",
           "hover:-translate-y-2 hover:bg-white/90 hover:text-current hover:bg-blend-screen",
           "hover:shadow-md",
