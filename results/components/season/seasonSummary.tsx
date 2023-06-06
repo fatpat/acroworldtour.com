@@ -52,10 +52,6 @@ const SeasonSummary = ({ season, className }: Props) => {
         )}
       </header>
       <section className="grid gap-2 pb-2 pl-5 pt-4">
-        <div className="flex items-baseline gap-1">
-          <h5>Type:</h5>
-          <p>{type}</p>
-        </div>
         {country && (
           <div className="flex items-baseline gap-1">
             <h5>Country:</h5>
@@ -63,8 +59,7 @@ const SeasonSummary = ({ season, className }: Props) => {
           </div>
         )}
         <div className="flex items-baseline gap-1">
-          <h5>{type === "solo" ? "Pilots:" : "Teams:"}</h5>
-          <p>{type === "solo" ? numberOfPilots : numberOfTeams}</p>
+          <h5>{type === "solo" ? `${numberOfPilots} pilots` : `${numberOfTeams} teams`}</h5>
         </div>
         <h5 className="text-left">
           {numberOfCompetitions
