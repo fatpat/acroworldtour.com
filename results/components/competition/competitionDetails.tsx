@@ -13,7 +13,7 @@ interface Props {
 }
 
 const CompetitionDetails = ({ competition }: Props) => {
-  const { name, results, code } = competition;
+  const { name, results, code, type } = competition;
   const overallResults = results.overall_results;
   overallResults.sort((a, b) => b.score - a.score);
   const runsResults = results.runs_results;
@@ -106,6 +106,7 @@ const CompetitionDetails = ({ competition }: Props) => {
             {showOverall && (
               <CompetitionOverallResults
                 results={overallResults}
+                type={type}
                 className="grid grid-cols-12"
               />
             )}

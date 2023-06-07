@@ -4,10 +4,11 @@ import CompetitionOverallHeader from "./competitionOverallHeader";
 
 interface Props {
   results: components["schemas"]["CompetitionPilotResultsExport"][];
+  type: components["schemas"]["CompetitionType"];
   className?: string;
 }
 
-const CompetitionOverallResults = ({ results, className }: Props) => {
+const CompetitionOverallResults = ({ results, type, className }: Props) => {
   return (
     <article className={className}>
       <h4 className="col-span-2 col-start-1 border-[1px] border-awt-dark-500 bg-awt-dark-900 py-1 text-white">
@@ -25,6 +26,7 @@ const CompetitionOverallResults = ({ results, className }: Props) => {
           key={index}
           result={result}
           rank={index + 1}
+          type={type}
         />
       ))}
     </article>

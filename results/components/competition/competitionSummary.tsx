@@ -15,6 +15,7 @@ const CompetitionSummary = ({ competition, className }: Props) => {
     image,
     location,
     number_of_pilots: numberOfPilots,
+    number_of_teams: numberOfTeams,
     start_date: startDate,
     type,
     website,
@@ -41,10 +42,6 @@ const CompetitionSummary = ({ competition, className }: Props) => {
         </div>
       )}
       <div>
-        <h5 className="inline-block py-2 pl-4 text-left capitalize">Type:</h5>
-        <p className="inline-block py-2 pl-4 text-left capitalize">{type}</p>
-      </div>
-      <div>
         <h5 className="inline-block py-2 pl-4 text-left capitalize">
           Location:
         </h5>
@@ -53,24 +50,17 @@ const CompetitionSummary = ({ competition, className }: Props) => {
         </p>
       </div>
       <div>
-        <h5 className="inline-block py-2 pl-4 text-left capitalize">Pilots:</h5>
-        <p className="inline-block py-2 pl-4 text-left capitalize">
-          {numberOfPilots}
-        </p>
+        <h5 className="inline-block py-2 pl-4 text-left capitalize">
+          {type === "solo"
+            ? `${numberOfPilots} pilots`
+            : `${numberOfTeams} teams`}
+        </h5>
       </div>
       <div>
-        <h5 className="inline-block py-2 pl-4 text-left capitalize">
-          Start Date:
-        </h5>
+        <h5 className="inline-block py-2 pl-4 text-left capitalize">Dates:</h5>
         <p className="inline-block py-2 pl-4 text-left capitalize">
-          {startDate}
+          {startDate} - {endDate}
         </p>
-      </div>
-      <div>
-        <h5 className="inline-block py-2 pl-4 text-left capitalize">
-          End Date:
-        </h5>
-        <p className="inline-block py-2 pl-4 text-left capitalize">{endDate}</p>
       </div>
       {competition.judges.length > 0 && (
         <>

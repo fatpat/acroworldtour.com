@@ -18,6 +18,7 @@ const SeasonDetails = ({ season }: Props) => {
     competitions_results: competitionResults,
     competitions,
     code,
+    type,
   } = season;
 
   const [showNotice, setShowNotice] = useState(true);
@@ -104,6 +105,7 @@ const SeasonDetails = ({ season }: Props) => {
                     results={categoryResults}
                     competitionResults={competitionResults}
                     competitions={competitions}
+                    type={type}
                     className="grid grid-cols-12 border-[1px]"
                   />
                 )}

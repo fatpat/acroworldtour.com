@@ -61,14 +61,12 @@ const Competitions = () => {
     return startYear === selectedYear || endYear === selectedYear;
   });
 
-  const soloSeasons = seasons.filter(
-    (season) =>
-      season.type === "solo" &&
-      season.competitions.some((comp) =>
-        filteredCompetitions.some(
-          (filteredComp) => filteredComp.code === comp.code,
-        ),
+  const soloSeasons = seasons.filter((season) =>
+    season.competitions.some((comp) =>
+      filteredCompetitions.some(
+        (filteredComp) => filteredComp.code === comp.code,
       ),
+    ),
   );
 
   soloSeasons.sort(

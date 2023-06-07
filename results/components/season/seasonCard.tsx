@@ -22,17 +22,17 @@ const SeasonCard = ({ season }: Props) => {
   const compsPlural = competitionsCount > 1;
   const competitionsString = competitionsCount
     ? `${competitionsCount} competition${compsPlural ? "s" : ""}`
-    : "No competitions data";
+    : "";
 
   const pilotsPlural = numberOfPilots > 1;
   const pilotsString = numberOfPilots
     ? `${numberOfPilots} pilot${pilotsPlural ? "s" : ""}`
-    : "No pilot data";
+    : "";
 
   const teamsPlural = numberOfTeams > 1;
   const teamsString = numberOfTeams
     ? `${numberOfTeams} team${teamsPlural ? "s" : ""}`
-    : "No team data";
+    : "";
 
   const seasonCover = image ?? "";
 

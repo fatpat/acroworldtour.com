@@ -8,12 +8,13 @@ import CompetitionOverallRuns from "./competitionOverallRuns";
 
 interface Props {
   result: components["schemas"]["CompetitionPilotResultsExport"];
+  type: components["schemas"]["CompetitionType"];
   rank: number;
 }
 
-const CompetitionOverallHeader = ({ result, rank }: Props) => {
+const CompetitionOverallHeader = ({ result, rank, type }: Props) => {
   const [showMore, setShowMore] = useState(false);
-  const { pilot, score, result_per_run: runs } = result;
+  const { pilot, team, score, result_per_run: runs } = result;
   const roundedScore = score.toFixed(3);
 
   return (
@@ -28,8 +29,15 @@ const CompetitionOverallHeader = ({ result, rank }: Props) => {
         onKeyDown={({ key }) => key === "Enter" && setShowMore(!showMore)}
       >
         <h5 className="my-auto pl-2 text-left">
-          {pilot?.name || "Pilot Unknown"}
+          {type === "solo" && (pilot?.name || "Unknown Pilot")}
+          {type === "synchro" && (team?.name || "Unknown Team")}
           {["🥇", "🥈", "🥉"][rank - 1]}
+          {type === "synchro" && team && (
+            <ul className="font-normal">
+              <li>{team?.pilots[0].name}</li>
+              <li>{team?.pilots[1].name}</li>
+            </ul>
+          )}
         </h5>
         <ChevronIcon
           className={classNames(

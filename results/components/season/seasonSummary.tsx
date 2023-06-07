@@ -59,7 +59,11 @@ const SeasonSummary = ({ season, className }: Props) => {
           </div>
         )}
         <div className="flex items-baseline gap-1">
-          <h5>{type === "solo" ? `${numberOfPilots} pilots` : `${numberOfTeams} teams`}</h5>
+          <h5>
+            {type === "solo"
+              ? `${numberOfPilots} pilots`
+              : `${numberOfTeams} teams`}
+          </h5>
         </div>
         <h5 className="text-left">
           {numberOfCompetitions

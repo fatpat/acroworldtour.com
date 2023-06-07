@@ -52,11 +52,7 @@ const Seasons = () => {
     (season) => season.year === selectedYear,
   );
 
-  const soloSeasons = filteredSeasons.filter(
-    (season) => season.type === "solo",
-  );
-
-  soloSeasons.sort(
+  filteredSeasons.sort(
     (a, b) =>
       b.year - a.year ||
       (a.index || 999) - (b.index || 999) ||
@@ -103,7 +99,7 @@ const Seasons = () => {
     <>
       <YearSelector years={years} />
       <section className={classNames("wrapper mb-8")}>
-        {soloSeasons.map((season) => (
+        {filteredSeasons.map((season) => (
           <SeasonCard key={season.code} season={season} />
         ))}
       </section>

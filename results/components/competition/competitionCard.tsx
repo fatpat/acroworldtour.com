@@ -15,7 +15,9 @@ const CompetitionCard = ({ competition }: Props) => {
     image,
     start_date,
     end_date,
+    type,
     number_of_pilots: numberOfPilots,
+    number_of_teams: numberOfTeams,
   } = competition;
   const startDate = new Date(start_date);
   const endDate = new Date(end_date);
@@ -53,7 +55,11 @@ const CompetitionCard = ({ competition }: Props) => {
           <p>{`${startDay} ${startMonth !== endMonth ? startMonth : ""} ${
             startYear !== endYear ? startYear : ""
           } to ${endDay} ${endMonth} ${endYear}`}</p>
-          <p>{`${numberOfPilots} pilots`}</p>
+          <p>
+            {type === "solo"
+              ? `${numberOfPilots} pilots`
+              : `${numberOfTeams} teams`}
+          </p>
         </div>
       </article>
     </Link>

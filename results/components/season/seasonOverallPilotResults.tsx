@@ -7,12 +7,15 @@ import { ordinalSuffixOf } from "@/utils/common";
 
 type CompetitionResult = components["schemas"]["CompetitionPilotResultsExport"];
 type CompetitionPublicExport = components["schemas"]["CompetitionPublicExport"];
+type CompetitionType = components["schemas"]["CompetitionType"];
 
 interface Props {
   results: {
     [key: string]: CompetitionResult[] | undefined;
   };
-  pilotId: number;
+  pilotId: number | undefined;
+  teamId: string | undefined;
+  type: CompetitionType;
   competitions: CompetitionPublicExport[];
   className?: string;
 }
@@ -26,14 +29,20 @@ type PilotResult = {
 const SeasonOverallPilotResults = ({
   results,
   pilotId,
+  teamId,
+  type,
   competitions,
 }: Props) => {
   const pilotResults: PilotResult[] = [];
 
+  console.log(results);
   for (const [competition, competitionResults] of Object.entries(results)) {
     competitionResults?.forEach((result, index) => {
-      const { pilot, score } = result;
-      if (pilot?.civlid === pilotId) {
+      const { pilot, team, score } = result;
+      if (type === "solo" && pilot?.civlid === pilotId) {
+        pilotResults.push({ competition, rank: index + 1, score });
+      }
+      if (type !== "solo" && team?._id === teamId) {
         pilotResults.push({ competition, rank: index + 1, score });
       }
     });

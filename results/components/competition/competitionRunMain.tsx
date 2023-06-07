@@ -7,6 +7,8 @@ import { ChevronIcon } from "../ui/icons";
 
 interface Props {
   results: components["schemas"]["FlightExport"][];
+  // TODO wront type, because of original variable in CompetitionDetails not having the right type
+  //type: components["schemas"]["CompetitionType"];
   type: string;
   className?: string;
 }
@@ -41,7 +43,7 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
         Score
       </h4>
       {results.map((result, resultIndex) => {
-        const { pilot, final_marks, tricks } = result;
+        const { pilot, team, final_marks, tricks } = result;
 
         const roundedScore =
           final_marks?.score?.toFixed(3) ?? "No score record";
@@ -83,8 +85,15 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
               }
             >
               <h4 className="my-auto text-left">
-                {pilot ? pilot.name : "No name record"}
+                {type === "solo" && (pilot ? pilot.name : "Unknown Pilot")}
+                {type === "synchro" && (team ? team.name : "Unknown Team")}
                 {["🥇", "🥈", "🥉"][rank - 1]}
+                {type === "synchro" && team && (
+                  <ul className="font-normal">
+                    <li>{team?.pilots[0].name}</li>
+                    <li>{team?.pilots[1].name}</li>
+                  </ul>
+                )}
               </h4>
               <ChevronIcon
                 className={classNames(
