@@ -282,7 +282,8 @@ class Season(BaseModel):
         overall.results.sort(key=lambda r:r.score, reverse=True)
 
         results = []
-        results.append(overall)
+        if len(overall.results) > 0:
+            results.append(overall)
 
         return SeasonPublicExport(
             _id = str(self.id),
