@@ -24,7 +24,7 @@ const SeasonDetails = ({ season }: Props) => {
   const [showCategory, setShowCategory] = useState(
     JSON.parse(
       localStorage.getItem(`season/${code}/showCategories`) || "false",
-    ) || resultCategories.map((cat) => cat.type == "overall"),
+    ) || resultCategories.map((cat) => cat.type === "overall"),
   );
 
   const changeCategory = (index: number) => {

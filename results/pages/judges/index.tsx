@@ -45,13 +45,13 @@ const Judges = () => {
   if (!judges) return <h2>Judges not found</h2>;
 
   const seniors = judges
-    .filter((j) => j.level == "senior")
+    .filter((j) => j.level === "senior")
     .sort((a, b) => a.name.localeCompare(b.name));
   const certifieds = judges
-    .filter((j) => j.level == "certified")
+    .filter((j) => j.level === "certified")
     .sort((a, b) => a.name.localeCompare(b.name));
   const trainees = judges
-    .filter((j) => j.level == "trainee")
+    .filter((j) => j.level === "trainee")
     .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
