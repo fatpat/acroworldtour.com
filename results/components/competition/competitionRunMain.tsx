@@ -7,9 +7,7 @@ import { ChevronIcon } from "../ui/icons";
 
 interface Props {
   results: components["schemas"]["FlightExport"][];
-  // TODO wront type, because of original variable in CompetitionDetails not having the right type
-  //type: components["schemas"]["CompetitionType"];
-  type: string;
+  type: components["schemas"]["CompetitionType"];
   className?: string;
 }
 
@@ -134,7 +132,6 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
                     Synchro
                   </h5>
                 )}
-
                 <p
                   className={classNames(
                     "py-1 text-center",
@@ -174,7 +171,6 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
                 <h4 className="col-span-4 bg-awt-dark-700 py-3 text-white">
                   Malus
                 </h4>
-
                 <p className="col-span-4 col-start-1 py-3 text-center">
                   {technicity?.toFixed(3)}
                 </p>
@@ -183,7 +179,6 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
                   {(malus || 0) > 0 && "🔻"}
                 </p>
                 <p className="col-span-4 py-3 text-center">{malus}%</p>
-
                 <h4 className="col-span-full col-start-1 bg-awt-dark-700 py-3 text-white">
                   Tricks
                 </h4>
@@ -196,7 +191,6 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
                     </li>
                   ))}
                 </ul>
-
                 <h4 className="col-span-full col-start-1 bg-awt-dark-700 py-3 text-white">
                   Final Marks
                 </h4>
@@ -224,7 +218,6 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
                     Synchro
                   </h5>
                 )}
-
                 <p
                   className={classNames(
                     "py-1 text-center",
@@ -248,6 +241,7 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
                 >
                   {landingFinal?.toFixed(3)}
                 </p>
+
                 {type === "synchro" && (
                   <>
                     <p className="col-span-3 border-x-[1px] py-1 text-center">
@@ -255,15 +249,12 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
                     </p>
                   </>
                 )}
-
                 <h5 className="col-span-full col-start-1 border-t-[1px] pt-2">
                   Bonus
                 </h5>
-
                 <p className="col-span-full col-start-1 py-1 text-center">
                   {(bonus || 0) > 0 ? `${bonus}` : "NIL"}
                 </p>
-
                 {(warnings?.length || 0) > 0 && (
                   <>
                     <h5 className="col-span-full col-start-1 border-t-[1px] py-2">
@@ -282,7 +273,6 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
                     </ul>
                   </>
                 )}
-
                 {(notes?.length || 0) > 0 && (
                   <>
                     <h5 className="col-span-full col-start-1 border-t-[1px] py-2">
@@ -301,7 +291,6 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
                     </ul>
                   </>
                 )}
-
                 <button
                   title="Close run details"
                   className="col-span-full col-start-1 border-y-[1px] bg-white py-3"

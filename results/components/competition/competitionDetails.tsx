@@ -12,6 +12,8 @@ interface Props {
   competition: components["schemas"]["CompetitionPublicExportWithResults"];
 }
 
+type CompetitionType = components["schemas"]["CompetitionType"];
+
 const CompetitionDetails = ({ competition }: Props) => {
   const { name, results, code, type } = competition;
   const overallResults = results.overall_results;
@@ -137,7 +139,7 @@ const CompetitionDetails = ({ competition }: Props) => {
                   {showRun[runIndex] && (
                     <CompetitionRunMain
                       results={run.results}
-                      type={run.type}
+                      type={run.type as CompetitionType}
                       className="grid grid-cols-12 border-[1px]"
                     />
                   )}
