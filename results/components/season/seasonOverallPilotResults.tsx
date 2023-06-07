@@ -60,6 +60,7 @@ const SeasonOverallPilotResults = ({
             >
               <h6 className="hover:font-bold">
                 {ordinalSuffixOf(rank)} at {competitionName}
+                {["🥇", "🥈", "🥉"][rank - 1]}
               </h6>
             </Link>
             <p className="col-span-2 col-start-11 border-[1px] bg-awt-dark-300 py-2 text-center">
