@@ -62,6 +62,10 @@
   button {
     @apply hover:bg-awt-accent-600 hover:fill-white hover:text-white;
   }
+
+  hr {
+    @apply mx-auto w-3/4 border-awt-accent-600/25;
+  }
 }
 
 @layer utilities {

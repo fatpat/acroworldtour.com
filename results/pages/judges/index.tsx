@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { Fragment, useEffect } from "react";
 import useSWR from "swr";
 
 import JudgeCard from "@/components/judge/judgeCard";
@@ -44,42 +44,30 @@ const Judges = () => {
   if (error) return <FetchError />;
   if (!judges) return <h2>Judges not found</h2>;
 
-  const seniors = judges
-    .filter((j) => j.level === "senior")
-    .sort((a, b) => a.name.localeCompare(b.name));
-  const certifieds = judges
-    .filter((j) => j.level === "certified")
-    .sort((a, b) => a.name.localeCompare(b.name));
-  const trainees = judges
-    .filter((j) => j.level === "trainee")
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const filterAndSortJudges = (judges: Judge[], level: Judge["level"]) =>
+    judges
+      .filter((judge) => judge.level === level)
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+  const ratedJudges = [
+    { judges: filterAndSortJudges(judges, "senior"), category: "Senior" },
+    { judges: filterAndSortJudges(judges, "certified"), category: "Certified" },
+    { judges: filterAndSortJudges(judges, "trainee"), category: "Trainee" },
+  ];
 
   return (
     <>
-      <h2>Senior Judges</h2>
-      <section className="mt-8 px-2">
-        <div className="wrapper">
-          {seniors.map((judge) => (
-            <JudgeCard key={judge._id} judge={judge} />
-          ))}
-        </div>
-      </section>
-      <h2>Certified Judges</h2>
-      <section className="mt-8 px-2">
-        <div className="wrapper">
-          {certifieds.map((judge) => (
-            <JudgeCard key={judge._id} judge={judge} />
-          ))}
-        </div>
-      </section>
-      <h2>Trainee Judges</h2>
-      <section className="mt-8 px-2">
-        <div className="wrapper">
-          {trainees.map((judge) => (
-            <JudgeCard key={judge._id} judge={judge} />
-          ))}
-        </div>
-      </section>
+      {ratedJudges.map((rating, index) => (
+        <Fragment key={rating.category}>
+          <h2>{rating.category} Judges</h2>
+          <section className="my-8 flex flex-wrap justify-center gap-8">
+            {rating.judges.map((judge) => (
+              <JudgeCard key={judge._id} judge={judge} />
+            ))}
+          </section>
+          {index < ratedJudges.length - 1 && <hr className="mb-4" />}
+        </Fragment>
+      ))}
     </>
   );
 };

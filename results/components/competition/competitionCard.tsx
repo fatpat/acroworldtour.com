@@ -19,6 +19,7 @@ const CompetitionCard = ({ competition }: Props) => {
     number_of_pilots: numberOfPilots,
     number_of_teams: numberOfTeams,
   } = competition;
+
   const startDate = new Date(start_date);
   const endDate = new Date(end_date);
   const startDay = startDate.getDate();
@@ -31,6 +32,7 @@ const CompetitionCard = ({ competition }: Props) => {
     month: "long",
   });
   const endYear = endDate.getFullYear();
+
   return (
     <Link
       key={code}

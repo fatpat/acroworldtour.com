@@ -11,15 +11,26 @@ interface Props {
 
 const CompetitionSummary = ({ competition, className }: Props) => {
   const {
-    end_date: endDate,
+    start_date,
+    end_date,
     image,
     location,
     number_of_pilots: numberOfPilots,
     number_of_teams: numberOfTeams,
-    start_date: startDate,
     type,
     website,
   } = competition;
+
+  const startDate = new Date(start_date).toLocaleString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  const endDate = new Date(end_date).toLocaleString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 
   return (
     <article className={className}>
@@ -58,14 +69,14 @@ const CompetitionSummary = ({ competition, className }: Props) => {
       </div>
       <div>
         <h5 className="inline-block py-2 pl-4 text-left capitalize">Dates:</h5>
-        <p className="inline-block py-2 pl-4 text-left capitalize">
-          {startDate} - {endDate}
+        <p className="inline-block py-2 pl-4 text-left">
+          {`${startDate} - ${endDate}`}
         </p>
       </div>
       {competition.judges.length > 0 && (
         <>
-          <hr />
-          <CompetitionJudges judges={competition.judges} className="pt-4 " />
+          <hr className="mt-4" />
+          <CompetitionJudges judges={competition.judges} className="pt-4" />
         </>
       )}
     </article>
