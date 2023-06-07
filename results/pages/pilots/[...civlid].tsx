@@ -37,7 +37,9 @@ const PilotPage = () => {
     if (pilot) {
       setPageTitle(pilot.name || "");
       setPageDescription(`Pilot page for ${pilot.name}`);
-      setHeaderTitle(pilot.name || "");
+      setHeaderTitle(
+        `${["🥇", "🥈", "🥉"][pilot.rank - 1]} ${pilot.name}` || "",
+      );
       setHeaderSubtitle(
         `${pilot.rank === 9999 ? "" : "#" + pilot.rank + " -"} ${civlid}` || "",
       );
