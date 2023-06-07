@@ -51,14 +51,14 @@ const Pilots = () => {
   return (
     <>
       <h2>AWT Pilots</h2>
-      <section className="wrapper mt-8 px-2">
+      <section className="wrapper">
         {awtPilots.map((pilot) => (
           <PilotCard key={pilot.civlid} pilot={pilot} />
         ))}
       </section>
 
       <h2>AWQ Pilots</h2>
-      <section className="wrapper mt-8 px-2">
+      <section className="wrapper">
         {awqPilots.map((pilot) => (
           <PilotCard key={pilot.civlid} pilot={pilot} />
         ))}

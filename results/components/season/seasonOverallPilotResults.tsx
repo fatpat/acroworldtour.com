@@ -35,7 +35,6 @@ const SeasonOverallPilotResults = ({
 }: Props) => {
   const pilotResults: PilotResult[] = [];
 
-  console.log(results);
   for (const [competition, competitionResults] of Object.entries(results)) {
     competitionResults?.forEach((result, index) => {
       const { pilot, team, score } = result;
@@ -54,7 +53,7 @@ const SeasonOverallPilotResults = ({
         const { competition: competitionCode, rank, score } = result;
         const roundedScore = score.toFixed(3);
         const competitionName = competitions.find(
-          (c) => c.code === competitionCode,
+          (comp) => comp.code === competitionCode,
         )?.name;
         return (
           <Fragment key={index}>

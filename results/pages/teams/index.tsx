@@ -50,7 +50,7 @@ const Teams = () => {
   return (
     <>
       <h2>All Teams</h2>
-      <section className="wrapper mt-8">
+      <section className="wrapper">
         {teams.map((team) => (
           <TeamCard key={team._id} team={team} />
         ))}
