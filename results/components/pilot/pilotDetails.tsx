@@ -130,7 +130,9 @@ const PilotDetails = ({ pilot }: Props) => {
                       className="h-8 cursor-pointer hover:bg-awt-dark-200"
                     >
                       <td className="pl-2">
-                        {name} {["🥇", "🥈", "🥉"][rank - 1]}
+                        <a href={`/competitions/${code}`}>
+                          {name} {["🥇", "🥈", "🥉"][rank - 1]}
+                        </a>
                       </td>
                       <td className="pr-2 text-right">#{rank}</td>
                     </tr>
@@ -156,7 +158,9 @@ const PilotDetails = ({ pilot }: Props) => {
                         className="h-8 cursor-pointer hover:bg-awt-dark-200"
                       >
                         <td className="pl-2">
-                          {name} {["🥇", "🥈", "🥉"][rank - 1]}
+                          <a href={`/seasons/${code}`}>
+                            {name} {["🥇", "🥈", "🥉"][rank - 1]}
+                          </a>
                         </td>
                         <td className="pr-2 text-right">#{rank}</td>
                       </tr>
