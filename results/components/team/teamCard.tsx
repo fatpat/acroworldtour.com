@@ -17,7 +17,7 @@ const TeamCard = ({ team }: Props) => {
   return (
     <Link
       key={teamId}
-      href={`/teams/${teamId}`}
+      href={`/teams/${teamId}/${name}`}
       className={classNames("max-w-lg flex-1", "min-w-[300px]")}
       onMouseEnter={() => preload(`${API_URL}/teams/${teamId}`, fetcher)}
     >
