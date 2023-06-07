@@ -11,7 +11,7 @@ from models.pilots import Pilot
 from models.pilots_with_results import PilotWithResults
 from models.judges import Judge
 from models.teams import Team, TeamExport
-from models.seasons import Season, SeasonExport
+from models.seasons import Season, SeasonPublicExport
 from models.tricks import Trick
 from models.cache import Cache
 from core.config import settings
@@ -156,7 +156,7 @@ async def get_competition(id: str):
 @public.get(
     "/seasons/",
     response_description="List all seasons",
-    response_model=List[SeasonExport],
+    response_model=List[SeasonPublicExport],
 )
 @cache(expire=settings.CACHE_EXPIRES)
 async def list_seasons(deleted: bool = False):
@@ -168,7 +168,7 @@ async def list_seasons(deleted: bool = False):
         Competition.getall(cache=cache),
         Trick.getall(cache=cache),
     )
-    return [await season.export(cache=cache) for season in await Season.getall(deleted=deleted, cache=cache)]
+    return [await season.export_public(cache=cache) for season in await Season.getall(deleted=deleted, cache=cache)]
 
 #
 # Get a season
@@ -176,7 +176,7 @@ async def list_seasons(deleted: bool = False):
 @public.get(
     "/seasons/{id}",
     response_description="Get a Season",
-    response_model=SeasonExport,
+    response_model=SeasonPublicExport,
 )
 @cache(expire=settings.CACHE_EXPIRES)
 async def get_season(id: str, deleted: bool = False):
@@ -188,7 +188,7 @@ async def get_season(id: str, deleted: bool = False):
         Trick.getall(cache=cache),
     )
     season = await Season.get(id, deleted=deleted, cache=cache)
-    return await season.export(cache=cache)
+    return await season.export_public(cache=cache)
 
 #
 # Get all tricks

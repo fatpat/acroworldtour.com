@@ -9,7 +9,7 @@ import pymongo
 from datetime import datetime
 from fastapi import HTTPException
 
-from models.competitions import Competition, CompetitionPublicExport, CompetitionState, CompetitionType
+from models.competitions import Competition, CompetitionPublicExport, CompetitionPublicExportWithResults, CompetitionState, CompetitionType, CompetitionExport
 from models.pilots import Pilot
 from models.teams import Team, TeamExport
 from models.results import CompetitionPilotResultsExport
@@ -52,7 +52,27 @@ class SeasonExport(BaseModel):
     type: CompetitionType
     number_of_pilots: int
     number_of_teams: int
-    competitions: List[CompetitionPublicExport]
+    competitions: List[CompetitionExport]
+    results: List[SeasonResults]
+
+
+    class Config:
+        allow_population_by_field_name = True
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}
+
+class SeasonPublicExport(BaseModel):
+    id: str = Field(alias="_id")
+    name: str
+    code: str
+    year: int
+    image: Optional[AnyHttpUrl]
+    country: Optional[str]
+    index: int = Field(999)
+    type: CompetitionType
+    number_of_pilots: int
+    number_of_teams: int
+    competitions: List[CompetitionPublicExportWithResults]
     results: List[SeasonResults]
     competitions_results: dict[str, list[CompetitionPilotResultsExport]]
 
@@ -188,7 +208,7 @@ class Season(BaseModel):
             return f"{settings.SERVER_HOST}/files/{self.image}"
         return None
 
-    async def export(self, cache:Cache=None) -> SeasonExport:
+    async def export_public(self, cache:Cache=None) -> SeasonPublicExport:
         competitions = []
         results = {}
         competitions_results = {}
@@ -208,7 +228,6 @@ class Season(BaseModel):
             # add the comp to the list of comps
             competitions.append(comp)
 
-            log.debug(f"got comp {comp.code} / {comp.published} / {comp.state} / {comp.results.final}")
             # only count published and closed competitions
             if comp.published and comp.state == CompetitionState.closed and comp.results.final:
 
@@ -265,7 +284,7 @@ class Season(BaseModel):
         results = []
         results.append(overall)
 
-        return SeasonExport(
+        return SeasonPublicExport(
             _id = str(self.id),
             name = self.name,
             code = self.code,
@@ -279,4 +298,22 @@ class Season(BaseModel):
             competitions = competitions,
             results = results,
             competitions_results = competitions_results
+        )
+
+    async def export(self, cache:Cache=None) -> SeasonExport:
+        export_public = await self.export_public(cache=cache)
+
+        return SeasonExport(
+            _id = str(export_public.id),
+            name = export_public.name,
+            code = export_public.code,
+            year = export_public.year,
+            image = export_public.image,
+            country = export_public.country,
+            index = export_public.index,
+            type = export_public.type,
+            number_of_pilots = export_public.number_of_pilots,
+            number_of_teams = export_public.number_of_teams,
+            competitions = [ await comp.export(cache=cache) for comp in await Competition.getall(season=self.code, cache=cache)],
+            results = export_public.results,
         )
