@@ -13,6 +13,9 @@ module.exports = {
         'awt-dark': colors.slate,
         'awt-accent': colors.sky,
       },
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+      },
     },
   },
   plugins: [
