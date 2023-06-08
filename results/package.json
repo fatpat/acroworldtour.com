@@ -1,0 +1,43 @@
+{
+  "name": "awt-results",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm format && clear && next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint --fix",
+    "format": "prettier --write .",
+    "interface": "openapi-typescript https://api.acroworldtour.com/openapi.json --output types.d.ts",
+    "prepare": "husky install"
+  },
+  "dependencies": {
+    "@types/node": "20.1.1",
+    "@types/react": "18.2.6",
+    "@types/react-dom": "18.2.4",
+    "autoprefixer": "10.4.14",
+    "classnames": "^2.3.2",
+    "i18n-iso-countries": "^7.6.0",
+    "next": "13.4.1",
+    "postcss": "8.4.23",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "semantic-ui-flag": "^2.5.0",
+    "swr": "^2.1.5",
+    "tailwindcss": "3.3.2",
+    "typescript": "5.0.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/forms": "^0.5.3",
+    "@tailwindcss/typography": "^0.5.9",
+    "eslint": "^8.42.0",
+    "eslint-config-next": "^13.4.4",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-plugin-jsx-a11y": "^6.7.1",
+    "eslint-plugin-simple-import-sort": "^10.0.0",
+    "husky": "^8.0.3",
+    "openapi-typescript": "^6.2.6",
+    "prettier": "^2.8.8",
+    "prettier-plugin-tailwindcss": "^0.2.8"
+  }
+}
