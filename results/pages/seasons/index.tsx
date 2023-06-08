@@ -33,8 +33,8 @@ const Seasons = () => {
   useEffect(() => {
     setPageTitle("Acro World Tour | Seasons");
     setPageDescription(`All the seasons of the Acro World Tour.`);
-    setHeaderTitle("Seasons");
-    setHeaderSubtitle("Acro World Tour");
+    setHeaderTitle("");
+    setHeaderSubtitle("");
     setActiveNav("seasons");
   }, [
     setActiveNav,

@@ -37,8 +37,8 @@ const TeamPage = () => {
     if (team) {
       setPageTitle(team.name || "");
       setPageDescription(`Team page for ${team.name}`);
-      setHeaderTitle(team.name || "");
-      setHeaderSubtitle("Team");
+      setHeaderTitle("");
+      setHeaderSubtitle("");
       setActiveNav("teams");
     }
   }, [

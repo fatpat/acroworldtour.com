@@ -26,8 +26,8 @@ const Teams = () => {
     setPageTitle("Acro World Tour | Teams");
     setPageDescription("All the teams of the Acro World Tour");
 
-    setHeaderTitle("Teams");
-    setHeaderSubtitle("Acro World Tour");
+    setHeaderTitle("");
+    setHeaderSubtitle("");
     setActiveNav("teams");
   }, [
     setActiveNav,

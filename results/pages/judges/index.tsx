@@ -23,8 +23,8 @@ const Judges = () => {
     setPageTitle("Acro World Tour | Judges");
     setPageDescription("All the judges of the Acro World Tour");
 
-    setHeaderTitle("Judges");
-    setHeaderSubtitle("Acro World Tour");
+    setHeaderTitle("");
+    setHeaderSubtitle("");
     setActiveNav("judges");
   }, [
     setActiveNav,

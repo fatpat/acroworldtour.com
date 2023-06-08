@@ -22,8 +22,8 @@ const Pilots = () => {
   useEffect(() => {
     setPageTitle("Acro World Tour | Pilots");
     setPageDescription(`All the pilots of the Acro World Tour.`);
-    setHeaderTitle("Pilots");
-    setHeaderSubtitle("Acro World Tour");
+    setHeaderTitle("");
+    setHeaderSubtitle("");
     setActiveNav("pilots");
   }, [
     setActiveNav,

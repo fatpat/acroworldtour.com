@@ -38,8 +38,8 @@ const SeasonPage = () => {
     if (season) {
       setPageTitle(season.name || "");
       setPageDescription(`Season page for ${season.name}`);
-      setHeaderTitle(season.name || "");
-      setHeaderSubtitle(`${season.type} season` || "");
+      setHeaderTitle("");
+      setHeaderSubtitle("");
       setActiveNav("seasons");
     }
   }, [

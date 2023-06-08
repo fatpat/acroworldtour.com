@@ -28,8 +28,8 @@ const Competitions = () => {
   useEffect(() => {
     setPageTitle("Acro World Tour | Competitions");
     setPageDescription(`All the competitions of the Acro World Tour.`);
-    setHeaderTitle("Competitions");
-    setHeaderSubtitle("Acro World Tour");
+    setHeaderTitle("");
+    setHeaderSubtitle("");
     setActiveNav("competitions");
   }, [
     setActiveNav,

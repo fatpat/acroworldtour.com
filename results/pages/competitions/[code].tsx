@@ -40,8 +40,8 @@ const CompetitionPage = () => {
     if (competition) {
       setPageTitle(competition.name || "");
       setPageDescription(`Competition page for ${competition.name}`);
-      setHeaderTitle(competition.name || "");
-      setHeaderSubtitle(`${competition.type} - ${competition.location}` || "");
+      setHeaderTitle("");
+      setHeaderSubtitle("");
       setActiveNav("competitions");
     }
   }, [
