@@ -1,6 +1,6 @@
 {
-  "name": "awt-results",
-  "version": "0.1.0",
+  "name": "results.acroworldtour.com",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "pnpm format && clear && next dev",
@@ -9,7 +9,7 @@
     "lint": "next lint --fix",
     "format": "prettier --write .",
     "interface": "openapi-typescript https://api.acroworldtour.com/openapi.json --output types.d.ts",
-    "prepare": "husky install"
+    "prepare": "cd .. && husky install manager/.husky"
   },
   "dependencies": {
     "@types/node": "20.1.1",
