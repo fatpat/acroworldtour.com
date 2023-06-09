@@ -14,7 +14,6 @@ import os
 import asyncio
 from pycountry import countries
 import base64
-import cairosvg
 
 from core.database import PyObjectId, db
 from core.config import settings
