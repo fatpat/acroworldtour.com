@@ -1,7 +1,8 @@
 import logging
+import json
 from http import HTTPStatus
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Response
-from typing import List
+from typing import List, Any
 from fastapi_cache import FastAPICache
 from fastapi_cache.decorator import cache
 from asyncio import gather
@@ -16,6 +17,9 @@ from models.tricks import Trick
 from models.cache import Cache
 from core.config import settings
 from controllers.utils import UtilsCtrl
+from controllers.seasons import SeasonCtrl
+from controllers.competitions import CompCtrl
+from core.utils import GenericResponseCoder
 
 log = logging.getLogger(__name__)
 public = APIRouter()
@@ -151,6 +155,64 @@ async def get_competition(id: str):
     return await comp.export_public_with_results(cache=cache)
 
 #
+# export competition overall standing in SVG
+#
+@public.get(
+    "/competitions/{id}/standings/overall/svg",
+    response_description="export competition overall standing in SVG",
+    response_class=Response,
+)
+@cache(expire=settings.CACHE_EXPIRES, coder=GenericResponseCoder)
+async def export_competition_overall_standing_svg(id: str, download: bool = False):
+    cache = Cache()
+    await gather(
+        Pilot.getall(cache=cache),
+        Team.getall(cache=cache),
+        Judge.getall(cache=cache),
+        Trick.getall(cache=cache),
+    )
+    competition = await Competition.get(id, deleted=False, cache=cache)
+    results = await competition.results()
+    svg = CompCtrl.svg_overall(await results.export(cache=cache))
+
+    headers = {}
+    if download:
+        headers["Content-Disposition"] = f"attachment; filename=\"{season.code}.standing.svg\""
+    else:
+        headers["Content-Disposition"] = f"inline"
+
+    return Response(content=svg, media_type="image/svg+xml", headers=headers)
+
+#
+# export competition run standing in SVG
+#
+@public.get(
+    "/competitions/{id}/standings/run/{run}/svg",
+    response_description="export competition overall standing in SVG",
+    response_class=Response,
+)
+@cache(expire=settings.CACHE_EXPIRES, coder=GenericResponseCoder)
+async def export_competition_overall_standing_svg(id: str, run: int, download: bool = False):
+    cache = Cache()
+    await gather(
+        Pilot.getall(cache=cache),
+        Team.getall(cache=cache),
+        Judge.getall(cache=cache),
+        Trick.getall(cache=cache),
+    )
+    competition = await Competition.get(id, deleted=False, cache=cache)
+    results = await competition.results()
+    svg = CompCtrl.svg_run(await results.export(cache=cache), run)
+
+    headers = {}
+    if download:
+        headers["Content-Disposition"] = f"attachment; filename=\"{season.code}.standing.svg\""
+    else:
+        headers["Content-Disposition"] = f"inline"
+
+    return Response(content=svg, media_type="image/svg+xml", headers=headers)
+
+#
 # Get all seasons
 #
 @public.get(
@@ -189,6 +251,34 @@ async def get_season(id: str, deleted: bool = False):
     )
     season = await Season.get(id, deleted=deleted, cache=cache)
     return await season.export_public(cache=cache)
+
+#
+# export season standing in SVG
+#
+@public.get(
+    "/seasons/{id}/standings/svg",
+    response_description="export season standing in SVG",
+    response_class=Response,
+)
+@cache(expire=settings.CACHE_EXPIRES, coder=GenericResponseCoder)
+async def export_season_standing_svg(id: str, download: bool = False):
+    cache = Cache()
+    await gather(
+        Pilot.getall(cache=cache),
+        Team.getall(cache=cache),
+        Judge.getall(cache=cache),
+        Trick.getall(cache=cache),
+    )
+    season = await Season.get(id, deleted=False, cache=cache)
+    svg = SeasonCtrl.svg(await season.export(cache=cache))
+
+    headers = {}
+    if download:
+        headers["Content-Disposition"] = f"attachment; filename=\"{season.code}.standing.svg\""
+    else:
+        headers["Content-Disposition"] = f"inline"
+
+    return Response(content=svg, media_type="image/svg+xml", headers=headers)
 
 #
 # Get all tricks
