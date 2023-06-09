@@ -1,6 +1,7 @@
 from typing import List, Any
 from statistics import mean
 from fastapi_cache import Coder
+from fastapi import Response
 import json
 
 def average(list: List[float]) -> float:
