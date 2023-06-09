@@ -9,9 +9,10 @@ import pymongo
 from datetime import datetime
 from fastapi import HTTPException
 
-from models.competitions import Competition, CompetitionPublicExportWithResults, CompetitionState, CompetitionType
+from models.competitions import Competition, CompetitionPublicExport, CompetitionPublicExportWithResults, CompetitionState, CompetitionType, CompetitionExport
 from models.pilots import Pilot
 from models.teams import Team, TeamExport
+from models.results import CompetitionPilotResultsExport
 from models.cache import Cache
 
 from core.database import db, PyObjectId
@@ -51,8 +52,29 @@ class SeasonExport(BaseModel):
     type: CompetitionType
     number_of_pilots: int
     number_of_teams: int
+    competitions: List[CompetitionExport]
+    results: List[SeasonResults]
+
+
+    class Config:
+        allow_population_by_field_name = True
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}
+
+class SeasonPublicExport(BaseModel):
+    id: str = Field(alias="_id")
+    name: str
+    code: str
+    year: int
+    image: Optional[AnyHttpUrl]
+    country: Optional[str]
+    index: int = Field(999)
+    type: CompetitionType
+    number_of_pilots: int
+    number_of_teams: int
     competitions: List[CompetitionPublicExportWithResults]
     results: List[SeasonResults]
+    competitions_results: dict[str, list[CompetitionPilotResultsExport]]
 
 
     class Config:
@@ -186,9 +208,10 @@ class Season(BaseModel):
             return f"{settings.SERVER_HOST}/files/{self.image}"
         return None
 
-    async def export(self, cache:Cache=None) -> SeasonExport:
+    async def export_public(self, cache:Cache=None) -> SeasonPublicExport:
         competitions = []
         results = {}
+        competitions_results = {}
         _type = None
         teams = {}
         pilots = {}
@@ -207,12 +230,23 @@ class Season(BaseModel):
 
             # only count published and closed competitions
             if comp.published and comp.state == CompetitionState.closed and comp.results.final:
+
+                competitions_results.setdefault(comp.code, [])
+
                 for res in comp.results.overall_results:
+
                     if _type == CompetitionType.synchro:
                         pilot_or_team = res.team.id
                         teams[res.team.id] = 0
                         for pilot in res.team.pilots:
                             pilots[pilot.civlid] = 0
+
+                        competitions_results[comp.code].append(CompetitionPilotResultsExport(
+                            pilot = None,
+                            team = res.team,
+                            score = res.score,
+                            result_per_run = [],
+                        ))
                     else:
                         # if the season is limit to a country (eg national championship)
                         # skip the pilot if its country does not match season's
@@ -220,6 +254,13 @@ class Season(BaseModel):
                             continue
                         pilot_or_team = res.pilot.civlid
                         pilots[res.pilot.civlid] = 0
+
+                        competitions_results[comp.code].append(CompetitionPilotResultsExport(
+                            pilot = res.pilot,
+                            team = None,
+                            score = res.score,
+                            result_per_run = [],
+                        ))
 
                     if pilot_or_team not in results:
                         results[pilot_or_team] = 0
@@ -241,9 +282,10 @@ class Season(BaseModel):
         overall.results.sort(key=lambda r:r.score, reverse=True)
 
         results = []
-        results.append(overall)
+        if len(overall.results) > 0:
+            results.append(overall)
 
-        return SeasonExport(
+        return SeasonPublicExport(
             _id = str(self.id),
             name = self.name,
             code = self.code,
@@ -256,4 +298,23 @@ class Season(BaseModel):
             number_of_teams = len(teams.keys()),
             competitions = competitions,
             results = results,
+            competitions_results = competitions_results
+        )
+
+    async def export(self, cache:Cache=None) -> SeasonExport:
+        export_public = await self.export_public(cache=cache)
+
+        return SeasonExport(
+            _id = str(export_public.id),
+            name = export_public.name,
+            code = export_public.code,
+            year = export_public.year,
+            image = export_public.image,
+            country = export_public.country,
+            index = export_public.index,
+            type = export_public.type,
+            number_of_pilots = export_public.number_of_pilots,
+            number_of_teams = export_public.number_of_teams,
+            competitions = [ await comp.export(cache=cache) for comp in await Competition.getall(season=self.code, cache=cache)],
+            results = export_public.results,
         )

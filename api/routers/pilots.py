@@ -87,3 +87,18 @@ async def change_gender(civlid: int):
     pilot = await Pilot.get(civlid)
     pilot.change_gender()
     return await pilot.save()
+
+#
+# change AWT
+#
+@pilots.patch(
+    "/{civlid}/awt",
+    status_code=200,
+    response_description="Change pilot AWT",
+    response_model=Pilot,
+    dependencies=[Depends(auth)],
+)
+async def change_gender(civlid: int):
+    pilot = await Pilot.get(civlid)
+    pilot.change_awt()
+    return await pilot.save()

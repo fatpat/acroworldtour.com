@@ -1,8 +1,9 @@
-name: Deploy to prod
+name: Deploy API to prod
 on:
   push:
     branches:
       - main
+    paths: "api/**"
 jobs:
   deploy-api-fly-io:
     name: Deploy API to fly.io
