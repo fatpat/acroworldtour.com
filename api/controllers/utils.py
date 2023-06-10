@@ -71,11 +71,14 @@ class UtilsCtrl:
         svg.append(f'    <text x="480" y="{0.6*line_sep}" font-size="{font_size}" font-family="Exo" font-style="italic" font-weight="700" fill="#fafafa" text-anchor="end">Score</text>')
 
         for i, data in enumerate(datas):
-            country = countries.get(alpha_3=data.country).alpha_2.lower()
-            flag = base64.b64encode(open(f"flags/{country}.svg", "rb").read()).decode('ascii')
             svg.append(f'<rect x="0" y="{1*line_sep + line_sep*i}" width="{width}" height="{line_sep}" fill="{"#e5e5e5" if i%2==0 else "#f5f5f5"}" fill-opacity="0.4" />')
             svg.append(f'    <text x="20" y="{1.6*line_sep + line_sep*i}" font-size="{font_size}" font-family="Exo" font-style="italic" font-weight="700" fill="#696969">{data.rank}</text>')
-            svg.append(f'    <image fill="#000000" x="60" y="{1.6*line_sep + line_sep*i - 15}" width="20"  href="data:image/svg+xml;base64,{flag}"/>')
+            try:
+                country = countries.get(alpha_3=data.country).alpha_2.lower()
+                flag = base64.b64encode(open(f"flags/{country}.svg", "rb").read()).decode('ascii')
+                svg.append(f'    <image fill="#000000" x="60" y="{1.6*line_sep + line_sep*i - 15}" width="20"  href="data:image/svg+xml;base64,{flag}"/>')
+            except:
+                pass
             svg.append(f'    <text x="90" y="{1.6*line_sep + line_sep*i}" font-size="{font_size}" font-family="Exo" font-style="normal" font-weight="700" fill="#000000">{data.name}</text>')
             svg.append(f'    <text x="480" y="{1.6*line_sep + line_sep*i}" font-size="{font_size}" font-family="Exo" font-style="normal" font-weight="700" fill="#000000" text-anchor="end">{data.score}</text>')
 
