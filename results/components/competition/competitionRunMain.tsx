@@ -101,7 +101,10 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
               />
             </button>
 
-            <p className="col-span-3 py-3 text-center">{roundedScore}</p>
+            <p className="col-span-3 py-3 text-center">
+              {roundedScore}
+              {(malus || 0) > 0 && "🔻"}
+            </p>
 
             {showDetails[resultIndex] && (
               <>
@@ -176,7 +179,6 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
                 </p>
                 <p className="col-span-4 flex flex-col items-center justify-center border-x-[1px] py-3">
                   {bonusPercentage}%{(warnings?.length || 0) > 0 && " ⚠️"}
-                  {(malus || 0) > 0 && "🔻"}
                 </p>
                 <p className="col-span-4 py-3 text-center">{malus}%</p>
                 <h4 className="col-span-full col-start-1 bg-awt-dark-700 py-3 text-white">
