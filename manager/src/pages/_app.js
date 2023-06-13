@@ -36,6 +36,9 @@ import { UserProvider, RequestError } from '@auth0/nextjs-auth0'
 // ** local
 import { APIRequest } from 'src/util/backend'
 
+// ** jquery
+import $ from 'jquery'
+
 const clientSideEmotionCache = createEmotionCache()
 
 // ** Pace Loader
@@ -63,6 +66,15 @@ const App = props => {
     const [err, body, headers] = await APIRequest(route, {expect_json: true})
     if (err) throw new RequestError(err)
     return body
+  }
+
+  if (typeof window !== "undefined") {
+    window.onbeforeprint = (event) => {
+      $('.hideToPrint').hide()
+    }
+    window.onafterprint = (event) => {
+      $('.hideToPrint').show()
+    }
   }
 
   return (

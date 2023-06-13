@@ -322,10 +322,13 @@ const RunPage = () => {
     <Grid container spacing={6}>
 
       <Grid item xs={12}>
-        <Typography variant='h6'><Link href={`${process.env.NEXT_PUBLIC_APP_BASE_PATH}/competitions/show?cid=${comp.code}`}>{comp.name}</Link></Typography><Typography variant='h3'>Run #{parseInt(rid)+1}<RefreshIcon onClick={loadCompetition} /></Typography>
+        <Typography variant='h6'>
+          <Link href={`${process.env.NEXT_PUBLIC_APP_BASE_PATH}/competitions/show?cid=${comp.code}`}>{comp.name}</Link>
+        </Typography>
+        <Typography variant='h3' className="hideToPrint">Run #{parseInt(rid)+1}<RefreshIcon onClick={loadCompetition} /></Typography>
       </Grid>
 
-      <Grid item xs={12} md={6} sx={{ paddingBottom: 4 }}>
+      <Grid item xs={12} md={6} sx={{ paddingBottom: 4 }} className="hideToPrint">
         <Typography>
           Status: <strong>{run.state}</strong>
 { run.state == 'init' &&

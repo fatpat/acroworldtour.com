@@ -19,9 +19,6 @@ import EmojiEventsIcon from '@mui/icons-material/EmojiEvents'
 import ArticleIcon from '@mui/icons-material/Article'
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload'
 
-// ** jquery
-import $ from 'jquery'
-
 // ** local
 import EnhancedTable from 'src/views/tables/EnhancedTable'
 import TabRunResults from 'src/views/competitions/TabRunResults'
@@ -60,13 +57,6 @@ const TabResults = ({ code }) => {
   }, [])
 
   if (!results) return('loading ...')
-
-  window.onbeforeprint = (event) => {
-    $('.hideToPrint').hide()
-  }; 
-  window.onafterprint = (event) => {
-    $('.hideToPrint').show()
-  }; 
 
   return (
     <CardContent>

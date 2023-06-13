@@ -21,9 +21,6 @@ import EmojiEventsIcon from '@mui/icons-material/EmojiEvents'
 import ArticleIcon from '@mui/icons-material/Article'
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload'
 
-// ** jquery
-import $ from 'jquery'
-
 // ** local
 import EnhancedTable from 'src/views/tables/EnhancedTable'
 import { useNotifications } from 'src/util/notifications'
@@ -61,13 +58,6 @@ const TabResults = ({ code, rid }) => {
   }, [])
 
   if (!results) return('loading ...')
-
-  window.onbeforeprint = (event) => {
-    $('.hideToPrint').hide()
-  }; 
-  window.onafterprint = (event) => {
-    $('.hideToPrint').show()
-  }; 
 
 
   return (
