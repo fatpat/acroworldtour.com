@@ -59,9 +59,24 @@ import TableRow from '@mui/material/TableRow'
 import TableHead from '@mui/material/TableHead'
 import Table from '@mui/material/Table'
 import TableContainer from '@mui/material/TableContainer'
+import List from "@mui/material/List";
 
 // ** others
 import Moment from 'react-moment'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
 
 // ** local
 import EnhancedTable from 'src/views/tables/EnhancedTable'
@@ -83,6 +98,7 @@ import TabRunResults from 'src/views/competitions/TabRunResults'
 import TabRepeatableTricks from 'src/views/competitions/TabRepeatableTricks'
 import TabFlightsSolo from 'src/views/competitions/TabFlightsSolo'
 import TabFlightsSynchro from 'src/views/competitions/TabFlightsSynchro'
+import SortablePilotStartingOrder from 'src/views/runs/SortablePilotStartingOrder'
 
 
 const Tab = styled(MuiTab)(({ theme }) => ({
@@ -117,6 +133,7 @@ const RunPage = () => {
   // ** local
   const [comp, setComp] = useState(false)
   const [run, setRun] = useState(false)
+  const [pilots, setPilotsVar] = useState([])
   const [tempComp, setTempComp] = useState({})
   const [isLoading, setLoading] = useState(false)
   const [tabContext, setTabContext] = useState('actions')
@@ -129,6 +146,13 @@ const RunPage = () => {
   const endDateRef = useRef()
   const locationRef = useRef()
 
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   const loadCompetition = async () => {
     setLoading(true)
 
@@ -137,6 +161,7 @@ const RunPage = () => {
     if (err) {
         setComp(false)
         setRun(false)
+        setPilotsVar([])
         setTempComp(false)
         error(`Error while retrieving competitions list: ${err}`)
         return
@@ -148,6 +173,7 @@ const RunPage = () => {
 
     setComp(data)
     setRun(data.runs[rid])
+    setPilotsVar(data.runs[rid].pilots)
     setTempComp(Object.assign({}, data)) // clone data before assigning it to tempComp, otherwise they'll share the same object
     setLoading(false)
   }
@@ -258,6 +284,20 @@ const RunPage = () => {
       success(`Run #${rid} from competition ${cid} successfully deleted`)
     }
     loadCompetition()
+  }
+
+  const changeStartingOrder = async (event) => {
+    const {active, over} = event
+    if (active.id === over.id) return
+
+    console.log(active.id, over.id)
+
+    const oldIndex = run.pilots.findIndex(p => p.civlid == active.id.civlid)
+    const newIndex = run.pilots.findIndex(p => p.civlid == over.id.civlid)
+    if (oldIndex < 0 || newIndex < 0) return
+
+    console.log({ oldIndex, newIndex })
+    setPilots(arrayMove(pilots, oldIndex, newIndex))
   }
 
   useEffect(() => {
@@ -417,24 +457,11 @@ const RunPage = () => {
                       Run {parseInt(rid)+1} Starting Order
                     </Typography>
                   </Box>
-                  <Table sx={{ minWidth: 750 }}>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Starting Position</TableCell>
-                        <TableCell>Pilot</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-{ run.pilots.sort((a,b) => b.rank-a.rank).map((p, i) => {
-  return(
-                      <TableRow key={`pilot-${i}`}>
-                        <TableCell>#{i+1}</TableCell>
-                        <TableCell>{p.name}</TableCell>
-                      </TableRow>
-  )
-})}
-                    </TableBody>
-                  </Table>
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={changeStartingOrder}>
+                      <SortableContext items={pilots} strategy={verticalListSortingStrategy}>
+                        { pilots.map((p,i) => <SortablePilotStartingOrder key={p.civlid} id={p} text={`${i+1} ${p.name}`} />)}
+                      </SortableContext>
+                    </DndContext>
                 </CardContent>
               </TableContainer>
             </TabPanel>
