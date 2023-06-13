@@ -432,6 +432,18 @@ class Competition(CompetitionNew):
         self.state = CompetitionState.open
         await self.save()
 
+
+    def get_pilot_or_team_rank_in_current_overall(self, pilot_or_team, results) -> int:
+        for rank, result in enumerate(results):
+            if self.type == CompetitionType.solo:
+                if result.pilot == pilot_or_team:
+                    return rank+1
+            else:
+                if result.team == pilot_or_team:
+                    return rank+1
+        return -1
+
+
     async def new_run(self, pilots_to_qualify: int = 0):
         if self.state != CompetitionState.open:
             raise HTTPException(400, "Competition must be 'open' to create a new run")
@@ -445,15 +457,22 @@ class Competition(CompetitionNew):
             teams = self.teams
 
         if len(self.runs) > 0: # take the list of pilots from the previous run
-            # TODO order by the overall ranking after the previous run
+
+            # get overall results from the previous runs to order pilots/teams
+            results = await self.results()
+            results = results.overall_results
+
             if self.type == CompetitionType.solo:
                 pilots = self.runs[-1].pilots
+                pilots.sort(key=lambda p:-self.get_pilot_or_team_rank_in_current_overall(p, results))
             else:
                 teams = self.runs[-1].teams
+                teams.sort(key=lambda t:self.get_team_or_team_rank_in_current_overall(t, results))
         else: #  first run to be added, use the list of pilots of the competition
             if self.type == CompetitionType.solo:
-                # TODO order by the CIVL ranking
                 pilots = self.pilots
+                # sort the pilots by their FAI ranking for the first comp of the season
+                pilots.sort(key=lambda p: p.rank)
             else:
                 # TOOD: order by team name, fine tuning the order will be made manually
                 teams = self.teams
