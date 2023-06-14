@@ -14,18 +14,40 @@
     <!-- Latest compiled and minified JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js" integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd" crossorigin="anonymous"></script>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Exo,wght@1,400&display=swap" rel="stylesheet">
+
     <style>
+
+@page {
+    size: 29.7cm 21cm;
+    margin: 5mm 5mm 5mm 5mm;
+}
+
 body{
-    margin-left: 1em;
-    margin-right: 1em;
+    margin-left: 0.2em;
+    margin-right: 0.2em;
+    margin-top: 0.2em;
+    margin-bottom: 0.2em;
+    font-family: 'Exo', sans-serif;
+    color: black;
 }
 h1{
     text-align: center;
 }
 table.main {
-    table-layout: fixed;
     width: 100%;
 }
+
+table.main tr td, table.main tr th {
+    page-break-inside: avoid;
+}
+
+.borderBottom {
+    border-bottom: 1px black solid;
+}
+
 table.secondary tr {
     border: 0;
 }
@@ -38,7 +60,8 @@ table.secondary td {
     margin: 0;
     padding: 0.1em;
 }
-.noborder {
+
+.noborder2 {
     border: 0;
 }
 

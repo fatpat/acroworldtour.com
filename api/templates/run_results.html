@@ -4,7 +4,7 @@
 {% block content %}
     <h1>{{ comp.name }} run {{rid+1}}{{ final }} results{{ limit }}</h1>
     <table class="main">
-        <tr class="noborder">
+        <tr class="borderBottom">
             <th width="3%">Rank</th>
             <th width="8%">{{ "Pilot" if comp.type == "solo" else "Team" }}</th>
             <th class="center">Tricks</th>
@@ -16,7 +16,7 @@
             <th width="5%" class="center">Score</th>
         </tr>
 {% for res in results.results %}
-        <tr class="{{ class }} {{ loop.cycle('odd', 'even') }}">
+        <tr class="borderBottom results {{ class }} {{ loop.cycle('odd', 'even') }}">
             <th>{{ loop.index }}</th>
 {% if comp.type == "solo" %}
             <td>{{ res.pilot.name }}</td>
