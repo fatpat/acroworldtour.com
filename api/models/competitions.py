@@ -472,7 +472,7 @@ class Competition(CompetitionNew):
             if self.type == CompetitionType.solo:
                 pilots = self.pilots
                 # sort the pilots by their FAI ranking for the first comp of the season
-                pilots.sort(key=lambda p: p.rank)
+                #pilots.sort(key=lambda p: p.rank)
             else:
                 # TOOD: order by team name, fine tuning the order will be made manually
                 teams = self.teams
