@@ -2,8 +2,10 @@ import logging
 from tempfile import NamedTemporaryFile
 from openpyxl import Workbook
 
-from models.competitions import Competition, CompetitionResultsExport, CompetitionType
+from models.competitions import Competition, CompetitionResultsExport, CompetitionType, CompetitionExport, CompetitionResults
 from models.results import RunResultsExport
+from models.svg_data import SvgData
+from controllers.utils import UtilsCtrl
 
 log = logging.getLogger(__name__)
 
@@ -160,3 +162,31 @@ class CompCtrl:
             wb.save(filename=ret)
 
         return ret
+
+    @staticmethod
+    def svg_overall(competition: CompetitionResults):
+        results = []
+        for rank, result in enumerate(competition.overall_results):
+            results.append(SvgData(
+                rank=rank+1,
+                country=result.pilot.country if competition.type == "solo" else None,
+                name=result.pilot.name if competition.type == "solo" else result.team.name,
+                score="%.3f" % result.score
+            ))
+
+        return UtilsCtrl.svg(results)
+
+    @staticmethod
+    def svg_run(compResults: CompetitionResults, run: int):
+        compResults = compResults.runs_results[run-1]
+        results = []
+        compResults.results.sort(key=lambda e: -e.final_marks.score)
+        for rank, result in enumerate(compResults.results):
+            results.append(SvgData(
+                rank=rank+1,
+                country=result.pilot.country if compResults.type == "solo" else None,
+                name=result.pilot.name if compResults.type == "solo" else result.team.name,
+                score="%.3f" % result.final_marks.score
+            ))
+
+        return UtilsCtrl.svg(results)

@@ -46,6 +46,7 @@ class Pilot(BaseModel):
     last_update: Optional[datetime] = Field(None, description="Last time the pilot has been updated")
     rank: int = Field(..., description="Current pilot's ranking in the aerobatic solo overwall world ranking")
     gender: GenderEnum = Field(GenderEnum.man, description="Pilot's sex")
+    is_awt: bool = Field(False, description="the pilot is part of the current's year pro tour (AWT)")
 
     class Config:
         allow_population_by_field_name = True
@@ -95,6 +96,9 @@ class Pilot(BaseModel):
             self.gender = GenderEnum.woman
         elif self.gender == GenderEnum.woman:
             self.gender = GenderEnum.man
+
+    def change_awt(self):
+        self.is_awt ^= True
 
     @staticmethod
     async def get(id: int, cache:Cache = None):

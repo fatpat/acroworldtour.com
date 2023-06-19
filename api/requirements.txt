@@ -34,3 +34,4 @@ requests
 fastapi-cache2
 redis
 jinja2
+asyncio
