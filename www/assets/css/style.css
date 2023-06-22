@@ -181,7 +181,7 @@ button {
     }
 
     .section__title h2 {
-        font-size: 50px;
+        font-size: 48px;
     }
 }
 
@@ -332,8 +332,6 @@ button {
     color: #fff;
     max-width: 450px;
     transform: translateY(40px);
-    padding-top: 110px;
-    padding-bottom: 20px;
 }
 
 .header__title {
@@ -351,6 +349,8 @@ button {
 .header--small .header__content {
     max-width: 100%;
     transform: none;
+    padding-top: 110px;
+    padding-bottom: 20px;
 }
 
 .header--small .header__title {
@@ -376,8 +376,9 @@ button {
         min-height: auto;
     }
 
-    .header__title {
-        font-size: 60px;
+    .header__title,
+    .header--small .header__title {
+        font-size: 55px;
     }
 }
 
