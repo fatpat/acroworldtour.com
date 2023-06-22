@@ -323,7 +323,7 @@ button {
 }
 
 .header--small {
-    height: 280px;
+    height: auto;
     min-height: auto;
     background-image: none;
 }
@@ -332,6 +332,8 @@ button {
     color: #fff;
     max-width: 450px;
     transform: translateY(40px);
+    padding-top: 110px;
+    padding-bottom: 20px;
 }
 
 .header__title {
@@ -347,12 +349,13 @@ button {
 }
 
 .header--small .header__content {
-    margin-top: 40px;
     max-width: 100%;
+    transform: none;
 }
 
 .header--small .header__title {
     color: var(--base-text-color);
+    font-size: 34px;
 }
 
 .header__subtitle,
