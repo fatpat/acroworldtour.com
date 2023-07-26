@@ -1,7 +1,7 @@
 {
   "name": "Twister",
   "acronym": "HH",
-  "directions": [],
+  "directions": ["left", "right"],
   "solo": true,
   "synchro": true,
   "repeatable": false,
