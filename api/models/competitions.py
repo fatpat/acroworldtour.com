@@ -159,10 +159,17 @@ class Competition(CompetitionNew):
 
     async def check(self):
         if self.type == CompetitionType.solo:
+            # ensure pilots exist and reverse order them by their respective rank
+            # the order of the pilots represents the starting order of the 1st run
+            pilots = []
             for id in self.pilots:
                 pilot = await Pilot.get(id)
                 if pilot is None:
                     raise HTTPException(400, f"Pilot '{id}' is unknown, only known pilots can take part of a competition")
+                pilots.append(pilot)
+
+            pilots.sort(key=lambda p: -p.rank)
+            self.pilots = list(map(lambda p: p.civlid, pilots))
 
             if len(list(set(self.pilots))) != len(self.pilots):
                 raise HTTPException(400, f"Can have duplicate pilots")
@@ -467,12 +474,10 @@ class Competition(CompetitionNew):
                 pilots.sort(key=lambda p:-self.get_pilot_or_team_rank_in_current_overall(p, results))
             else:
                 teams = self.runs[-1].teams
-                teams.sort(key=lambda t:self.get_team_or_team_rank_in_current_overall(t, results))
+                teams.sort(key=lambda t:-self.get_team_or_team_rank_in_current_overall(t, results))
         else: #  first run to be added, use the list of pilots of the competition
             if self.type == CompetitionType.solo:
                 pilots = self.pilots
-                # sort the pilots by their FAI ranking for the first comp of the season
-                #pilots.sort(key=lambda p: p.rank)
             else:
                 # TOOD: order by team name, fine tuning the order will be made manually
                 teams = self.teams
