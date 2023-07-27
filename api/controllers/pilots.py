@@ -262,9 +262,11 @@ class PilotCtrl:
         )
 
         # keep gender as CIVL does not permit, yet, do retrieve pilot gender
+        # keep the AWT flag also
         try:
             previousPilot = await Pilot.get(civlid)
             pilot.gender = previousPilot.gender
+            pilot.is_awt = previousPilot.is_awt
         except Exception:
             pass
 
