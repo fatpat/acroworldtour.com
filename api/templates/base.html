@@ -20,10 +20,25 @@
 
     <style>
 
+/*
 @page {
     size: 29.7cm 21cm;
     margin: 5mm 5mm 5mm 5mm;
 }
+*/
+
+@media print {
+  a:link:after,
+  a:visited:after {
+      content: "" !important;
+  }
+  .even {
+      background-color: WhiteSmoke !important;
+  }
+  .odd {
+      background-color: white !important;
+  }
+}²
 
 body{
     margin-left: 0.2em;

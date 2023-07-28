@@ -1,30 +1,28 @@
 {% extends "base.html" %}
-{% set final = "" if comp.final else " intermediate" %}
+{% set final = "" if results.final else " intermediate" %}
 {% block title %}{{comp.name}} run {{rid+1}}{{ final }} results{{ limit }}{% endblock %}
 {% block content %}
     <h1>{{ comp.name }} run {{rid+1}}{{ final }} results{{ limit }}</h1>
     <table class="main">
         <tr class="borderBottom">
-            <th width="3%">Rank</th>
-            <th width="8%">{{ "Pilot" if comp.type == "solo" else "Team" }}</th>
-            <th class="center">Tricks</th>
-            <th class="center">Warnings</th>
-            <th width="10%">Technicity</th>
-            <th width="10%">Judges Marks</th>
-            <th width="10%">Final Marks</th>
-            <th width="5%" class="center">Bonus</th>
-            <th width="5%" class="center">Score</th>
+            <th>Rank</th>
+            <th>{{ "Pilot" if comp.type == "solo" else "Team" }}</th>
+            <th>Sponsors</th>
+            <th>Warnings</th>
+            <th>Judges Marks</th>
+            <th>Bonus</th>
+            <th>Score</th>
         </tr>
 {% for res in results.results %}
         <tr class="borderBottom results {{ class }} {{ loop.cycle('odd', 'even') }}">
             <th>{{ loop.index }}</th>
 {% if comp.type == "solo" %}
             <td>
-                <h3>{{ res.pilot.name }}</h3>
+                {{ res.pilot.name }}
+            </td>
+            <td>
 {%   if res.pilot.sponsors | length > 0 %}
-                <p class="italic">
-                Sponsors:
-                <ul style="padding: 0;">
+                <ul class="nobullets" style="padding: 0;">
 {%     for sponsor in res.pilot.sponsors %}
                     <li>
 {%       if sponsor.link | length > 0 %}
@@ -35,7 +33,6 @@
                     </li>
 {%     endfor %}
                 </ul>
-                </p>
 {%   endif %}
             </td>
 {% else %}
@@ -49,36 +46,8 @@
             </td>
 {% endif %}
             <td>
-                <ul class="nobullets">
-{% for trick in res.tricks %}
-                    <li>{{ sentence_case(trick.name) }} ({{ trick.technical_coefficient }}, {{ trick.bonus }})</li>
-{% endfor %}
-                </ul>
-            </td>
-            <td>
                 warnings: {{ res.final_marks.warnings | length }}<br />
-{% if res.final_marks.warnings | length > 0 %}
-                <ul class="nobullets">
-{% for warning in res.final_marks.warnings %}
-                    <li>{{ warning }}</li>
-{% endfor %}
-                </ul>
-{% endif %}
                 Malus: {{ "%d%%" | format(res.final_marks.malus) }}
-{% if res.final_marks.notes | length > 0 %}
-                <br />
-                <ul class="nobullets">
-{% for note in res.final_marks.notes %}
-                    <li>{{ note }}</li>
-{% endfor %}
-                </ul>
-{% endif %}
-            </td>
-            <td>
-                <table class="secondary">
-                    <tr><td>Technicity</td><td>{{ "%.3f" | format(res.final_marks.technicity) }}</td></tr>
-                    <tr><td>Bonus</td><td>{{ "%.3f%%" | format(res.final_marks.bonus) }}</td></tr>
-                </table>
             </td>
             <td>
                 <table class="secondary">
@@ -90,18 +59,8 @@
 {% endif %}
                 </table>
             </td>
-            <td>
-                <table class="secondary">
-                    <tr><td>Technical</td><td>{{ "%.3f" | format(res.final_marks.technical) }}</td></tr>
-                    <tr><td>Choreography</td><td>{{ "%.3f" | format(res.final_marks.choreography) }}</td></tr>
-                    <tr><td>Landing</td><td>{{ "%.3f" | format(res.final_marks.landing) }}</td></tr>
-{% if comp.type == "synchro" %}
-                    <tr><td><Synchro/td><td>{{ "%.3f" | format(res.final_marks.synchro) }}</td></tr>
-{% endif %}
-                </table>
-            .</td>
-            <td class="center">{{ "%.3f" | format(res.final_marks.bonus) }}</td>
-            <th class="center">{{ "%.3f" | format(res.final_marks.score) }}</th>
+            <td>{{ "%.1f%%" | format(res.final_marks.bonus_percentage) }}</td>
+            <th>{{ "%.3f" | format(res.final_marks.score) }}</th>
         </tr>
 {% endfor %}
     </table>

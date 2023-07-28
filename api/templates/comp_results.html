@@ -8,6 +8,9 @@
         <tr class="noborder">
             <th rowspan="2" width="8%" class="borderBottom">Rank</th>
             <th rowspan="2" class="borderBottom">{{ "Pilot" if comp.type == "solo" else "Team" }}</th>
+{% if comp.type == "solo" %}
+            <th rowspan="2" class="borderBottom">Sponsors</th>
+{% endif %}
             <th colspan="3" width="20%" class="center">Runs</th>
             <th rowspan="2" class="center borderBottom" width="15%">Final Score</th>
         </tr>
@@ -33,6 +36,32 @@
                 </ul>
             </td>
         {% endif %}
+{% if comp.type == "solo" %}
+            <td rowspan="{{ res.result_per_run | length}}" class="borderBottom">
+{%   if res.pilot.sponsors | length > 0 %}
+                <ul class="nobullets" style="padding: 0;">
+{%     for sponsor in res.pilot.sponsors %}
+                    <li>
+{%       if sponsor.link | length > 0 %}
+                        <a href="{{ sponsor.link }}" target="_blank">{{ sponsor.name }}</a>
+{%       else %}
+                        {{ sponsor.name }}
+{%       endif %}
+                    </li>
+{%     endfor %}
+                </ul>
+{%   endif %}
+            </td>
+{% else %}
+            <td>
+                {{ res.team.name }}
+                <ul class="nobullets">
+{% for pilot in res.team.pilots %}
+                    <li>{{ pilot.name }}</li>
+{% endfor %}
+                </ul>
+            </td>
+{% endif %}
         {% for run in res.result_per_run %}
             {% if loop.index == 1 %}
             <td class="center {{ "borderBottom" if loop.last }}">Run {{ loop.index }}</td>
