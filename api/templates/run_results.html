@@ -19,7 +19,25 @@
         <tr class="borderBottom results {{ class }} {{ loop.cycle('odd', 'even') }}">
             <th>{{ loop.index }}</th>
 {% if comp.type == "solo" %}
-            <td>{{ res.pilot.name }}</td>
+            <td>
+                <h3>{{ res.pilot.name }}</h3>
+{%   if res.pilot.sponsors | length > 0 %}
+                <p class="italic">
+                Sponsors:
+                <ul style="padding: 0;">
+{%     for sponsor in res.pilot.sponsors %}
+                    <li>
+{%       if sponsor.link | length > 0 %}
+                        <a href="{{ sponsor.link }}" target="_blank">{{ sponsor.name }}</a>
+{%       else %}
+                        {{ sponsor.name }}
+{%       endif %}
+                    </li>
+{%     endfor %}
+                </ul>
+                </p>
+{%   endif %}
+            </td>
 {% else %}
             <td>
                 {{ res.team.name }}
@@ -59,7 +77,7 @@
             <td>
                 <table class="secondary">
                     <tr><td>Technicity</td><td>{{ "%.3f" | format(res.final_marks.technicity) }}</td></tr>
-                    <tr><td>Bonus</td><td>{{ "%d%%" | format(res.final_marks.bonus) }}</td></tr>
+                    <tr><td>Bonus</td><td>{{ "%.3f%%" | format(res.final_marks.bonus) }}</td></tr>
                 </table>
             </td>
             <td>
