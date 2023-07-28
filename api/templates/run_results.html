@@ -18,8 +18,18 @@
             <th>{{ loop.index }}</th>
 {% if comp.type == "solo" %}
             <td>
-                {{ res.pilot.name }}
+                <a href="https://results.acroworldtour.com/pilots/{{ res.pilot.civlid }}/{{ res.pilot.name }}" target="_blank">{{ res.pilot.name }}</a>
             </td>
+{% else %}
+            <td>
+                {{ res.team.name }}
+                <ul class="nobullets">
+{% for pilot in res.team.pilots %}
+                    <li>{{ pilot.name }}</li>
+{% endfor %}
+                </ul>
+            </td>
+{% endif %}
             <td>
 {%   if res.pilot.sponsors | length > 0 %}
                 <ul class="nobullets" style="padding: 0;">
@@ -35,16 +45,6 @@
                 </ul>
 {%   endif %}
             </td>
-{% else %}
-            <td>
-                {{ res.team.name }}
-                <ul class="nobullets">
-{% for pilot in res.team.pilots %}
-                    <li>{{ pilot.name }}</li>
-{% endfor %}
-                </ul>
-            </td>
-{% endif %}
             <td>
                 warnings: {{ res.final_marks.warnings | length }}<br />
                 Malus: {{ "%d%%" | format(res.final_marks.malus) }}

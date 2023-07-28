@@ -25,7 +25,9 @@
         <tr class="results {{ class }} {{ parity }}">
             <th rowspan="{{ res.result_per_run | length}}" class="borderBottom">{{ loop.index }}</th>
         {% if comp.type == "solo" %}
-            <td rowspan="{{ res.result_per_run | length}}" class="borderBottom">{{ res.pilot.name }}</td>
+            <td rowspan="{{ res.result_per_run | length}}" class="borderBottom">
+                <a href="https://results.acroworldtour.com/pilots/{{ res.pilot.civlid }}/{{ res.pilot.name }}" target="_blank">{{ res.pilot.name }}</a>
+            </td>
         {% else %}
             <td rowspan="{{ res.result_per_run | length}}" class="borderBottom">
                 {{ res.team.name }}
