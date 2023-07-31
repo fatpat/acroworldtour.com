@@ -48,7 +48,7 @@ class CompCtrl:
 
         rank = 0
         row = 1
-        for res in comp.overall_results:
+        for res in comp.results["overall"]:
             rank += 1
             score = round(res.score, 3)
             if type == CompetitionType.solo:
@@ -58,7 +58,7 @@ class CompCtrl:
                 ws.cell(column=3, row=row, value=res.pilot.name.split(" ", 1)[0])
                 ws.cell(column=4, row=row, value=res.pilot.name.split(" ", 1)[1])
                 ws.cell(column=5, row=row, value=res.pilot.country.upper())
-                ws.cell(column=6, row=row, value=f"M")
+                ws.cell(column=6, row=row, value="M" if res.pilot.gender == "man" else "F")
                 ws.cell(column=7, row=row, value=f"")
                 ws.cell(column=8, row=row, value=f"")
                 ws.cell(column=9, row=row, value=f"{res.pilot.civlid}")
@@ -123,8 +123,8 @@ class CompCtrl:
 
         rank = 0
         row = 1
-        run.results.sort(key=lambda e: -e.final_marks.score)
-        for res in run.results:
+        run.results["overall"].sort(key=lambda e: -e.final_marks.score)
+        for res in run.results["overall"]:
             rank += 1
             score = round(res.final_marks.score, 3)
             if type == CompetitionType.solo:
@@ -134,7 +134,7 @@ class CompCtrl:
                 ws.cell(column=3, row=row, value=res.pilot.name.split(" ", 1)[0])
                 ws.cell(column=4, row=row, value=res.pilot.name.split(" ", 1)[1])
                 ws.cell(column=5, row=row, value=res.pilot.country.upper())
-                ws.cell(column=6, row=row, value=f"M")
+                ws.cell(column=6, row=row, value="M" if res.pilot.gender == "man" else "F")
                 ws.cell(column=7, row=row, value=f"")
                 ws.cell(column=8, row=row, value=f"")
                 ws.cell(column=9, row=row, value=f"{res.pilot.civlid}")
@@ -166,7 +166,7 @@ class CompCtrl:
     @staticmethod
     def svg_overall(competition: CompetitionResults):
         results = []
-        for rank, result in enumerate(competition.overall_results):
+        for rank, result in enumerate(competition.results["overall"]):
             results.append(SvgData(
                 rank=rank+1,
                 country=result.pilot.country if competition.type == "solo" else None,
