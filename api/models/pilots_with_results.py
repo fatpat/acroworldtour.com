@@ -58,7 +58,7 @@ class PilotWithResults(Pilot):
             if not comp_with_results.results.final:
                 continue
 
-            for rank, result in enumerate(comp_with_results.results.overall_results):
+            for rank, result in enumerate(comp_with_results.results.results["overall"]):
                 if comp.type == CompetitionType.solo and result.pilot.id != id:
                     continue
 

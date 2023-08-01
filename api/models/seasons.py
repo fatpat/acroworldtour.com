@@ -8,6 +8,7 @@ from fastapi.encoders import jsonable_encoder
 import pymongo
 from datetime import datetime
 from fastapi import HTTPException
+import re
 
 from models.competitions import Competition, CompetitionPublicExport, CompetitionPublicExportWithResults, CompetitionState, CompetitionType, CompetitionExport
 from models.pilots import Pilot
@@ -20,6 +21,12 @@ from core.config import settings
 
 log = logging.getLogger(__name__)
 collection = db.seasons
+
+def check_country(cls, v):
+    if v is None:
+        return v
+    assert countries.get(alpha_3=v) is not None, f"Invalid country '{v}'"
+    return v
 
 class SeasonResult(BaseModel):
     pilot: Optional[Pilot]
@@ -76,7 +83,6 @@ class SeasonPublicExport(BaseModel):
     results: List[SeasonResults]
     competitions_results: dict[str, list[CompetitionPilotResultsExport]]
 
-
     class Config:
         allow_population_by_field_name = True
         arbitrary_types_allowed = True
@@ -93,6 +99,8 @@ class Season(BaseModel):
     index: int = Field(999)
     deleted: Optional[datetime]
 
+    _normalize_country = validator('country', allow_reuse=True)(check_country)
+
 
     class Config:
         allow_population_by_field_name = True
@@ -105,7 +113,18 @@ class Season(BaseModel):
             }
         }
 
+    def check(self):
+        if self.country is not None:
+            if re.search(f"^{self.country}-", self.code) is None:
+                raise HTTPException(400, f"season code must start with '{self.country}-'")
+        if re.search(f"-{self.year}$", self.code) is None:
+            raise HTTPException(400, f"season code end with '-{self.year}'")
+
     async def create(self):
+        if self.country is not None:
+            self.code = f"{self.country}-{self.year}"
+
+        self.check()
         try:
             season = jsonable_encoder(self)
             season['deleted'] = None
@@ -116,6 +135,10 @@ class Season(BaseModel):
             raise HTTPException(400, f"Season '{self.name}' already exists")
 
     async def save(self):
+        if self.country is not None:
+            self.code = f"{self.country}-{self.year}"
+
+        self.check()
         season = jsonable_encoder(self)
 
         old = await collection.find_one({"_id": str(self.id)})
@@ -233,7 +256,7 @@ class Season(BaseModel):
 
                 competitions_results.setdefault(comp.code, [])
 
-                for res in comp.results.overall_results:
+                for res in comp.results.results[self.code]:
 
                     if _type == CompetitionType.synchro:
                         pilot_or_team = res.team.id

@@ -16,6 +16,7 @@ from models.marks import FinalMark, FinalMarkExport
 from models.flights import Flight, FlightNew, FlightExport
 from models.results import RunResults, CompetitionResults, CompetitionResultsExport, RunResultsExport
 from models.cache import Cache
+from models.seasons import Season
 from controllers.competitions import CompCtrl
 from controllers.utils import UtilsCtrl
 
@@ -374,10 +375,15 @@ async def get_export_results(request: Request, id: str, bg_tasks: BackgroundTask
     comp = await Competition.get(id, cache=cache)
     res = await comp.results(limit = limit_run)
     res = await res.export(cache=cache)
+    seasons = {}
+    for season in comp.seasons:
+        seasons[season] = await Season.get(season)
+
     if filetype == "xls":
         file = CompCtrl.comp_to_xlsx(res, comp.type)
     elif filetype == "html":
-        return templates.TemplateResponse("comp_results.html", {"request": request, "results":res, "comp":comp, "limit_run":limit_run})
+        log.debug(seasons)
+        return templates.TemplateResponse("comp_results.html", {"request": request, "results":res, "comp":comp, "limit_run":limit_run, "seasons": seasons})
     else:
         raise HTTPException(status_code=400, detail="wrong file type, must be xls or html")
     bg_tasks.add_task(os.remove, file)
@@ -415,7 +421,8 @@ async def run_get_results(request: Request, id: str, i: int, bg_tasks: Backgroun
     if filetype == "xls":
         file = CompCtrl.run_to_xlsx(res, comp.type)
     elif filetype == "html":
-        res.results.sort(key=lambda e: -e.final_marks.score)
+        for result_type in res.results:
+            res.results[result_type].sort(key=lambda e: -e.final_marks.score)
         return templates.TemplateResponse("run_results.html", {"request": request, "results":res, "comp":comp, "rid": i})
     else:
         raise HTTPException(status_code=400, detail="wrong file type, must be xls or html")

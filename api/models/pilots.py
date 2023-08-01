@@ -130,7 +130,7 @@ class Pilot(BaseModel):
 
         if len(list) > 0:
             cond = {"$or": [
-                {"id": {"$in": list}},
+                {"_id": {"$in": list}},
                 {"name": {"$in": list}}
             ]}
         else:

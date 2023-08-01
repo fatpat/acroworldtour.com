@@ -1,9 +1,19 @@
 {% extends "base.html" %}
-{% set final = "" if comp.final else " intermediate" %}
+{% set final = "" if results.final else " intermediate" %}
 {% set limit = "" if limit_run == -1 else " after run " ~ (limit_run+1) | string %}
-{% block title %}{{comp.name}} overall{{ final }} results{{ limit }}{% endblock %}
+{% block title %}{{comp.name}} {{ final }} results{{ limit }}{% endblock %}
 {% block content %}
-    <h1>{{ comp.name }} overall{{ final }} results{{ limit }}</h1>
+{% for result_type, _results in results.results.items() %}
+{% if seasons[result_type] %}
+{% set season = seasons[result_type].name %}
+{% else %}
+{% set season = result_type | capitalize %}
+{% endif %}
+{% if loop.index > 1 %}
+    <div class="pagebreak"> </div>
+{% endif %}
+    <h1>{{ comp.name }}</h1>
+    <h2>{{ season }}{{ final }} results{{ limit }}</h2>
     <table class="main">
         <tr class="noborder">
             <th rowspan="2" width="8%" class="borderBottom">Rank</th>
@@ -11,22 +21,21 @@
 {% if comp.type == "solo" %}
             <th rowspan="2" class="borderBottom">Sponsors</th>
 {% endif %}
-            <th colspan="3" width="20%" class="center">Runs</th>
+            <th colspan="2" width="20%" class="center">Runs</th>
             <th rowspan="2" class="center borderBottom" width="15%">Final Score</th>
         </tr>
         <tr class="noborder">
             <th class="center borderBottom">Run</th>
             <th class="center borderBottom">Score</th>
-            <th class="center borderBottom">Rank</th>
         </tr>
-    {% for res in results.overall_results %}
+    {% for res in _results %}
         {% set class = "noborder" if res.result_per_run | length > 1 else "" %}
         {% set parity = "odd" if loop.index % 2 == 1 else "even" %}
         <tr class="results {{ class }} {{ parity }}">
             <th rowspan="{{ res.result_per_run | length}}" class="borderBottom">{{ loop.index }}</th>
         {% if comp.type == "solo" %}
             <td rowspan="{{ res.result_per_run | length}}" class="borderBottom">
-                <a href="https://results.acroworldtour.com/pilots/{{ res.pilot.civlid }}/{{ res.pilot.name }}" target="_blank">{{ res.pilot.name }}</a>
+                <a href="https://results.acroworldtour.com/pilots/{{ res.pilot.civlid }}/{{ res.pilot.name }}" target="_blank">{{ res.pilot.name }} ({{ res.pilot.country | upper }})</a>
             </td>
         {% else %}
             <td rowspan="{{ res.result_per_run | length}}" class="borderBottom">
@@ -68,7 +77,6 @@
             {% if loop.index == 1 %}
             <td class="center {{ "borderBottom" if loop.last }}">Run {{ loop.index }}</td>
             <td class="center {{ "borderBottom" if loop.last }}">{{ "%.3f" | format(run.score) }}</td>
-            <td class="center {{ "borderBottom" if loop.last }}">{{ run.rank }}</td>
             {% endif %}
         {% endfor %}
             <th class="center borderBottom" rowspan="{{ res.result_per_run | length }}">{{ "%.3f" | format(res.score) }}</th>
@@ -80,12 +88,11 @@
             <td class="center {{ "borderBottom" if loop.last }}">Run {{ loop.index }}</td>
 
             <td class="center {{ "borderBottom" if loop.last }}">{{ run.score }}</td>
-            <td class="center {{ "borderBottom" if loop.last }}">{{ run.rank }}</td>
         </tr>
                 {% endif %}
             {% endfor %}
         {% endif %}
     {% endfor %}
-</div>
     </table>
+{% endfor %}
 {% endblock %}

@@ -2,7 +2,8 @@
 {% set final = "" if results.final else " intermediate" %}
 {% block title %}{{comp.name}} run {{rid+1}}{{ final }} results{{ limit }}{% endblock %}
 {% block content %}
-    <h1>{{ comp.name }} run {{rid+1}}{{ final }} results{{ limit }}</h1>
+{% for result_type, _results in results.results.items() %}
+    <h1>{{ comp.name }} run {{rid+1}}{{ final }} {{ result_type}} results{{ limit }}</h1>
     <table class="main">
         <tr class="borderBottom">
             <th>Rank</th>
@@ -13,7 +14,7 @@
             <th>Bonus</th>
             <th>Score</th>
         </tr>
-{% for res in results.results %}
+{% for res in _results %}
         <tr class="borderBottom results {{ class }} {{ loop.cycle('odd', 'even') }}">
             <th>{{ loop.index }}</th>
 {% if comp.type == "solo" %}
@@ -46,8 +47,12 @@
 {%   endif %}
             </td>
             <td>
-                warnings: {{ res.final_marks.warnings | length }}<br />
-                Malus: {{ "%d%%" | format(res.final_marks.malus) }}
+{%   if res.final_marks.warnings | length > 0 %}
+                <p>warnings: {{ res.final_marks.warnings | length }}</p>
+{%   endif %}
+{%   if res.final_marks.malus > 0 %}
+                <p>Malus: {{ "%d%%" | format(res.final_marks.malus) }}</p>
+{%   endif %}
             </td>
             <td>
                 <table class="secondary">
@@ -64,4 +69,5 @@
         </tr>
 {% endfor %}
     </table>
+{% endfor %}
 {% endblock %}

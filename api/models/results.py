@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 class RunResultsExport(BaseModel):
     final: bool
     type: str
-    results: List[FlightExport]
+    results: dict[str, List[FlightExport]]
 
     class Config:
         json_encoders = {ObjectId: str}
@@ -28,7 +28,7 @@ class RunResultsExport(BaseModel):
 class RunResults(BaseModel):
     final: bool
     type: str
-    results: List[Flight]
+    results: dict[str, List[Flight]]
 
     class Config:
         schema_extra = {
@@ -39,9 +39,11 @@ class RunResults(BaseModel):
         }
 
     async def export(self, cache:Cache = None) -> FlightExport:
-        results = []
-        for result in self.results:
-            results.append(await result.export(cache=cache))
+        results = {}
+        for result_type in self.results:
+            results[result_type] = []
+            for result in self.results[result_type]:
+                results[result_type].append(await result.export(cache=cache))
 
         return RunResultsExport(
             final = self.final,
@@ -120,7 +122,7 @@ class CompetitionPilotResults(BaseModel):
 class CompetitionResultsExport(BaseModel):
     final: bool
     type: str
-    overall_results: List[CompetitionPilotResultsExport]
+    results: dict[str, List[CompetitionPilotResultsExport]]
     runs_results: List[RunResultsExport]
 
     class Config:
@@ -129,22 +131,26 @@ class CompetitionResultsExport(BaseModel):
 class CompetitionResults(BaseModel):
     final: bool
     type: str
-    overall_results: List[CompetitionPilotResults]
+    results: dict[str, List[CompetitionPilotResults]]
     runs_results: List[RunResults]
 
     class Config:
         schema_extra = {
             "example": {
                 "final": False,
-                "overall_results": [],
+                "results": {
+                    "overall" : []
+                },
                 "runs_results": []
             }
         }
 
     async def export(self, cache:Cache = None) -> CompetitionResultsExport:
-        overall_results = []
-        for r in self.overall_results:
-            overall_results.append(await r.export(cache=cache))
+        results = {}
+        for result_type in self.results:
+            results[result_type] = []
+            for r in self.results[result_type]:
+                results[result_type].append(await r.export(cache=cache))
 
         runs_results = []
         for r in self.runs_results:
@@ -153,6 +159,6 @@ class CompetitionResults(BaseModel):
         return CompetitionResultsExport(
             final = self.final,
             type = self.type,
-            overall_results = overall_results,
+            results = results,
             runs_results = runs_results,
         )

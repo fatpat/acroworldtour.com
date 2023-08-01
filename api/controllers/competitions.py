@@ -48,7 +48,7 @@ class CompCtrl:
 
         rank = 0
         row = 1
-        for res in comp.overall_results:
+        for res in comp.results["overall"]:
             rank += 1
             score = round(res.score, 3)
             if type == CompetitionType.solo:
@@ -123,8 +123,8 @@ class CompCtrl:
 
         rank = 0
         row = 1
-        run.results.sort(key=lambda e: -e.final_marks.score)
-        for res in run.results:
+        run.results["overall"].sort(key=lambda e: -e.final_marks.score)
+        for res in run.results["overall"]:
             rank += 1
             score = round(res.final_marks.score, 3)
             if type == CompetitionType.solo:
@@ -166,7 +166,7 @@ class CompCtrl:
     @staticmethod
     def svg_overall(competition: CompetitionResults):
         results = []
-        for rank, result in enumerate(competition.overall_results):
+        for rank, result in enumerate(competition.results["overall"]):
             results.append(SvgData(
                 rank=rank+1,
                 country=result.pilot.country if competition.type == "solo" else None,

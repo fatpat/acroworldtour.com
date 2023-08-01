@@ -311,8 +311,9 @@ class Competition(CompetitionNew):
 
         results = await self.results()
         for result in results.runs_results:
-            for r in result.results:
-                r.marks = []
+            for result_type in result.results:
+                for r in result.results[result_type]:
+                    r.marks = []
 
         comp = await self.export(cache=cache)
         return CompetitionPublicExportWithResults(
@@ -467,7 +468,7 @@ class Competition(CompetitionNew):
 
             # get overall results from the previous runs to order pilots/teams
             results = await self.results()
-            results = results.overall_results
+            results = results.results["overall"]
 
             if self.type == CompetitionType.solo:
                 pilots = self.runs[-1].pilots
@@ -585,7 +586,7 @@ class Competition(CompetitionNew):
         flights.sort(key=lambda e: e.final_marks.score)
 
         return RunResults(
-            results = flights,
+            results = {"overall": flights},
             type = self.type,
             final = (run.state == RunState.closed) and all_published
         )
@@ -693,10 +694,10 @@ class Competition(CompetitionNew):
             if not run_result.final:
                 final = False
 
-            for j, result in enumerate(run_result.results):
+            for j, result in enumerate(run_result.results["overall"]):
 
                 run_result_summary = RunResultSummary(
-                    rank = len(run_result.results)-j,
+                    rank = len(run_result.results["overall"])-j,
                     score = result.final_marks.score
                 )
 
@@ -727,10 +728,43 @@ class Competition(CompetitionNew):
         overall_results = list(overall.values())
         overall_results.sort(key=lambda e: e.score)
 
+        results = {}
+        results["overall"] = overall_results[::-1]
+
+        pilots = await Pilot.getall(list(map(lambda r: r.pilot, overall_results)))
+
+        # seasons
+        for season in self.seasons:
+            if re.search('^awt-\d{4}$', season):
+                awt_pilots = list(filter(lambda p: p.is_awt, pilots))
+                awt_results = list(filter(lambda r: next((p for p in awt_pilots if p.civlid == r.pilot), None) is not None, overall_results))
+                results[season] = list(awt_results[::-1])
+                continue
+
+            if re.search('^awq-\d{4}$', season):
+                awq_pilots = list(filter(lambda p: not p.is_awt, pilots))
+                awq_results = list(filter(lambda r: next((p for p in awq_pilots if p.civlid == r.pilot), None) is not None, overall_results))
+                results[season] = list(awq_results[::-1])
+                continue
+
+            if re.search('^\w\w\w-\d{4}$', season):
+                country = season[0:3]
+                country_pilots = list(filter(lambda p: p.country == country, pilots))
+                country_results = list(filter(lambda r: next((p for p in country_pilots if p.civlid == r.pilot), None) is not None, overall_results))
+                results[season] = list(country_results[::-1])
+                continue
+
+
+        # women results
+        women_pilots = list(filter(lambda p: p.gender == 'woman', pilots))
+        women_results = list(filter(lambda r: next((p for p in women_pilots if p.civlid == r.pilot), None) is not None, overall_results))
+        if len(women_pilots) > 3:
+            results["women"] = list(women_results[::-1])
+
         return CompetitionResults(
             final = final,
             type = self.type,
-            overall_results = overall_results[::-1],
+            results = results,
             runs_results = runs_results,
         )
 
