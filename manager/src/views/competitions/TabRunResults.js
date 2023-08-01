@@ -45,10 +45,12 @@ const TabResults = ({ code, rid }) => {
         return
     }
 
-    data.results = data.results.map((r, i) => {
-      r.rank = i+1
-      return r
-    })
+    for (var result_type in data.results) {
+      data.results[result_type] = data.results[result_type].map((r, i) => {
+        r.rank = i+1
+        return r
+      })
+    }
 
     setResults(data)
   }
@@ -92,7 +94,7 @@ const TabResults = ({ code, rid }) => {
                 </TableRow>
               </TableHead>
               <TableBody>
-{ results.results.sort((a,b) => b.final_marks.score-a.final_marks.score).map((r,rank) => {
+{ results.results["overall"].sort((a,b) => b.final_marks.score-a.final_marks.score).map((r,rank) => {
   return(
                 <TableRow key={rank}>
                   <TableCell>

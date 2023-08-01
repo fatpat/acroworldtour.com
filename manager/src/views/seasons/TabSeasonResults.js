@@ -35,6 +35,7 @@ const TabSeasonResults = ({season}) => {
     },
     {
       id: 'score',
+      rewrite: (s) => s.toFixed(3),
     }
   ]
 

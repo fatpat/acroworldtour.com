@@ -44,10 +44,12 @@ const TabResults = ({ code }) => {
         return
     }
 
-    retData.overall_results = retData.overall_results.map((r, i) => {
-      r.rank = i+1
-      return r
-    })
+    for (var result_type in retData.results) {
+      retData.results[result_type] = retData.results[result_type].map((r, i) => {
+        r.rank = i+1
+        return r
+      })
+    }
 
     setResults(retData)
   }
@@ -64,9 +66,11 @@ const TabResults = ({ code }) => {
         <Button href={new URL(`/competitions/${code}/results/export`, process.env.NEXT_PUBLIC_API_URL).toString()} startIcon={<ArticleIcon />}>Download CIVL Export</Button>
         <Button href={new URL(`/competitions/${code}/results/export?filetype=html`, process.env.NEXT_PUBLIC_API_URL).toString()} startIcon={<CloudDownloadIcon />} target="_blank" rel="noreferrer">PDF Export</Button>
       </Box>
+{ Object.keys(results.results).map((result_type) => (
+      <>
       <Box sx={{display: 'flex',justifyContent: 'center'}}>
       <Typography variant="h4">
-        <EmojiEventsIcon fontSize="large"/>{ results.final ? 'Final' : 'Intermediate' } Overall
+        <EmojiEventsIcon fontSize="large"/>{ results.final ? 'Final' : 'Intermediate' } { result_type }
       </Typography>
       </Box>
       <Grid container spacing={7}>
@@ -79,12 +83,11 @@ const TabResults = ({ code }) => {
                   <TableCell>Pilot</TableCell>
                   <TableCell>Run</TableCell>
                   <TableCell>Score</TableCell>
-                  <TableCell>Rank</TableCell>
                   <TableCell>Score</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-{ results.overall_results.map((r,rank) => (
+{ results.results[result_type].map((r,rank) => (
                 <TableRow key={`result-${rank}`}>
                   <TableCell>{rank+1}</TableCell>
                   <TableCell>
@@ -103,12 +106,6 @@ const TabResults = ({ code }) => {
                       return [...res, <br />, v]
                     })}
                   </TableCell>
-                  <TableCell>
-                    {r.result_per_run.map((rr, rid) => (`${rr.rank}`)).reduce((res, v) => {
-                      if (!res) return [v]
-                      return [...res, <br />, v]
-                    })}
-                  </TableCell>
                   <TableCell>{r.score.toFixed(3)}</TableCell>
                 </TableRow>
 ))}
@@ -117,12 +114,8 @@ const TabResults = ({ code }) => {
           </TableContainer>
         </Grid>
       </Grid>
-{/*
-{ results.runs_results.map((r, rid) => {
-    return(
-      <TabRunResults code={code} rid={rid} />
-)})}
-*/}
+      </>
+))}
     </CardContent>
   )
 }
