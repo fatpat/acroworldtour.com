@@ -6,6 +6,7 @@ import { components } from "@/types";
 
 interface Props {
   pilot: components["schemas"]["Pilot"];
+  small?: boolean;
 }
 
 const PilotCard = ({ pilot, small }: Props) => {

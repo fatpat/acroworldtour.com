@@ -9,7 +9,7 @@ import FetchLoading from "@/components/ui/fetchLoading";
 import { API_URL } from "@/constants";
 import { components } from "@/types";
 
-type Season = components["schemas"]["SeasonExport"];
+type Season = components["schemas"]["SeasonPublicExport"];
 
 const SeasonPage = () => {
   const {

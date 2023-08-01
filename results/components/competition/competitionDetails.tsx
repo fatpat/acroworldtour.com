@@ -16,9 +16,11 @@ type CompetitionType = components["schemas"]["CompetitionType"];
 
 const CompetitionDetails = ({ competition }: Props) => {
   const { name, results, code, type } = competition;
-  const globalResults = results.results;
+  let globalResults: components["schemas"]["CompetitionResultsExport"]["results"] =
+    results.results;
+
   for (var resultsType in globalResults) {
-    globalResults[resultsType].sort((a, b) => b.score - a.score);
+    globalResults[resultsType]?.sort((a, b) => b.score - a.score);
   }
   const runsResults = results.runs_results;
 
@@ -34,7 +36,7 @@ const CompetitionDetails = ({ competition }: Props) => {
     ) || runsResults.map(() => false),
   );
 
-  const changeResults = (index: str | number) => {
+  const changeResults = (index: string | number) => {
     const newShowGlobal = Object.fromEntries(
       Object.values(showGlobal).map((k) => [k, false]),
     );
@@ -57,8 +59,8 @@ const CompetitionDetails = ({ competition }: Props) => {
     );
 
     setHideSummary(
-      Object.values(showGlobal).some((showGlobal: boolean) => showGlobal) ||
-        showRun.some((showRun: boolean) => showRun),
+      Object.values(showGlobal).some((b) => b) ||
+        showRun.some((b: boolean) => b),
     );
   }, [showGlobal, showRun, code]);
 
@@ -67,9 +69,9 @@ const CompetitionDetails = ({ competition }: Props) => {
     <>
       <h2 className="mb-4">{name}</h2>
       {(Object.keys(globalResults).length === 0 ||
-        !Object.values(globalResults).some((r) => r.length > 0)) && (
-        <h3>No results at the moment.</h3>
-      )}
+        !Object.values(globalResults).some(
+          (r) => r instanceof Array && r.length > 0,
+        )) && <h3>No results at the moment.</h3>}
       <div
         className={classNames(
           "mt-4 flex w-full items-start justify-center gap-4 portrait:flex-col",
@@ -85,7 +87,9 @@ const CompetitionDetails = ({ competition }: Props) => {
         />
 
         {Object.keys(globalResults).length > 0 &&
-          Object.values(globalResults).some((r) => r.length > 0) && (
+          Object.values(globalResults).some(
+            (r) => r instanceof Array && r.length > 0,
+          ) && (
             <section
               className={classNames(
                 "flex w-full flex-grow flex-col gap-4 rounded-xl bg-awt-dark-50 py-2 shadow-inner",
@@ -138,7 +142,7 @@ const CompetitionDetails = ({ competition }: Props) => {
               {runsResults.map((run, runIndex) => {
                 const runNumber = runIndex + 1;
                 const runText = run.final ? "" : " (on-going)";
-                if (run.results["overall"].length > 0)
+                if ((run.results["overall"] || []).length > 0)
                   return (
                     <Fragment key={runIndex}>
                       <button

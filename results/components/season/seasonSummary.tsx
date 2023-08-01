@@ -6,7 +6,7 @@ import { components } from "@/types";
 import SeasonPilots from "./seasonPilots";
 
 interface Props {
-  season: components["schemas"]["SeasonExport"];
+  season: components["schemas"]["SeasonPublicExport"];
   className?: string;
 }
 
@@ -28,7 +28,10 @@ const SeasonSummary = ({ season, className }: Props) => {
       (value, index, array) =>
         array.findIndex((p) => p.civlid === value.civlid) === index,
     );
-  console.log("filte", pilots);
+  pilots.sort((a, b) => a.rank - b.rank);
+  competitions.sort(
+    (a, b) => Date.parse(a.start_date) - Date.parse(b.start_date),
+  );
 
   return (
     <article className={className}>
@@ -100,9 +103,7 @@ const SeasonSummary = ({ season, className }: Props) => {
           })}
         </ul>
         <div className="flex items-baseline gap-1">
-          {type === "solo" && (
-            <SeasonPilots pilots={pilots.toReversed()} className="pt-4" />
-          )}
+          {type === "solo" && <SeasonPilots pilots={pilots} className="pt-4" />}
         </div>
       </section>
     </article>

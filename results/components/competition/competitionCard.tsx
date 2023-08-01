@@ -4,7 +4,9 @@ import Link from "next/link";
 import { components } from "@/types";
 
 interface Props {
-  competition: components["schemas"]["CompetitionPublicExport"];
+  competition:
+    | components["schemas"]["CompetitionPublicExportWithResults"]
+    | components["schemas"]["CompetitionPublicExport"];
 }
 
 const CompetitionCard = ({ competition }: Props) => {
