@@ -3,6 +3,7 @@ import Image from "next/image";
 import { components } from "@/types";
 
 import CompetitionJudges from "./competitionJudges";
+import CompetitionPilots from "./competitionPilots";
 
 interface Props {
   competition: components["schemas"]["CompetitionPublicExportWithResults"];
@@ -73,6 +74,15 @@ const CompetitionSummary = ({ competition, className }: Props) => {
           {`${startDate} - ${endDate}`}
         </p>
       </div>
+      {type === "solo" && competition.pilots.length > 0 && (
+        <>
+          <hr className="mt-4" />
+          <CompetitionPilots
+            pilots={competition.pilots.toReversed()}
+            className="pt-4"
+          />
+        </>
+      )}
       {competition.judges.length > 0 && (
         <>
           <hr className="mt-4" />

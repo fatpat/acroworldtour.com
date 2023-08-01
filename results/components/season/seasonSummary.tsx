@@ -3,6 +3,8 @@ import Image from "next/image";
 
 import { components } from "@/types";
 
+import SeasonPilots from "./seasonPilots";
+
 interface Props {
   season: components["schemas"]["SeasonExport"];
   className?: string;
@@ -19,6 +21,14 @@ const SeasonSummary = ({ season, className }: Props) => {
   } = season;
 
   const numberOfCompetitions = competitions.length;
+  let pilots = competitions
+    .map((c) => c.pilots)
+    .flat(1)
+    .filter(
+      (value, index, array) =>
+        array.findIndex((p) => p.civlid === value.civlid) === index,
+    );
+  console.log("filte", pilots);
 
   return (
     <article className={className}>
@@ -89,6 +99,11 @@ const SeasonSummary = ({ season, className }: Props) => {
             );
           })}
         </ul>
+        <div className="flex items-baseline gap-1">
+          {type === "solo" && (
+            <SeasonPilots pilots={pilots.toReversed()} className="pt-4" />
+          )}
+        </div>
       </section>
     </article>
   );

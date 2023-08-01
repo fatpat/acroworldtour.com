@@ -266,6 +266,14 @@ export interface paths {
     /** Get Competition */
     get: operations["get_competition_public_competitions__id__get"];
   };
+  "/public/competitions/{id}/standings/overall/svg": {
+    /** Export Competition Overall Standing Svg */
+    get: operations["export_competition_overall_standing_svg_public_competitions__id__standings_overall_svg_get"];
+  };
+  "/public/competitions/{id}/standings/run/{run}/svg": {
+    /** Export Competition Overall Standing Svg */
+    get: operations["export_competition_overall_standing_svg_public_competitions__id__standings_run__run__svg_get"];
+  };
   "/public/seasons/": {
     /** List Seasons */
     get: operations["list_seasons_public_seasons__get"];
@@ -273,6 +281,10 @@ export interface paths {
   "/public/seasons/{id}": {
     /** Get Season */
     get: operations["get_season_public_seasons__id__get"];
+  };
+  "/public/seasons/{id}/standings/svg": {
+    /** Export Season Standing Svg */
+    get: operations["export_season_standing_svg_public_seasons__id__standings_svg_get"];
   };
   "/public/tricks/": {
     /** List */
@@ -673,8 +685,10 @@ export interface components {
       final: boolean;
       /** Type */
       type: string;
-      /** Overall Results */
-      overall_results: (components["schemas"]["CompetitionPilotResultsExport"])[];
+      /** Results */
+      results: {
+        [key: string]: (components["schemas"]["CompetitionPilotResultsExport"])[] | undefined;
+      };
       /** Runs Results */
       runs_results: (components["schemas"]["RunResultsExport"])[];
     };
@@ -1447,7 +1461,9 @@ export interface components {
       /** Type */
       type: string;
       /** Results */
-      results: (components["schemas"]["FlightExport"])[];
+      results: {
+        [key: string]: (components["schemas"]["FlightExport"])[] | undefined;
+      };
     };
     /**
      * RunState 
@@ -1528,7 +1544,39 @@ export interface components {
       /** Number Of Teams */
       number_of_teams: number;
       /** Competitions */
-      competitions: (components["schemas"]["CompetitionPublicExport"])[];
+      competitions: (components["schemas"]["CompetitionExport"])[];
+      /** Results */
+      results: (components["schemas"]["SeasonResults"])[];
+    };
+    /** SeasonPublicExport */
+    SeasonPublicExport: {
+      /** Id */
+      _id: string;
+      /** Name */
+      name: string;
+      /** Code */
+      code: string;
+      /** Year */
+      year: number;
+      /**
+       * Image 
+       * Format: uri
+       */
+      image?: string;
+      /** Country */
+      country?: string;
+      /**
+       * Index 
+       * @default 999
+       */
+      index?: number;
+      type: components["schemas"]["CompetitionType"];
+      /** Number Of Pilots */
+      number_of_pilots: number;
+      /** Number Of Teams */
+      number_of_teams: number;
+      /** Competitions */
+      competitions: (components["schemas"]["CompetitionPublicExportWithResults"])[];
       /** Results */
       results: (components["schemas"]["SeasonResults"])[];
       /** Competitions Results */
@@ -3250,6 +3298,49 @@ export interface operations {
       };
     };
   };
+  /** Export Competition Overall Standing Svg */
+  export_competition_overall_standing_svg_public_competitions__id__standings_overall_svg_get: {
+    parameters: {
+      query?: {
+        download?: boolean;
+      };
+      path: {
+        id: string;
+      };
+    };
+    responses: {
+      /** @description export competition overall standing in SVG */
+      200: never;
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Export Competition Overall Standing Svg */
+  export_competition_overall_standing_svg_public_competitions__id__standings_run__run__svg_get: {
+    parameters: {
+      query?: {
+        download?: boolean;
+      };
+      path: {
+        id: string;
+        run: number;
+      };
+    };
+    responses: {
+      /** @description export competition overall standing in SVG */
+      200: never;
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   /** List Seasons */
   list_seasons_public_seasons__get: {
     parameters: {
@@ -3261,7 +3352,7 @@ export interface operations {
       /** @description List all seasons */
       200: {
         content: {
-          "application/json": (components["schemas"]["SeasonExport"])[];
+          "application/json": (components["schemas"]["SeasonPublicExport"])[];
         };
       };
       /** @description Validation Error */
@@ -3286,9 +3377,30 @@ export interface operations {
       /** @description Get a Season */
       200: {
         content: {
-          "application/json": components["schemas"]["SeasonExport"];
+          "application/json": components["schemas"]["SeasonPublicExport"];
         };
       };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Export Season Standing Svg */
+  export_season_standing_svg_public_seasons__id__standings_svg_get: {
+    parameters: {
+      query?: {
+        download?: boolean;
+      };
+      path: {
+        id: string;
+      };
+    };
+    responses: {
+      /** @description export season standing in SVG */
+      200: never;
       /** @description Validation Error */
       422: {
         content: {

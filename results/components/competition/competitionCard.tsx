@@ -49,7 +49,9 @@ const CompetitionCard = ({ competition }: Props) => {
           "shadow shadow-awt-dark-400",
           "hover:-translate-y-2 hover:text-current hover:bg-blend-screen",
           "hover:shadow-md",
-          currentYear == startYear && state == "closed" ? "grayscale hover:grayscale-0 hover:bg-awt-dark-900/60 " : "hover:bg-white/40",
+          currentYear == startYear && state == "closed"
+            ? "grayscale hover:bg-awt-dark-900/60 hover:grayscale-0 "
+            : "hover:bg-white/40",
         )}
       >
         <hgroup>

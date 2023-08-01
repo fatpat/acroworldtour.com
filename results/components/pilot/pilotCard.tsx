@@ -8,7 +8,7 @@ interface Props {
   pilot: components["schemas"]["Pilot"];
 }
 
-const PilotCard = ({ pilot }: Props) => {
+const PilotCard = ({ pilot, small }: Props) => {
   const { civlid, name, photo, country, rank } = pilot;
   const urlName = name.toLowerCase().replace(/\s/g, "-");
   const alpha2country = alpha3ToAlpha2(country?.toUpperCase())?.toLowerCase();
@@ -19,8 +19,9 @@ const PilotCard = ({ pilot }: Props) => {
       title={`See ${name}'s profile`}
       href={`/pilots/${civlid}/${urlName}`}
       className={classNames(
-        "flex w-48 flex-col rounded-xl pb-4",
+        "flex flex-col rounded-xl",
         "hover:-translate-y-2 hover:shadow-md",
+        small ? "w-24 pb-2" : "w-48 pb-4",
       )}
     >
       <figure
@@ -39,7 +40,7 @@ const PilotCard = ({ pilot }: Props) => {
         <h3 className="text-left">
           {name} {["🥇", "🥈", "🥉"][rank - 1]}
         </h3>
-        <p>FAI Rank: #{rank}</p>
+        {!small && <p>FAI Rank: #{rank}</p>}
       </figcaption>
     </Link>
   );
