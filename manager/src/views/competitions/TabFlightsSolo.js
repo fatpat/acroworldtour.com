@@ -213,7 +213,7 @@ const TabFlights = ({ comp, run, rid }) => {
         <Grid item xs={10} sm={10}>
                     <Autocomplete
                       id="autocomplete-pilot"
-                      options={run.pilots.sort((a,b) => b.rank-a.rank)}
+                      options={run.pilots}
                       value={pilot}
                       getOptionLabel={(p) => `${p.name} (${p.civlid})`}
                       renderInput={(params) => <TextField {...params} name="pilot" label="Pilot" />}
