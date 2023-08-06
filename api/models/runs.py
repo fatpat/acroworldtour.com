@@ -24,6 +24,12 @@ class RunState(str, Enum):
     open = 'open'
     closed = 'closed'
 
+class RunRepetitionsResetPolicy(int, Enum):
+    none = 0
+    awt = 1
+    awq = 2
+    all = 3
+
 class RunExport(BaseModel):
     state: RunState
     pilots: List[Pilot]
@@ -32,6 +38,7 @@ class RunExport(BaseModel):
     repeatable_tricks: List[Trick]
     config: CompetitionConfig
     flights: List[FlightExport]
+    repetitions_reset_policy: RunRepetitionsResetPolicy = Field(RunRepetitionsResetPolicy.none)
 
     class Config:
         json_encoders = {ObjectId: str}
@@ -44,6 +51,7 @@ class Run(BaseModel):
     repeatable_tricks: List[str]
     config: CompetitionConfig
     flights: List[Flight]
+    repetitions_reset_policy: RunRepetitionsResetPolicy = Field(RunRepetitionsResetPolicy.none)
 
     class Config:
         schema_extra = {
@@ -92,4 +100,5 @@ class Run(BaseModel):
             repeatable_tricks=repeatable_tricks,
             config=self.config,
             flights=flights,
+            repetitions_reset_policy=self.repetitions_reset_policy,
         )

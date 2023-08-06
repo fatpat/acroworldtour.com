@@ -9,6 +9,7 @@ import AddIcon from '@mui/icons-material/Add'
 import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField'
 import Box from '@mui/material/Box'
+import MenuItem from '@mui/material/MenuItem'
 import Link from '@mui/material/Link'
 import Avatar from '@mui/material/Avatar'
 import Dialog from '@mui/material/Dialog'
@@ -30,9 +31,16 @@ const TabRuns = ({comp, refresh}) => {
   const [runs, setRuns] = useState([])
   const [newRunOpen, setNewRunOpen] = useState(false)
   const [pilotsToQualify, setPilotsToQualify] = useState(0)
+  // by default set repetitionsResetPolicy to 0 (None), to 1 for every 5 awt runs, to 2 for every 2 AWQ runs
+  const [repetitionsResetPolicy, setRepetitionsResetPolicy] = useState(
+    (comp.seasons.filter((s) => s.match(/^awt-/)).length > 0 && comp.runs.length > 3 && comp.runs.length % 5 == 4 ? 1 : 0)
+    +
+    (comp.seasons.filter((s) => s.match(/^awq-/)).length > 0 && comp.runs.length > 1 && comp.runs.length % 2 == 0 ? 2 : 0)
+  )
 
   const createNewRun = async() => {
-    const [err, retData, headers] = await APIRequest(`/competitions/${comp.code}/runs/new?pilots_to_qualify=${pilotsToQualify}`, {
+
+    const [err, retData, headers] = await APIRequest(`/competitions/${comp.code}/runs/new?pilots_to_qualify=${pilotsToQualify}&repetitions_reset_policy=${repetitionsResetPolicy}`, {
         expected_status: 201,
         method: 'POST',
     })
@@ -54,6 +62,9 @@ const TabRuns = ({comp, refresh}) => {
     },
     {
       id: 'state',
+    },
+    {
+      id: 'repetitions_reset_policy',
     }
   ]
 
@@ -76,10 +87,31 @@ const TabRuns = ({comp, refresh}) => {
     >
       <DialogTitle>New Run</DialogTitle>
       <DialogContent dividers>
-        <TextField
-          name="pilots-to-qualify" label="Pilots to Qualify" placeholder="Pilots to Qualify"
-          defaultValue={pilotsToQualify} type="number"
-          onChange={e => {setPilotsToQualify(e.target.value)}}/>
+          <TextField
+            name="pilots-to-qualify"
+            label="Pilots to Qualify"
+            placeholder="Pilots to Qualify"
+            fullWidth={true}
+            defaultValue={pilotsToQualify}
+            type="number"
+            required={true}
+            onChange={e => {setPilotsToQualify(e.target.value)}}
+          />
+          <TextField
+            name="repetition-reset-policy"
+            label="Repetition Reset Policy"
+            placeholder="Repetition Reset Policy"
+            fullWidth={true}
+            defaultValue={repetitionsResetPolicy}
+            select={true}
+            required={true}
+            onChange={e => {setRepetitionsResetPolicy(e.target.value)}}
+          >
+            <MenuItem value={0}>None</MenuItem>
+            <MenuItem value={1}>Only for AWT pilots</MenuItem>
+            <MenuItem value={2}>Only for AWQ pilots</MenuItem>
+            <MenuItem value={3}>For all pilots</MenuItem>
+          </TextField>
       </DialogContent>
       <DialogActions>
         <Button autoFocus onClick={() => {setNewRunOpen(false)}}>

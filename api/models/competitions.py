@@ -13,7 +13,7 @@ import unicodedata
 from models.pilots import Pilot
 from models.teams import Team, TeamExport
 from models.judges import Judge
-from models.runs import Run, RunState, RunExport
+from models.runs import Run, RunState, RunExport, RunRepetitionsResetPolicy
 from models.tricks import Trick
 from models.flights import Flight, FlightNew
 from models.marks import JudgeMark, FinalMark
@@ -452,7 +452,7 @@ class Competition(CompetitionNew):
         return -1
 
 
-    async def new_run(self, pilots_to_qualify: int = 0):
+    async def new_run(self, pilots_to_qualify: int = 0, repetitions_reset_policy: RunRepetitionsResetPolicy = RunRepetitionsResetPolicy.none):
         if self.state != CompetitionState.open:
             raise HTTPException(400, "Competition must be 'open' to create a new run")
 
@@ -495,7 +495,8 @@ class Competition(CompetitionNew):
             judges=self.judges,
             config=self.config,
             repeatable_tricks=self.repeatable_tricks,
-            flights=[]
+            flights=[],
+            repetitions_reset_policy=repetitions_reset_policy,
         )
         self.runs.append(run)
         await self.save()
@@ -649,11 +650,16 @@ class Competition(CompetitionNew):
     async def flight_save(self, run_i: int, id, flight: FlightNew, save: bool=False, published: bool=False) -> FinalMark:
         run = await self.run_get(run_i)
 
+        is_awt = False
+
         if self.type == CompetitionType.solo:
             if int(id) not in run.pilots:
                 raise HTTPException(400, f"Pilot #{id} does not participate in the run number #{run_i} of the comp ({self.name})")
             if int(id) not in self.pilots:
                 raise HTTPException(400, f"Pilot #{id} does not participate in this comp ({self.name})")
+
+            pilot = await Pilot.get(int(id))
+            is_awt = pilot.is_awt
 
         if self.type == CompetitionType.synchro:
             if id not in run.teams:
@@ -662,7 +668,7 @@ class Competition(CompetitionNew):
                 raise HTTPException(400, f"Team #{id} does not participate in this comp ({self.name})")
 
         new_flight = await self.flight_convert(id, flight)
-        mark = await self.calculate_score(flight=new_flight, run_i=run_i)
+        mark = await self.calculate_score(flight=new_flight, run_i=run_i, is_awt_pilot=is_awt)
         if not save:
             return mark
 
@@ -839,12 +845,14 @@ class Competition(CompetitionNew):
             competition.deleted = datetime.now()
         return await competition.save()
 
+    def is_awt_season(self):
+        return bool([s for s in self.seasons if re.match('^awt-', s)])
+
+    def is_awq_season(self):
+        return bool([s for s in self.seasons if re.match('^awq-', s)])
 
 
-
-
-
-    async def calculate_score(self, flight: Flight, run_i: int = -1) -> FinalMark:
+    async def calculate_score(self, flight: Flight, run_i: int = -1, is_awt_pilot=False) -> FinalMark:
         mark = FinalMark(
             judges_mark = JudgeMark(
                 judge = "",
@@ -1026,6 +1034,21 @@ class Competition(CompetitionNew):
             if trick is not None:
                 repeatable_tricks.append(trick.name)
 
+        first_run_to_check_repetitions = 0
+        if self.type == CompetitionType.solo:
+            for i in range(len(self.runs)):
+                if self.runs[i].repetitions_reset_policy == RunRepetitionsResetPolicy.none:
+                    continue
+                if self.runs[i].repetitions_reset_policy == RunRepetitionsResetPolicy.all:
+                    first_run_to_check_repetitions = i
+                    continue
+                if self.runs[i].repetitions_reset_policy == RunRepetitionsResetPolicy.awt and is_awt_pilot and self.is_awt_season():
+                    first_run_to_check_repetitions = i
+                    continue
+                if self.runs[i].repetitions_reset_policy == RunRepetitionsResetPolicy.awq and not is_awt_pilot and self.is_awq_season():
+                    first_run_to_check_repetitions = i
+                    continue
+
         if len(self.runs) > 0 and run_i > 0:
             trick_i = 0
             for trick in tricks: # for each trick detect repetition before
@@ -1034,6 +1057,8 @@ class Competition(CompetitionNew):
                     continue
                 # loop over all previous runs
                 for i in range(len(self.runs)):
+                    if i < first_run_to_check_repetitions:
+                        continue
                     if i >= run_i:
                         break
                     r = self.runs[i]

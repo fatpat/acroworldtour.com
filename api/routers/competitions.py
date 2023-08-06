@@ -11,7 +11,7 @@ from core.security import auth
 
 from models.competitions import Competition, CompetitionExport, CompetitionNew, CompetitionState, CompetitionPublicExport
 from models.competition_configs import CompetitionConfig
-from models.runs import Run, RunExport
+from models.runs import Run, RunExport, RunRepetitionsResetPolicy
 from models.marks import FinalMark, FinalMarkExport
 from models.flights import Flight, FlightNew, FlightExport
 from models.results import RunResults, CompetitionResults, CompetitionResultsExport, RunResultsExport
@@ -205,10 +205,11 @@ async def close(id: str):
     response_model=RunExport,
     dependencies=[Depends(auth)],
 )
-async def new_run(id: str, pilots_to_qualify: int = 0):
+async def new_run(id: str, pilots_to_qualify: int = 0, repetitions_reset_policy: int = RunRepetitionsResetPolicy.none):
     cache = Cache()
     comp = await Competition.get(id, cache=cache)
-    run = await comp.new_run(pilots_to_qualify)
+    log.debug(f"repetitions_reset_policy={repetitions_reset_policy}")
+    run = await comp.new_run(pilots_to_qualify, repetitions_reset_policy=repetitions_reset_policy)
     return await run.export(cache=cache)
 
 @competitions.get(
