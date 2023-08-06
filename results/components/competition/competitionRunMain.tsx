@@ -257,7 +257,7 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
                   Bonus
                 </h5>
                 <p className="col-span-full col-start-1 py-1 text-center">
-                  {(bonus || 0) > 0 ? `${bonus}` : "NIL"}
+                  {bonus?.toFixed(3)}
                 </p>
                 {(warnings?.length || 0) > 0 && (
                   <>
