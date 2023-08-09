@@ -113,11 +113,13 @@ const PilotsPage = () => {
         setLoading(`Updating all pilots ... ${percent.toFixed(2)}% (${i+1}/${fullData.length})`)
         const [err, retData, headers] = await APIRequest(`/pilots/${civlid}`, {method: 'POST', expected_status: 201})
         if (err) {
-          error(`Error updating Pilot #${civlid}: ${err}`)
+          error(`Error updating Pilot #${civlid}: ${err} (${percent.toFixed(2)}% ${i+1}/${fullData.length})`)
         } else {
-          success(`Pilot #${civlid} successfully updated`)
+          success(`Pilot #${civlid} successfully updated (${percent.toFixed(2)}% ${i+1}/${fullData.length})`)
           fullData[i] = retData
         }
+        console.log("wait 500ms before next pilot")
+        await new Promise(res => setTimeout(res, 500))
       }
 
       setFullData(fullData)
