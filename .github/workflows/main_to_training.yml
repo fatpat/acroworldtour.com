@@ -1,0 +1,12 @@
+name: Duplicate main to training
+on:
+  push:
+    branches:
+      - main
+jobs:
+  duplicate-to-training:
+    name: Duplicate main to training
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: git push origin main:training --force
