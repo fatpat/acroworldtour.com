@@ -1599,7 +1599,7 @@ export interface components {
        * Link 
        * Format: uri
        */
-      link: string;
+      link?: string;
       /** Img */
       img: string;
     };

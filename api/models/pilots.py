@@ -22,7 +22,7 @@ class Link(BaseModel):
 
 class Sponsor(BaseModel):
     name: str
-    link: HttpUrl
+    link: Optional[HttpUrl]
     img: str
 
 class GenderEnum(str, Enum):

@@ -205,7 +205,7 @@ class PilotCtrl:
         for e in html.cssselect('aside.sponsors-wrapper a'):
             sponsors.append({
                 "name": e.get('alt'),
-                "link": e.get('href'),
+                "link": e.get('href') or None,
                 "img": e.cssselect('img')[0].get('src'),
             })
 
