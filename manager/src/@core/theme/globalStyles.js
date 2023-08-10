@@ -1,5 +1,8 @@
 const GlobalStyles = theme => {
   return {
+    '#body-border-top, #body-border-bottom, #body-border-left, #body-border-right': {
+      background: process.env.NEXT_PUBLIC_BORDER_COLOR || 'none',
+    },
     '.ps__rail-y': {
       zIndex: 1,
       right: '0 !important',
