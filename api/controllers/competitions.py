@@ -180,8 +180,8 @@ class CompCtrl:
     def svg_run(compResults: CompetitionResults, run: int):
         compResults = compResults.runs_results[run-1]
         results = []
-        compResults.results.sort(key=lambda e: -e.final_marks.score)
-        for rank, result in enumerate(compResults.results):
+        compResults.results['overall'].sort(key=lambda e: -e.final_marks.score)
+        for rank, result in enumerate(compResults.results['overall']):
             results.append(SvgData(
                 rank=rank+1,
                 country=result.pilot.country if compResults.type == "solo" else None,
