@@ -158,12 +158,12 @@ async def get_competition(id: str):
 # export competition overall standing in SVG
 #
 @public.get(
-    "/competitions/{id}/standings/overall/svg",
+    "/competitions/{id}/standings/{result_type}/svg",
     response_description="export competition overall standing in SVG",
     response_class=Response,
 )
 @cache(expire=settings.CACHE_EXPIRES, coder=GenericResponseCoder)
-async def export_competition_overall_standing_svg(id: str, download: bool = False):
+async def export_competition_overall_standing_svg(id: str, result_type: str, download: bool = False):
     cache = Cache()
     await gather(
         Pilot.getall(cache=cache),
@@ -173,11 +173,11 @@ async def export_competition_overall_standing_svg(id: str, download: bool = Fals
     )
     competition = await Competition.get(id, deleted=False, cache=cache)
     results = await competition.results()
-    svg = CompCtrl.svg_overall(await results.export(cache=cache))
+    svg = CompCtrl.svg_overall(competition=await results.export(cache=cache), result_type=result_type)
 
     headers = {}
     if download:
-        headers["Content-Disposition"] = f"attachment; filename=\"{season.code}.standing.svg\""
+        headers["Content-Disposition"] = f"attachment; filename=\"{season.code}.{type}.standing.svg\""
     else:
         headers["Content-Disposition"] = f"inline"
 
@@ -188,11 +188,16 @@ async def export_competition_overall_standing_svg(id: str, download: bool = Fals
 #
 @public.get(
     "/competitions/{id}/standings/run/{run}/svg",
-    response_description="export competition overall standing in SVG",
+    response_description="export competition run standing in SVG",
+    response_class=Response,
+)
+@public.get(
+    "/competitions/{id}/standings/{result_type}/run/{run}/svg",
+    response_description="export competition run standing in SVG",
     response_class=Response,
 )
 @cache(expire=settings.CACHE_EXPIRES, coder=GenericResponseCoder)
-async def export_competition_overall_standing_svg(id: str, run: int, download: bool = False):
+async def export_competition_overall_standing_svg(id: str, run: int, result_type: str='overall', download: bool = False):
     cache = Cache()
     await gather(
         Pilot.getall(cache=cache),
@@ -202,11 +207,11 @@ async def export_competition_overall_standing_svg(id: str, run: int, download: b
     )
     competition = await Competition.get(id, deleted=False, cache=cache)
     results = await competition.results()
-    svg = CompCtrl.svg_run(await results.export(cache=cache), run)
+    svg = CompCtrl.svg_run(competition=await results.export(cache=cache), run=run, result_type=result_type)
 
     headers = {}
     if download:
-        headers["Content-Disposition"] = f"attachment; filename=\"{season.code}.standing.svg\""
+        headers["Content-Disposition"] = f"attachment; filename=\"{season.code}.run{run}.{result_type}.standing.svg\""
     else:
         headers["Content-Disposition"] = f"inline"
 
