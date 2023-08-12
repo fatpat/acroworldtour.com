@@ -738,34 +738,9 @@ class Competition(CompetitionNew):
         results["overall"] = overall_results[::-1]
 
         pilots = await Pilot.getall(list(map(lambda r: r.pilot, overall_results)))
-
-        # seasons
-        for season in self.seasons:
-            if re.search('^awt-\d{4}$', season):
-                awt_pilots = list(filter(lambda p: p.is_awt, pilots))
-                awt_results = list(filter(lambda r: next((p for p in awt_pilots if p.civlid == r.pilot), None) is not None, overall_results))
-                results[season] = list(awt_results[::-1])
-                continue
-
-            if re.search('^awq-\d{4}$', season):
-                awq_pilots = list(filter(lambda p: not p.is_awt, pilots))
-                awq_results = list(filter(lambda r: next((p for p in awq_pilots if p.civlid == r.pilot), None) is not None, overall_results))
-                results[season] = list(awq_results[::-1])
-                continue
-
-            if re.search('^\w\w\w-\d{4}$', season):
-                country = season[0:3]
-                country_pilots = list(filter(lambda p: p.country == country, pilots))
-                country_results = list(filter(lambda r: next((p for p in country_pilots if p.civlid == r.pilot), None) is not None, overall_results))
-                results[season] = list(country_results[::-1])
-                continue
-
-
-        # women results
-        women_pilots = list(filter(lambda p: p.gender == 'woman', pilots))
-        women_results = list(filter(lambda r: next((p for p in women_pilots if p.civlid == r.pilot), None) is not None, overall_results))
-        if len(women_pilots) > 3:
-            results["women"] = list(women_results[::-1])
+        self.create_sub_results(results, pilots)
+        for run_results in runs_results:
+            self.create_sub_results(run_results.results, pilots)
 
         return CompetitionResults(
             final = final,
@@ -773,6 +748,42 @@ class Competition(CompetitionNew):
             results = results,
             runs_results = runs_results,
         )
+
+    def create_sub_results(self, results, pilots):
+        if self.type != CompetitionType.solo:
+            return
+
+        # seasons
+        for season in self.seasons:
+            if re.search('^awt-\d{4}$', season):
+                awt_pilots = list(filter(lambda p: p.is_awt, pilots))
+                awt_results = list(filter(lambda r: next((p for p in awt_pilots if p.civlid == r.pilot), None) is not None, results['overall']))
+                awt_results.sort(key=lambda e: e.score if hasattr(e, 'score') else e.final_marks.score)
+                results[season] = list(awt_results[::-1])
+                continue
+
+            if re.search('^awq-\d{4}$', season):
+                awq_pilots = list(filter(lambda p: not p.is_awt, pilots))
+                awq_results = list(filter(lambda r: next((p for p in awq_pilots if p.civlid == r.pilot), None) is not None, results['overall']))
+                awq_results.sort(key=lambda e: e.score if hasattr(e, 'score') else e.final_marks.score)
+                results[season] = list(awq_results[::-1])
+                continue
+
+            if re.search('^\w\w\w-\d{4}$', season):
+                country = season[0:3]
+                country_pilots = list(filter(lambda p: p.country == country, pilots))
+                country_results = list(filter(lambda r: next((p for p in country_pilots if p.civlid == r.pilot), None) is not None, results['overall']))
+                country_results.sort(key=lambda e: e.score if hasattr(e, 'score') else e.final_marks.score)
+                results[season] = list(country_results[::-1])
+                continue
+
+
+        # women results
+        women_pilots = list(filter(lambda p: p.gender == 'woman', pilots))
+        women_results = list(filter(lambda r: next((p for p in women_pilots if p.civlid == r.pilot), None) is not None, results['overall']))
+        if len(women_pilots) > 3:
+            women_results.sort(key=lambda e: e.score if hasattr(e, 'score') else e.final_marks.score)
+            results["women"] = list(women_results[::-1])
 
     
     #
