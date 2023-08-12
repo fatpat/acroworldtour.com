@@ -134,6 +134,7 @@ const RunPage = () => {
   const [comp, setComp] = useState(false)
   const [run, setRun] = useState(false)
   const [pilots, setPilotsVar] = useState([])
+  const [teams, setTeamsVar] = useState([])
   const [tempComp, setTempComp] = useState({})
   const [isLoading, setLoading] = useState(false)
   const [tabContext, setTabContext] = useState('actions')
@@ -162,6 +163,7 @@ const RunPage = () => {
         setComp(false)
         setRun(false)
         setPilotsVar([])
+        setTeamsVar([])
         setTempComp(false)
         error(`Error while retrieving competitions list: ${err}`)
         return
@@ -173,7 +175,8 @@ const RunPage = () => {
 
     setComp(data)
     setRun(data.runs[rid])
-    setPilotsVar(data.runs[rid].pilots)
+    data.type === 'solo' && setPilotsVar(data.runs[rid].pilots)
+    data.type === 'synchro' && setTeamsVar(data.runs[rid].teams)
     setTempComp(Object.assign({}, data)) // clone data before assigning it to tempComp, otherwise they'll share the same object
     setLoading(false)
   }
@@ -213,7 +216,7 @@ const RunPage = () => {
         expected_status: 204,
         method: 'PATCH',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(teams.map(j => j.id)),
+        body: JSON.stringify(teams.map(j => j._id)),
     })
 
     if (err) {
@@ -290,14 +293,23 @@ const RunPage = () => {
     const {active, over} = event
     if (active.id === over.id) return
 
-    console.log(active.id, over.id)
+    if (comp.type === 'solo') {
+      const oldIndex = run.pilots.findIndex(p => p.civlid == active.id.civlid)
+      const newIndex = run.pilots.findIndex(p => p.civlid == over.id.civlid)
+      if (oldIndex < 0 || newIndex < 0) return
 
-    const oldIndex = run.pilots.findIndex(p => p.civlid == active.id.civlid)
-    const newIndex = run.pilots.findIndex(p => p.civlid == over.id.civlid)
-    if (oldIndex < 0 || newIndex < 0) return
+      setPilots(arrayMove(pilots, oldIndex, newIndex))
+      return
+    }
 
-    console.log({ oldIndex, newIndex })
-    setPilots(arrayMove(pilots, oldIndex, newIndex))
+    if (comp.type === 'synchro') {
+      const oldIndex = run.teams.findIndex(t => t._id == active.id._id)
+      const newIndex = run.teams.findIndex(t => t._id == over.id._id)
+      if (oldIndex < 0 || newIndex < 0) return
+
+      setTeams(arrayMove(teams, oldIndex, newIndex))
+      return
+    }
   }
 
   useEffect(() => {
@@ -460,11 +472,20 @@ const RunPage = () => {
                       Run {parseInt(rid)+1} Starting Order
                     </Typography>
                   </Box>
+                    { comp.type == "solo" &&
                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={changeStartingOrder}>
                       <SortableContext items={pilots} strategy={verticalListSortingStrategy}>
                         { pilots.map((p,i) => <SortablePilotStartingOrder key={p.civlid} id={p} text={`${i+1} ${p.name}`} />)}
                       </SortableContext>
                     </DndContext>
+                    }
+                    { comp.type == "synchro" &&
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={changeStartingOrder}>
+                      <SortableContext items={teams} strategy={verticalListSortingStrategy}>
+                        { teams.map((p,i) => <SortablePilotStartingOrder key={p.id} id={p} text={`${i+1} ${p.name}`} />)}
+                      </SortableContext>
+                    </DndContext>
+                    }
                 </CardContent>
               </TableContainer>
             </TabPanel>
