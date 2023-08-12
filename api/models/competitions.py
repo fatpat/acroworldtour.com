@@ -745,6 +745,30 @@ class Competition(CompetitionNew):
         for run_results in runs_results:
             self.create_sub_results(run_results.results, pilots)
 
+        #
+        #  update result_per_run for each sub rankings
+        #
+        for result_type in list(results):
+
+            if result_type == 'overall':
+                continue
+
+            for result in results[result_type]:
+
+                result_per_run = []
+
+                for (run_index, run) in enumerate(runs_results):
+
+                    if run.results[result_type] is None:
+                        continue
+
+                    for (rank_index, run_results) in enumerate(run.results[result_type]):
+
+                        if (self.type == CompetitionType.solo and result.pilot == run_results.pilot) or (self.type == CompetitionType.synchro and result.team == run_results.team):
+                            result_per_run.append(RunResultSummary(rank=rank_index+1, score=run_results.final_marks.score))
+
+                result.result_per_run = result_per_run
+
         return CompetitionResults(
             final = final,
             type = self.type,
