@@ -737,7 +737,10 @@ class Competition(CompetitionNew):
         results = {}
         results["overall"] = overall_results[::-1]
 
-        pilots = await Pilot.getall(list(map(lambda r: r.pilot, overall_results)))
+        pilots = []
+        if self.type == CompetitionType.solo:
+            pilots = await Pilot.getall(list(map(lambda r: r.pilot, overall_results)))
+
         self.create_sub_results(results, pilots)
         for run_results in runs_results:
             self.create_sub_results(run_results.results, pilots)
@@ -750,11 +753,13 @@ class Competition(CompetitionNew):
         )
 
     def create_sub_results(self, results, pilots):
-        if self.type != CompetitionType.solo:
-            return
-
         # seasons
         for season in self.seasons:
+
+            if self.type == CompetitionType.synchro:
+                results[season] = results['overall']
+                continue
+
             if re.search('^awt-\d{4}$', season):
                 awt_pilots = list(filter(lambda p: p.is_awt, pilots))
                 awt_results = list(filter(lambda r: next((p for p in awt_pilots if p.civlid == r.pilot), None) is not None, results['overall']))
@@ -779,11 +784,12 @@ class Competition(CompetitionNew):
 
 
         # women results
-        women_pilots = list(filter(lambda p: p.gender == 'woman', pilots))
-        women_results = list(filter(lambda r: next((p for p in women_pilots if p.civlid == r.pilot), None) is not None, results['overall']))
-        if len(women_pilots) > 3:
-            women_results.sort(key=lambda e: e.score if hasattr(e, 'score') else e.final_marks.score)
-            results["women"] = list(women_results[::-1])
+        if self.type == CompetitionType.solo:
+            women_pilots = list(filter(lambda p: p.gender == 'woman', pilots))
+            women_results = list(filter(lambda r: next((p for p in women_pilots if p.civlid == r.pilot), None) is not None, results['overall']))
+            if len(women_pilots) > 3:
+                women_results.sort(key=lambda e: e.score if hasattr(e, 'score') else e.final_marks.score)
+                results["women"] = list(women_results[::-1])
 
     
     #
