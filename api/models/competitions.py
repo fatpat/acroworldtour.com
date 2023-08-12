@@ -475,7 +475,7 @@ class Competition(CompetitionNew):
                 pilots.sort(key=lambda p:-self.get_pilot_or_team_rank_in_current_overall(p, results))
             else:
                 teams = self.runs[-1].teams
-                teams.sort(key=lambda t:-self.get_team_or_team_rank_in_current_overall(t, results))
+                teams.sort(key=lambda t:-self.get_pilot_or_team_rank_in_current_overall(t, results))
         else: #  first run to be added, use the list of pilots of the competition
             if self.type == CompetitionType.solo:
                 pilots = self.pilots
