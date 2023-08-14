@@ -89,6 +89,13 @@ class Judge(BaseModel):
         if id is None:
             raise HTTPException(404, f"Judge not found")
 
+        if id == "simulator":
+            return Judge(
+                name="simulator",
+                country="fra",
+               level=JudgeLevel.senior,
+           )
+
         if not deleted and cache is not None:
             judge = cache.get('judges', id)
             if judge is not None:

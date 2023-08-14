@@ -102,6 +102,22 @@ class Pilot(BaseModel):
 
     @staticmethod
     async def get(id: int, cache:Cache = None):
+        if id < -999999:
+            return Pilot(
+                id = id,
+                civlid = id,
+                name = f"simulator {id}",
+                civl_link = "http://no.where/",
+                country = "fra",
+                about = "",
+                social_links = [],
+                sponsors = [],
+                photo = "http://no.where/",
+                background_picture = "http://no.where/",
+                rank = 9999,
+                is_awt = (id % 2 == 0),
+            )
+
         if id <= 0:
             raise HTTPException(status_code=404, detail=f"Pilot {id} not found")
 

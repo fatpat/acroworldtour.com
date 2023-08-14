@@ -452,7 +452,7 @@ class Competition(CompetitionNew):
         return -1
 
 
-    async def new_run(self, pilots_to_qualify: int = 0, repetitions_reset_policy: RunRepetitionsResetPolicy = RunRepetitionsResetPolicy.none):
+    async def new_run(self, pilots_to_qualify: int = 0, repetitions_reset_policy: RunRepetitionsResetPolicy = RunRepetitionsResetPolicy.none, saveToDB: bool = True):
         if self.state != CompetitionState.open:
             raise HTTPException(400, "Competition must be 'open' to create a new run")
 
@@ -499,7 +499,8 @@ class Competition(CompetitionNew):
             repetitions_reset_policy=repetitions_reset_policy,
         )
         self.runs.append(run)
-        await self.save()
+        if saveToDB:
+            await self.save()
         return run
 
     async def run_get(self, i: int) -> Run:
@@ -647,7 +648,7 @@ class Competition(CompetitionNew):
                 warnings = flight.warnings,
         )
 
-    async def flight_save(self, run_i: int, id, flight: FlightNew, save: bool=False, published: bool=False) -> FinalMark:
+    async def flight_save(self, run_i: int, id, flight: FlightNew, save: bool=False, published: bool=False, saveToDB : bool = True) -> FinalMark:
         run = await self.run_get(run_i)
 
         is_awt = False
@@ -678,11 +679,13 @@ class Competition(CompetitionNew):
         for i, f in enumerate(self.runs[run_i].flights):
             if (self.type == CompetitionType.solo and f.pilot == new_flight.pilot) or (self.type == CompetitionType.synchro and f.team == new_flight.team):
                 self.runs[run_i].flights[i] = new_flight
-                await self.save()
+                if saveToDB:
+                    await self.save()
                 return mark
 
         self.runs[run_i].flights.append(new_flight)
-        await self.save()
+        if saveToDB:
+            await self.save()
         return mark
 
     async def results(self, limit: int = -1) -> CompetitionResults:
