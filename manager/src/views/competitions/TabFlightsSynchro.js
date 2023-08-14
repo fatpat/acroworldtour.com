@@ -262,6 +262,7 @@ const TabFlightsSynchro = ({ comp, run, rid }) => {
                       id="autocomplete-trick-{i}"
                       key="autocomplete-trick-{i}"
                       options={uniqueTricks}
+                      groupBy={t => t.base_trick}
                       getOptionLabel={(p) => `${p.name} (${p.acronym}) (${p.technical_coefficient})`}
                       renderInput={(params) => <TextField {...params} name="trick" />}
                       value={trick}
