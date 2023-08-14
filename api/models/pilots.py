@@ -110,7 +110,6 @@ class Pilot(BaseModel):
             if pilot is not None:
                 return pilot
 
-        log.debug(f"mongo[pilot].find_one({id})")
         pilot = await collection.find_one({"_id": id})
 
         if pilot is None:
@@ -140,7 +139,6 @@ class Pilot(BaseModel):
 
         pilots = []
         sort=[("rank", pymongo.ASCENDING),("name", pymongo.ASCENDING)]
-        log.debug(f"mongo[pilot].find({cond})")
         for pilot in await collection.find(filter=cond, sort=sort).to_list(1000):
             pilot = Pilot.parse_obj(pilot)
             pilots.append(pilot)

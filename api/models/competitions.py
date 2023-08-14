@@ -836,7 +836,6 @@ class Competition(CompetitionNew):
                 competition = cache.get('competitions', id)
                 if competition is not None:
                     return competition
-        log.debug(f"mongo[competition].find_one({search})")
         competition = await collection.find_one(search)
         if competition is None:
             raise HTTPException(404, f"Competition {id} not found")
@@ -856,7 +855,6 @@ class Competition(CompetitionNew):
                     return [c for c in competitions if season in c.seasons]
 
         competitions = []
-        log.debug(f"mongo[competition].find()")
         for competition in await collection.find({"deleted": None}, sort=[("name", pymongo.ASCENDING)]).to_list(1000):
             competition = Competition.parse_obj(competition)
             if season is None or season in competition.seasons:
@@ -1109,7 +1107,6 @@ class Competition(CompetitionNew):
                             continue
                         for t in f.tricks:
                             if t.base_trick == trick.base_trick and t.uniqueness == trick.uniqueness:
-                                log.info(f"base_trick={trick.base_trick}({t.base_trick}) -- uniqueness={trick.uniqueness} ({t.uniqueness})")
                                 mark.malus += config.malus_repetition
                                 mark.notes.append(f"trick number #{trick_i} ({trick.name}) has already been performed in a previous run. Adding a {config.malus_repetition}% malus.")
                                 broke = True

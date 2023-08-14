@@ -75,7 +75,6 @@ class File(BaseModel):
             search = {"_id": id}
         else:
             search = {"_id": id, "deleted": None}
-        log.debug(f"mongo[files].find_one({search})")
         file = await collection.find_one(search)
         if file is None:
             raise HTTPException(404, f"File {id} not found")
@@ -91,7 +90,6 @@ class File(BaseModel):
         else:
             search = {"deleted": None}
         files = []
-        log.debug(f"mongo[files].find({search})")
         for file in await collection.find(search, sort=[("level", pymongo.DESCENDING), ("name", pymongo.ASCENDING)]).to_list(1000):
             files.append(File.parse_obj(file))
         return files
