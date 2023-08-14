@@ -7,6 +7,7 @@ import {
   JudgesIcon,
   PilotsIcon,
   SeasonsIcon,
+  SimulatorIcon,
   TeamsIcon,
   TricksIcon,
 } from "../ui/icons";
@@ -38,6 +39,7 @@ const NavItem = ({ link, active }: Props) => (
     {link === "Teams" && <TeamsIcon className={iconClasses} />}
     {link === "Judges" && <JudgesIcon className={iconClasses} />}
     {link === "Tricks" && <TricksIcon className={iconClasses} />}
+    {link === "Simulator" && <SimulatorIcon className={iconClasses} />}
     <span>{link || "Home"}</span>
   </Link>
 );

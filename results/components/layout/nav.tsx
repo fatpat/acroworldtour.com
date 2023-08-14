@@ -61,6 +61,9 @@ const Nav = ({ activeNav, fontClass }: Props) => (
       <li onMouseEnter={() => preload(`${API_URL}/tricks/`, fetcher)}>
         <NavItem link="Tricks" active={activeNav === "tricks"} />
       </li>
+      <li onMouseEnter={() => preload(`${API_URL}/tricks/unique/`, fetcher)} className="invisible">
+        <NavItem link="Simulator" active={activeNav === "simulator"} />
+      </li>
     </ul>
   </nav>
 );
