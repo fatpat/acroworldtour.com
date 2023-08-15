@@ -1,8 +1,10 @@
 import Autocomplete from "@mui/material/Autocomplete";
+import IconButton from "@mui/material/IconButton";
 import TextField from "@mui/material/TextField";
 import { useEffect, useState } from "react";
 
 import SimulatorMarkSelect from "@/components/simulator/simulatorMarkSelect";
+import { DeleteIcon } from "@/components/ui/icons";
 import { components } from "@/types";
 
 type UniqueTrick = components["schemas"]["UniqueTrick"];
@@ -161,14 +163,27 @@ const SimulatorRun = ({
       choreography: Math.min(Math.max(choreography, 0), 10),
       landing: Math.min(Math.max(landing, 0), 10),
     });
-  }, [tricks, technical, choreography, landing, runIndex, setRun]);
+  }, [tricks, technical, choreography, landing, runIndex]);
 
   if (tricks === undefined) return <></>;
 
   return (
     <section className="flew w-full flex-grow flex-col gap-4 rounded-xl bg-awt-dark-50 py-2 shadow-inner lg:col-span-full">
       <article className="grid grid-cols-12 justify-center">
-        <h2 className="col-span-full">run {runIndex + 1}</h2>
+        <h2 className="col-span-full">
+          run {runIndex + 1}
+          <IconButton
+            onClick={() => {
+              if (!confirm(`Reset run ${runIndex + 1} ?`)) return;
+              setTricks(defaultTricks);
+              setTechnical(defaultTechnical);
+              setChoreography(defaultChoreography);
+              setLanding(defaultLanding);
+            }}
+          >
+            <DeleteIcon />
+          </IconButton>
+        </h2>
         {[...Array(numberOfTricksPerRun).keys()].map((i) => (
           <Autocomplete
             key={`run${runIndex}_trick${i + 1}`}

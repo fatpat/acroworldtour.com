@@ -1,10 +1,13 @@
+import { IconButton } from "@mui/material";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
 
 import { useLayout } from "@/components/layout/layoutContext";
+import SimulatorRefreshButton from "@/components/simulator/simulatorRefreshButton";
 import SimulatorRun from "@/components/simulator/simulatorRun";
 import FetchError from "@/components/ui/fetchError";
 import FetchLoading from "@/components/ui/fetchLoading";
+import { DeleteIcon } from "@/components/ui/icons";
 import { API_URL } from "@/constants";
 import { components } from "@/types";
 
@@ -56,14 +59,7 @@ const Tricks = () => {
   );
   const [finalScore, setFinalScore] = useState<number | undefined>(undefined);
 
-  const setRun = (i: number, run: any) => {
-    if (i < 0 || i >= maxNumberOfRuns) return;
-    let r = [...runs];
-    r[i] = run;
-    setRuns(r);
-  };
-
-  useEffect(() => {
+  const refreshResults = () => {
     if (resetRepetitionsFrequency === undefined) return;
 
     fetch(
@@ -117,7 +113,7 @@ const Tricks = () => {
         return;
       }
       return response.json().then(function (json) {
-        let score = 0;
+        let score: number | undefined = undefined;
         setResults(
           json.map((r: Flight, i: number) => {
             if (!runs) return undefined;
@@ -125,17 +121,40 @@ const Tricks = () => {
             if (!runs[i].tricks) return undefined;
             if (!runs[i].tricks) return undefined;
 
-            score += r.final_marks?.score || 0;
-
-            return runs[i].tricks.filter((t: any) => t !== undefined).length > 0
-              ? r
-              : undefined;
+            if (runs[i].tricks.filter((t: any) => t !== undefined).length > 0) {
+              score = (score || 0) + (r.final_marks?.score || 0);
+              return r;
+            }
+            return undefined;
           }),
         );
         setFinalScore(score);
       });
     });
-  }, [runs, resetRepetitionsFrequency]);
+  };
+
+  const setRun = (i: number, run: any) => {
+    console.log("setRun", i, run);
+    if (i < 0 || i >= maxNumberOfRuns) return;
+    setRuns((previousRuns) => {
+      let r = [...previousRuns];
+      r[i] = run;
+      return r;
+    });
+  };
+
+  const cleanCompetition = () => {
+    Object.keys(localStorage).map((key) => {
+      if (key.startsWith(`simulator/competition/${competitionName}/`)) {
+        localStorage.removeItem(key);
+      }
+      window.location.reload();
+    });
+  };
+
+  useEffect(() => {
+    refreshResults();
+  }, [resetRepetitionsFrequency]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !window.localStorage) return;
@@ -215,37 +234,35 @@ const Tricks = () => {
     isLoading,
   } = useSWR<UniqueTrick[], Error>(`${API_URL}/tricks/unique/`);
 
-  if (isLoading || competitionName === undefined || numberOfRuns === undefined)
-    return <FetchLoading />;
+  if (isLoading) return <FetchLoading />;
+  if (competitionName === undefined) return <FetchLoading />;
+  if (numberOfRuns === undefined) return <FetchLoading />;
   if (error) return <FetchError />;
   if (!uniqueTricks) return <h2>No Tricks found</h2>;
 
   return (
     <>
-      <h1>Runs Simulator</h1>
-      <button
-        onClick={(e) => {
-          e.preventDefault();
-        }}
-      >
-        clear all
-      </button>
+      <h1>
+        Competition Simulator
+        <IconButton
+          onClick={() => {
+            if (!confirm(`Reset competition ?`)) return;
+            cleanCompetition();
+          }}
+        >
+          <DeleteIcon />
+        </IconButton>
+      </h1>
       <div className="flew w-full flex-grow flex-col gap-4 rounded-xl bg-awt-dark-50 py-2 shadow-inner lg:col-span-full">
         <article className="grid grid-cols-12 justify-center">
-          {finalScore !== undefined && (
-            <>
-              <h2 className="col-span-10 col-start-2 bg-awt-dark-700 py-3 text-white">
-                Final Score: {finalScore.toFixed(3)}
-              </h2>
-              <hr className="coll-span-full col-start-1 py-2" />
-            </>
-          )}
-
-          <h4 className="col-span-4 col-start-1">Current Simulation</h4>
-          <h4 className="col-span-4">Number of Runs</h4>
-          <h4 className="col-span-4">Reset Repetitions</h4>
-          <h6 className="col-span-4 col-start-1">{competitionName}</h6>
-          <h6 className="col-span-4">
+          <h4 className="col-span-3 col-start-1">Current Simulation</h4>
+          <h4 className="col-span-3">Number of Runs</h4>
+          <h4 className="col-span-3">Reset Repetitions</h4>
+          <h4 className="col-span-3">
+            <SimulatorRefreshButton refresh={() => refreshResults()} />
+          </h4>
+          <h6 className="col-span-3 col-start-1">{competitionName}</h6>
+          <h6 className="col-span-3">
             <select
               value={numberOfRuns}
               onChange={(e) => setNumberOfRuns(parseInt(e.target.value))}
@@ -259,7 +276,7 @@ const Tricks = () => {
                 ))}
             </select>
           </h6>
-          <h6 className="col-span-4">
+          <h6 className="col-span-3">
             <select
               value={resetRepetitionsFrequency}
               onChange={(e) =>
@@ -268,10 +285,18 @@ const Tricks = () => {
             >
               <option value="0">never</option>
               <option value="1">at each run</option>
-              <option value="2">at run 3 and 5</option>
-              <option value="4">at run 4</option>
+              <option value="2">at runs 3 and 5</option>
+              <option value="4">at run 5</option>
             </select>
           </h6>
+          <button
+            className="col-span-3 cursor-pointer rounded-xl bg-awt-dark-700 py-3 text-white hover:invert"
+            onClick={() => refreshResults()}
+          >
+            {finalScore === undefined
+              ? "Click to get result !"
+              : `Final Score: ${finalScore?.toFixed(3)}`}
+          </button>
         </article>
       </div>
       <div className="mt4 flex w-full items-start justify-center gap-5 portrait:flex-col">
@@ -289,14 +314,24 @@ const Tricks = () => {
         })}
       </div>
 
-      {finalScore !== undefined && (
-        <div className="flew w-full flex-grow flex-col gap-4 rounded-xl bg-awt-dark-50 py-2 shadow-inner lg:col-span-full">
-          <hr className="coll-span-full col-start-1 py-2" />
-          <h2 className="col-span-10 col-start-2 bg-awt-dark-700 py-3 text-white">
-            Final Score: {finalScore.toFixed(3)}
+      <div className="flew w-full flex-grow flex-col gap-4 rounded-xl bg-awt-dark-50 py-2 shadow-inner lg:col-span-full">
+        <article className="grid grid-cols-12 justify-center">
+          <h2 className="col-span-2 col-start-3">
+            <SimulatorRefreshButton refresh={() => refreshResults()} />
           </h2>
-        </div>
-      )}
+          <button
+            className="col-span-4 cursor-pointer rounded-xl bg-awt-dark-700 py-3 text-white hover:invert"
+            onClick={() => refreshResults()}
+          >
+            {finalScore === undefined
+              ? "Click to get result !"
+              : `Final Score: ${finalScore?.toFixed(3)}`}
+          </button>
+          <h2 className="col-span-2">
+            <SimulatorRefreshButton refresh={() => refreshResults()} />
+          </h2>
+        </article>
+      </div>
     </>
   );
 };
