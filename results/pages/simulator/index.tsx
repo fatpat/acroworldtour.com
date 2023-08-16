@@ -1,4 +1,6 @@
 import { IconButton } from "@mui/material";
+import MenuItem from "@mui/material/MenuItem";
+import TextField from "@mui/material/TextField";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
 
@@ -257,37 +259,39 @@ const Tricks = () => {
         <article className="grid grid-cols-12 justify-center">
           <h4 className="col-span-3 col-start-1">Current Simulation</h4>
           <h4 className="col-span-3">Number of Runs</h4>
-          <h4 className="col-span-3">Reset Repetitions</h4>
+          <h4 className="col-span-3">Reset tricks repetitions</h4>
           <h4 className="col-span-3">
             <SimulatorRefreshButton refresh={() => refreshResults()} />
           </h4>
           <h6 className="col-span-3 col-start-1">{competitionName}</h6>
           <h6 className="col-span-3">
-            <select
+            <TextField
+              select
               value={numberOfRuns}
               onChange={(e) => setNumberOfRuns(parseInt(e.target.value))}
             >
               {Array(maxNumberOfRuns)
                 .fill(false)
                 .map((_, i) => (
-                  <option key={i} value={i + 1}>
+                  <MenuItem key={i} value={i + 1}>
                     {i + 1}
-                  </option>
+                  </MenuItem>
                 ))}
-            </select>
+            </TextField>
           </h6>
           <h6 className="col-span-3">
-            <select
+            <TextField
+              select
               value={resetRepetitionsFrequency}
               onChange={(e) =>
                 setResetRepetitionsFrequency(parseInt(e.target.value))
               }
             >
-              <option value="0">never</option>
-              <option value="1">at each run</option>
-              <option value="2">at runs 3 and 5</option>
-              <option value="4">at run 5</option>
-            </select>
+              <MenuItem value="0">never</MenuItem>
+              <MenuItem value="1">every run</MenuItem>
+              <MenuItem value="2">at runs 3 and 5</MenuItem>
+              <MenuItem value="4">at run 5</MenuItem>
+            </TextField>
           </h6>
           <button
             className="col-span-3 cursor-pointer rounded-xl bg-awt-dark-700 py-3 text-white hover:invert"
