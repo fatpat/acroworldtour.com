@@ -44,6 +44,7 @@ class UniqueTrick(BaseModel):
     bonus_types: List[str]
     base_trick: str
     uniqueness: List[str]
+    bonuses: List[Bonus] = []
 
     class Config:
         schema_extra = {

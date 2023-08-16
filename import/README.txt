@@ -5,18 +5,20 @@ to import tricks, you can use the following command from the commandline:
 
 ### On development environment
 ```bash
+for i in 2023/tricks/*.json; do
     curl \
         -w '%{http_code} %{url}\n' \
         -X PUT \
         -H 'Content-Type: application/json' \
         -d @$i \
         "http://localhost:8000/tricks/$(jq -r '.name|@uri' $i)"
+done
 ```
 
 ### On production environment
 note: take the bearer from https://api.acroworldtour.com/docs/
 ```bash
-for i in tricks/2023/*.json; do
+for i in 2023/tricks/*.json; do
     curl \
         -w '%{http_code} %{url}\n' \
         -X PUT \
