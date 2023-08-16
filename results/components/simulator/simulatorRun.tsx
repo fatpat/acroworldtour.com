@@ -44,7 +44,10 @@ const SimulatorRun = ({
   const tricks_twisted =
     results?.tricks?.filter((trick) =>
       trick.bonuses?.some(
-        (t) => t.name.includes("twist") || t.name.includes("hardcore"),
+        (t) =>
+          t.name.includes("twist") ||
+          t.name.includes("hardcore") ||
+          t.name.includes("cab slide"),
       ),
     ) || [];
   const tricks_reversed =
@@ -210,7 +213,7 @@ const SimulatorRun = ({
             disablePortal
             options={uniqueTricks.concat([emptyTrick])}
             getOptionLabel={(t) =>
-              t?.name !== "" ? `${t.name} - ${t.acronym}` : ""
+              t?.name !== "" ? `${t.acronym} - ${t.name}` : ""
             }
             isOptionEqualToValue={(a, b) => a.name === b.name}
             groupBy={(t) => t?.base_trick}
@@ -221,7 +224,21 @@ const SimulatorRun = ({
               t.splice(i, 1, v?.name);
               setTricks(t);
             }}
-            className="col-span-full"
+            className="col-span-full py-1"
+            filterOptions={(options, state) => {
+              const text = state.inputValue.toLowerCase();
+              let filtered = options.filter(
+                (o) =>
+                  o.acronym.toLowerCase().startsWith(text) ||
+                  o.acronym.toLowerCase().startsWith(text),
+              );
+              if (filtered.length > 0) return filtered;
+              return options.filter(
+                (o) =>
+                  o.acronym.toLowerCase().includes(text) ||
+                  o.name.toLowerCase().includes(text),
+              );
+            }}
           />
         ))}
 
@@ -304,87 +321,89 @@ const SimulatorRun = ({
               {results.final_marks?.bonus.toFixed(3)}
             </h6>
 
-            {/* details bonuses */}
+            {/* best tricks */}
             <h4 className="col-span-full bg-awt-dark-500 py-3 text-white">
               3 best tricks
             </h4>
             {best_tricks.map((t) => (
-              <p
-                key={`best${t.acronym}`}
-                className="col-span-4 py-2 text-center"
-              >
-                {t.name} ({t.acronym})
+              <p key={t.acronym} className="col-span-4 py-2 text-center">
+                {t.name}
               </p>
             ))}
 
             {/* details bonuses */}
-            <h4 className="col-span-4 col-start-1 bg-awt-dark-500 py-3 text-white">
-              Twisted Tricks
-            </h4>
-            <h4 className="col-span-4 bg-awt-dark-500 py-3 text-white">
-              Reversed Tricks
-            </h4>
-            <h4 className="col-span-4 bg-awt-dark-500 py-3 text-white">
-              Flipped Tricks
-            </h4>
-            {Array(5)
-              .fill(false)
-              .map((_, i) => {
-                let out = [];
+            {(tricks_twisted.length > 0 ||
+              tricks_reversed.length > 0 ||
+              tricks_flipped.length > 0) && (
+              <>
+                <h4 className="col-span-4 col-start-1 bg-awt-dark-500 py-3 text-white">
+                  Twisted Tricks
+                </h4>
+                <h4 className="col-span-4 bg-awt-dark-500 py-3 text-white">
+                  Reversed Tricks
+                </h4>
+                <h4 className="col-span-4 bg-awt-dark-500 py-3 text-white">
+                  Flipped Tricks
+                </h4>
+                {Array(5)
+                  .fill(false)
+                  .map((_, i) => {
+                    let out = [];
 
-                let trick = tricks_twisted[i] || undefined;
-                if (trick)
-                  out.push(
-                    <p
-                      key={trick.acronym}
-                      className="col-span-4 col-start-1 py-1"
-                    >
-                      <b>{trick.name}</b>
-                      {trick.bonuses?.map((b) => (
-                        <Fragment key={b.name}>
-                          <br />
-                          {b.name} bonus: {b.bonus}%
-                        </Fragment>
-                      ))}
-                    </p>,
-                  );
+                    let trick = tricks_twisted[i] || undefined;
+                    if (trick)
+                      out.push(
+                        <p
+                          key={trick.acronym}
+                          className="col-span-4 col-start-1 py-1"
+                        >
+                          <b>{trick.name}</b>
+                          {trick.bonuses?.map((b) => (
+                            <Fragment key={b.name}>
+                              <br />
+                              {b.name} bonus: {b.bonus}%
+                            </Fragment>
+                          ))}
+                        </p>,
+                      );
 
-                trick = tricks_reversed[i] || undefined;
-                if (trick && i < 3)
-                  out.push(
-                    <p
-                      key={trick.acronym}
-                      className="col-span-4 col-start-5 py-1"
-                    >
-                      <b>{trick.name}</b>
-                      {trick.bonuses?.map((b) => (
-                        <Fragment key={b.name}>
-                          <br />
-                          {b.name} bonus: {b.bonus}%
-                        </Fragment>
-                      ))}
-                    </p>,
-                  );
+                    trick = tricks_reversed[i] || undefined;
+                    if (trick && i < 3)
+                      out.push(
+                        <p
+                          key={trick.acronym}
+                          className="col-span-4 col-start-5 py-1"
+                        >
+                          <b>{trick.name}</b>
+                          {trick.bonuses?.map((b) => (
+                            <Fragment key={b.name}>
+                              <br />
+                              {b.name} bonus: {b.bonus}%
+                            </Fragment>
+                          ))}
+                        </p>,
+                      );
 
-                trick = tricks_flipped[i] || undefined;
-                if (trick && i < 2)
-                  out.push(
-                    <p
-                      key={trick.acronym}
-                      className="col-span-4 col-start-9 py-1"
-                    >
-                      <b>{trick.name}</b>
-                      {trick.bonuses?.map((b) => (
-                        <Fragment key={b.name}>
-                          <br />
-                          {b.name} bonus: {b.bonus}%
-                        </Fragment>
-                      ))}
-                    </p>,
-                  );
-                return out;
-              })}
-
+                    trick = tricks_flipped[i] || undefined;
+                    if (trick && i < 2)
+                      out.push(
+                        <p
+                          key={trick.acronym}
+                          className="col-span-4 col-start-9 py-1"
+                        >
+                          <b>{trick.name}</b>
+                          {trick.bonuses?.map((b) => (
+                            <Fragment key={b.name}>
+                              <br />
+                              {b.name} bonus: {b.bonus}%
+                            </Fragment>
+                          ))}
+                        </p>,
+                      );
+                    return out;
+                  })}
+              </>
+            )}
             {/* warnings */}
             {(results.final_marks?.warnings.length || 0) > 0 && (
               <>

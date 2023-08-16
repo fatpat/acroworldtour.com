@@ -43,7 +43,7 @@ const Tricks = () => {
   const maxNumberOfRuns = 5;
   const defaultCompetitionName = "default";
   const defaultNumberOfRuns = 1;
-  const defaultResetRepetitionsFrequency = 3;
+  const defaultResetRepetitionsFrequency = 2;
 
   const [competitionName, setCompetitionName] = useState<string | undefined>(
     undefined,
