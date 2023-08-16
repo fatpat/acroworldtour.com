@@ -1,7 +1,7 @@
 import Autocomplete from "@mui/material/Autocomplete";
 import IconButton from "@mui/material/IconButton";
 import TextField from "@mui/material/TextField";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 
 import SimulatorMarkSelect from "@/components/simulator/simulatorMarkSelect";
 import { DeleteIcon } from "@/components/ui/icons";
@@ -40,6 +40,24 @@ const SimulatorRun = ({
     base_trick: "",
     uniqueness: [],
   };
+
+  const tricks_twisted =
+    results?.tricks?.filter((trick) =>
+      trick.bonuses?.some(
+        (t) => t.name.includes("twist") || t.name.includes("hardcore"),
+      ),
+    ) || [];
+  const tricks_reversed =
+    results?.tricks?.filter((trick) =>
+      trick.bonuses?.some((t) => t.name.includes("reverse")),
+    ) || [];
+  const tricks_flipped =
+    results?.tricks?.filter((trick) =>
+      trick.bonuses?.some((t) => t.name.includes("flip")),
+    ) || [];
+  let best_tricks = results?.tricks.slice() || [];
+  best_tricks.sort((a, b) => b.technical_coefficient - a.technical_coefficient);
+  best_tricks.splice(3);
 
   const [tricks, setTricks] = useState<Trick[] | undefined>(undefined);
   const [technical, setTechnical] = useState<number | undefined>(undefined);
@@ -184,6 +202,8 @@ const SimulatorRun = ({
             <DeleteIcon />
           </IconButton>
         </h2>
+
+        {/* tricks */}
         {[...Array(numberOfTricksPerRun).keys()].map((i) => (
           <Autocomplete
             key={`run${runIndex}_trick${i + 1}`}
@@ -205,8 +225,7 @@ const SimulatorRun = ({
           />
         ))}
 
-        <hr className="coll-span-full col-start-1 py-3" />
-
+        {/* marks */}
         <h5 className="col-span-4 col-start-1 bg-awt-dark-500 py-3 text-white">
           Technical
         </h5>
@@ -232,10 +251,11 @@ const SimulatorRun = ({
           setValue={setLanding}
           className="col-span-4"
         />
+
+        {/* results */}
         {results && tricks.find((t) => t !== undefined) && (
           <>
-            <hr className="coll-span-full col-start-1 py-3" />
-
+            {/* score */}
             <h4 className="col-span-full bg-awt-dark-500 py-3 text-white">
               Simulated Score
             </h4>
@@ -243,8 +263,7 @@ const SimulatorRun = ({
               {results.final_marks?.score.toFixed(3)}
             </h5>
 
-            <hr className="coll-span-full col-start-1 py-2" />
-
+            {/* details */}
             <h4 className="col-span-4 col-start-1 bg-awt-dark-500 py-3 text-white">
               Technicity
             </h4>
@@ -264,8 +283,7 @@ const SimulatorRun = ({
               {results.final_marks?.malus.toFixed(1)}%
             </h6>
 
-            <hr className="coll-span-full col-start-1 py-2" />
-
+            {/* final marks */}
             <h4 className="col-span-full bg-awt-dark-500 py-3 text-white">
               Final marks
             </h4>
@@ -286,9 +304,90 @@ const SimulatorRun = ({
               {results.final_marks?.bonus.toFixed(3)}
             </h6>
 
+            {/* details bonuses */}
+            <h4 className="col-span-full bg-awt-dark-500 py-3 text-white">
+              3 best tricks
+            </h4>
+            {best_tricks.map((t) => (
+              <p
+                key={`best${t.acronym}`}
+                className="col-span-4 py-2 text-center"
+              >
+                {t.name} ({t.acronym})
+              </p>
+            ))}
+
+            {/* details bonuses */}
+            <h4 className="col-span-4 col-start-1 bg-awt-dark-500 py-3 text-white">
+              Twisted Tricks
+            </h4>
+            <h4 className="col-span-4 bg-awt-dark-500 py-3 text-white">
+              Reversed Tricks
+            </h4>
+            <h4 className="col-span-4 bg-awt-dark-500 py-3 text-white">
+              Flipped Tricks
+            </h4>
+            {Array(5)
+              .fill(false)
+              .map((_, i) => {
+                let out = [];
+
+                let trick = tricks_twisted[i] || undefined;
+                if (trick)
+                  out.push(
+                    <p
+                      key={trick.acronym}
+                      className="col-span-4 col-start-1 py-1"
+                    >
+                      <b>{trick.name}</b>
+                      {trick.bonuses?.map((b) => (
+                        <Fragment key={b.name}>
+                          <br />
+                          {b.name} bonus: {b.bonus}%
+                        </Fragment>
+                      ))}
+                    </p>,
+                  );
+
+                trick = tricks_reversed[i] || undefined;
+                if (trick && i < 3)
+                  out.push(
+                    <p
+                      key={trick.acronym}
+                      className="col-span-4 col-start-5 py-1"
+                    >
+                      <b>{trick.name}</b>
+                      {trick.bonuses?.map((b) => (
+                        <Fragment key={b.name}>
+                          <br />
+                          {b.name} bonus: {b.bonus}%
+                        </Fragment>
+                      ))}
+                    </p>,
+                  );
+
+                trick = tricks_flipped[i] || undefined;
+                if (trick && i < 2)
+                  out.push(
+                    <p
+                      key={trick.acronym}
+                      className="col-span-4 col-start-9 py-1"
+                    >
+                      <b>{trick.name}</b>
+                      {trick.bonuses?.map((b) => (
+                        <Fragment key={b.name}>
+                          <br />
+                          {b.name} bonus: {b.bonus}%
+                        </Fragment>
+                      ))}
+                    </p>,
+                  );
+                return out;
+              })}
+
+            {/* warnings */}
             {(results.final_marks?.warnings.length || 0) > 0 && (
               <>
-                <hr className="coll-span-full col-start-1 py-2" />
                 <h4 className="col-span-full col-start-1 bg-awt-dark-500 py-3 text-white">
                   Warnings
                 </h4>
@@ -300,9 +399,9 @@ const SimulatorRun = ({
               </>
             )}
 
+            {/* notes */}
             {(results.final_marks?.notes?.length || 0) > 0 && (
               <>
-                <hr className="coll-span-full col-start-1 py-2" />
                 <h4 className="col-span-full col-start-1 bg-awt-dark-500 py-3 text-white">
                   Notes
                 </h4>

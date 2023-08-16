@@ -63,6 +63,7 @@ const Tricks = () => {
 
   const refreshResults = () => {
     if (resetRepetitionsFrequency === undefined) return;
+    if (numberOfRuns === undefined) return;
 
     fetch(
       `${API_URL}/simulate/competition/solo?reset_repetitions_frequency=${resetRepetitionsFrequency}`,
@@ -72,8 +73,8 @@ const Tricks = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(
-          runs.map((run) => {
-            if (!run)
+          runs.map((run, i) => {
+            if (!run || i >= numberOfRuns)
               return {
                 tricks: [],
                 marks: [
@@ -136,7 +137,6 @@ const Tricks = () => {
   };
 
   const setRun = (i: number, run: any) => {
-    console.log("setRun", i, run);
     if (i < 0 || i >= maxNumberOfRuns) return;
     setRuns((previousRuns) => {
       let r = [...previousRuns];
@@ -294,7 +294,7 @@ const Tricks = () => {
             </TextField>
           </h6>
           <button
-            className="col-span-3 cursor-pointer rounded-xl bg-awt-dark-700 py-3 text-white hover:invert"
+            className="col-span-3 cursor-pointer rounded-xl bg-awt-dark-700 text-white hover:invert"
             onClick={() => refreshResults()}
           >
             {finalScore === undefined

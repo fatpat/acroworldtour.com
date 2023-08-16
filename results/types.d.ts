@@ -1879,6 +1879,11 @@ export interface components {
       base_trick: string;
       /** Uniqueness */
       uniqueness: (string)[];
+      /**
+       * Bonuses 
+       * @default []
+       */
+      bonuses?: (components["schemas"]["Bonus"])[];
     };
     /** ValidationError */
     ValidationError: {
