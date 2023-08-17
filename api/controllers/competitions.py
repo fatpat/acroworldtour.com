@@ -47,10 +47,11 @@ class CompCtrl:
             ws.cell(column=10, row=1, value="CIVL ID")
             ws.cell(column=11, row=1, value="Score")
 
-
-        awt_results = list(filter(lambda r: r.pilot.is_awt, comp.results["overall"]))
-        awq_results = list(filter(lambda r: not r.pilot.is_awt, comp.results["overall"]))
-        all_results = awt_results + awq_results
+        all_results = comp.results["overall"]
+        if type == CompetitionType.solo:
+            awt_results = list(filter(lambda r: r.pilot.is_awt, comp.results["overall"]))
+            awq_results = list(filter(lambda r: not r.pilot.is_awt, comp.results["overall"]))
+            all_results = awt_results + awq_results
 
         rank = 0
         row = 1
@@ -59,7 +60,7 @@ class CompCtrl:
         for res in all_results:
             rank += 1
 
-            if not first_awq and not res.pilot.is_awt:
+            if type == CompetitionType.solo and not first_awq and not res.pilot.is_awt:
                 score = 80
                 first_awq = True
 
@@ -135,10 +136,14 @@ class CompCtrl:
             ws.cell(column=10, row=1, value="CIVL ID")
             ws.cell(column=11, row=1, value="Score")
 
+
         run.results["overall"].sort(key=lambda e: -e.final_marks.score)
-        awt_results = list(filter(lambda r: r.pilot.is_awt, run.results["overall"]))
-        awq_results = list(filter(lambda r: not r.pilot.is_awt, run.results["overall"]))
-        all_results = awt_results + awq_results
+        all_results = run.results["overall"]
+
+        if type == CompetitionType.solo:
+            awt_results = list(filter(lambda r: r.pilot.is_awt, run.results["overall"]))
+            awq_results = list(filter(lambda r: not r.pilot.is_awt, run.results["overall"]))
+            all_results = awt_results + awq_results
 
         rank = 0
         row = 1
@@ -147,7 +152,7 @@ class CompCtrl:
         for res in all_results:
             rank += 1
 
-            if not first_awq and not res.pilot.is_awt:
+            if type == CompetitionType.solo and not first_awq and not res.pilot.is_awt:
                 score = 80
                 first_awq = True
 
