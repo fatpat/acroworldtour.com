@@ -98,10 +98,7 @@ class ScoreCtrl:
             tricks = []
             errors = []
             for trick_name in flight.tricks:
-                trick = await Trick.get_unique_trick(trick_name,
-                    solo  = (type==CompetitionType.solo),
-                    synchro = (type==CompetitionType.synchro),
-                )
+                trick = await Trick.get_unique_trick(trick_name)
                 if trick is None:
                     errors.append(trick_name)
                 else:

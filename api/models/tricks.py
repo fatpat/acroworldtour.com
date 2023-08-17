@@ -45,6 +45,8 @@ class UniqueTrick(BaseModel):
     base_trick: str
     uniqueness: List[str]
     bonuses: List[Bonus] = []
+    synchro: Optional[bool]
+    solo: Optional[bool]
 
     class Config:
         schema_extra = {
@@ -201,22 +203,22 @@ class Trick(BaseModel):
 
     @staticmethod
     async def get_unique_tricks(solo: bool, synchro: bool) -> List[UniqueTrick]:
+        log.debug(f"get_unique_tricks solo={solo} synchro={synchro}")
         if not solo and not synchro:
             return []
         tricks = []
         for trick in await collection.find({"deleted": None, "$or": [{"solo": solo}, {"synchro": synchro}]}).sort("technical_coefficient").to_list(1000):
             for t in trick['tricks']:
-                tricks.append(UniqueTrick.parse_obj(t))
+                if ('solo' not in t or t['solo'] == solo) or ('synchro' not in t or t['synchro'] == synchro):
+                    tricks.append(UniqueTrick.parse_obj(t))
         return tricks
 
     @staticmethod
-    async def get_unique_trick(id, solo:bool = True, synchro:bool = True) -> UniqueTrick:
+    async def get_unique_trick(id) -> UniqueTrick:
         trick = await collection.find_one({"deleted": None, "$or": [{"tricks.name": id}, {"tricks.acronym": id}]})
         if trick is None:
             return None
         trick = Trick.parse_obj(trick)
-        if solo and not trick.solo or synchro and not trick.synchro:
-            return None
         for t in trick.tricks:
             if t.name == id or t.acronym == id:
                 return UniqueTrick.parse_obj(t)

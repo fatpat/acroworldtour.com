@@ -70,7 +70,10 @@ async def get_directions():
     dependencies=[Depends(auth)],
 )
 async def get_unique_trick(id):
-    return await Trick.get_unique_trick(id)
+    trick = await Trick.get_unique_trick(id)
+    if trick is None:
+        raise HTTPException(status_code=404)
+    return trick
 
 #
 # Get one trick

@@ -96,8 +96,11 @@ class TrickCtrl:
                 base_trick = trick.name,
                 uniqueness = uniqueness,
                 bonuses = combination,
+                solo = trick.solo,
+                synchro = trick.synchro,
             ))
         else:
+
             for direction in trick.directions:
                 direction_acronym = next(d['acronym'] for d in settings.tricks.available_directions if d['name'] == direction)
 
@@ -110,6 +113,25 @@ class TrickCtrl:
                     base_trick = trick.name,
                     uniqueness = uniqueness + [direction],
                     bonuses = combination,
+                    solo = trick.solo,
+                    synchro = trick.synchro,
+                ))
+
+            if trick.solo and trick.synchro:
+                direction = "opposite"
+                direction_acronym = list(filter(lambda d: d['name'] == direction, settings.tricks.available_directions))[0]['acronym']
+
+                trick.tricks.append(UniqueTrick(
+                    name = (name % f"{direction} "),
+                    acronym = (acronym % direction_acronym),
+                    technical_coefficient = trick.technical_coefficient,
+                    bonus = overall_bonus,
+                    bonus_types = bonus_types,
+                    base_trick = trick.name,
+                    uniqueness = uniqueness + [direction],
+                    bonuses = combination,
+                    solo = False,
+                    synchro = trick.synchro,
                 ))
 
         return
