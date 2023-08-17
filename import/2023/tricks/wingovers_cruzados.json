@@ -2,7 +2,7 @@
   "name": "Wingovers Cruzados",
   "acronym": "WC",
   "directions": [],
-  "solo": true,
+  "solo": false,
   "synchro": true,
   "repeatable": true,
   "description": "Same as Wingover Opposite but the pilots must cross each other during the manoeuvre",
