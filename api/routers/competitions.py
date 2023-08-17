@@ -390,7 +390,7 @@ async def get_export_results(request: Request, id: str, bg_tasks: BackgroundTask
     bg_tasks.add_task(os.remove, file)
     filename=f"{id}-overall-results"
     if limit_run >= 0:
-        filename += f"-after-run{limit_run}"
+        filename += f"-after-run{limit_run+1}"
     filename += f"-{datetime.now().strftime('%Y-%m-%d-%H%M%S')}.xlsx"
     return FileResponse(path=file, filename=filename, background=bg_tasks)
 
@@ -428,5 +428,5 @@ async def run_get_results(request: Request, id: str, i: int, bg_tasks: Backgroun
     else:
         raise HTTPException(status_code=400, detail="wrong file type, must be xls or html")
     bg_tasks.add_task(os.remove, file)
-    filename=f"{id}-run{i}-results-{datetime.now().strftime('%Y-%m-%d-%H%M%S')}.xlsx"
+    filename=f"{id}-run{i+1}-results-{datetime.now().strftime('%Y-%m-%d-%H%M%S')}.xlsx"
     return FileResponse(path=file, filename=filename, background=bg_tasks)

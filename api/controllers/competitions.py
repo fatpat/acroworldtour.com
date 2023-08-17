@@ -47,11 +47,22 @@ class CompCtrl:
             ws.cell(column=10, row=1, value="CIVL ID")
             ws.cell(column=11, row=1, value="Score")
 
+
+        awt_results = list(filter(lambda r: r.pilot.is_awt, comp.results["overall"]))
+        awq_results = list(filter(lambda r: not r.pilot.is_awt, comp.results["overall"]))
+        all_results = awt_results + awq_results
+
         rank = 0
         row = 1
-        for res in comp.results["overall"]:
+        score = 100
+        first_awq = False
+        for res in all_results:
             rank += 1
-            score = round(res.score, 3)
+
+            if not first_awq and not res.pilot.is_awt:
+                score = 80
+                first_awq = True
+
             if type == CompetitionType.solo:
                 row += 1
                 ws.cell(column=1, row=row, value=f"{rank}")
@@ -81,6 +92,8 @@ class CompCtrl:
                     ws.cell(column=11, row=row, value=f"{score}")
                 ws.merge_cells(start_row=row-1, start_column=1, end_row=row, end_column=1)
                 ws.merge_cells(start_row=row-1, start_column=2, end_row=row, end_column=2)
+
+            score = score - 1
 
         with NamedTemporaryFile(suffix=".xlsx", delete=False) as xlsx:
             ret = xlsx.name
@@ -122,12 +135,22 @@ class CompCtrl:
             ws.cell(column=10, row=1, value="CIVL ID")
             ws.cell(column=11, row=1, value="Score")
 
+        run.results["overall"].sort(key=lambda e: -e.final_marks.score)
+        awt_results = list(filter(lambda r: r.pilot.is_awt, run.results["overall"]))
+        awq_results = list(filter(lambda r: not r.pilot.is_awt, run.results["overall"]))
+        all_results = awt_results + awq_results
+
         rank = 0
         row = 1
-        run.results["overall"].sort(key=lambda e: -e.final_marks.score)
-        for res in run.results["overall"]:
+        score = 100
+        first_awq = False
+        for res in all_results:
             rank += 1
-            score = round(res.final_marks.score, 3)
+
+            if not first_awq and not res.pilot.is_awt:
+                score = 80
+                first_awq = True
+
             if type == CompetitionType.solo:
                 row += 1
                 ws.cell(column=1, row=row, value=f"{rank}")
@@ -157,6 +180,8 @@ class CompCtrl:
                     ws.cell(column=11, row=row, value=f"{score}")
                 ws.merge_cells(start_row=row-1, start_column=1, end_row=row, end_column=1)
                 ws.merge_cells(start_row=row-1, start_column=2, end_row=row, end_column=2)
+
+            score = score - 1
 
         with NamedTemporaryFile(suffix=".xlsx", delete=False) as xlsx:
             ret = xlsx.name
