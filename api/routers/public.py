@@ -339,7 +339,7 @@ async def simulate(civlid:int, run:int, download:bool = False):
 
     headers = {}
     if download:
-        headers["Content-Disposition"] = f"attachment; filename=\"live.overlay.pilot.{pilot}.run{run}.svg\""
+        headers["Content-Disposition"] = f"attachment; filename=\"live.overlay.run{run}.pilot.{pilot}.svg\""
     else:
         headers["Content-Disposition"] = f"inline"
 
@@ -359,7 +359,7 @@ async def simulate(team:str, run:int, download:bool = False):
 
     headers = {}
     if download:
-        headers["Content-Disposition"] = f"attachment; filename=\"live.overlay.team.{team}.run{run}.svg\""
+        headers["Content-Disposition"] = f"attachment; filename=\"live.overlay.team.run{run}.{team}.svg\""
     else:
         headers["Content-Disposition"] = f"inline"
 
