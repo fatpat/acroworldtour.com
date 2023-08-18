@@ -66,31 +66,31 @@ class CompCtrl:
 
             if type == CompetitionType.solo:
                 row += 1
-                ws.cell(column=1, row=row, value=f"{rank}")
-                ws.cell(column=2, row=row, value=f"{res.pilot.civlid}")
+                ws.cell(column=1, row=row, value=rank)
+                ws.cell(column=2, row=row, value=res.pilot.civlid)
                 ws.cell(column=3, row=row, value=res.pilot.name.split(" ", 1)[0])
                 ws.cell(column=4, row=row, value=res.pilot.name.split(" ", 1)[1])
                 ws.cell(column=5, row=row, value=res.pilot.country.upper())
                 ws.cell(column=6, row=row, value="M" if res.pilot.gender == "man" else "F")
                 ws.cell(column=7, row=row, value=f"")
                 ws.cell(column=8, row=row, value=f"")
-                ws.cell(column=9, row=row, value=f"{res.pilot.civlid}")
-                ws.cell(column=10, row=row, value=f"{score}")
+                ws.cell(column=9, row=row, value=res.pilot.civlid)
+                ws.cell(column=10, row=row, value=score)
 
             if type == CompetitionType.synchro:
                 for i, pilot in enumerate(res.team.pilots):
                     row += 1
-                    ws.cell(column=1, row=row, value=f"{rank}")
+                    ws.cell(column=1, row=row, value=rank)
                     ws.cell(column=2, row=row, value=f"{res.team.name}")
-                    ws.cell(column=3, row=row, value=f"{pilot.civlid}")
+                    ws.cell(column=3, row=row, value=pilot.civlid)
                     ws.cell(column=4, row=row, value=pilot.name.split(" ", 1)[0])
                     ws.cell(column=5, row=row, value=pilot.name.split(" ", 1)[1])
                     ws.cell(column=6, row=row, value=pilot.country.upper())
                     ws.cell(column=7, row=row, value=f"M")
                     ws.cell(column=8, row=row, value=f"")
                     ws.cell(column=9, row=row, value=f"")
-                    ws.cell(column=10, row=row, value=f"{pilot.civlid}")
-                    ws.cell(column=11, row=row, value=f"{score}")
+                    ws.cell(column=10, row=row, value=pilot.civlid)
+                    ws.cell(column=11, row=row, value=score)
                 ws.merge_cells(start_row=row-1, start_column=1, end_row=row, end_column=1)
                 ws.merge_cells(start_row=row-1, start_column=2, end_row=row, end_column=2)
                 ws.merge_cells(start_row=row-1, start_column=11, end_row=row, end_column=11)
@@ -159,31 +159,31 @@ class CompCtrl:
 
             if type == CompetitionType.solo:
                 row += 1
-                ws.cell(column=1, row=row, value=f"{rank}")
-                ws.cell(column=2, row=row, value=f"{res.pilot.civlid}")
+                ws.cell(column=1, row=row, value=rank)
+                ws.cell(column=2, row=row, value=res.pilot.civlid)
                 ws.cell(column=3, row=row, value=res.pilot.name.split(" ", 1)[0])
                 ws.cell(column=4, row=row, value=res.pilot.name.split(" ", 1)[1])
                 ws.cell(column=5, row=row, value=res.pilot.country.upper())
                 ws.cell(column=6, row=row, value="M" if res.pilot.gender == "man" else "F")
                 ws.cell(column=7, row=row, value=f"")
                 ws.cell(column=8, row=row, value=f"")
-                ws.cell(column=9, row=row, value=f"{res.pilot.civlid}")
-                ws.cell(column=10, row=row, value=f"{score}")
+                ws.cell(column=9, row=row, value=res.pilot.civlid)
+                ws.cell(column=10, row=row, value=score)
 
             if type == CompetitionType.synchro:
                 for i, pilot in enumerate(res.team.pilots):
                     row += 1
-                    ws.cell(column=1, row=row, value=f"{rank}")
+                    ws.cell(column=1, row=row, value=rank)
                     ws.cell(column=2, row=row, value=f"{res.team.name}")
-                    ws.cell(column=3, row=row, value=f"{pilot.civlid}")
+                    ws.cell(column=3, row=row, value=pilot.civlid)
                     ws.cell(column=4, row=row, value=pilot.name.split(" ", 1)[0])
                     ws.cell(column=5, row=row, value=pilot.name.split(" ", 1)[1])
                     ws.cell(column=6, row=row, value=pilot.country.upper())
                     ws.cell(column=7, row=row, value=f"M")
                     ws.cell(column=8, row=row, value=f"")
                     ws.cell(column=9, row=row, value=f"")
-                    ws.cell(column=10, row=row, value=f"{pilot.civlid}")
-                    ws.cell(column=11, row=row, value=f"{score}")
+                    ws.cell(column=10, row=row, value=pilot.civlid)
+                    ws.cell(column=11, row=row, value=score)
                 ws.merge_cells(start_row=row-1, start_column=1, end_row=row, end_column=1)
                 ws.merge_cells(start_row=row-1, start_column=2, end_row=row, end_column=2)
                 ws.merge_cells(start_row=row-1, start_column=11, end_row=row, end_column=11)
