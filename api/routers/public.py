@@ -1,5 +1,7 @@
 import logging
 import json
+import re
+import unicodedata
 from http import HTTPStatus
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Response, Body
 from typing import List, Any
@@ -22,6 +24,7 @@ from controllers.utils import UtilsCtrl
 from controllers.seasons import SeasonCtrl
 from controllers.competitions import CompCtrl
 from controllers.scores import ScoreCtrl
+from controllers.live import LiveCtrl
 from core.utils import GenericResponseCoder
 
 log = logging.getLogger(__name__)
@@ -321,3 +324,43 @@ async def list(solo: bool = True, synchro: bool = False):
 )
 async def simulate(t: CompetitionType, flights: List[FlightNew] = Body(...), reset_repetitions_frequency:int = 0):
     return await ScoreCtrl.simulate_scores(flights=flights, type=t, reset_repetitions_frequency=reset_repetitions_frequency)
+
+#
+# Get live template for pilot
+#
+@public.get(
+    "/live/overlay/pilot/{civlid}/run/{run}",
+    response_class=Response,
+)
+async def simulate(civlid:int, run:int, download:bool = False):
+    pilot, svg = await LiveCtrl.pilot_overlay(civlid, run)
+    pilot = ''.join(c for c in unicodedata.normalize('NFD', pilot) if unicodedata.category(c) != 'Mn')
+    pilot = re.sub(r'[^\x00-\x7f]',r'', pilot)
+
+    headers = {}
+    if download:
+        headers["Content-Disposition"] = f"attachment; filename=\"live.overlay.pilot.{pilot}.run{run}.svg\""
+    else:
+        headers["Content-Disposition"] = f"inline"
+
+    return Response(content=svg, media_type="image/svg+xml", headers=headers)
+
+#
+# Get live template for team
+#
+@public.get(
+    "/live/overlay/team/{team}/run/{run}",
+    response_class=Response,
+)
+async def simulate(team:str, run:int, download:bool = False):
+    team, svg = await LiveCtrl.team_overlay(team, run)
+    team = ''.join(c for c in unicodedata.normalize('NFD', team) if unicodedata.category(c) != 'Mn')
+    team = re.sub(r'[^\x00-\x7f]',r'', team)
+
+    headers = {}
+    if download:
+        headers["Content-Disposition"] = f"attachment; filename=\"live.overlay.team.{team}.run{run}.svg\""
+    else:
+        headers["Content-Disposition"] = f"inline"
+
+    return Response(content=svg, media_type="image/svg+xml", headers=headers)
