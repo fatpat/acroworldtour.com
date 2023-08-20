@@ -1044,7 +1044,11 @@ class Competition(CompetitionNew):
 
                 n_bonuses[bonus_type] += 1
 
-                max = dict(config.max_bonus_per_run)[bonus_type]
+                max=10
+                try:
+                    max = dict(config.max_bonus_per_run)[bonus_type]
+                except:
+                    pass
 
                 if n_bonuses[bonus_type] > max:
                     log.warning(f"Ignoring trick #{i} ({trick}) because already {max} tricks have been flown")
