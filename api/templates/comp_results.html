@@ -53,7 +53,7 @@
                 <ul class="nobullets" style="padding: 0;">
 {%     for sponsor in res.pilot.sponsors %}
                     <li>
-{%       if sponsor.link | length > 0 %}
+{%       if sponsor.link and sponsor.link | length > 0 %}
                         <a href="{{ sponsor.link }}" target="_blank">{{ sponsor.name }}</a>
 {%       else %}
                         {{ sponsor.name }}
