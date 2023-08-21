@@ -63,15 +63,6 @@
                 </ul>
 {%   endif %}
             </td>
-{% else %}
-            <td>
-                {{ res.team.name }}
-                <ul class="nobullets">
-{% for pilot in res.team.pilots %}
-                    <li>{{ pilot.name }}</li>
-{% endfor %}
-                </ul>
-            </td>
 {% endif %}
         {% for run in res.result_per_run %}
             {% if loop.index == 1 %}
