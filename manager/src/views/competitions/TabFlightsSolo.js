@@ -32,14 +32,7 @@ import Checkbox from '@mui/material/Checkbox'
 import EnhancedTable from 'src/views/tables/EnhancedTable'
 import { useNotifications } from 'src/util/notifications'
 import { APIRequest, useUniqueTricks } from 'src/util/backend'
-
-const SelectMark = (props) => {
-  return (
-    <NativeSelect onChange={e => {props.onChange(e)}}>
-      { Array.from({length: 21}, (v, k) => k*0.5).map(i => (<option value={i} selected={props.value==i}>{i}</option>))}
-    </NativeSelect>
-  )
-}
+import InputMark from 'src/components/InputMark'
 
 const TabFlights = ({ comp, run, rid }) => {
   // ** notification messages
@@ -143,7 +136,11 @@ const TabFlights = ({ comp, run, rid }) => {
   const setMark = (type, judge, mark) => {
     for (const [i, m] of data.marks.entries()) {
         if (data.marks[i].judge == judge._id) {
-          data.marks[i][type] = mark
+          if (isNaN(mark)) {
+            delete data.marks[i][type]
+          } else {
+            data.marks[i][type] = mark
+          }
           setData(data)
           simulateScore(data)
           return
@@ -293,9 +290,9 @@ const TabFlights = ({ comp, run, rid }) => {
     </TableHead>
             <TableBody>
 { run.judges.map((j) => {
-    var technical = 0
-    var choreography = 0
-    var landing = 0
+    var technical = null
+    var choreography = null
+    var landing = null
     for (const m in data.marks) {
       m = data.marks[m]
       if (m.judge == j._id) {
@@ -311,13 +308,13 @@ const TabFlights = ({ comp, run, rid }) => {
                   <Typography>{ j.name }</Typography>
                 </TableCell>
                 <TableCell>
-                  <SelectMark onChange={e => {setMark('technical', j, e.target.value)}} value={technical}/>
+                  <InputMark onChange={value => {setMark('technical', j, value)}} value={technical} />
                 </TableCell>
                 <TableCell>
-                  <SelectMark onChange={e => {setMark('choreography', j, e.target.value)}} value={choreography}/>
+                  <InputMark onChange={value => {setMark('choreography', value)}} value={choreography} />
                 </TableCell>
                 <TableCell>
-                  <SelectMark onChange={e => {setMark('landing', j, e.target.value)}} value={landing}/>
+                  <InputMark onChange={value => {setMark('landing', j, value)}} value={landing} />
                 </TableCell>
             </TableRow>
 )})}
