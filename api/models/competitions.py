@@ -1,4 +1,5 @@
 import logging
+from collections import Counter
 from pydantic import BaseModel, Field, validator, AnyHttpUrl
 from fastapi import  HTTPException
 from bson import ObjectId
@@ -1029,6 +1030,40 @@ class Competition(CompetitionNew):
         # endof calculating the weight average of the judges marks
         #
 
+
+        #
+        # tricks direction odd-even check
+        #
+        if len(flight.tricks) > 1: # this does not make sense with only 1 trick
+            directions = []
+            available_directions = list(map(lambda  x:x['name'], settings.tricks.available_directions))
+
+            # parse each tricks
+            for trick in flight.tricks:
+
+                # search if there is a direction
+                for bonus in trick.uniqueness:
+                    if bonus in available_directions:
+                        directions.append(bonus)
+                        break
+
+            # count the number of each directions
+            directions=Counter(directions)
+            # only keep the number of each directions
+            directions = directions.values()
+
+            # if there is only one direction flown
+            # or
+            # a difference of 2 between the number of directions flown
+            if (len(directions) == 1) or (max(directions) - min(directions) > 1):
+                # then lower the choreography mark by 1
+                if mark.judges_mark.choreography >= 1:
+                    mark.judges_mark.choreography -= 1
+        #
+        # endof tricks direction odd-even check
+        #
+
+
         #
         # ignore trick with bonus higher than the maximum bonus tricks allowed
         #
@@ -1044,15 +1079,15 @@ class Competition(CompetitionNew):
 
                 n_bonuses[bonus_type] += 1
 
-                max=10
+                max_per_run=10
                 try:
-                    max = dict(config.max_bonus_per_run)[bonus_type]
+                    max_per_run = dict(config.max_bonus_per_run)[bonus_type]
                 except:
                     pass
 
-                if n_bonuses[bonus_type] > max:
-                    log.warning(f"Ignoring trick #{i} ({trick}) because already {max} tricks have been flown")
-                    mark.notes.append(f"trick number #{i} ({trick.name}) has been ignored because more than {max} {bonus_type} tricks have been flown")
+                if n_bonuses[bonus_type] > max_per_run:
+                    log.warning(f"Ignoring trick #{i} ({trick}) because already {max_per_run} tricks have been flown")
+                    mark.notes.append(f"trick number #{i} ({trick.name}) has been ignored because more than {max_per_run} {bonus_type} tricks have been flown")
                     ignoring = True
 
             if not ignoring:
