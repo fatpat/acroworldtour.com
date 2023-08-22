@@ -12,7 +12,7 @@ default:
 
 export:
 	@test -n "$(from)" || (echo "missing from parameter" ; false)
-	@[[ "$(from)" == "PROD" || "$(from)" == "PREPROD" || "$(from)" == "DEV" ]] || (echo "from parameter ($(from)) must be PROD, PREPROD or DEV" ; false)
+	@[[ "$(from)" == "PROD" || "$(from)" == "PREPROD" || "$(from)" == "DEV" || "$(from)" == "TRAINING" ]] || (echo "from parameter ($(from)) must be PROD, PREPROD, TRAINING or DEV" ; false)
 
 	@[[ ! -f "$(BACKUP_FILE)" ]] || (echo "$(BACKUP_FILE) already exist"; false)
 
@@ -24,7 +24,7 @@ export:
 
 import:
 	@test -n "$(from)" || (echo "missing from parameter" ; false)
-	@[[ "$(to)" == "PROD" || "$(to)" == "PREPROD" || "$(to)" == "DEV" ]] || (echo "to parameter ($(to)) must be PROD, PREPROD or DEV" ; false)
+	@[[ "$(to)" == "PROD" || "$(to)" == "PREPROD" || "$(to)" == "DEV" || "$(to)" == "TRAINING" ]] || (echo "to parameter ($(to)) must be PROD, PREPROD, TRAINING or DEV" ; false)
 
 	@[[ -f "$(from)" ]] || (echo "backup file $(from) not found"; false)
 

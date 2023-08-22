@@ -94,19 +94,35 @@ const PilotDetails = ({ pilot }: Props) => {
         <article className="p-4">
           <h4>Sponsors:</h4>
           <div className="flex flex-wrap justify-evenly">
-            {sponsors.map((sponsor) => (
-              <Link
-                key={sponsor.name}
-                href={sponsor.link}
-                title={sponsor.name}
-                style={{ backgroundImage: `url('${sponsor.img}')` }}
-                target="_blank"
-                className={classNames(
-                  "m-4 aspect-video w-20 bg-contain bg-center bg-no-repeat",
-                  "hover:fill-awt-accent-500",
-                )}
-              />
-            ))}
+            {sponsors.map((sponsor) => {
+              if (sponsor.link) {
+                return (
+                  <Link
+                    key={sponsor.name}
+                    href={sponsor.link}
+                    title={sponsor.name}
+                    style={{ backgroundImage: `url('${sponsor.img}')` }}
+                    target="_blank"
+                    className={classNames(
+                      "m-4 aspect-video w-20 bg-contain bg-center bg-no-repeat",
+                      "hover:fill-awt-accent-500",
+                    )}
+                  />
+                );
+              } else {
+                return (
+                  <span
+                    key={sponsor.name}
+                    title={sponsor.name}
+                    style={{ backgroundImage: `url('${sponsor.img}')` }}
+                    className={classNames(
+                      "m-4 aspect-video w-20 bg-contain bg-center bg-no-repeat",
+                      "hover:fill-awt-accent-500",
+                    )}
+                  />
+                );
+              }
+            })}
           </div>
         </article>
       )}

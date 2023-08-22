@@ -10,7 +10,7 @@ import { API_URL } from "@/constants";
 import { components } from "@/types";
 
 type Competition = components["schemas"]["CompetitionPublicExport"];
-type Season = components["schemas"]["SeasonExport"];
+type Season = components["schemas"]["SeasonPublicExport"];
 
 const currentYear = new Date().getFullYear();
 

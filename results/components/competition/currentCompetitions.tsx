@@ -7,7 +7,7 @@ import { components } from "@/types";
 import FetchError from "../ui/fetchError";
 import FetchLoading from "../ui/fetchLoading";
 
-type Competition = components["schemas"]["CompetitionPublicExport"];
+type Competition = components["schemas"]["CompetitionPublicExportWithResults"];
 
 const pluralH2 = "Current Competitions";
 const singularH2 = "Current Competition";

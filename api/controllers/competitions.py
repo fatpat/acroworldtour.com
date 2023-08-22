@@ -1,6 +1,7 @@
 import logging
 from tempfile import NamedTemporaryFile
 from openpyxl import Workbook
+from fastapi import HTTPException
 
 from models.competitions import Competition, CompetitionResultsExport, CompetitionType, CompetitionExport, CompetitionResults
 from models.results import RunResultsExport
@@ -164,9 +165,11 @@ class CompCtrl:
         return ret
 
     @staticmethod
-    def svg_overall(competition: CompetitionResults):
+    def svg_overall(competition: CompetitionResults, result_type: str = 'overall'):
+        if result_type not in competition.results:
+            raise HTTPException(status_code=404, detail=f"Result Type not found for this competition")
         results = []
-        for rank, result in enumerate(competition.results["overall"]):
+        for rank, result in enumerate(competition.results[result_type]):
             results.append(SvgData(
                 rank=rank+1,
                 country=result.pilot.country if competition.type == "solo" else None,
@@ -177,15 +180,20 @@ class CompCtrl:
         return UtilsCtrl.svg(results)
 
     @staticmethod
-    def svg_run(compResults: CompetitionResults, run: int):
-        compResults = compResults.runs_results[run-1]
+    def svg_run(competition: CompetitionResults, run: int, result_type: str = 'overall'):
+        try:
+            competition = competition.runs_results[run-1]
+        except:
+            raise HTTPException(status_code=404, detail=f"Run not found for this competition")
         results = []
-        compResults.results.sort(key=lambda e: -e.final_marks.score)
-        for rank, result in enumerate(compResults.results):
+        if result_type not in competition.results:
+            raise HTTPException(status_code=404, detail=f"Result Type not found for this run")
+        competition.results[result_type].sort(key=lambda e: -e.final_marks.score)
+        for rank, result in enumerate(competition.results[result_type]):
             results.append(SvgData(
                 rank=rank+1,
-                country=result.pilot.country if compResults.type == "solo" else None,
-                name=result.pilot.name if compResults.type == "solo" else result.team.name,
+                country=result.pilot.country if competition.type == "solo" else None,
+                name=result.pilot.name if competition.type == "solo" else result.team.name,
                 score="%.3f" % result.final_marks.score
             ))
 

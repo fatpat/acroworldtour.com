@@ -44,6 +44,7 @@ class UniqueTrick(BaseModel):
     bonus_types: List[str]
     base_trick: str
     uniqueness: List[str]
+    bonuses: List[Bonus] = []
 
     class Config:
         schema_extra = {
@@ -185,7 +186,6 @@ class Trick(BaseModel):
             search = {"$or": [{"_id": id}, {"name": id}]}
         else:
             search = {"$or": [{"_id": id}, {"name": id}], "deleted": None}
-        log.debug(f"mongo[tricks].find_one({search})")
         trick = await collection.find_one(search)
         if trick is None:
             raise HTTPException(404, f"Trick {id} not found")
@@ -204,7 +204,6 @@ class Trick(BaseModel):
         if not solo and not synchro:
             return []
         tricks = []
-        log.debug(f"mongo[tricks].find()")
         for trick in await collection.find({"deleted": None, "$or": [{"solo": solo}, {"synchro": synchro}]}).sort("technical_coefficient").to_list(1000):
             for t in trick['tricks']:
                 tricks.append(UniqueTrick.parse_obj(t))

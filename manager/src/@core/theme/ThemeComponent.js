@@ -39,6 +39,10 @@ const ThemeComponent = props => {
 
   return (
     <ThemeProvider theme={theme}>
+      <div id="body-border-top"></div>
+      <div id="body-border-bottom"></div>
+      <div id="body-border-left"></div>
+      <div id="body-border-right"></div>
       <CssBaseline />
       <GlobalStyles styles={() => GlobalStyling(theme)} />
       {children}

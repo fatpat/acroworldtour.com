@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - run: flyctl deploy --remote-only --dockerfile Dockerfile.fly.io
+      - run: flyctl deploy --remote-only --dockerfile Dockerfile.fly.io --wait-timeout 600
         working-directory: ./api
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

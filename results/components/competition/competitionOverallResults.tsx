@@ -3,7 +3,7 @@ import { components } from "@/types";
 import CompetitionOverallHeader from "./competitionOverallHeader";
 
 interface Props {
-  results: components["schemas"]["CompetitionPilotResultsExport"][];
+  results: components["schemas"]["CompetitionPilotResultsExport"][] | undefined;
   type: components["schemas"]["CompetitionType"];
   className?: string;
 }
@@ -21,7 +21,7 @@ const CompetitionOverallResults = ({ results, type, className }: Props) => {
         Score
       </h4>
 
-      {results.map((result, index) => (
+      {results?.map((result, index) => (
         <CompetitionOverallHeader
           key={index}
           result={result}

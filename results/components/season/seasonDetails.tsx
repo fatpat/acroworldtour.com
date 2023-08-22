@@ -8,7 +8,7 @@ import SeasonCategoryResults from "./seasonCategoryResults";
 import SeasonSummary from "./seasonSummary";
 
 interface Props {
-  season: components["schemas"]["SeasonExport"];
+  season: components["schemas"]["SeasonPublicExport"];
 }
 
 const SeasonDetails = ({ season }: Props) => {

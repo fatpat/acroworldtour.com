@@ -1,24 +1,27 @@
 import logging
 import json
 from http import HTTPStatus
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Response
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Response, Body
 from typing import List, Any
 from fastapi_cache import FastAPICache
 from fastapi_cache.decorator import cache
 from asyncio import gather
 
-from models.competitions import Competition, CompetitionExport, CompetitionNew, CompetitionState, CompetitionPublicExport, CompetitionPublicExportWithResults
+from models.competitions import Competition, CompetitionExport, CompetitionNew, CompetitionState, CompetitionPublicExport, CompetitionPublicExportWithResults, CompetitionType
 from models.pilots import Pilot
 from models.pilots_with_results import PilotWithResults
 from models.judges import Judge
 from models.teams import Team, TeamExport
 from models.seasons import Season, SeasonPublicExport
-from models.tricks import Trick
+from models.tricks import Trick, UniqueTrick
+from models.marks import FinalMark
+from models.flights import Flight, FlightNew
 from models.cache import Cache
 from core.config import settings
 from controllers.utils import UtilsCtrl
 from controllers.seasons import SeasonCtrl
 from controllers.competitions import CompCtrl
+from controllers.scores import ScoreCtrl
 from core.utils import GenericResponseCoder
 
 log = logging.getLogger(__name__)
@@ -158,12 +161,12 @@ async def get_competition(id: str):
 # export competition overall standing in SVG
 #
 @public.get(
-    "/competitions/{id}/standings/overall/svg",
+    "/competitions/{id}/standings/{result_type}/svg",
     response_description="export competition overall standing in SVG",
     response_class=Response,
 )
 @cache(expire=settings.CACHE_EXPIRES, coder=GenericResponseCoder)
-async def export_competition_overall_standing_svg(id: str, download: bool = False):
+async def export_competition_overall_standing_svg(id: str, result_type: str, download: bool = False):
     cache = Cache()
     await gather(
         Pilot.getall(cache=cache),
@@ -173,11 +176,11 @@ async def export_competition_overall_standing_svg(id: str, download: bool = Fals
     )
     competition = await Competition.get(id, deleted=False, cache=cache)
     results = await competition.results()
-    svg = CompCtrl.svg_overall(await results.export(cache=cache))
+    svg = CompCtrl.svg_overall(competition=await results.export(cache=cache), result_type=result_type)
 
     headers = {}
     if download:
-        headers["Content-Disposition"] = f"attachment; filename=\"{season.code}.standing.svg\""
+        headers["Content-Disposition"] = f"attachment; filename=\"{season.code}.{type}.standing.svg\""
     else:
         headers["Content-Disposition"] = f"inline"
 
@@ -188,11 +191,16 @@ async def export_competition_overall_standing_svg(id: str, download: bool = Fals
 #
 @public.get(
     "/competitions/{id}/standings/run/{run}/svg",
-    response_description="export competition overall standing in SVG",
+    response_description="export competition run standing in SVG",
+    response_class=Response,
+)
+@public.get(
+    "/competitions/{id}/standings/{result_type}/run/{run}/svg",
+    response_description="export competition run standing in SVG",
     response_class=Response,
 )
 @cache(expire=settings.CACHE_EXPIRES, coder=GenericResponseCoder)
-async def export_competition_overall_standing_svg(id: str, run: int, download: bool = False):
+async def export_competition_overall_standing_svg(id: str, run: int, result_type: str='overall', download: bool = False):
     cache = Cache()
     await gather(
         Pilot.getall(cache=cache),
@@ -202,11 +210,11 @@ async def export_competition_overall_standing_svg(id: str, run: int, download: b
     )
     competition = await Competition.get(id, deleted=False, cache=cache)
     results = await competition.results()
-    svg = CompCtrl.svg_run(await results.export(cache=cache), run)
+    svg = CompCtrl.svg_run(competition=await results.export(cache=cache), run=run, result_type=result_type)
 
     headers = {}
     if download:
-        headers["Content-Disposition"] = f"attachment; filename=\"{season.code}.standing.svg\""
+        headers["Content-Disposition"] = f"attachment; filename=\"{season.code}.run{run}.{result_type}.standing.svg\""
     else:
         headers["Content-Disposition"] = f"inline"
 
@@ -291,3 +299,25 @@ async def export_season_standing_svg(id: str, download: bool = False):
 @cache(expire=settings.CACHE_EXPIRES)
 async def list(repeatable: bool = None):
     return await Trick.getall(deleted = False, repeatable = repeatable)
+
+#
+# Get all tricks
+#
+@public.get(
+    "/tricks/unique/",
+    response_description="List all unique tricks",
+    response_model=List[UniqueTrick],
+)
+@cache(expire=settings.CACHE_EXPIRES)
+async def list(solo: bool = True, synchro: bool = False):
+    return await Trick.get_unique_tricks(solo = solo, synchro = synchro)
+
+#
+# Single Score Simulation
+#
+@public.post(
+    "/simulate/competition/{t}",
+    response_model=List[Flight],
+)
+async def simulate(t: CompetitionType, flights: List[FlightNew] = Body(...), reset_repetitions_frequency:int = 0):
+    return await ScoreCtrl.simulate_scores(flights=flights, type=t, reset_repetitions_frequency=reset_repetitions_frequency)

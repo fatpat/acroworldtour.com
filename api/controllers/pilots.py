@@ -32,22 +32,35 @@ class PilotCtrl:
         return xls
 
     @staticmethod
-    async def update_rankings():
+    async def get_ranking_url_solo():
         async with httpx.AsyncClient() as client:
             ret = await client.get(settings.pilots.civl_link_all_pilots)
 
             if ret.status_code != HTTPStatus.OK:
-                log.error("unable to update pilots from %s, code=%d", settings.pilots.civl_link_all_pilots, ret.status_code)
-                return
+                raise Exception("unable to update pilots from %s, code=%d", settings.pilots.civl_link_all_pilots, ret.status_code)
+
+            matches = re.search("'(https://civlcomps.org/ranking/export-new[^']+)&async=1'", ret.text)
+            if matches is None:
+                raise Exception(f"Unable to extract ranking URL from {settings.pilots.civl_link_ranking_solo}")
+
+            url = matches.group(1)
 
             csrf_token = None
             try:
                 html = lxml.html.fromstring(ret.text)
-                #csrf_param = html.cssselect('meta[name="csrf-param"]')[0].get('content')
                 csrf_token = html.cssselect('meta[name="csrf-token"]')[0].get('content')
             except Exception as e:
-                log.error(f"Unable to retrieve CSRF token from {settings.pilots.civl_link_all_pilots}", e)
+                raise Exception(f"Unable to retrieve CSRF token from {settings.pilots.civl_link_ranking_solo}", e)
                 return
+
+            log.debug(f"get_ranking_url_solo={url} cookies={ret.cookies} csrf={csrf_token}")
+            return url, ret.cookies, csrf_token
+
+    @staticmethod
+    async def update_rankings():
+        ranking_url, cookies, csrf_token = await PilotCtrl.get_ranking_url_solo()
+
+        async with httpx.AsyncClient() as client:
 
             now = datetime.now()
             data = {
@@ -65,10 +78,10 @@ class PilotCtrl:
                 }
             }
             headers = {'X-CSRF-Token': csrf_token}
-            ret = await client.post(settings.pilots.civl_link_export_ranking, headers=headers, cookies=ret.cookies, data=data)
+            ret = await client.post(ranking_url, headers=headers, cookies=cookies, data=data)
 
             if ret.status_code != HTTPStatus.OK:
-                log.error("unable to update pilots from %s, code=%d", settings.pilots.civl_link_all_pilots, ret.status_code)
+                log.error("unable to update pilots from %s, code=%d (2)", ranking_url, ret.status_code)
                 return
 
             # write the excel to a temporary file and read it
@@ -205,7 +218,7 @@ class PilotCtrl:
         for e in html.cssselect('aside.sponsors-wrapper a'):
             sponsors.append({
                 "name": e.get('alt'),
-                "link": e.get('href'),
+                "link": e.get('href') or None,
                 "img": e.cssselect('img')[0].get('src'),
             })
 

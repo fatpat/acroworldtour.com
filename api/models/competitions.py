@@ -13,7 +13,7 @@ import unicodedata
 from models.pilots import Pilot
 from models.teams import Team, TeamExport
 from models.judges import Judge
-from models.runs import Run, RunState, RunExport
+from models.runs import Run, RunState, RunExport, RunRepetitionsResetPolicy
 from models.tricks import Trick
 from models.flights import Flight, FlightNew
 from models.marks import JudgeMark, FinalMark
@@ -452,7 +452,7 @@ class Competition(CompetitionNew):
         return -1
 
 
-    async def new_run(self, pilots_to_qualify: int = 0):
+    async def new_run(self, pilots_to_qualify: int = 0, repetitions_reset_policy: RunRepetitionsResetPolicy = RunRepetitionsResetPolicy.none, saveToDB: bool = True):
         if self.state != CompetitionState.open:
             raise HTTPException(400, "Competition must be 'open' to create a new run")
 
@@ -475,7 +475,7 @@ class Competition(CompetitionNew):
                 pilots.sort(key=lambda p:-self.get_pilot_or_team_rank_in_current_overall(p, results))
             else:
                 teams = self.runs[-1].teams
-                teams.sort(key=lambda t:-self.get_team_or_team_rank_in_current_overall(t, results))
+                teams.sort(key=lambda t:-self.get_pilot_or_team_rank_in_current_overall(t, results))
         else: #  first run to be added, use the list of pilots of the competition
             if self.type == CompetitionType.solo:
                 pilots = self.pilots
@@ -495,10 +495,12 @@ class Competition(CompetitionNew):
             judges=self.judges,
             config=self.config,
             repeatable_tricks=self.repeatable_tricks,
-            flights=[]
+            flights=[],
+            repetitions_reset_policy=repetitions_reset_policy,
         )
         self.runs.append(run)
-        await self.save()
+        if saveToDB:
+            await self.save()
         return run
 
     async def run_get(self, i: int) -> Run:
@@ -646,14 +648,19 @@ class Competition(CompetitionNew):
                 warnings = flight.warnings,
         )
 
-    async def flight_save(self, run_i: int, id, flight: FlightNew, save: bool=False, published: bool=False) -> FinalMark:
+    async def flight_save(self, run_i: int, id, flight: FlightNew, save: bool=False, published: bool=False, saveToDB : bool = True) -> FinalMark:
         run = await self.run_get(run_i)
+
+        is_awt = False
 
         if self.type == CompetitionType.solo:
             if int(id) not in run.pilots:
                 raise HTTPException(400, f"Pilot #{id} does not participate in the run number #{run_i} of the comp ({self.name})")
             if int(id) not in self.pilots:
                 raise HTTPException(400, f"Pilot #{id} does not participate in this comp ({self.name})")
+
+            pilot = await Pilot.get(int(id))
+            is_awt = pilot.is_awt
 
         if self.type == CompetitionType.synchro:
             if id not in run.teams:
@@ -662,7 +669,7 @@ class Competition(CompetitionNew):
                 raise HTTPException(400, f"Team #{id} does not participate in this comp ({self.name})")
 
         new_flight = await self.flight_convert(id, flight)
-        mark = await self.calculate_score(flight=new_flight, run_i=run_i)
+        mark = await self.calculate_score(flight=new_flight, run_i=run_i, is_awt_pilot=is_awt)
         if not save:
             return mark
 
@@ -672,11 +679,13 @@ class Competition(CompetitionNew):
         for i, f in enumerate(self.runs[run_i].flights):
             if (self.type == CompetitionType.solo and f.pilot == new_flight.pilot) or (self.type == CompetitionType.synchro and f.team == new_flight.team):
                 self.runs[run_i].flights[i] = new_flight
-                await self.save()
+                if saveToDB:
+                    await self.save()
                 return mark
 
         self.runs[run_i].flights.append(new_flight)
-        await self.save()
+        if saveToDB:
+            await self.save()
         return mark
 
     async def results(self, limit: int = -1) -> CompetitionResults:
@@ -731,35 +740,37 @@ class Competition(CompetitionNew):
         results = {}
         results["overall"] = overall_results[::-1]
 
-        pilots = await Pilot.getall(list(map(lambda r: r.pilot, overall_results)))
+        pilots = []
+        if self.type == CompetitionType.solo:
+            pilots = await Pilot.getall(list(map(lambda r: r.pilot, overall_results)))
 
-        # seasons
-        for season in self.seasons:
-            if re.search('^awt-\d{4}$', season):
-                awt_pilots = list(filter(lambda p: p.is_awt, pilots))
-                awt_results = list(filter(lambda r: next((p for p in awt_pilots if p.civlid == r.pilot), None) is not None, overall_results))
-                results[season] = list(awt_results[::-1])
+        self.create_sub_results(results, pilots)
+        for run_results in runs_results:
+            self.create_sub_results(run_results.results, pilots)
+
+        #
+        #  update result_per_run for each sub rankings
+        #
+        for result_type in list(results):
+
+            if result_type == 'overall':
                 continue
 
-            if re.search('^awq-\d{4}$', season):
-                awq_pilots = list(filter(lambda p: not p.is_awt, pilots))
-                awq_results = list(filter(lambda r: next((p for p in awq_pilots if p.civlid == r.pilot), None) is not None, overall_results))
-                results[season] = list(awq_results[::-1])
-                continue
+            for result in results[result_type]:
 
-            if re.search('^\w\w\w-\d{4}$', season):
-                country = season[0:3]
-                country_pilots = list(filter(lambda p: p.country == country, pilots))
-                country_results = list(filter(lambda r: next((p for p in country_pilots if p.civlid == r.pilot), None) is not None, overall_results))
-                results[season] = list(country_results[::-1])
-                continue
+                result_per_run = []
 
+                for (run_index, run) in enumerate(runs_results):
 
-        # women results
-        women_pilots = list(filter(lambda p: p.gender == 'woman', pilots))
-        women_results = list(filter(lambda r: next((p for p in women_pilots if p.civlid == r.pilot), None) is not None, overall_results))
-        if len(women_pilots) > 3:
-            results["women"] = list(women_results[::-1])
+                    if run.results[result_type] is None:
+                        continue
+
+                    for (rank_index, run_results) in enumerate(run.results[result_type]):
+
+                        if (self.type == CompetitionType.solo and result.pilot == run_results.pilot) or (self.type == CompetitionType.synchro and result.team == run_results.team):
+                            result_per_run.append(RunResultSummary(rank=rank_index+1, score=run_results.final_marks.score))
+
+                result.result_per_run = result_per_run
 
         return CompetitionResults(
             final = final,
@@ -767,6 +778,45 @@ class Competition(CompetitionNew):
             results = results,
             runs_results = runs_results,
         )
+
+    def create_sub_results(self, results, pilots):
+        # seasons
+        for season in self.seasons:
+
+            if self.type == CompetitionType.synchro:
+                results[season] = results['overall']
+                continue
+
+            if re.search('^awt-\d{4}$', season):
+                awt_pilots = list(filter(lambda p: p.is_awt, pilots))
+                awt_results = list(filter(lambda r: next((p for p in awt_pilots if p.civlid == r.pilot), None) is not None, results['overall']))
+                awt_results.sort(key=lambda e: e.score if hasattr(e, 'score') else e.final_marks.score)
+                results[season] = list(awt_results[::-1])
+                continue
+
+            if re.search('^awq-\d{4}$', season):
+                awq_pilots = list(filter(lambda p: not p.is_awt, pilots))
+                awq_results = list(filter(lambda r: next((p for p in awq_pilots if p.civlid == r.pilot), None) is not None, results['overall']))
+                awq_results.sort(key=lambda e: e.score if hasattr(e, 'score') else e.final_marks.score)
+                results[season] = list(awq_results[::-1])
+                continue
+
+            if re.search('^\w\w\w-\d{4}$', season):
+                country = season[0:3]
+                country_pilots = list(filter(lambda p: p.country == country, pilots))
+                country_results = list(filter(lambda r: next((p for p in country_pilots if p.civlid == r.pilot), None) is not None, results['overall']))
+                country_results.sort(key=lambda e: e.score if hasattr(e, 'score') else e.final_marks.score)
+                results[season] = list(country_results[::-1])
+                continue
+
+
+        # women results
+        if self.type == CompetitionType.solo:
+            women_pilots = list(filter(lambda p: p.gender == 'woman', pilots))
+            women_results = list(filter(lambda r: next((p for p in women_pilots if p.civlid == r.pilot), None) is not None, results['overall']))
+            if len(women_pilots) > 3:
+                women_results.sort(key=lambda e: e.score if hasattr(e, 'score') else e.final_marks.score)
+                results["women"] = list(women_results[::-1])
 
     
     #
@@ -789,7 +839,6 @@ class Competition(CompetitionNew):
                 competition = cache.get('competitions', id)
                 if competition is not None:
                     return competition
-        log.debug(f"mongo[competition].find_one({search})")
         competition = await collection.find_one(search)
         if competition is None:
             raise HTTPException(404, f"Competition {id} not found")
@@ -809,7 +858,6 @@ class Competition(CompetitionNew):
                     return [c for c in competitions if season in c.seasons]
 
         competitions = []
-        log.debug(f"mongo[competition].find()")
         for competition in await collection.find({"deleted": None}, sort=[("name", pymongo.ASCENDING)]).to_list(1000):
             competition = Competition.parse_obj(competition)
             if season is None or season in competition.seasons:
@@ -839,12 +887,14 @@ class Competition(CompetitionNew):
             competition.deleted = datetime.now()
         return await competition.save()
 
+    def is_awt_season(self):
+        return bool([s for s in self.seasons if re.match('^awt-', s)])
+
+    def is_awq_season(self):
+        return bool([s for s in self.seasons if re.match('^awq-', s)])
 
 
-
-
-
-    async def calculate_score(self, flight: Flight, run_i: int = -1) -> FinalMark:
+    async def calculate_score(self, flight: Flight, run_i: int = -1, is_awt_pilot=False) -> FinalMark:
         mark = FinalMark(
             judges_mark = JudgeMark(
                 judge = "",
@@ -1026,6 +1076,21 @@ class Competition(CompetitionNew):
             if trick is not None:
                 repeatable_tricks.append(trick.name)
 
+        first_run_to_check_repetitions = 0
+        if self.type == CompetitionType.solo:
+            for i in range(len(self.runs)):
+                if self.runs[i].repetitions_reset_policy == RunRepetitionsResetPolicy.none:
+                    continue
+                if self.runs[i].repetitions_reset_policy == RunRepetitionsResetPolicy.all:
+                    first_run_to_check_repetitions = i
+                    continue
+                if self.runs[i].repetitions_reset_policy == RunRepetitionsResetPolicy.awt and is_awt_pilot and self.is_awt_season():
+                    first_run_to_check_repetitions = i
+                    continue
+                if self.runs[i].repetitions_reset_policy == RunRepetitionsResetPolicy.awq and not is_awt_pilot and self.is_awq_season():
+                    first_run_to_check_repetitions = i
+                    continue
+
         if len(self.runs) > 0 and run_i > 0:
             trick_i = 0
             for trick in tricks: # for each trick detect repetition before
@@ -1034,6 +1099,8 @@ class Competition(CompetitionNew):
                     continue
                 # loop over all previous runs
                 for i in range(len(self.runs)):
+                    if i < first_run_to_check_repetitions:
+                        continue
                     if i >= run_i:
                         break
                     r = self.runs[i]
@@ -1043,7 +1110,6 @@ class Competition(CompetitionNew):
                             continue
                         for t in f.tricks:
                             if t.base_trick == trick.base_trick and t.uniqueness == trick.uniqueness:
-                                log.info(f"base_trick={trick.base_trick}({t.base_trick}) -- uniqueness={trick.uniqueness} ({t.uniqueness})")
                                 mark.malus += config.malus_repetition
                                 mark.notes.append(f"trick number #{trick_i} ({trick.name}) has already been performed in a previous run. Adding a {config.malus_repetition}% malus.")
                                 broke = True

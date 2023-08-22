@@ -95,6 +95,7 @@ class TrickCtrl:
                 bonus_types = bonus_types,
                 base_trick = trick.name,
                 uniqueness = uniqueness,
+                bonuses = combination,
             ))
         else:
             for direction in trick.directions:
@@ -108,6 +109,7 @@ class TrickCtrl:
                     bonus_types = bonus_types,
                     base_trick = trick.name,
                     uniqueness = uniqueness + [direction],
+                    bonuses = combination,
                 ))
 
         return

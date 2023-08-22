@@ -22,3 +22,22 @@ code:not([class*='language-']):after {
 code[class*='language-'] {
   padding: 0;
 }
+
+#body-border-top, #body-border-bottom, #body-border-left, #body-border-right {
+    position: fixed;
+}
+#body-border-left, #body-border-right {
+    top: 0;
+    bottom: 0;
+    width: 5px;
+}
+#body-border-left { left: 0; }
+#body-border-right { right: 0; }
+
+#body-border-top, #body-border-bottom {
+    left: 0;
+    right: 0;
+    height: 5px;
+}
+#body-border-top { top: 0; }
+#body-border-bottom { bottom: 0; }

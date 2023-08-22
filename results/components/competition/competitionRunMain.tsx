@@ -6,7 +6,7 @@ import { components } from "@/types";
 import { ChevronIcon } from "../ui/icons";
 
 interface Props {
-  results: components["schemas"]["FlightExport"][];
+  results: components["schemas"]["FlightExport"][] | undefined;
   type: components["schemas"]["CompetitionType"];
   className?: string;
 }
@@ -17,7 +17,9 @@ const capitalise = (string: string) =>
   string.charAt(0).toUpperCase() + string.slice(1);
 
 const CompetitionRunMain = ({ results, type, className }: Props) => {
-  const [showDetails, setShowDetails] = useState(results.map(() => false));
+  const [showDetails, setShowDetails] = useState(
+    results?.map(() => false) || [],
+  );
 
   const toggleDetails = (index: number) => {
     const newShowDetails = [...showDetails];
@@ -25,7 +27,7 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
     setShowDetails(newShowDetails);
   };
 
-  results.sort(
+  results?.sort(
     (a, b) => (b.final_marks?.score || 0) - (a.final_marks?.score || 0),
   );
 
@@ -40,7 +42,7 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
       <h4 className="col-span-3 border-awt-dark-500 bg-awt-dark-900 py-3 text-white">
         Score
       </h4>
-      {results.map((result, resultIndex) => {
+      {results?.map((result, resultIndex) => {
         const { pilot, team, final_marks, tricks } = result;
 
         const roundedScore =
@@ -255,7 +257,7 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
                   Bonus
                 </h5>
                 <p className="col-span-full col-start-1 py-1 text-center">
-                  {(bonus || 0) > 0 ? `${bonus}` : "NIL"}
+                  {bonus?.toFixed(3)}
                 </p>
                 {(warnings?.length || 0) > 0 && (
                   <>

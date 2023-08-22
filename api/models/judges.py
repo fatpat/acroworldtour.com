@@ -89,6 +89,13 @@ class Judge(BaseModel):
         if id is None:
             raise HTTPException(404, f"Judge not found")
 
+        if id == "simulator":
+            return Judge(
+                name="simulator",
+                country="fra",
+               level=JudgeLevel.senior,
+           )
+
         if not deleted and cache is not None:
             judge = cache.get('judges', id)
             if judge is not None:
@@ -98,7 +105,6 @@ class Judge(BaseModel):
             search = {"_id": id}
         else:
             search = {"_id": id, "deleted": None}
-        log.debug(f"mongo[judge].find_one({search})")
         judge = await collection.find_one(search)
         if judge is None:
             raise HTTPException(404, f"Judge {id} not found")
@@ -119,7 +125,6 @@ class Judge(BaseModel):
                 if judges is not None:
                     return judges
         judges = []
-        log.debug(f"mongo[judge].find({search})")
         for judge in await collection.find(search, sort=[("level", pymongo.DESCENDING), ("name", pymongo.ASCENDING)]).to_list(1000):
             judge = Judge.parse_obj(judge)
             judges.append(judge)

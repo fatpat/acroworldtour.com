@@ -30,7 +30,6 @@ class Settings(BaseSettings):
 
     class pilots:
         civl_link_all_pilots = 'https://civlcomps.org/ranking/paragliding-aerobatics/pilots'
-        civl_link_export_ranking = 'https://civlcomps.org/ranking/export-new?rankingId=1577&type=export_pilots_ranking&format=xls'
         civl_link_one_pilot = 'https://civlcomps.org/pilot/'
 
     class tricks:

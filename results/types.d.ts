@@ -266,9 +266,13 @@ export interface paths {
     /** Get Competition */
     get: operations["get_competition_public_competitions__id__get"];
   };
-  "/public/competitions/{id}/standings/overall/svg": {
+  "/public/competitions/{id}/standings/{result_type}/svg": {
     /** Export Competition Overall Standing Svg */
-    get: operations["export_competition_overall_standing_svg_public_competitions__id__standings_overall_svg_get"];
+    get: operations["export_competition_overall_standing_svg_public_competitions__id__standings__result_type__svg_get"];
+  };
+  "/public/competitions/{id}/standings/{result_type}/run/{run}/svg": {
+    /** Export Competition Overall Standing Svg */
+    get: operations["export_competition_overall_standing_svg_public_competitions__id__standings__result_type__run__run__svg_get"];
   };
   "/public/competitions/{id}/standings/run/{run}/svg": {
     /** Export Competition Overall Standing Svg */
@@ -289,6 +293,14 @@ export interface paths {
   "/public/tricks/": {
     /** List */
     get: operations["list_public_tricks__get"];
+  };
+  "/public/tricks/unique/": {
+    /** List */
+    get: operations["list_public_tricks_unique__get"];
+  };
+  "/public/simulate/competition/{t}": {
+    /** Simulate */
+    post: operations["simulate_public_simulate_competition__t__post"];
   };
   "/utils/backup": {
     /** Backup */
@@ -1440,7 +1452,15 @@ export interface components {
       config: components["schemas"]["CompetitionConfig"];
       /** Flights */
       flights: (components["schemas"]["FlightExport"])[];
+      /** @default 0 */
+      repetitions_reset_policy?: components["schemas"]["RunRepetitionsResetPolicy"];
     };
+    /**
+     * RunRepetitionsResetPolicy 
+     * @description An enumeration. 
+     * @enum {integer}
+     */
+    RunRepetitionsResetPolicy: 0 | 1 | 2 | 3;
     /**
      * RunResultSummary 
      * @example {
@@ -1599,7 +1619,7 @@ export interface components {
        * Link 
        * Format: uri
        */
-      link: string;
+      link?: string;
       /** Img */
       img: string;
     };
@@ -1859,6 +1879,11 @@ export interface components {
       base_trick: string;
       /** Uniqueness */
       uniqueness: (string)[];
+      /**
+       * Bonuses 
+       * @default []
+       */
+      bonuses?: (components["schemas"]["Bonus"])[];
     };
     /** ValidationError */
     ValidationError: {
@@ -2770,6 +2795,7 @@ export interface operations {
     parameters: {
       query?: {
         pilots_to_qualify?: number;
+        repetitions_reset_policy?: number;
       };
       path: {
         id: string;
@@ -3299,13 +3325,14 @@ export interface operations {
     };
   };
   /** Export Competition Overall Standing Svg */
-  export_competition_overall_standing_svg_public_competitions__id__standings_overall_svg_get: {
+  export_competition_overall_standing_svg_public_competitions__id__standings__result_type__svg_get: {
     parameters: {
       query?: {
         download?: boolean;
       };
       path: {
         id: string;
+        result_type: string;
       };
     };
     responses: {
@@ -3320,9 +3347,33 @@ export interface operations {
     };
   };
   /** Export Competition Overall Standing Svg */
+  export_competition_overall_standing_svg_public_competitions__id__standings__result_type__run__run__svg_get: {
+    parameters: {
+      query?: {
+        download?: boolean;
+      };
+      path: {
+        id: string;
+        run: number;
+        result_type: string;
+      };
+    };
+    responses: {
+      /** @description export competition run standing in SVG */
+      200: never;
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Export Competition Overall Standing Svg */
   export_competition_overall_standing_svg_public_competitions__id__standings_run__run__svg_get: {
     parameters: {
       query?: {
+        result_type?: string;
         download?: boolean;
       };
       path: {
@@ -3331,7 +3382,7 @@ export interface operations {
       };
     };
     responses: {
-      /** @description export competition overall standing in SVG */
+      /** @description export competition run standing in SVG */
       200: never;
       /** @description Validation Error */
       422: {
@@ -3421,6 +3472,59 @@ export interface operations {
       200: {
         content: {
           "application/json": (components["schemas"]["Trick"])[];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** List */
+  list_public_tricks_unique__get: {
+    parameters: {
+      query?: {
+        solo?: boolean;
+        synchro?: boolean;
+      };
+    };
+    responses: {
+      /** @description List all unique tricks */
+      200: {
+        content: {
+          "application/json": (components["schemas"]["UniqueTrick"])[];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Simulate */
+  simulate_public_simulate_competition__t__post: {
+    parameters: {
+      query?: {
+        reset_repetitions_frequency?: number;
+      };
+      path: {
+        t: components["schemas"]["CompetitionType"];
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": (components["schemas"]["FlightNew"])[];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": (components["schemas"]["Flight"])[];
         };
       };
       /** @description Validation Error */

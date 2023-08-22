@@ -11,7 +11,7 @@ interface Props {
 }
 
 const CompetitionSummary = ({ competition, className }: Props) => {
-  const {
+  let {
     start_date,
     end_date,
     image,
@@ -20,6 +20,7 @@ const CompetitionSummary = ({ competition, className }: Props) => {
     number_of_teams: numberOfTeams,
     type,
     website,
+    pilots,
   } = competition;
 
   const startDate = new Date(start_date).toLocaleString("en-GB", {
@@ -32,6 +33,8 @@ const CompetitionSummary = ({ competition, className }: Props) => {
     month: "long",
     year: "numeric",
   });
+
+  pilots.sort((a, b) => a.rank - b.rank);
 
   return (
     <article className={className}>
@@ -74,13 +77,10 @@ const CompetitionSummary = ({ competition, className }: Props) => {
           {`${startDate} - ${endDate}`}
         </p>
       </div>
-      {type === "solo" && competition.pilots.length > 0 && (
+      {type === "solo" && pilots.length > 0 && (
         <>
           <hr className="mt-4" />
-          <CompetitionPilots
-            pilots={competition.pilots.toReversed()}
-            className="pt-4"
-          />
+          <CompetitionPilots pilots={pilots} className="pt-4" />
         </>
       )}
       {competition.judges.length > 0 && (

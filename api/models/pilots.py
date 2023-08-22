@@ -22,7 +22,7 @@ class Link(BaseModel):
 
 class Sponsor(BaseModel):
     name: str
-    link: HttpUrl
+    link: Optional[HttpUrl]
     img: str
 
 class GenderEnum(str, Enum):
@@ -102,6 +102,22 @@ class Pilot(BaseModel):
 
     @staticmethod
     async def get(id: int, cache:Cache = None):
+        if id < -999999:
+            return Pilot(
+                id = id,
+                civlid = id,
+                name = f"simulator {id}",
+                civl_link = "http://no.where/",
+                country = "fra",
+                about = "",
+                social_links = [],
+                sponsors = [],
+                photo = "http://no.where/",
+                background_picture = "http://no.where/",
+                rank = 9999,
+                is_awt = (id % 2 == 0),
+            )
+
         if id <= 0:
             raise HTTPException(status_code=404, detail=f"Pilot {id} not found")
 
@@ -110,7 +126,6 @@ class Pilot(BaseModel):
             if pilot is not None:
                 return pilot
 
-        log.debug(f"mongo[pilot].find_one({id})")
         pilot = await collection.find_one({"_id": id})
 
         if pilot is None:
@@ -140,7 +155,6 @@ class Pilot(BaseModel):
 
         pilots = []
         sort=[("rank", pymongo.ASCENDING),("name", pymongo.ASCENDING)]
-        log.debug(f"mongo[pilot].find({cond})")
         for pilot in await collection.find(filter=cond, sort=sort).to_list(1000):
             pilot = Pilot.parse_obj(pilot)
             pilots.append(pilot)

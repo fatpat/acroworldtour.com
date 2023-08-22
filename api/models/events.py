@@ -132,7 +132,6 @@ class Event(BaseModel):
             streaming_url = self.streaming_url,
             competitions = competitions,
         )
-        log.debug(f"event >>> {event}")
         return event
 
     @staticmethod
@@ -155,7 +154,6 @@ class Event(BaseModel):
         if deleted:
             search['id'] = "deleted"
 
-        log.debug(f"mongo[event].find_one({search})")
         event = await collection.find_one(search)
         if event is None:
             raise HTTPException(404, f"Event {id} not found")
@@ -176,7 +174,6 @@ class Event(BaseModel):
                 if events is not None:
                     return events
         events = []
-        log.debug(f"mongo[event].find({search})")
         for event in await collection.find(search, sort=[("code", pymongo.DESCENDING), ("name", pymongo.ASCENDING)]).to_list(1000):
             event = Event.parse_obj(event)
             events.append(event)
