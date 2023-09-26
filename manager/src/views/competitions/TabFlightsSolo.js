@@ -311,7 +311,7 @@ const TabFlights = ({ comp, run, rid }) => {
                   <InputMark onChange={value => {setMark('technical', j, value)}} value={technical} />
                 </TableCell>
                 <TableCell>
-                  <InputMark onChange={value => {setMark('choreography', value)}} value={choreography} />
+                  <InputMark onChange={value => {setMark('choreography', j, value)}} value={choreography} />
                 </TableCell>
                 <TableCell>
                   <InputMark onChange={value => {setMark('landing', j, value)}} value={landing} />
