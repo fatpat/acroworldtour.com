@@ -469,7 +469,20 @@ class Competition(CompetitionNew):
 
             # get overall results from the previous runs to order pilots/teams
             results = await self.results()
-            results = results.results["overall"]
+
+            has_awt = [x for x in results.results.keys() if x.startswith('awt-')]
+            has_awq = [x for x in results.results.keys() if x.startswith('awq-')]
+
+            # if this is a mix event with AWT and AWQ, separate starting order
+            # with AWQ first, then AWT, never mix both categories
+            if self.type == CompetitionType.solo and len(has_awt) == 1 and len(has_awq) == 1:
+                log.debug("separate AWT AND AWQ in the starting order")
+                awt_results = results.results[has_awt[0]]
+                awq_results = results.results[has_awq[0]]
+                results = awt_results + awq_results
+            else:
+                results = results.results["overall"]
+
 
             if self.type == CompetitionType.solo:
                 pilots = self.runs[-1].pilots
@@ -477,6 +490,7 @@ class Competition(CompetitionNew):
             else:
                 teams = self.runs[-1].teams
                 teams.sort(key=lambda t:-self.get_pilot_or_team_rank_in_current_overall(t, results))
+
         else: #  first run to be added, use the list of pilots of the competition
             if self.type == CompetitionType.solo:
                 pilots = self.pilots
