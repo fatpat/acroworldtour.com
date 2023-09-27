@@ -475,7 +475,7 @@ const RunPage = () => {
                     { comp.type == "solo" &&
                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={changeStartingOrder}>
                       <SortableContext items={pilots} strategy={verticalListSortingStrategy}>
-                        { pilots.map((p,i) => <SortablePilotStartingOrder key={p.civlid} id={p} text={`${i+1} ${p.name}`} />)}
+                        { pilots.map((p,i) => <SortablePilotStartingOrder key={p.civlid} id={p} text={`${i+1} ${p.name}${p.is_awt ? "⭐" : ""}`} />)}
                       </SortableContext>
                     </DndContext>
                     }
