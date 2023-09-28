@@ -1,0 +1,58 @@
+--- views/competitions/TabFlightsSolo.js
++++ views/competitions/TabFlightsSolo.js
+@@ -27,6 +27,7 @@ import Autocomplete from '@mui/material/Autocomplete'
+ import NativeSelect from '@mui/material/NativeSelect'
+ import LinearProgress from '@mui/material/LinearProgress'
+ import Checkbox from '@mui/material/Checkbox'
++import DeleteIcon from '@mui/icons-material/Delete'
+ 
+ // ** local
+ import EnhancedTable from 'src/views/tables/EnhancedTable'
+@@ -185,6 +186,21 @@ const TabFlights = ({ comp, run, rid }) => {
+     saveResults(true, false)
+   }
+ 
++  const addWarning = async(e, warning) => {
++    if (!warning || warning === "") warning = prompt("Warning message")
++    if (!warning || warning === "") return
++    data.warnings.push(warning)
++    setData(data)
++    simulateScore(data)
++  }
++
++  const removeWarning = async(i) => {
++    if (i<0 || i>= data.warnings.length) return
++    data.warnings.splice(i, 1)
++    setData(data)
++    simulateScore(data)
++  }
++
+   useEffect(() => {
+     loadPilot(0)
+   }, [])
+@@ -375,6 +391,16 @@ const TabFlights = ({ comp, run, rid }) => {
+                   <TableCell>
+                     <Typography variant="h5">Final Score: {result.score ?? ""}</Typography>
+                   </TableCell>
++  { result.warnings && result.warnings.length > 0 && (<>
++                  <TableCell>
++                  </TableCell>
++                  <TableCell>
++                    <Typography>warnings:</Typography>
++  <ul>
++  { result.warnings.map((warning, i) => <li>{warning} <DeleteIcon onClick={() => removeWarning(i)} /></li>)}
++  </ul>
++                  </TableCell>
++  </>)}
+                 </TableRow>
+               </TableBody>
+             </Table>
+@@ -391,6 +417,8 @@ const TabFlights = ({ comp, run, rid }) => {
+               </Grid>
+               <Grid item xs={4}>
+                 <Button onClick={didNotStart}>Did not start</Button>
++                <Button onClick={addWarning}>Add warning</Button>
++                <Button onClick={e => addWarning(e, "flight over the public")}>flight over the public</Button>
+               </Grid>
+           </Grid>
+         </Grid>

@@ -24,7 +24,6 @@ import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore'
 import Editable from 'src/components/Editable'
 import Autocomplete from '@mui/material/Autocomplete'
 import LinearProgress from '@mui/material/LinearProgress'
-import DeleteIcon from '@mui/icons-material/Delete'
 
 // ** local
 import EnhancedTable from 'src/views/tables/EnhancedTable'
@@ -192,21 +191,6 @@ const TabFlightsSynchro = ({ comp, run, rid }) => {
     if (!confirm('Are you sure to publish a DNS flight ?')) return
     data.did_not_start = true
     saveResults(true)
-  }
-
-  const addWarning = async(e, warning) => {
-    if (!warning || warning === "") warning = prompt("Warning message")
-    if (!warning || warning === "") return
-    data.warnings.push(warning)
-    setData(data)
-    simulateScore(data)
-  }
-
-  const removeWarning = async(i) => {
-    if (i<0 || i>= data.warnings.length) return
-    data.warnings.splice(i, 1)
-    setData(data)
-    simulateScore(data)
   }
 
   useEffect(() => {
@@ -410,16 +394,6 @@ const TabFlightsSynchro = ({ comp, run, rid }) => {
                   <TableCell>
                     <Typography variant="h5">Final Score: {result.score ?? ""}</Typography>
                   </TableCell>
-  { result.warnings && result.warnings.length > 0 && (<>
-                  <TableCell>
-                  </TableCell>
-                  <TableCell>
-                    <Typography>warnings:</Typography>
-  <ul>
-  { result.warnings.map((warning, i) => <li>{warning} <DeleteIcon onClick={() => removeWarning(i)} /></li>)}
-  </ul>
-                  </TableCell>
-  </>)}
                 </TableRow>
               </TableBody>
             </Table>
@@ -436,8 +410,6 @@ const TabFlightsSynchro = ({ comp, run, rid }) => {
               </Grid>
               <Grid item xs={4}>
                 <Button onClick={didNotStart}>Did not start</Button>
-                <Button onClick={addWarning}>Add warning</Button>
-                <Button onClick={e => addWarning(e, "flight over the public")}>flight over the public</Button>
               </Grid>
           </Grid>
         </Grid>
