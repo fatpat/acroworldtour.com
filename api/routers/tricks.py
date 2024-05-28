@@ -99,7 +99,7 @@ async def get(id: str, deleted: bool = False):
 )
 async def create(trick: Trick = Body(...)):
     TrickCtrl.generate_tricks(trick)
-    await trick.create()
+    return await trick.create()
 
 #
 # Import Tricks
