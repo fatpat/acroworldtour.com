@@ -66,6 +66,7 @@ class Trick(BaseModel):
     name: str = Field(..., min_length=1, description="The name of the trick (without bonuses)")
     acronym: str = Field(..., min_length=1, description="The acronym of the trick (without bonuses)")
     solo: bool = Field(..., description="Is this trick valid for solo competitions")
+    solo_awt: bool = Field(True, description="Is this trick valid for solo competitions")
     synchro: bool = Field(..., description="Is this trick valid for synchro competitions")
     directions: List[str] = Field(..., description="List of allowed diredctions for the trick. Empty list implies a trick with a unique direction")
     technical_coefficient: float = Field(..., ge=0.0, description="The technical coefficient of the trick")
