@@ -42,7 +42,8 @@ class Settings(BaseSettings):
             {"name": "devil twist stall", "post_acronym": "XX", "type": "twist"},
             {"name": "to twisted sat", "post_acronym": "S", "type": "twist"},
             {"name": "cab slide", "post_acronym": "C", "type": "twist"},
-            {"name": "hardcore", "post_acronym": "HC", "type": "twist"},
+            {"name": "hardcore", "post_acronym": "HC", "type": "twist"}, #TODO(jlo): remove once migrate to hardcore entry
+            {"name": "hardcore entry", "post_acronym": "HC", "type": "twist"},
             {"name": "flip", "post_acronym": "F", "type": "flip"},
             {"name": "double flip", "post_acronym": "FF", "type": "flip"},
             {"name": "wing touch", "post_acronym": "T", "type": "other"},
