@@ -65,6 +65,7 @@ class Trick(BaseModel):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     name: str = Field(..., min_length=1, description="The name of the trick (without bonuses)")
     acronym: str = Field(..., min_length=1, description="The acronym of the trick (without bonuses)")
+    types: List[str] = Field([], description="List of trick types")
     solo: bool = Field(..., description="Is this trick valid for solo competitions")
     solo_awt: bool = Field(True, description="Is this trick valid for solo competitions")
     synchro: bool = Field(..., description="Is this trick valid for synchro competitions")
