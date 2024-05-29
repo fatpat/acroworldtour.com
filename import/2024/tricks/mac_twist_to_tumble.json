@@ -1,6 +1,7 @@
 {
   "name": "Mac Twist to Tumbling",
   "acronym": "MCT",
+  "types": ["to infinite", "tumbling"],
   "directions": ["left", "right"],
   "solo": true,
   "solo_awt": true,

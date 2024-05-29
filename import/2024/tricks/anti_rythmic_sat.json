@@ -1,6 +1,7 @@
 {
   "name": "Anti-Rythmic SAT",
   "acronym": "A",
+  "types": ["tumbling"],
   "directions": ["left", "right"],
   "solo": true,
   "solo_awt": true,

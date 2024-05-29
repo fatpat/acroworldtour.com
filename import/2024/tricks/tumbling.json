@@ -1,6 +1,7 @@
 {
   "name": "Tumbling",
   "acronym": "T",
+  "types": ["tumbling"],
   "directions": ["left", "right"],
   "solo": true,
   "solo_awt": true,

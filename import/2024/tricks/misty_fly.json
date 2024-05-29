@@ -1,6 +1,7 @@
 {
   "name": "MistyFly",
   "acronym": "MF",
+  "types": ["to infinite", "tumbling"],
   "directions": [],
   "solo": true,
   "solo_awt": true,

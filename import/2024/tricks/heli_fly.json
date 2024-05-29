@@ -1,6 +1,7 @@
 {
   "name": "HeliFly",
   "acronym": "HF",
+  "types": ["to infinite", "tumbling"],
   "directions": [],
   "solo": true,
   "solo_awt": true,

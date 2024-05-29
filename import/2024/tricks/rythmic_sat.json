@@ -1,6 +1,7 @@
 {
   "name": "Rythmic SAT",
   "acronym": "R",
+  "types": ["tumbling"],
   "directions": ["left", "right"],
   "solo": true,
   "solo_awt": true,

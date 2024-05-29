@@ -1,6 +1,7 @@
 {
   "name": "MacFly",
   "acronym": "MCF",
+  "types": ["to infinite", "tumbling"],
   "directions": [],
   "solo": true,
   "solo_awt": true,

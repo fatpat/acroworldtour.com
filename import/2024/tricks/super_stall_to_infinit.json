@@ -1,6 +1,7 @@
 {
   "name": "Super Stall to Infinity Tumbling",
   "acronym": "SSI",
+  "types": ["to infinite", "tumbling"],
   "directions": [],
   "solo": true,
   "solo_awt": true,

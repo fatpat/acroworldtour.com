@@ -1,6 +1,7 @@
 {
   "name": "Infinity Tumbling",
   "acronym": "I",
+  "types": ["tumbling"],
   "directions": ["left", "right"],
   "solo": true,
   "solo_awt": true,

@@ -1,6 +1,7 @@
 {
   "name": "X-Chopper to Infinity Tumbling",
   "acronym": "XI",
+  "types": ["to infinite", "tumbling"],
   "directions": ["left", "right"],
   "solo": true,
   "solo_awt": true,

@@ -1,6 +1,7 @@
 {
   "name": "Esfera",
   "acronym": "E",
+  "types": ["tumbling"],
   "directions": ["left", "right"],
   "solo": true,
   "solo_awt": true,

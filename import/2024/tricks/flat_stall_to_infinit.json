@@ -1,6 +1,7 @@
 {
   "name": "Flat Stall to Infinity Tumbling",
   "acronym": "FSI",
+  "types": ["to infinite", "tumbling"],
   "directions": [],
   "solo": true,
   "solo_awt": true,

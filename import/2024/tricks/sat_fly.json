@@ -1,6 +1,7 @@
 {
   "name": "SatFly",
   "acronym": "SF",
+  "types": ["to infinite", "tumbling"],
   "directions": [],
   "solo": true,
   "solo_awt": true,
