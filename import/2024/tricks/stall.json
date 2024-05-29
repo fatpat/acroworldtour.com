@@ -1,0 +1,42 @@
+{
+  "name": "Stall",
+  "acronym": "FS",
+  "directions": [],
+  "solo": true,
+  "solo_awt": true,
+  "synchro": true,
+  "repeatable": true,
+  "description": "Straight climb + stall >90° for max score",
+  "minimum": "45° backwards pitch, over 90° for max score",
+  "criterias": {
+    "normal": "energy, importance of pitch, cleanness of the stall, control of direction and exit or connection",
+    "twisted": "twisted on the entry, stay twisted when the glider stalls, untwist during the dive",
+    "twisted exit": "the twist must be kept for at least 3 seconds or until the next manoeuvre",
+    "devil twist": "twisted on the entry, untwist during the stall and immediately twist to the other direction, must exit twisted. The twist must be kept for at least 3 seconds or until the next manoeuvre",
+    "flip": "body flip either forward or backwards during the stall. Flip may begin during the climb out and must be completed before the dive",
+    "flip_double": "both flips must be chained, flow"
+  },
+  "repetition_allowed": true,
+  "technical_coefficient": 1.60,
+  "bonuses": [
+    {"name": "twisted","bonus": 2.5},
+    {"name": "twisted exit","bonus": 4.5},
+    {"name": "devil twist","bonus": 7},
+    {"name": "flip","bonus": 4.5},
+    {"name": "double flip","bonus": 5.5}
+  ],
+  "bonus_constraints": [
+    ["twisted", "devil twist"],
+    ["twisted", "flip"],
+    ["twisted", "double flip"],
+    ["twisted exit", "flip"],
+    ["twisted exit", "double flip"],
+    ["devil twist", "flip"],
+    ["devil twist", "double flip"],
+    ["flip", "double flip"]
+  ],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

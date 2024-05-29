@@ -1,0 +1,24 @@
+{
+  "name": "Rodeo Helicopter",
+  "acronym": "RH",
+  "directions": ["left", "right", "opposite"],
+  "solo": false,
+  "solo_awt": false,
+  "synchro": true,
+  "repeatable": false,
+  "description": "One pilot is performing a Helicopter while the other is spiralling around",
+  "minimum": "2 spiral revolutions around the helicopter at the same altitude",
+  "criterias": {
+    "normal": "same as for Helicopter",
+    "twisted": "same as for Helicopter"
+  },
+  "technical_coefficient": 1.7,
+  "bonuses": [
+    {"name": "twisted","bonus": 3}
+  ],
+  "bonus_constraints": [],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

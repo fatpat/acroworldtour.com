@@ -1,0 +1,26 @@
+{
+  "name": "Helicopter to SAT",
+  "acronym": "HS",
+  "directions": ["left", "right"],
+  "solo": true,
+  "solo_awt": true,
+  "synchro": true,
+  "repeatable": false,
+  "description": "Helicopter + connection to SAT",
+  "minimum": "3 helicopter rotations, 2 SAT rotations",
+  "criterias": {
+    "normal": "no rotation on entry and exit, direction",
+    "twisted": "twist during the helicopter. Must stay twisted during the whole transition, at least 1 turn of SAT twisted. Can untwist on the exit",
+    "reverse": "immediate transition to a SAT in the opposite direction"
+  },
+  "technical_coefficient": 1.85,
+  "bonuses": [
+    {"name": "twisted","bonus": 4.5},
+    {"name": "reverse","bonus": 4}
+  ],
+  "bonus_constraints": [],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

@@ -1,0 +1,43 @@
+{
+  "name": "Super Stall to Infinity Tumbling",
+  "acronym": "SSI",
+  "directions": [],
+  "solo": true,
+  "solo_awt": true,
+  "synchro": true,
+  "repeatable": false,
+  "description": "Super Stall directly connected into an Infinite Tumbling. The Full Stall must not necessarily be high but shall be perfectly straight",
+  "minimum": "entry\\ + 3 rotations",
+  "criterias": {
+    "normal": "rhythm, flow, trajectory (no roll movement), tension in the lines and glider, duration, exit or connection",
+    "twisted": "twisted on the entry, untwist after the stall and proceed into the Infinity Tumbling without twist",
+    "full twisted": "twisted on the entry, stay twisted after the stall and proceed into the Infinity Tumbling twisted and untwist at exit (not during the turns)",
+    "devil twist stall": "twisted on the entry, untwist during the stall and immediately twist to the other direction and proceed into the Infinity Tumbling twisted",
+    "twisted exit": "stay twisted during the exit of the Infinity Tumbling",
+    "flip": "the pilot performs a flip just after the glider stalled, proceed into the Infinity Tumbling",
+    "cab slide": "get twisted during an infinity tumbling turn",
+    "devil twist": "from a twisted situation, change of twist direction (within one turn)"
+  },
+  "connection": "Forbidden connection to Tumbling or Anti-Rhythmic SAT",
+  "technical_coefficient": 2.00,
+  "bonuses": [
+    {"name": "twisted","bonus": 2.5},
+    {"name": "twisted exit","bonus": 3},
+    {"name": "full twisted","bonus": 6.5},
+    {"name": "devil twist stall","bonus": 7.5},
+    {"name": "flip","bonus": 6.5},
+    {"name": "cab slide","bonus": 2},
+    {"name": "devil twist","bonus": 2}
+  ],
+  "bonus_constraints": [
+    ["twisted", "full twisted"],
+    ["twisted", "devil twist stall"],
+    ["full twisted", "devil twist stall"],
+    ["full twisted", "cab slide"],
+    ["devil twist stall", "cab slide"]
+  ],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 2
+}
