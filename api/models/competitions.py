@@ -945,6 +945,7 @@ class Competition(CompetitionNew):
         else:
             config = run.config
 
+
         #
         # check if a trick is not perform in a allowed position (not the first or not as a last x maneuvers)
         #
@@ -1091,47 +1092,65 @@ class Competition(CompetitionNew):
             ignoring = False
 
             #
-            # ignore tricks with bonus higher than the maximum bonus tricks allowed
+            # ignore tricks by competition types
             #
-            for bonus_type in trick.bonus_types:
-                if bonus_type not in n_bonuses:
-                    n_bonuses[bonus_type] = 0
-
-                n_bonuses[bonus_type] += 1
-
-                max_per_run=10
-                try:
-                    max_per_run = dict(config.max_bonus_per_run)[bonus_type]
-                except:
-                    pass
-
-                if n_bonuses[bonus_type] > max_per_run:
-                    log.warning(f"Ignoring trick #{i} ({trick}) because already {max_per_run} tricks have been flown")
-                    mark.notes.append(f"trick number #{i} ({trick.name}) has been ignored because more than {max_per_run} {bonus_type} tricks have been flown")
+            if self.type == CompetitionType.solo:
+                log.debug(f"{is_awt_pilot} / {self.is_awt_season()} / {trick.solo} / {trick.solo_awt}")
+                if not trick.solo:
+                    mark.notes.append(f"Ignoring trick #{i} ({trick.name}) because it's not allowed in a solo competition")
                     ignoring = True
 
-            #
-            # endof ignore tricks max_bonus_per_run
-            #
-            for _type in trick.types:
-                log.debug(f"types={trick.types} type={_type} limits={limits_per_type}")
-                log.debug(settings.competitions.max_tricks_per_type)
-                limit = settings.competitions.max_tricks_per_type.get(_type, None)
-                log.debug(f"type={_type} limit={limit}")
-                if limit is not None:
-                    limits_per_type.setdefault(_type, 0)
-                    limits_per_type[_type] += 1
-                    if limits_per_type[_type] > limit:
-                        log.warning(f"Ignoring trick #{i} ({trick.name}) because already {limit} '{_type}' tricks have been flown")
-                        mark.notes.append(f"trick number #{i} ({trick.name}) has been ignored because more than {limit} '{_type}' tricks have been flown")
-                        ignoring = True
-            #
-            # 6.5.1.2 (2024) ignore tricks that can't be performed during the same run
-            #
+                elif is_awt_pilot and self.is_awt_season() and not trick.solo_awt:
+                    mark.notes.append(f"Ignoring trick #{i} ({trick.name}) because it's not allowed in AWT solo competition")
+                    ignoring = True
 
-            #
-            # endof 6.5.1.2 (2024) ignore tricks that can't be performed during the same run
-            #
+            elif self.type == CompetitionType.synchro and not trick.synchro:
+                mark.notes.append(f"Ignoring trick #{i} ({trick.name}) because it's not allowed in a synchro competition")
+                ignoring = True
+
+            if not ignoring:
+                #
+                # ignore tricks with bonus higher than the maximum bonus tricks allowed
+                #
+                for bonus_type in trick.bonus_types:
+                    if bonus_type not in n_bonuses:
+                        n_bonuses[bonus_type] = 0
+
+                    n_bonuses[bonus_type] += 1
+
+                    max_per_run=10
+                    try:
+                        max_per_run = dict(config.max_bonus_per_run)[bonus_type]
+                    except:
+                        pass
+
+                    if n_bonuses[bonus_type] > max_per_run:
+                        log.warning(f"Ignoring trick #{i} ({trick}) because already {max_per_run} tricks have been flown")
+                        mark.notes.append(f"trick number #{i} ({trick.name}) has been ignored because more than {max_per_run} {bonus_type} tricks have been flown")
+                        ignoring = True
+
+                #
+                # endof ignore tricks max_bonus_per_run
+                #
+
+                #
+                # 6.5.1.2 (2024) ignore tricks that can't be performed during the same run
+                #
+                for _type in trick.types:
+                    log.debug(f"types={trick.types} type={_type} limits={limits_per_type}")
+                    log.debug(settings.competitions.max_tricks_per_type)
+                    limit = settings.competitions.max_tricks_per_type.get(_type, None)
+                    log.debug(f"type={_type} limit={limit}")
+                    if limit is not None:
+                        limits_per_type.setdefault(_type, 0)
+                        limits_per_type[_type] += 1
+                        if limits_per_type[_type] > limit:
+                            log.warning(f"Ignoring trick #{i} ({trick.name}) because already {limit} '{_type}' tricks have been flown")
+                            mark.notes.append(f"trick number #{i} ({trick.name}) has been ignored because more than {limit} '{_type}' tricks have been flown")
+                            ignoring = True
+                #
+                # endof 6.5.1.2 (2024) ignore tricks that can't be performed during the same run
+                #
 
             if not ignoring:
                 tricks.append(trick)
