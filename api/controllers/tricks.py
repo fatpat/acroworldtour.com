@@ -97,7 +97,9 @@ class TrickCtrl:
                 uniqueness = uniqueness,
                 bonuses = combination,
                 solo = trick.solo,
+                solo_awt = trick.solo_awt,
                 synchro = trick.synchro,
+                types = trick.types,
             ))
         else:
 
@@ -133,7 +135,9 @@ class TrickCtrl:
                     uniqueness = uniqueness + [direction],
                     bonuses = combination,
                     solo = False,
+                    solo_awt = trick.solo_awt,
                     synchro = trick.synchro,
+                    types = trick.types,
                 ))
 
         return
