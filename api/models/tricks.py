@@ -47,6 +47,8 @@ class UniqueTrick(BaseModel):
     bonuses: List[Bonus] = []
     synchro: Optional[bool]
     solo: Optional[bool]
+    solo_awt: Optional[bool]
+    types: List[str] = []
 
     class Config:
         schema_extra = {
