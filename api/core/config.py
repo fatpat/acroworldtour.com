@@ -1,5 +1,5 @@
 import secrets
-from typing import List, Union
+from typing import List, Union, Dict
 
 from pydantic import AnyHttpUrl, BaseSettings, validator
 
@@ -73,6 +73,10 @@ class Settings(BaseSettings):
         max_bonus_twist_per_run : int = 5
         max_bonus_reverse_per_run : int = 3
         max_bonus_flip_per_run : int = 2
+        max_tricks_per_type : Dict[str, int] = {
+            "tumbling" : 2,
+            "to infinite" : 1,
+        }
 
 
     class runs:

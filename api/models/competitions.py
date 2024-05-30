@@ -1079,14 +1079,20 @@ class Competition(CompetitionNew):
 
 
         #
-        # ignore trick with bonus higher than the maximum bonus tricks allowed
+        # ignore tricks
         #
         tricks = [] # the list of tricks that will be used to calculate the scores
         n_bonuses = {}
+        limits_per_type = {}
         i = 0
         for trick in flight.tricks:
             i += 1
+            log.debug(f"Check trick #{i}: #{trick.name}")
             ignoring = False
+
+            #
+            # ignore tricks with bonus higher than the maximum bonus tricks allowed
+            #
             for bonus_type in trick.bonus_types:
                 if bonus_type not in n_bonuses:
                     n_bonuses[bonus_type] = 0
@@ -1104,10 +1110,33 @@ class Competition(CompetitionNew):
                     mark.notes.append(f"trick number #{i} ({trick.name}) has been ignored because more than {max_per_run} {bonus_type} tricks have been flown")
                     ignoring = True
 
+            #
+            # endof ignore tricks max_bonus_per_run
+            #
+            for _type in trick.types:
+                log.debug(f"types={trick.types} type={_type} limits={limits_per_type}")
+                log.debug(settings.competitions.max_tricks_per_type)
+                limit = settings.competitions.max_tricks_per_type.get(_type, None)
+                log.debug(f"type={_type} limit={limit}")
+                if limit is not None:
+                    limits_per_type.setdefault(_type, 0)
+                    limits_per_type[_type] += 1
+                    if limits_per_type[_type] > limit:
+                        log.warning(f"Ignoring trick #{i} ({trick.name}) because already {limit} '{_type}' tricks have been flown")
+                        mark.notes.append(f"trick number #{i} ({trick.name}) has been ignored because more than {limit} '{_type}' tricks have been flown")
+                        ignoring = True
+            #
+            # 6.5.1.2 (2024) ignore tricks that can't be performed during the same run
+            #
+
+            #
+            # endof 6.5.1.2 (2024) ignore tricks that can't be performed during the same run
+            #
+
             if not ignoring:
                 tricks.append(trick)
         #
-        # endof ignore tricks max_bonus_per_run
+        # endof ignore tricks
         #
 
 
