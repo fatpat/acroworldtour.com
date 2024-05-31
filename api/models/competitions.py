@@ -1056,23 +1056,25 @@ class Competition(CompetitionNew):
             for trick in flight.tricks:
 
                 # search if there is a direction
-                for bonus in trick.uniqueness:
-                    if bonus in available_directions:
-                        directions.append(bonus)
+                for direction in trick.uniqueness:
+                    if direction in available_directions:
+                        directions.append(direction)
                         break
 
-            # count the number of each directions
-            directions=Counter(directions)
-            # only keep the number of each directions
-            directions = directions.values()
+            # if there are more than 1 direction trick
+            if len(directions) > 1:
 
-            # if there is only one direction flown
-            # or
-            # a difference of 2 between the number of directions flown
-            if (len(directions) == 1) or (max(directions) - min(directions) > 1):
-                # then lower the choreography mark by 1
-                if mark.judges_mark.choreography >= 1:
-                    mark.judges_mark.choreography -= 1
+                # count the number of each directions
+                directions = Counter(directions)
+                # only keep the number of each directions
+                directions = directions.values()
+                # len(directions) == 1 --> 2 or more tricsk to the same direction
+                # max(directions) - min(directions) > 1 --> is number of tricks with direction even ?
+                if len(directions) == 1 or (max(directions) - min(directions)) > 1:
+                    # then lower the choreography mark by 1
+                    if mark.judges_mark.choreography >= 1:
+                        mark.notes.append(f"choreography mark has been lower by 1 point because direction is not even")
+                        mark.judges_mark.choreography -= 1
         #
         # endof tricks direction odd-even check
         #
