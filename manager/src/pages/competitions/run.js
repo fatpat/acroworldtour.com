@@ -60,6 +60,7 @@ import TableHead from '@mui/material/TableHead'
 import Table from '@mui/material/Table'
 import TableContainer from '@mui/material/TableContainer'
 import List from "@mui/material/List";
+import FunctionsIcon from '@mui/icons-material/Functions';
 
 // ** others
 import Moment from 'react-moment'
@@ -97,6 +98,7 @@ import TabConfig from 'src/views/competitions/TabConfig'
 import TabRunResults from 'src/views/competitions/TabRunResults'
 import TabRepeatableTricks from 'src/views/competitions/TabRepeatableTricks'
 import TabFlightsSolo from 'src/views/competitions/TabFlightsSolo'
+import TabFlightsSoloDetails from 'src/views/competitions/TabFlightsSoloDetails'
 import TabFlightsSynchro from 'src/views/competitions/TabFlightsSynchro'
 import SortablePilotStartingOrder from 'src/views/runs/SortablePilotStartingOrder'
 
@@ -425,6 +427,17 @@ const RunPage = () => {
                   </Box>
                 }
               />
+{ comp.type == "solo" &&
+              <Tab
+                value='flights_details'
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <FunctionsIcon />
+                    <TabName>Flights Details</TabName>
+                  </Box>
+                }
+              />
+}
               <Tab
                 value='starting_order'
                 label={
@@ -464,6 +477,11 @@ const RunPage = () => {
 { comp.type == "solo" && <TabFlightsSolo comp={comp} run={run} rid={rid}/>}
 { comp.type == "synchro" && <TabFlightsSynchro comp={comp} run={run} rid={rid}/>}
             </TabPanel>
+{ comp.type == "solo" &&
+            <TabPanel sx={{ p: 0 }} value='flights_details'>
+              <TabFlightsSoloDetails comp={comp} run={run} rid={rid}/>
+            </TabPanel>
+}
             <TabPanel sx={{ p: 0 }} value='starting_order'>
               <TableContainer>
                 <CardContent>
