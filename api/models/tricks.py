@@ -49,6 +49,7 @@ class UniqueTrick(BaseModel):
     solo: Optional[bool]
     solo_awt: Optional[bool]
     types: List[str] = []
+    technical_mark: Optional[float] = None
 
     class Config:
         schema_extra = {

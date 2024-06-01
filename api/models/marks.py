@@ -16,6 +16,7 @@ from core.utils import float2digits, float3digits
 class JudgeMarkExport(BaseModel):
     judge: Optional[Judge]
     technical: Optional[float]
+    technical_per_trick: Optional[List[Optional[float]]] = Field(None)
     choreography: Optional[float]
     landing: Optional[float]
     synchro: Optional[float]
@@ -32,6 +33,7 @@ class JudgeMarkExport(BaseModel):
 class JudgeMark(BaseModel):
     judge: str
     technical: Optional[float] = Field(None, ge=0)
+    technical_per_trick: Optional[List[Optional[float]]] = Field(None)
     choreography: Optional[float] = Field(None, ge=0)
     landing: Optional[float] = Field(None, ge=0)
     synchro: Optional[float] = Field(None, ge=0)
@@ -60,6 +62,7 @@ class JudgeMark(BaseModel):
         return JudgeMarkExport(
             judge = judge,
             technical = self.technical,
+            technical_per_trick = self.technical_per_trick,
             choreography = self.choreography,
             landing = self.landing,
             synchro = self.synchro,

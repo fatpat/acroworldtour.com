@@ -348,7 +348,7 @@ async def flight_get(id: str, i: int, pilot_team_id):
 async def flight_save(id: str, i: int, pilot_team_id, save: bool, published:bool = False, flight: FlightNew = Body(...)):
     cache = Cache()
     comp = await Competition.get(id, cache=cache)
-    mark = await comp.flight_save(run_i=i, id=pilot_team_id, flight=flight, save=save, published=published)
+    mark = await comp.flight_save(run_i=i, id=pilot_team_id, flight=flight, save=save, published=published, cache=cache)
     return await mark.export(cache=cache)
 
 @competitions.get(

@@ -659,7 +659,7 @@ class Competition(CompetitionNew):
                 warnings = flight.warnings,
         )
 
-    async def flight_save(self, run_i: int, id, flight: FlightNew, save: bool=False, published: bool=False, saveToDB : bool = True) -> FinalMark:
+    async def flight_save(self, run_i: int, id, flight: FlightNew, save: bool=False, published: bool=False, saveToDB : bool = True, cache:Cache = None) -> FinalMark:
         run = await self.run_get(run_i)
 
         is_awt = False
@@ -680,7 +680,7 @@ class Competition(CompetitionNew):
                 raise HTTPException(400, f"Team #{id} does not participate in this comp ({self.name})")
 
         new_flight = await self.flight_convert(id, flight)
-        mark = await self.calculate_score(flight=new_flight, run_i=run_i, is_awt_pilot=is_awt)
+        mark = await self.calculate_score(flight=new_flight, run_i=run_i, is_awt_pilot=is_awt, cache=cache)
         if not save:
             return mark
 
@@ -905,7 +905,7 @@ class Competition(CompetitionNew):
         return bool([s for s in self.seasons if re.match('^awq-', s)])
 
 
-    async def calculate_score(self, flight: Flight, run_i: int = -1, is_awt_pilot=False) -> FinalMark:
+    async def calculate_score(self, flight: Flight, run_i: int = -1, is_awt_pilot=False, cache:Cache = None) -> FinalMark:
         mark = FinalMark(
             judges_mark = JudgeMark(
                 judge = "",
@@ -944,6 +944,25 @@ class Competition(CompetitionNew):
         else:
             config = run.config
 
+
+        # if a technical mark has been set for each trick individually
+        # let's calculate now the average of the technical mark for each trick
+        # and associate the resulted technical mark to the trick directly
+        for i, trick in enumerate(flight.tricks):
+            technicals = None
+            for m in flight.marks:
+                if m.technical_per_trick is not None:
+                    if i < len(m.technical_per_trick):
+                        if m.technical_per_trick[i] is not None:
+                            judge = await Judge.get(m.judge, cache=cache)
+                            if judge is None:
+                                raise HTTPException(400, f"judge '{m.judge}' not found")
+                            weight = dict(config.judge_weights)[judge.level.value]
+                            if technicals is None:
+                                technicals = []
+                            technicals.append((m.technical_per_trick[i], weight))
+            if technicals is not None:
+                trick.technical_mark = weight_average(technicals)
 
         #
         # check if a trick is not perform in a allowed position (not the first or not as a last x maneuvers)
@@ -1017,6 +1036,7 @@ class Competition(CompetitionNew):
         choreographies = []
         landings = []
         synchros = []
+        technical_marks_per_trick = False
         for m in flight.marks:
             judge = await Judge.get(m.judge)
             if judge is None:
@@ -1031,8 +1051,10 @@ class Competition(CompetitionNew):
             if self.type == CompetitionType.synchro:
                 if m.synchro is not None:
                     synchros.append((m.synchro, weight))
+            if m.technical_per_trick is not None:
+                technical_marks_per_trick = True
 
-        if (len(technicals) == 0 or len(choreographies) == 0 or len(landings) == 0 or (self.type == CompetitionType.synchro and  len(synchros) == 0)):
+        if ((len(technicals) == 0 and not technical_marks_per_trick) or len(choreographies) == 0 or len(landings) == 0 or (self.type == CompetitionType.synchro and  len(synchros) == 0)):
             raise HTTPException(400, f"not enough marks")
 
         mark.judges_mark.technical = weight_average(technicals)
@@ -1228,19 +1250,56 @@ class Competition(CompetitionNew):
         #
 
 
+
+        #
+        # handle the technical mark per trick (as per §6.6.1)
+        # technical marks = average of marks of each trick
+        #
+        technical_marks_per_trick = None
+        for trick in tricks:
+            if trick.technical_mark is not None:
+                if technical_marks_per_trick is None:
+                    technical_marks_per_trick = []
+                technical_marks_per_trick.append(trick.technical_mark)
+
+        if technical_marks_per_trick is not None:
+            if len(technical_marks_per_trick) != len(tricks):
+                raise HTTPException(400, f"not enough technicals marks")
+            mark.judges_mark.technical = average(technical_marks_per_trick)
+        #
+        # endof technical mark per trick
+        #
+
+
         technicals = []
         bonuses = []
+        bonuses_details = None
         for trick in tricks:
             # calculate the bonus of the run as stated in 7B
             # §6.6.1 Twisted manoeuvres bonus
             if trick.bonus > 0:
                 bonuses.append(trick.bonus)
 
+                # 6.6.1 Bonus calculation during AWT and CAT1 events
+                # apply the technical mark as a percentage of the bonus
+                # if technical mark per trick is sent (reserved for AWT and CAT.1)
+                if trick.technical_mark is not None:
+                    if bonuses_details is None:
+                        bonuses_details = []
+                    bonuses_details.append(trick.bonus * trick.technical_mark / 10)
+
             # as stated in 7B §
             # If more than 5 manoeuvres are flown twisted, the extra manoeuvres will not
             # be scored and their coefficients not taken into account for the
             # determination of the average coefficient.
             technicals.append(trick.technical_coefficient)
+
+        bonuses_total = sum(bonuses)
+        if bonuses_details is not None:
+            bonuses_details_total = sum(bonuses_details)
+            if bonuses_total != bonuses_details_total:
+                mark.notes.append(f"Initial total bonus of {bonuses_total}% has been lowered by technical mark to {round(bonuses_details_total,3)}%")
+                bonuses_total = bonuses_details_total
 
         # calculate the technicity of the run as stated in 7B 
         # §"6.3.1.1 Technicity in Solo"
@@ -1252,8 +1311,9 @@ class Competition(CompetitionNew):
         # calculate the bonus of the run as stated in 7B
         # §6.6.1 Twisted manoeuvres bonus
         # -> it is implied that the bonus is the sum of the bonuses limited to 5,3or 2
-        #    minus the malus
-        mark.bonus_percentage = sum(bonuses) - mark.malus
+        #    minus the malus (the malus is applied right after to avoid confusion
+        #    we don't want to include the malus in the bonus percentage that is exported to the result site
+        mark.bonus_percentage = bonuses_total
 
         mark_percentage = dict(config.mark_percentages)[self.type.value]
         mark.technical = mark.technicity * mark.judges_mark.technical * mark_percentage.technical / 100
@@ -1264,7 +1324,7 @@ class Competition(CompetitionNew):
         if self.type == CompetitionType.synchro:
             mark.synchro = mark.judges_mark.synchro * mark_percentage.synchro / 100
 
-        mark.bonus = (mark.technical + mark.choreography) * mark.bonus_percentage / 100
+        mark.bonus = (mark.technical + mark.choreography) * (mark.bonus_percentage - mark.malus) / 100
 
         mark.score = mark.technical + mark.choreography + mark.landing + mark.synchro + mark.bonus
 
