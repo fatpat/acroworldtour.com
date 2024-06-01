@@ -78,7 +78,8 @@ const Navigation = props => {
       shadowRef.current.classList.remove('d-block')
     }
   }
-  const ScrollWrapper = hidden ? Box : PerfectScrollbar
+  //const ScrollWrapper = hidden ? Box : PerfectScrollbar
+  const ScrollWrapper = PerfectScrollbar
 
   return (
     <Drawer {...props}>
