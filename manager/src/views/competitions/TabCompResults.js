@@ -66,8 +66,8 @@ const TabResults = ({ code }) => {
         <Button href={new URL(`/competitions/${code}/results/export`, process.env.NEXT_PUBLIC_API_URL).toString()} startIcon={<ArticleIcon />}>Download CIVL Export</Button>
         <Button href={new URL(`/competitions/${code}/results/export?filetype=html`, process.env.NEXT_PUBLIC_API_URL).toString()} startIcon={<CloudDownloadIcon />} target="_blank" rel="noreferrer">PDF Export</Button>
       </Box>
-{ Object.keys(results.results).map((result_type) => (
-      <>
+{ Object.keys(results.results).map((result_type, i) => (
+      <div key={i}>
       <Box sx={{display: 'flex',justifyContent: 'center'}}>
       <Typography variant="h4">
         <EmojiEventsIcon fontSize="large"/>{ results.final ? 'Final' : 'Intermediate' } { result_type }
@@ -88,11 +88,11 @@ const TabResults = ({ code }) => {
               </TableHead>
               <TableBody>
 { results.results[result_type].map((r,rank) => (
-                <TableRow key={`result-${rank}`}>
+                <TableRow key={rank}>
                   <TableCell>{rank+1}</TableCell>
                   <TableCell>
                     {results.type == "solo" && r.pilot.name}
-                    {results.type == "synchro" && <p>{r.team.name}<ul><li>{r.team.pilots[0].name}</li><li>{r.team.pilots[1].name}</li></ul></p>}
+                    {results.type == "synchro" && <p>{r.team.name}<ul><li key={t.team.pilot[0].name}>{r.team.pilots[0].name}</li><li key={t.team.pilot[1].name}>{r.team.pilots[1].name}</li></ul></p>}
                   </TableCell>
                   <TableCell>
                     {r.result_per_run.map((rr, rid) => (`Run ${rid+1}`)).reduce((res, v) => {
@@ -114,7 +114,7 @@ const TabResults = ({ code }) => {
           </TableContainer>
         </Grid>
       </Grid>
-      </>
+      </div>
 ))}
     </CardContent>
   )

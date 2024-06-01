@@ -278,7 +278,7 @@ const SeasonPage = () => {
       </Grid>
 
       <Grid item xs={8} sx={{ paddingBottom: 4 }}>
-        <Typography>
+        <Typography component="span">
           <Editable
             text={tempSeason.name}
             title="Name"
@@ -297,7 +297,7 @@ const SeasonPage = () => {
                     />
           </Editable>
         </Typography>
-        <Typography>
+        <Typography component="span">
           <Editable
             text={tempSeason.code}
             title="Code"
@@ -316,7 +316,7 @@ const SeasonPage = () => {
                     />
           </Editable>
         </Typography>
-        <Typography>
+        <Typography component="span">
           <Editable
             text={tempSeason.year}
             title="Year"
@@ -335,7 +335,7 @@ const SeasonPage = () => {
             />
           </Editable>
         </Typography>
-        <Typography>
+        <Typography component="span">
           <Editable
             text={tempSeason.country || "none"}
             title="Country"
@@ -360,7 +360,7 @@ const SeasonPage = () => {
             />
           </Editable>
         </Typography>
-        <Typography>
+        <Typography component="span">
           <Editable
             text={tempSeason.index || "999"}
             title="index"

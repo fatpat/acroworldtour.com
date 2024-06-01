@@ -419,7 +419,7 @@ const CompetitionPage = () => {
       </Grid>
 
       <Grid item xs={12} md={4} sx={{ paddingBottom: 4 }}>
-        <Typography>
+        <Typography component="span">
           <Editable
             text={tempComp.name}
             title="Name"
@@ -438,7 +438,7 @@ const CompetitionPage = () => {
                     />
           </Editable>
         </Typography>
-        <Typography>
+        <Typography component="span">
           <Editable
             text={tempComp.code}
             title="Code"
@@ -457,7 +457,7 @@ const CompetitionPage = () => {
                     />
           </Editable>
         </Typography>
-        <Typography>
+        <Typography component="span">
           Status: <strong>{tempComp.state}</strong>
 { comp.state == 'init' &&
           <Button variant='outlined' className="hideToPrint" startIcon={<RocketLaunchIcon />} onClick={() => setState('open') }>Open</Button>
@@ -469,10 +469,10 @@ const CompetitionPage = () => {
           <Button variant='outlined' className="hideToPrint" startIcon={<AutorenewIcon />} onClick={() => setState('reopen') }>Reopen</Button>
 }
         </Typography>
-        <Typography>
+        <Typography component="span">
           Type: <strong>{tempComp.type}</strong>
         </Typography>
-        <Typography>
+        <Typography component="span">
           <Editable
             text={tempComp.seasons.length > 0 ? tempComp.seasons.join(', ') : "none"}
             title="Seasons"
@@ -494,7 +494,7 @@ const CompetitionPage = () => {
       </Grid>
 
       <Grid item xs={12} md={4} sx={{ paddingBottom: 4 }}>
-        <Typography>
+        <Typography component="span">
           <Editable
             text={tempComp.start_date}
             title="Start date"
@@ -513,7 +513,7 @@ const CompetitionPage = () => {
             />
           </Editable>
         </Typography>
-        <Typography>
+        <Typography component="span">
           <Editable
             text={tempComp.end_date}
             title="End date"
@@ -533,7 +533,7 @@ const CompetitionPage = () => {
           </Editable>
         </Typography>
 
-        <Typography>
+        <Typography component="span">
           <Editable
             text={tempComp.location}
             title="Location"
@@ -553,7 +553,7 @@ const CompetitionPage = () => {
           </Editable>
         </Typography>
 
-        <Typography>
+        <Typography component="span">
           <Editable
             text={tempComp.website || "none"}
             title="Website"
@@ -573,7 +573,7 @@ const CompetitionPage = () => {
           </Editable>
         </Typography>
 
-        <Typography>
+        <Typography component="span">
           <section>
             <div>
               <span>

@@ -70,8 +70,8 @@ const TabSeasonResults = ({season}) => {
   return (
     <CardContent>
       <Grid container spacing={7}>
-{ season.results.map(results => (
-        <Grid item xs={12} sm={12}>
+{ season.results.map((results,i) => (
+        <Grid item xs={12} sm={12} key={i}>
           <h3>{results.type}</h3>
           <EnhancedTable rows={results.results.map((result, rank) => {result.rank = rank+1; return result})} headCells={season.type =="solo" ? headCellsSolo : headCellsSynchro} orderById='score' defaultOrder="desc" pagination={false}/>
         </Grid>

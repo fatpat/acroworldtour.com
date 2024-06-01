@@ -228,7 +228,7 @@ export default function EnhancedTable({ rows, headCells, orderById, actionRowId,
                   const labelId = `enhanced-table-checkbox-${index}`
 
                   return (
-                    <TableRow hover tabIndex={-1} key={row.name}>
+                    <TableRow hover tabIndex={-1} key={index}>
                       {headCells.map((h, index) => {
                         const isActionRowId = h.id === actionRowId
                         var value = row[h.id]
