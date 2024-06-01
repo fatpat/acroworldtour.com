@@ -182,7 +182,6 @@ const CompetitionPage = () => {
     if (err) {
         return error(`error while updating competition ${cid}: ${err}`)
     }
-    console.log(retData)
 
     return retData
   }

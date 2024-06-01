@@ -44,7 +44,6 @@ const TabJudges = ({judges, allJudges, update}) => {
   ]
 
   useEffect(() =>{
-    console.log('useEffect()')
     judges = judges.map(p => {
       p.delete = 'delete'
       p.id = p._id
