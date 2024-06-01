@@ -254,7 +254,8 @@ class Competition(CompetitionNew):
 
         repeatable_tricks = []
         for trick in self.repeatable_tricks:
-            repeatable_tricks.append(await Trick.get(trick, cache=cache))
+            repeatable_tricks.append(await Trick.get(trick, deleted=(self.state == CompetitionState.closed), cache=cache))
+
 
         runs = []
         for run in self.runs:

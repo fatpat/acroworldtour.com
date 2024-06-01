@@ -86,7 +86,7 @@ class Run(BaseModel):
 
         repeatable_tricks = []
         for trick in self.repeatable_tricks:
-            repeatable_tricks.append(await Trick.get(trick, cache=cache))
+            repeatable_tricks.append(await Trick.get(trick, cache=cache, deleted=(self.state == RunState.closed)))
 
         flights = []
         for flight in self.flights:
