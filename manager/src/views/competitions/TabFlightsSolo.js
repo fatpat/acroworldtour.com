@@ -253,23 +253,24 @@ const TabFlights = ({ comp, run, rid }) => {
       </Grid>
       <Grid container spacing={2}>
         {/* 1st column / maneuvers*/}
-        <Grid container xs={6}>
-            <Grid xs={12}>
+        <Grid item xs={6}>
+            <Grid item xs={12}>
               <Typography variant="h5">Maneuvers</Typography>
             </Grid>
 { [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20].map(i =>{
             var trick = null
             if (data && data.tricks && data.tricks[i]) trick = data.tricks[i]
             return(
-            <Grid xs={12} key={i}>
+            <Grid item xs={12} key={i}>
                     <Autocomplete
                       id="autocomplete-trick-{i}"
-                      key="autocomplete-trick-{i}"
+                      key={i}
                       options={uniqueTricks}
                       groupBy={t => t.base_trick}
                       getOptionLabel={(p) => `${p.name} (${p.acronym}) (${p.technical_coefficient})`}
                       renderInput={(params) => <TextField {...params} name="trick" />}
                       value={trick}
+                      isOptionEqualToValue={(a,b) => a.acronym == b.acronym}
                       onChange={(e, v) => {
                           data.tricks[i] = v
                           simulateScore(data)
@@ -280,9 +281,9 @@ const TabFlights = ({ comp, run, rid }) => {
 )})}
         </Grid>
         {/* 2nd column */}
-        <Grid container xs={6}>
+        <Grid item xs={6}>
           {/* marks */}
-          <Grid container xs={12}>
+          <Grid item xs={12}>
             <Typography variant="h5">Marks</Typography>
     <Box sx={{ width: '100%' }}>
       <Paper sx={{ width: '100%', mb: 2 }}>
@@ -319,7 +320,7 @@ const TabFlights = ({ comp, run, rid }) => {
       }
     }
     return (
-              <TableRow>
+              <TableRow key={j._id}>
                 <TableCell>
                   <Typography>{ j.name }</Typography>
                 </TableCell>
@@ -341,7 +342,7 @@ const TabFlights = ({ comp, run, rid }) => {
     </Box>
           </Grid>
           {/* scores */}
-          <Grid container xs={12}>
+          <Grid item xs={12}>
             <Typography variant="h5">Scores</Typography>
             <Table>
               <TableBody>
@@ -395,13 +396,13 @@ const TabFlights = ({ comp, run, rid }) => {
   { result.notes && result.notes.length > 0 && (<>
                     <Typography>notes:</Typography>
   <ul>
-  { result.notes.map((note, i) => <li>{note}</li>)}
+  { result.notes.map((note, i) => <li key={i}>{note}</li>)}
   </ul>
   </>)}
   { result.warnings && result.warnings.length > 0 && (<>
                     <Typography>warnings:</Typography>
   <ul>
-  { result.warnings.map((warning, i) => <li>{warning} <DeleteIcon onClick={() => removeWarning(i)} /></li>)}
+  { result.warnings.map((warning, i) => <li key={i}>{warning} <DeleteIcon onClick={() => removeWarning(i)} /></li>)}
   </ul>
   </>)}
                   </TableCell>
@@ -410,7 +411,7 @@ const TabFlights = ({ comp, run, rid }) => {
             </Table>
           </Grid>
           {/* actions */}
-          <Grid container xs={12}>
+          <Grid container>
               <Grid item xs={4}>
                 <Button variant="contained" disabled={!resultsOK} onClick={e => saveResults(false, 0)}>Save</Button>
                 <Button variant="contained" disabled={!resultsOK} onClick={e => saveResults(false, 1)}>Save & Next</Button>

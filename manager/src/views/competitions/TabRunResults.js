@@ -112,24 +112,24 @@ const TabResults = ({ code, rid }) => {
 })}
                   </TableCell>
                   <TableCell sx={{width: "30%"}}>
-                    <p>warnings: {r.final_marks.warnings.length}
+                    <div>warnings: {r.final_marks.warnings.length}
 { r.final_marks.warnings.length > 0 &&
                       <List>
-  { r.final_marks.warnings.map(w => (
-                        <ListItem>{w}</ListItem>
+  { r.final_marks.warnings.map((w,i) => (
+                        <ListItem key={i}>{w}</ListItem>
   ))}
                       </List>
 }
-                    </p>
+                    </div>
                     <p>Malus: {r.final_marks.malus}%</p>
 { r.final_marks.notes.length > 0 &&
-                    <p>
+                    <div>
                       <List>
-  { r.final_marks.notes.map(n => (
-                        <ListItem>{n}</ListItem>
+  { r.final_marks.notes.map((n,i) => (
+                        <ListItem key={i}>{n}</ListItem>
   ))}
                       </List>
-                    </p>
+                    </div>
 }
                     { r.did_not_start && <p>DID NOT START</p>}
                   </TableCell>

@@ -37,8 +37,9 @@ const TabConfig = ({ config,  update, type}) => {
   return (
     <CardContent>
       <Grid container spacing={7}>
-        <Grid item xs={4} sm={4} container>
-          <Typography>
+
+        <Grid item xs={4} sm={4}>
+          <Typography component="span">
             <Editable
               text={config.warning}
               title="Warning"
@@ -59,8 +60,8 @@ const TabConfig = ({ config,  update, type}) => {
           </Typography>
         </Grid>
 
-        <Grid item xs={4} sm={4} container>
-          <Typography>
+        <Grid item xs={4} sm={4}>
+          <Typography component="span">
             <Editable
               text={config.malus_repetition}
               title="Malus Repetition"
@@ -81,8 +82,8 @@ const TabConfig = ({ config,  update, type}) => {
           </Typography>
         </Grid>
 
-        <Grid item xs={4} sm={4} container>
-          <Typography>
+        <Grid item xs={4} sm={4}>
+          <Typography component="span">
             <Editable
               text={config.warnings_to_dsq}
               title="Warnings to DSQ"
@@ -103,8 +104,8 @@ const TabConfig = ({ config,  update, type}) => {
           </Typography>
         </Grid>
 
-        <Grid item xs={4} sm={4} container>
-          <Typography>
+        <Grid item xs={4} sm={4}>
+          <Typography component="span">
             <Editable
               text={config.judge_weights.senior}
               title="Senior Judge Weight"
@@ -125,8 +126,8 @@ const TabConfig = ({ config,  update, type}) => {
           </Typography>
         </Grid>
 
-        <Grid item xs={4} sm={4} container>
-          <Typography>
+        <Grid item xs={4} sm={4}>
+          <Typography component="span">
             <Editable
               text={config.judge_weights.certified}
               title="Certified Judge Weight"
@@ -147,8 +148,8 @@ const TabConfig = ({ config,  update, type}) => {
           </Typography>
         </Grid>
 
-        <Grid item xs={4} sm={4} container>
-          <Typography>
+        <Grid item xs={4} sm={4}>
+          <Typography component="span">
             <Editable
               text={config.judge_weights.trainee}
               title="Trainee Judge Weight"
@@ -169,8 +170,8 @@ const TabConfig = ({ config,  update, type}) => {
           </Typography>
         </Grid>
 
-        <Grid item xs={4} sm={4} container>
-          <Typography>
+        <Grid item xs={4} sm={4}>
+          <Typography component="span">
             <Editable
               text={config.max_bonus_per_run.twist}
               title="Max Twists per run"
@@ -191,8 +192,8 @@ const TabConfig = ({ config,  update, type}) => {
           </Typography>
         </Grid>
 
-        <Grid item xs={4} sm={4} container>
-          <Typography>
+        <Grid item xs={4} sm={4}>
+          <Typography component="span">
             <Editable
               text={config.max_bonus_per_run.reverse}
               title="Max Reverses per run"
@@ -213,8 +214,8 @@ const TabConfig = ({ config,  update, type}) => {
           </Typography>
         </Grid>
 
-        <Grid item xs={4} sm={4} container>
-          <Typography>
+        <Grid item xs={4} sm={4}>
+          <Typography component="span">
             <Editable
               text={config.max_bonus_per_run.flip}
               title="Max Flips per run"
@@ -235,8 +236,8 @@ const TabConfig = ({ config,  update, type}) => {
           </Typography>
         </Grid>
 
-        <Grid item xs={4} sm={4} container>
-          <Typography>
+        <Grid item xs={4} sm={4}>
+          <Typography component="span">
             <Editable
               text={config.mark_percentages[type].technical}
               title="Mark Percentage: Technical"
@@ -257,8 +258,8 @@ const TabConfig = ({ config,  update, type}) => {
           </Typography>
         </Grid>
 
-        <Grid item xs={4} sm={4} container>
-          <Typography>
+        <Grid item xs={4} sm={4}>
+          <Typography component="span">
             <Editable
               text={config.mark_percentages[type].choreography}
               title="Mark Percentage: Choreography"
@@ -279,8 +280,8 @@ const TabConfig = ({ config,  update, type}) => {
           </Typography>
         </Grid>
 
-        <Grid item xs={4} sm={4} container>
-          <Typography>
+        <Grid item xs={4} sm={4}>
+          <Typography component="span">
             <Editable
               text={config.mark_percentages[type].landing}
               title="Mark Percentage: Landing"
@@ -302,8 +303,8 @@ const TabConfig = ({ config,  update, type}) => {
         </Grid>
 
 { type == "synchro" && 
-        <Grid item xs={4} sm={4} container>
-          <Typography>
+        <Grid item xs={4} sm={4}>
+          <Typography component="span">
             <Editable
               text={config.mark_percentages[type].synchro}
               title="Mark Percentage: Synchro"
