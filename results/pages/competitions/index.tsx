@@ -10,7 +10,7 @@ import { API_URL } from "@/constants";
 import { components } from "@/types";
 
 type Competition = components["schemas"]["CompetitionPublicExport"];
-type Season = components["schemas"]["SeasonPublicExport"];
+type Season = components["schemas"]["SeasonExportLight"];
 
 const currentYear = new Date().getFullYear();
 
@@ -62,10 +62,8 @@ const Competitions = () => {
   });
 
   const soloSeasons = seasons.filter((season) =>
-    season.competitions.some((comp) =>
-      filteredCompetitions.some(
-        (filteredComp) => filteredComp.code === comp.code,
-      ),
+    filteredCompetitions.some((comp) =>
+      comp.seasons.some((s) => s == season.code),
     ),
   );
 
@@ -134,7 +132,10 @@ const Competitions = () => {
       <YearSelector years={years} />
 
       {soloSeasons.map((season) => {
-        const { code, competitions, name } = season;
+        const { code, name } = season;
+        let competitions = filteredCompetitions.filter((competition) =>
+          competition.seasons.some((s) => s == code),
+        );
         competitions.sort(
           (a, b) =>
             new Date(a.start_date).getTime() - new Date(b.start_date).getTime(),

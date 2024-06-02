@@ -106,7 +106,7 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
             <p className="col-span-3 py-3 text-center">
               {roundedScore}
               {(malus || 0) > 0 && "🔻"}
-              {(warnings?.length || 0) > 0 && " ⚠️"} 
+              {(warnings?.length || 0) > 0 && " ⚠️"}
             </p>
 
             {showDetails[resultIndex] && (

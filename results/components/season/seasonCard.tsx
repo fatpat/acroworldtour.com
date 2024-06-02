@@ -4,7 +4,7 @@ import Link from "next/link";
 import { components } from "@/types";
 
 interface Props {
-  season: components["schemas"]["SeasonExport"];
+  season: components["schemas"]["SeasonExportLight"];
 }
 
 const SeasonCard = ({ season }: Props) => {
@@ -14,14 +14,13 @@ const SeasonCard = ({ season }: Props) => {
     image,
     number_of_pilots: numberOfPilots,
     number_of_teams: numberOfTeams,
+    number_of_competitions: numberOfCompetitions,
     type,
-    competitions,
   } = season;
 
-  const competitionsCount = competitions.length;
-  const compsPlural = competitionsCount > 1;
-  const competitionsString = competitionsCount
-    ? `${competitionsCount} competition${compsPlural ? "s" : ""}`
+  const compsPlural = numberOfCompetitions > 1;
+  const competitionsString = numberOfCompetitions
+    ? `${numberOfCompetitions} competition${compsPlural ? "s" : ""}`
     : "";
 
   const pilotsPlural = numberOfPilots > 1;
@@ -55,29 +54,6 @@ const SeasonCard = ({ season }: Props) => {
         )}
       >
         <h3 className="">{name}</h3>
-
-        {!seasonCover && (
-          <div
-            className={classNames(
-              "absolute inset-0 flex flex-grow overflow-hidden",
-              "scale-105 rounded-xl mix-blend-overlay",
-            )}
-          >
-            {competitions.map((competition) => {
-              const { code, image } = competition;
-              return (
-                <div
-                  key={code}
-                  style={{ backgroundImage: `url(${image})` }}
-                  className={classNames(
-                    "h-full w-full scale-110",
-                    "bg-cover bg-center bg-no-repeat",
-                  )}
-                />
-              );
-            })}
-          </div>
-        )}
         <footer>
           <p className="capitalize">{type}</p>
           <p className="">{competitionsString}</p>
