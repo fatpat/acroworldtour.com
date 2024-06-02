@@ -302,6 +302,14 @@ export interface paths {
     /** Simulate */
     post: operations["simulate_public_simulate_competition__t__post"];
   };
+  "/public/live/overlay/pilot/{civlid}/run/{run}": {
+    /** Simulate */
+    get: operations["simulate_public_live_overlay_pilot__civlid__run__run__get"];
+  };
+  "/public/live/overlay/team/{team}/run/{run}": {
+    /** Simulate */
+    get: operations["simulate_public_live_overlay_team__team__run__run__get"];
+  };
   "/utils/backup": {
     /** Backup */
     get: operations["backup_utils_backup_get"];
@@ -955,6 +963,8 @@ export interface components {
       judge: string;
       /** Technical */
       technical?: number;
+      /** Technical Per Trick */
+      technical_per_trick?: (number)[];
       /** Choreography */
       choreography?: number;
       /** Landing */
@@ -967,6 +977,8 @@ export interface components {
       judge?: components["schemas"]["Judge"];
       /** Technical */
       technical?: number;
+      /** Technical Per Trick */
+      technical_per_trick?: (number)[];
       /** Choreography */
       choreography?: number;
       /** Landing */
@@ -1568,6 +1580,36 @@ export interface components {
       /** Results */
       results: (components["schemas"]["SeasonResults"])[];
     };
+    /** SeasonExportLight */
+    SeasonExportLight: {
+      /** Id */
+      _id: string;
+      /** Name */
+      name: string;
+      /** Code */
+      code: string;
+      /** Year */
+      year: number;
+      /**
+       * Image 
+       * Format: uri
+       */
+      image?: string;
+      /** Country */
+      country?: string;
+      /**
+       * Index 
+       * @default 999
+       */
+      index?: number;
+      type: components["schemas"]["CompetitionType"];
+      /** Number Of Pilots */
+      number_of_pilots: number;
+      /** Number Of Teams */
+      number_of_teams: number;
+      /** Number Of Competitions */
+      number_of_competitions: number;
+    };
     /** SeasonPublicExport */
     SeasonPublicExport: {
       /** Id */
@@ -1769,10 +1811,22 @@ export interface components {
        */
       acronym: string;
       /**
+       * Types 
+       * @description List of trick types 
+       * @default []
+       */
+      types?: (string)[];
+      /**
        * Solo 
        * @description Is this trick valid for solo competitions
        */
       solo: boolean;
+      /**
+       * Solo Awt 
+       * @description Is this trick valid for solo competitions 
+       * @default true
+       */
+      solo_awt?: boolean;
       /**
        * Synchro 
        * @description Is this trick valid for synchro competitions
@@ -1799,6 +1853,12 @@ export interface components {
        * @default []
        */
       bonus_constraints?: ((string)[])[];
+      /**
+       * Tricks Constraints 
+       * @description List of tricks that cannot be performed during the same competition. 
+       * @default []
+       */
+      tricks_constraints?: (string)[];
       /**
        * First Maneuver 
        * @description If positive, indicates that the trick must be performed in the first N tricks of the run 
@@ -1884,6 +1944,19 @@ export interface components {
        * @default []
        */
       bonuses?: (components["schemas"]["Bonus"])[];
+      /** Synchro */
+      synchro?: boolean;
+      /** Solo */
+      solo?: boolean;
+      /** Solo Awt */
+      solo_awt?: boolean;
+      /**
+       * Types 
+       * @default []
+       */
+      types?: (string)[];
+      /** Technical Mark */
+      technical_mark?: number;
     };
     /** ValidationError */
     ValidationError: {
@@ -3403,7 +3476,7 @@ export interface operations {
       /** @description List all seasons */
       200: {
         content: {
-          "application/json": (components["schemas"]["SeasonPublicExport"])[];
+          "application/json": (components["schemas"]["SeasonExportLight"])[];
         };
       };
       /** @description Validation Error */
@@ -3535,6 +3608,50 @@ export interface operations {
       };
     };
   };
+  /** Simulate */
+  simulate_public_live_overlay_pilot__civlid__run__run__get: {
+    parameters: {
+      query?: {
+        download?: boolean;
+      };
+      path: {
+        civlid: number;
+        run: number;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: never;
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Simulate */
+  simulate_public_live_overlay_team__team__run__run__get: {
+    parameters: {
+      query?: {
+        download?: boolean;
+      };
+      path: {
+        team: string;
+        run: number;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: never;
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   /** Backup */
   backup_utils_backup_get: {
     responses: {
@@ -3622,7 +3739,7 @@ export interface operations {
       /** @description List all seasons */
       200: {
         content: {
-          "application/json": (components["schemas"]["SeasonExport"])[];
+          "application/json": (components["schemas"]["SeasonExportLight"])[];
         };
       };
       /** @description Validation Error */
