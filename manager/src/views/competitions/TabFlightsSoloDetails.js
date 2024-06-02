@@ -275,9 +275,9 @@ const TabFlights = ({ comp, run, rid }) => {
           <Table sx={{ minWidth: 750 }}>
             <TableHead>
               <TableRow>
-                <TableCell>Trick</TableCell>
+                <TableCell style={{width: '60%'}}>Trick</TableCell>
 { run.judges.map((judge) => {
-                return(<TableCell key={judge.name}>{judge.name}</TableCell>)
+                return(<TableCell key={judge.name} align="center">{judge.name}</TableCell>)
 })}
               </TableRow>
             </TableHead>
