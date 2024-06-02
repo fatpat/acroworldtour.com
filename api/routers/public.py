@@ -14,7 +14,7 @@ from models.pilots import Pilot
 from models.pilots_with_results import PilotWithResults
 from models.judges import Judge
 from models.teams import Team, TeamExport
-from models.seasons import Season, SeasonPublicExport
+from models.seasons import Season, SeasonPublicExport, SeasonExportLight
 from models.tricks import Trick, UniqueTrick
 from models.marks import FinalMark
 from models.flights import Flight, FlightNew
@@ -229,19 +229,12 @@ async def export_competition_overall_standing_svg(id: str, run: int, result_type
 @public.get(
     "/seasons/",
     response_description="List all seasons",
-    response_model=List[SeasonPublicExport],
+    response_model=List[SeasonExportLight],
 )
 @cache(expire=settings.CACHE_EXPIRES)
 async def list_seasons(deleted: bool = False):
     cache = Cache()
-    await gather(
-        Pilot.getall(cache=cache),
-        Team.getall(cache=cache),
-        Judge.getall(cache=cache),
-        Competition.getall(cache=cache),
-        Trick.getall(cache=cache),
-    )
-    return [await season.export_public(cache=cache) for season in await Season.getall(deleted=deleted, cache=cache)]
+    return [await season.export_light(cache=cache) for season in await Season.getall(deleted=deleted, cache=cache)]
 
 #
 # Get a season

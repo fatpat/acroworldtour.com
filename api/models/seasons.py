@@ -62,6 +62,24 @@ class SeasonExport(BaseModel):
     competitions: List[CompetitionExport]
     results: List[SeasonResults]
 
+    class Config:
+        allow_population_by_field_name = True
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}
+
+
+class SeasonExportLight(BaseModel):
+    id: str = Field(alias="_id")
+    name: str
+    code: str
+    year: int
+    image: Optional[AnyHttpUrl]
+    country: Optional[str]
+    index: int = Field(999)
+    type: CompetitionType
+    number_of_pilots: int
+    number_of_teams: int
+    number_of_competitions: int
 
     class Config:
         allow_population_by_field_name = True
@@ -237,7 +255,11 @@ class Season(BaseModel):
         teams = {}
         pilots = {}
 
-        for comp in await Competition.getall(season=self.code, cache=cache):
+        _competitions = await Competition.getall(season=self.code, cache=cache)
+        if len(_competitions) == 0:
+            _type = CompetitionType.solo
+
+        for comp in _competitions:
             comp = await comp.export_public_with_results(cache=cache)
 
             # handle type and check that all comp of the season are of the same type
@@ -336,6 +358,42 @@ class Season(BaseModel):
             type = export_public.type,
             number_of_pilots = export_public.number_of_pilots,
             number_of_teams = export_public.number_of_teams,
-            competitions = [ await comp.export(cache=cache) for comp in await Competition.getall(season=self.code, cache=cache)],
+            competitions = [ await comp.export(cache=cache) for comp in await Competition.getall(season=export_public.code, cache=cache)],
             results = export_public.results,
+        )
+
+    async def export_light(self, cache:Cache=None) -> SeasonExportLight:
+        _type = None
+        pilots = []
+        teams = []
+        competitions = await Competition.getall(season=self.code, cache=cache)
+        if len(competitions) == 0:
+            _type = CompetitionType.solo
+
+        for competition in competitions:
+            if _type is None:
+                _type = competition.type
+            elif competition.type != _type:
+                raise HTTPException(500, f"All competition of a season must be of the same type (either solo or synchro). Both are link to the season {self.name}")
+
+            if competition.type == CompetitionType.solo:
+                pilots += competition.pilots
+            if competition.type == CompetitionType.synchro:
+                teams += competition.teams
+
+            if self.image is None:
+                self.image = competition.image
+
+        return SeasonExportLight(
+            _id = str(self.id),
+            name = self.name,
+            code = self.code,
+            year = self.year,
+            image = self.get_image_url(),
+            country = self.country,
+            index = self.index,
+            type = _type,
+            number_of_pilots = len(list(set(pilots))),
+            number_of_teams = len(list(set(teams))),
+            number_of_competitions = len(competitions),
         )

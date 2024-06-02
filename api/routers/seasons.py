@@ -2,7 +2,7 @@ import logging
 from http import HTTPStatus
 from fastapi import APIRouter, Depends, Body, HTTPException
 from core.security import auth
-from models.seasons import Season, SeasonExport
+from models.seasons import Season, SeasonExport, SeasonExportLight
 from models.cache import Cache
 from typing import List
 from fastapi.responses import Response
@@ -18,12 +18,12 @@ seasons = APIRouter()
 @seasons.get(
     "/",
     response_description="List all seasons",
-    response_model=List[SeasonExport],
+    response_model=List[SeasonExportLight],
     dependencies=[Depends(auth)],
 )
 async def list(deleted: bool = False):
     cache = Cache()
-    return [await season.export(cache=cache) for season in await Season.getall(deleted=deleted, cache=cache)]
+    return [await season.export_light(cache=cache) for season in await Season.getall(deleted=deleted, cache=cache)]
 
 #
 # Get one season
