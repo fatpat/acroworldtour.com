@@ -79,7 +79,6 @@ const SeasonsPage = () => {
     data = data.map(j => {
       j.delete = 'delete'
       j.update = 'update'
-      j.number_of_competitions = (j.competitions ?? []).length
       j.id = j._id
       return j
     })
