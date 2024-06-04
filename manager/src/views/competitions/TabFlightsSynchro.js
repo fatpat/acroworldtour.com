@@ -209,6 +209,23 @@ const TabFlightsSynchro = ({ comp, run, rid }) => {
     simulateScore(data)
   }
 
+  const deleteRun = async(e) => {
+    if (!confirm(`Are you sure to delete run #${rid} of ${team.name}  ?`)) return
+    if (!confirm(`Are you REALLY sure to delete run #${rid} of ${team.name}  ?`)) return
+
+    const [err, retData, headers] = await APIRequest(`/competitions/${comp.code}/runs/${rid}/flights/${team._id}`, {
+      method: 'DELETE',
+      expected_status: [204],
+    })
+
+    if (err) {
+        error(`error while deleting run #${rid} of ${team.name}: ${err}`)
+        return
+    }
+    success(`run #${rid} of ${team.name} has been deleted`)
+    loadPilot(currentFlight)
+  }
+
   useEffect(() => {
     loadTeam(0)
   }, [])
@@ -438,6 +455,7 @@ const TabFlightsSynchro = ({ comp, run, rid }) => {
                 <Button onClick={didNotStart}>Did not start</Button>
                 <Button onClick={addWarning}>Add warning</Button>
                 <Button onClick={e => addWarning(e, "flight over the public")}>flight over the public</Button>
+                <Button onClick={deleteRun}>Delete</Button>
               </Grid>
           </Grid>
         </Grid>
