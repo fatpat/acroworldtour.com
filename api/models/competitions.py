@@ -630,6 +630,11 @@ class Competition(CompetitionNew):
 
         raise HTTPException(404, "Flight not found")
 
+    async def flight_delete(self, run_i: int, pilot_or_team) -> Flight:
+        flight = await self.flight_get(run_i, pilot_or_team)
+        self.runs[run_i].flights.remove(flight)
+        await self.save()
+
     async def flight_convert(self, id, flight: FlightNew) -> Flight:
         tricks = []
         errors = []

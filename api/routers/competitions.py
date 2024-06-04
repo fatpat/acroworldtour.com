@@ -339,6 +339,18 @@ async def flight_get(id: str, i: int, pilot_team_id):
     comp = await Competition.get(id)
     return await comp.flight_get(run_i= i, pilot_or_team=pilot_team_id)
 
+@competitions.delete(
+    "/{id}/runs/{i}/flights/{pilot_team_id}",
+    status_code=204,
+    response_description="delete a flight from a pilot",
+    response_class=Response,
+    dependencies=[Depends(auth)],
+)
+async def flight_delete(id: str, i: int, pilot_team_id):
+    comp = await Competition.get(id)
+    await comp.flight_delete(run_i= i, pilot_or_team=pilot_team_id)
+
+
 @competitions.post(
     "/{id}/runs/{i}/flights/{pilot_team_id}/new",
     response_description="Simulate a run and get the detail score",
