@@ -122,14 +122,14 @@ const TabFlights = ({ comp, run, rid }) => {
     })
 
     if (err) {
-        console.log(`error while simlating score: ${err}`)
         setResult({
-          judges_mark:{}
+          judges_mark:{},
+          notes: [err],
         })
         setResultsOK(false)
+        warning(err)
         return
     }
-    console.log("simulated score:", retData)
     setResult(retData)
     setResultsOK(true)
   }

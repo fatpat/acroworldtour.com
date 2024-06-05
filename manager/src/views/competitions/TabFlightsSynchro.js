@@ -118,14 +118,13 @@ const TabFlightsSynchro = ({ comp, run, rid }) => {
     })
 
     if (err) {
-        console.log(`error while simlating score: ${err}`)
         setResult({
-          judges_mark:{}
+          judges_mark:{},
+          notes:[],
         })
         setResultsOK(false)
         return
     }
-    console.log("simulated score:", retData) 
     setResult(retData)
     setResultsOK(true)
   }
