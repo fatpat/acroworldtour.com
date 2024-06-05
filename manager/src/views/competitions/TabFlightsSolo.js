@@ -231,6 +231,12 @@ const TabFlights = ({ comp, run, rid }) => {
     )
   }
 
+  let has_technical_marks_per_trick = false
+  data.marks.forEach((m) => {
+    console.log(m)
+    if (m.technical_per_trick != null) has_technical_marks_per_trick = true
+  })
+
   return (
     <CardContent>
 { pilot &&
@@ -265,6 +271,8 @@ const TabFlights = ({ comp, run, rid }) => {
         </Grid>
       </Grid>
 }
+{ has_technical_marks_per_trick && <Typography variant="h5">The run has already been marked with technichal mark per trick. Please use the "Flight Details" tab instead.</Typography> }
+{ has_technical_marks_per_trick || <>
       <Grid container spacing={2}>
         &nbsp;
       </Grid>
@@ -446,6 +454,7 @@ const TabFlights = ({ comp, run, rid }) => {
           </Grid>
         </Grid>
       </Grid>
+</>}
     </CardContent>
   )
 }
