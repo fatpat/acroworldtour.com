@@ -264,7 +264,7 @@ const TabFlights = ({ comp, run, rid }) => {
                       options={run.pilots}
                       value={pilot}
                       getOptionLabel={(p) => `${p.name} (${p.civlid})`}
-                      renderInput={(params) => <TextField {...params} name="pilot" label="Pilot" />}
+                      renderInput={(params) => <TextField {...params} inputProps={{ ...params.inputProps, tabIndex: 1 }} name="pilot" label="Pilot" />}
                       onChange={(e, v) => {
                         if (!v) return
                         for(const [i,p] of run.pilots.entries()){
@@ -310,7 +310,7 @@ const TabFlights = ({ comp, run, rid }) => {
                     options={uniqueTricks}
                     groupBy={t => t.base_trick}
                     getOptionLabel={(p) => `${p.name} (${p.acronym}) (${p.technical_coefficient})`}
-                    renderInput={(params) => <TextField {...params} name="trick" />}
+                    renderInput={(params) => <TextField {...params} inputProps={{ ...params.inputProps, tabIndex: 100 + i }} name="trick" />}
                     value={trick}
                     isOptionEqualToValue={(a,b) => a.acronym == b.acronym}
                     onChange={(e, v) => {
@@ -320,15 +320,15 @@ const TabFlights = ({ comp, run, rid }) => {
                     }}
                   />
                 </TableCell>
-  { run.judges.map((judge) => {
+  { run.judges.map((judge, judge_i) => {
                 let technical = undefined
                 let mark = data.marks.find((e) => e.judge == judge._id)
                 if (mark && Array.isArray(mark['technical_per_trick']) && i < mark['technical_per_trick'].length) {
                   technical = mark['technical_per_trick'][i]
                 }
                 return(
-                  <TableCell key={judge.name}>
-                    <InputMark onChange={value => {setMarkTechnicalDetail(judge, i, value)}} value={technical} />
+                  <TableCell key={judge.name} >
+                    <InputMark onChange={value => {setMarkTechnicalDetail(judge, i, value)}} value={technical} tabindex={1000 * (judge_i + 1) + i} />
                   </TableCell>
                 )
   })}
@@ -356,16 +356,17 @@ const TabFlights = ({ comp, run, rid }) => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-{ run.judges.map((j) => {
-                  var technical = null
-                  var choreography = null
-                  var landing = null
+{ run.judges.map((j, judge_i) => {
+                  let technical = null
+                  let choreography = null
+                  let landing = null
                   for (const m in data.marks) {
                     m = data.marks[m]
                     if (m.judge == j._id) {
                       technical = m.technical
                       choreography = m.choreography
                       landing = m.landing
+                      console.log(m.judge, technical, choreography, landing)
                       break
                     }
                   }
@@ -375,10 +376,10 @@ const TabFlights = ({ comp, run, rid }) => {
                         <Typography>{ j.name }</Typography>
                       </TableCell>
                       <TableCell>
-                        <InputMark onChange={value => {setMark('choreography', j, value)}} value={choreography} />
+                        <InputMark onChange={value => {setMark('choreography', j, value)}} value={choreography} tabindex={ 5000 +judge_i*10 } />
                       </TableCell>
                       <TableCell>
-                        <InputMark onChange={value => {setMark('landing', j, value)}} value={landing} />
+                        <InputMark onChange={value => {setMark('landing', j, value)}} value={landing} tabindex={ 5000 + judge_i*10 + 1 } />
                       </TableCell>
                     </TableRow>
 )})}
@@ -460,18 +461,18 @@ const TabFlights = ({ comp, run, rid }) => {
           {/* actions */}
           <Grid container>
               <Grid item xs={4}>
-                <Button variant="contained" disabled={!resultsOK} onClick={e => saveResults(false, 0)}>Save</Button>
-                <Button variant="contained" disabled={!resultsOK} onClick={e => saveResults(false, 1)}>Save & Next</Button>
+                <Button variant="contained" disabled={!resultsOK} onClick={e => saveResults(false, 0)} tabindex="10000">Save</Button>
+                <Button variant="contained" disabled={!resultsOK} onClick={e => saveResults(false, 1)} tabindex="10001">Save & Next</Button>
               </Grid>
               <Grid item xs={4}>
-                <Button variant="contained" disabled={!resultsOK} onClick={e => saveResults(true, 0)}>Save & Publish</Button>
-                <Button variant="contained" disabled={!resultsOK} onClick={e => saveResults(true, 1)}>Save & Publish & Next</Button>
+                <Button variant="contained" disabled={!resultsOK} onClick={e => saveResults(true, 0)} tabindex="10002">Save & Publish</Button>
+                <Button variant="contained" disabled={!resultsOK} onClick={e => saveResults(true, 1)} tabindex="10003">Save & Publish & Next</Button>
               </Grid>
               <Grid item xs={4}>
-                <Button onClick={didNotStart}>Did not start</Button>
-                <Button onClick={addWarning}>Add warning</Button>
-                <Button onClick={e => addWarning(e, "flight over the public")}>flight over the public</Button>
-                <Button onClick={deleteRun}>Delete</Button>
+                <Button onClick={didNotStart} tabindex="10004">Did not start</Button>
+                <Button onClick={addWarning} tabindex="10005">Add warning</Button>
+                <Button onClick={e => addWarning(e, "flight over the public")} tabindex="10006">flight over the public</Button>
+                <Button onClick={deleteRun} tabindex="10007">Delete</Button>
               </Grid>
           </Grid>
         </Grid>

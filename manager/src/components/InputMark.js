@@ -13,6 +13,7 @@ const InputMark = (props) => {
       }}
       defaultValue={value}
       type="number"
+      inputProps={{ tabIndex: props.tabindex ?? "0" }}
     />
   )
 /*
