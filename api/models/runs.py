@@ -1,5 +1,5 @@
 import logging
-from pydantic import BaseModel, Field, validator
+from pydantic import ConfigDict, BaseModel, Field, validator
 from bson import ObjectId
 from typing import List, Optional
 from fastapi.encoders import jsonable_encoder
@@ -39,9 +39,9 @@ class RunExport(BaseModel):
     config: CompetitionConfig
     flights: List[FlightExport]
     repetitions_reset_policy: RunRepetitionsResetPolicy = Field(RunRepetitionsResetPolicy.none)
-
-    class Config:
-        json_encoders = {ObjectId: str}
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(json_encoders={ObjectId: str})
 
 class Run(BaseModel):
     state: RunState
@@ -52,22 +52,20 @@ class Run(BaseModel):
     config: CompetitionConfig
     flights: List[Flight]
     repetitions_reset_policy: RunRepetitionsResetPolicy = Field(RunRepetitionsResetPolicy.none)
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "state": "init",
-                "pilots": [1234, 4567],
-                "teams": [],
-                "judges": ["bb1726576153281283", "ba789798798798798798"],
-                "repeatable_tricks": [],
-                "config": {
-                    "warning": 0.5,
-                    "malus_repetition": 13
-                },
-                "flights": []
-            }
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "state": "init",
+            "pilots": [1234, 4567],
+            "teams": [],
+            "judges": ["bb1726576153281283", "ba789798798798798798"],
+            "repeatable_tricks": [],
+            "config": {
+                "warning": 0.5,
+                "malus_repetition": 13
+            },
+            "flights": []
         }
+    })
 
     async def export(self, cache:Cache = None) -> RunExport:
 

@@ -1,5 +1,5 @@
 import logging
-from pydantic import BaseModel, Field, validator, AnyHttpUrl
+from pydantic import ConfigDict, BaseModel, Field, validator, AnyHttpUrl
 from bson import ObjectId
 from enum import Enum
 from pycountry import countries
@@ -31,18 +31,15 @@ class EventExport(BaseModel):
     end_date: date
     country: str = Field(..., description="The country of the event using the 3 letter acronym of the country")
     location: str = Field(..., description="The place of the event", min_length=2)
-    website: Optional[AnyHttpUrl]
-    description: Optional[str]
-    image_url: Optional[AnyHttpUrl]
-    logo_url: Optional[AnyHttpUrl]
-    streaming_url: Optional[AnyHttpUrl]
+    website: Optional[AnyHttpUrl] = None
+    description: Optional[str] = None
+    image_url: Optional[AnyHttpUrl] = None
+    logo_url: Optional[AnyHttpUrl] = None
+    streaming_url: Optional[AnyHttpUrl] = None
     competitions: List[CompetitionPublicExport]
-
-
-    class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True, json_encoders={ObjectId: str})
 
 class Event(BaseModel):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
@@ -52,30 +49,27 @@ class Event(BaseModel):
     end_date: date
     country: str = Field(..., description="The country of the event using the 3 letter acronym of the country")
     location: str = Field(..., description="The place of the event", min_length=2)
-    website: Optional[AnyHttpUrl]
-    description: Optional[str]
-    image: Optional[str]
-    logo: Optional[str]
-    streaming_url: Optional[AnyHttpUrl]
+    website: Optional[AnyHttpUrl] = None
+    description: Optional[str] = None
+    image: Optional[str] = None
+    logo: Optional[str] = None
+    streaming_url: Optional[AnyHttpUrl] = None
     competitions: List[str] = Field([])
-    deleted: Optional[datetime]
+    deleted: Optional[datetime] = None
 
     _normalize_country = validator('country', allow_reuse=True)(check_country)
-
-    class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
-        schema_extra = {
-            "example": {
-                "name": "Kings of the box",
-                "code": "kob-2023",
-                "start_date": "2023-06-16",
-                "end_date": "2023-07-18",
-                "country": "fra",
-                "location": "allevard",
-            }
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True, json_encoders={ObjectId: str}, json_schema_extra={
+        "example": {
+            "name": "Kings of the box",
+            "code": "kob-2023",
+            "start_date": "2023-06-16",
+            "end_date": "2023-07-18",
+            "country": "fra",
+            "location": "allevard",
         }
+    })
 
     async def check(self):
         for competition in self.competitions:
@@ -158,7 +152,7 @@ class Event(BaseModel):
         if event is None:
             raise HTTPException(404, f"Event {id} not found")
 
-        event = Event.parse_obj(event)
+        event = Event.model_validate(event)
         if not deleted and cache is not None:
             cache.add('events', event)
         return event
@@ -175,7 +169,7 @@ class Event(BaseModel):
                     return events
         events = []
         for event in await collection.find(search, sort=[("code", pymongo.DESCENDING), ("name", pymongo.ASCENDING)]).to_list(1000):
-            event = Event.parse_obj(event)
+            event = Event.model_validate(event)
             events.append(event)
             if not deleted and cache is not None:
                 cache.add('events', event)

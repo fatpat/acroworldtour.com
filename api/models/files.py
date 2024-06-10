@@ -1,7 +1,7 @@
 import logging
 import sys
 import hashlib
-from pydantic import BaseModel, Field, validator, root_validator, PositiveInt
+from pydantic import ConfigDict, BaseModel, Field, validator, root_validator, PositiveInt
 from bson import ObjectId
 from typing import List, Optional
 from fastapi.encoders import jsonable_encoder
@@ -20,24 +20,21 @@ class FileID(BaseModel):
     id: str
 
 class File(BaseModel):
-    id: Optional[str] = Field(alias="_id")
+    id: Optional[str] = Field(None, alias="_id")
     filename: str = Field(..., min_length=1)
     content_type: str = Field(..., min_length=1)
     content: str = Field(..., min_length=1)
-    deleted: Optional[datetime]
-
-    class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
-        schema_extra = {
-            "example": {
-                "filename": "file.png",
-                "content_type": "image/jpg",
-                "size": 2,
-                "content": "\x42\x54"
-            }
+    deleted: Optional[datetime] = None
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True, json_encoders={ObjectId: str}, json_schema_extra={
+        "example": {
+            "filename": "file.png",
+            "content_type": "image/jpg",
+            "size": 2,
+            "content": "\x42\x54"
         }
+    })
 
     async def create(self):
         try:
@@ -78,7 +75,7 @@ class File(BaseModel):
         file = await collection.find_one(search)
         if file is None:
             raise HTTPException(404, f"File {id} not found")
-        file = File.parse_obj(file)
+        file = File.model_validate(file)
         if not deleted and cache is not None:
             cache.add('files', file)
         return file
@@ -91,7 +88,7 @@ class File(BaseModel):
             search = {"deleted": None}
         files = []
         for file in await collection.find(search, sort=[("level", pymongo.DESCENDING), ("name", pymongo.ASCENDING)]).to_list(1000):
-            files.append(File.parse_obj(file))
+            files.append(File.model_validate(file))
         return files
 
     @staticmethod

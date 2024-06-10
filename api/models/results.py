@@ -1,5 +1,5 @@
 import logging
-from pydantic import BaseModel, Field, validator
+from pydantic import ConfigDict, BaseModel, Field, validator
 from bson import ObjectId
 from typing import List, Optional
 from fastapi.encoders import jsonable_encoder
@@ -21,22 +21,20 @@ class RunResultsExport(BaseModel):
     final: bool
     type: str
     results: dict[str, List[FlightExport]]
-
-    class Config:
-        json_encoders = {ObjectId: str}
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(json_encoders={ObjectId: str})
 
 class RunResults(BaseModel):
     final: bool
     type: str
     results: dict[str, List[Flight]]
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "final": False,
-                "results": []
-            }
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "final": False,
+            "results": []
         }
+    })
 
     async def export(self, cache:Cache = None) -> FlightExport:
         results = {}
@@ -56,23 +54,21 @@ class RunResultSummary(BaseModel):
     score: float
 
     _score = validator('score', allow_reuse=True)(float3digits)
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "rank": "1",
-                "score": 12.5
-            }
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "rank": "1",
+            "score": 12.5
         }
+    })
 
 class CompetitionPilotResultsExport(BaseModel):
-    pilot: Optional[Pilot]
-    team: Optional[TeamExport]
+    pilot: Optional[Pilot] = None
+    team: Optional[TeamExport] = None
     result_per_run: List[RunResultSummary]
     score: float
-
-    class Config:
-        json_encoders = {ObjectId: str}
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(json_encoders={ObjectId: str})
 
 class CompetitionPilotResults(BaseModel):
     pilot: int
@@ -81,24 +77,22 @@ class CompetitionPilotResults(BaseModel):
     score: float
 
     _score = validator('score', allow_reuse=True)(float3digits)
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "pilot": "1234",
-                "result_per_run": [
-                    {
-                        "rank": "1",
-                        "score": 12.5
-                    },
-                    {
-                        "rank": "3",
-                        "score": 11
-                    }
-                ],
-                "score": 23.5,
-            }
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "pilot": "1234",
+            "result_per_run": [
+                {
+                    "rank": "1",
+                    "score": 12.5
+                },
+                {
+                    "rank": "3",
+                    "score": 11
+                }
+            ],
+            "score": 23.5,
         }
+    })
 
     async def export(self, cache:Cache = None) -> CompetitionPilotResultsExport:
         try:
@@ -124,26 +118,24 @@ class CompetitionResultsExport(BaseModel):
     type: str
     results: dict[str, List[CompetitionPilotResultsExport]]
     runs_results: List[RunResultsExport]
-
-    class Config:
-        json_encoders = {ObjectId: str}
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(json_encoders={ObjectId: str})
 
 class CompetitionResults(BaseModel):
     final: bool
     type: str
     results: dict[str, List[CompetitionPilotResults]]
     runs_results: List[RunResults]
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "final": False,
-                "results": {
-                    "overall" : []
-                },
-                "runs_results": []
-            }
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "final": False,
+            "results": {
+                "overall" : []
+            },
+            "runs_results": []
         }
+    })
 
     async def export(self, cache:Cache = None) -> CompetitionResultsExport:
         results = {}

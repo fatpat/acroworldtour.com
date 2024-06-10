@@ -1,6 +1,6 @@
 import logging
 from collections import Counter
-from pydantic import BaseModel, Field, validator, AnyHttpUrl
+from pydantic import ConfigDict, BaseModel, Field, validator, AnyHttpUrl
 from fastapi import  HTTPException
 from bson import ObjectId
 from typing import List, Optional
@@ -54,13 +54,13 @@ class CompetitionExport(BaseModel):
     state: CompetitionState
     config: CompetitionConfig
     runs: List[RunExport]
-    image: Optional[AnyHttpUrl]
-    logo: Optional[AnyHttpUrl]
-    website: Optional[AnyHttpUrl]
+    image: Optional[AnyHttpUrl] = None
+    logo: Optional[AnyHttpUrl] = None
+    website: Optional[AnyHttpUrl] = None
     seasons: List[str]
-
-    class Config:
-        json_encoders = {ObjectId: str}
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(json_encoders={ObjectId: str})
 
 
 class CompetitionPublicExport(BaseModel):
@@ -77,13 +77,13 @@ class CompetitionPublicExport(BaseModel):
     number_of_teams: int
     number_of_judges: int
     number_of_runs: int
-    image: Optional[AnyHttpUrl]
-    logo: Optional[AnyHttpUrl]
-    website: Optional[AnyHttpUrl]
+    image: Optional[AnyHttpUrl] = None
+    logo: Optional[AnyHttpUrl] = None
+    website: Optional[AnyHttpUrl] = None
     seasons: List[str]
-
-    class Config:
-        json_encoders = {ObjectId: str}
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(json_encoders={ObjectId: str})
 
 class CompetitionPublicExportWithResults(CompetitionPublicExport):
     results: CompetitionResultsExport
@@ -93,15 +93,15 @@ class CompetitionPublicExportWithResults(CompetitionPublicExport):
 
 class CompetitionNew(BaseModel):
     name: str = Field(..., min_len=1)
-    code: Optional[str] = Field(regex='^[a-z][a-z0-9-]*[a-z0-9]')
+    code: Optional[str] = Field(None, pattern='^[a-z][a-z0-9-]*[a-z0-9]')
     start_date: date
     end_date: date
     location: str = Field(..., min_len=1)
     published: bool
     type: CompetitionType
-    image: Optional[str]
-    logo: Optional[str]
-    website: Optional[AnyHttpUrl]
+    image: Optional[str] = None
+    logo: Optional[str] = None
+    website: Optional[AnyHttpUrl] = None
     seasons: List[str] = Field([])
 
 
@@ -143,20 +143,17 @@ class Competition(CompetitionNew):
     state: CompetitionState
     config: CompetitionConfig
     runs: List[Run]
-    deleted: Optional[datetime]
-    image: Optional[str]
-    logo: Optional[str]
-    website: Optional[AnyHttpUrl]
+    deleted: Optional[datetime] = None
+    image: Optional[str] = None
+    logo: Optional[str] = None
+    website: Optional[AnyHttpUrl] = None
     seasons: List[str] = Field([])
-
-    class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
-        schema_extra = {
-            "example": {
-            }
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True, json_encoders={ObjectId: str}, json_schema_extra={
+        "example": {
         }
+    })
 
     async def check(self):
         if self.type == CompetitionType.solo:
@@ -859,7 +856,7 @@ class Competition(CompetitionNew):
         competition = await collection.find_one(search)
         if competition is None:
             raise HTTPException(404, f"Competition {id} not found")
-        competition = Competition.parse_obj(competition)
+        competition = Competition.model_validate(competition)
         if not deleted and cache is not None:
             cache.add('competitions', competition)
         return competition
@@ -876,7 +873,7 @@ class Competition(CompetitionNew):
 
         competitions = []
         for competition in await collection.find({"deleted": None}, sort=[("name", pymongo.ASCENDING)]).to_list(1000):
-            competition = Competition.parse_obj(competition)
+            competition = Competition.model_validate(competition)
             if season is None or season in competition.seasons:
                 competitions.append(competition)
                 if cache is not None:

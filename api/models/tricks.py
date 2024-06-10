@@ -1,6 +1,6 @@
 import logging
 import sys
-from pydantic import BaseModel, Field, validator, root_validator, AnyHttpUrl
+from pydantic import field_validator, ConfigDict, BaseModel, Field, root_validator, AnyHttpUrl
 from bson import ObjectId
 from typing import List, Optional
 from fastapi.encoders import jsonable_encoder
@@ -18,16 +18,15 @@ collection = db.tricks
 class Bonus(BaseModel):
     name: str = Field(..., min_length=1)
     bonus: float = Field(..., ge=0.0)
-    sample_video: Optional[AnyHttpUrl]
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "name": "twisted",
-                "bonus": 2.5
-            }
+    sample_video: Optional[AnyHttpUrl] = None
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "name": "twisted",
+            "bonus": 2.5
         }
-    @validator('name')
+    })
+    @field_validator('name')
+    @classmethod
     def check_name(cls, v):
         bonuses = list(map(lambda x: x['name'], settings.tricks.available_bonuses))
         if v not in bonuses:
@@ -45,24 +44,22 @@ class UniqueTrick(BaseModel):
     base_trick: str
     uniqueness: List[str]
     bonuses: List[Bonus] = []
-    synchro: Optional[bool]
-    solo: Optional[bool]
-    solo_awt: Optional[bool]
+    synchro: Optional[bool] = None
+    solo: Optional[bool] = None
+    solo_awt: Optional[bool] = None
     types: List[str] = []
     technical_mark: Optional[float] = None
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "name": "twisted left Misty to Helicopter reverse",
-                "acronym": "/LMHR",
-                "technical_coefficient": 1.75,
-                "bonus": 6,
-                "bonus_types": ["twist", "reverse"],
-                "uniqueness": ["left", "reverse"],
-                "base_trick": "Misty To Helicoper",
-            }
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "name": "twisted left Misty to Helicopter reverse",
+            "acronym": "/LMHR",
+            "technical_coefficient": 1.75,
+            "bonus": 6,
+            "bonus_types": ["twist", "reverse"],
+            "uniqueness": ["left", "reverse"],
+            "base_trick": "Misty To Helicoper",
         }
+    })
 
 class Trick(BaseModel):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
@@ -83,10 +80,11 @@ class Trick(BaseModel):
     no_last_maneuver: int = Field(0, ge=0, description="If positive, indicates that the trick must not be performed in the last N tricks of the run")
     tricks: List[UniqueTrick] = Field([], description="List of all the variant of the trick (this is automatically generated)")
     repeatable: bool = Field(False, description="Is this trick can be repeatable")
-    deleted: Optional[datetime]
-    sample_video: Optional[AnyHttpUrl]
+    deleted: Optional[datetime] = None
+    sample_video: Optional[AnyHttpUrl] = None
 
-    @validator('directions')
+    @field_validator('directions')
+    @classmethod
     def check_directions(cls, v):
         if len(v) == 1:
             raise ValueError("directions must have 0 or at least 2 directions (not one)")
@@ -102,47 +100,45 @@ class Trick(BaseModel):
                 raise ValueError(f"invalid direction '{direction}', must be one of {directions} ")
         return v
 
-    @validator('bonus_constraints')
+    @field_validator('bonus_constraints')
+    @classmethod
     def check_bonus_constraints(cls, v):
         for constraints in v:
             if len(constraints) != 2:
                 raise ValueError(f"invalid bonus contraints '{contraints}', must be composed of strictly 2 bonuses")
         return v
-
-    class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
-        schema_extra = {
-            "example": {
-                "_id": "bababababaabababababab",
-                "name": "Misty to Helicopter",
-                "acronym": "MH",
-                "solo": True,
-                "synchro": True,
-                "directions": ["left", "right"],
-                "technical_coefficient": 1.75,
-                "bonuses": [
-                    {"name": "twisted", "bonus": 3},
-                    {"name": "reverse", "bonus": 3}
-                ],
-                "first_maneuver": 0,
-                "no_first_maneuver": 0, 
-                "last_maneuver": 0,
-                "no_last_maneuver": 0,
-                "repeatable": False,
-                "tricks": [
-                    {      "name": "left Misty to Helicopter",      "acronym": "LMH",      "technical_coefficient": 1.75,      "bonus": 0    },
-                    {      "name": "right Misty to Helicopter",      "acronym": "RMH",      "technical_coefficient": 1.75,      "bonus": 0    },
-                    {      "name": "twisted left Misty to Helicopter",      "acronym": "/LMH",      "technical_coefficient": 1.75,      "bonus": 3    },
-                    {      "name": "twisted right Misty to Helicopter",      "acronym": "/RMH",      "technical_coefficient": 1.75,      "bonus": 3    },
-                    {      "name": "left Misty to Helicopter reverse",      "acronym": "LMHR",      "technical_coefficient": 1.75,      "bonus": 3    },
-                    {      "name": "right Misty to Helicopter reverse",      "acronym": "RMHR",      "technical_coefficient": 1.75,      "bonus": 3    },
-                    {      "name": "twisted left Misty to Helicopter reverse",      "acronym": "/LMHR",      "technical_coefficient": 1.75,      "bonus": 6    },
-                    {      "name": "twisted right Misty to Helicopter reverse",      "acronym": "/RMHR",      "technical_coefficient": 1.75,      "bonus": 6    }
-                ]
-            }
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True, json_encoders={ObjectId: str}, json_schema_extra={
+        "example": {
+            "_id": "bababababaabababababab",
+            "name": "Misty to Helicopter",
+            "acronym": "MH",
+            "solo": True,
+            "synchro": True,
+            "directions": ["left", "right"],
+            "technical_coefficient": 1.75,
+            "bonuses": [
+                {"name": "twisted", "bonus": 3},
+                {"name": "reverse", "bonus": 3}
+            ],
+            "first_maneuver": 0,
+            "no_first_maneuver": 0, 
+            "last_maneuver": 0,
+            "no_last_maneuver": 0,
+            "repeatable": False,
+            "tricks": [
+                {      "name": "left Misty to Helicopter",      "acronym": "LMH",      "technical_coefficient": 1.75,      "bonus": 0    },
+                {      "name": "right Misty to Helicopter",      "acronym": "RMH",      "technical_coefficient": 1.75,      "bonus": 0    },
+                {      "name": "twisted left Misty to Helicopter",      "acronym": "/LMH",      "technical_coefficient": 1.75,      "bonus": 3    },
+                {      "name": "twisted right Misty to Helicopter",      "acronym": "/RMH",      "technical_coefficient": 1.75,      "bonus": 3    },
+                {      "name": "left Misty to Helicopter reverse",      "acronym": "LMHR",      "technical_coefficient": 1.75,      "bonus": 3    },
+                {      "name": "right Misty to Helicopter reverse",      "acronym": "RMHR",      "technical_coefficient": 1.75,      "bonus": 3    },
+                {      "name": "twisted left Misty to Helicopter reverse",      "acronym": "/LMHR",      "technical_coefficient": 1.75,      "bonus": 6    },
+                {      "name": "twisted right Misty to Helicopter reverse",      "acronym": "/RMHR",      "technical_coefficient": 1.75,      "bonus": 6    }
+            ]
         }
+    })
 
     async def check(self):
 #        for id in self.pilots:
@@ -201,7 +197,7 @@ class Trick(BaseModel):
         if 'bonus_constraints' not in trick:
             trick['bonus_constraints'] = []
 
-        trick = Trick.parse_obj(trick)
+        trick = Trick.model_validate(trick)
         if not deleted and cache is not None:
             cache.add('tricks', trick)
 
@@ -216,7 +212,7 @@ class Trick(BaseModel):
         for trick in await collection.find({"deleted": None, "$or": [{"solo": solo}, {"synchro": synchro}]}).sort("technical_coefficient").to_list(1000):
             for t in trick['tricks']:
                 if ('solo' not in t or t['solo'] == solo) or ('synchro' not in t or t['synchro'] == synchro):
-                    tricks.append(UniqueTrick.parse_obj(t))
+                    tricks.append(UniqueTrick.model_validate(t))
         return tricks
 
     @staticmethod
@@ -224,10 +220,10 @@ class Trick(BaseModel):
         trick = await collection.find_one({"deleted": None, "$or": [{"tricks.name": id}, {"tricks.acronym": id}]})
         if trick is None:
             return None
-        trick = Trick.parse_obj(trick)
+        trick = Trick.model_validate(trick)
         for t in trick.tricks:
             if t.name == id or t.acronym == id:
-                return UniqueTrick.parse_obj(t)
+                return UniqueTrick.model_validate(t.dict())
         return None
 
     @staticmethod
@@ -248,7 +244,7 @@ class Trick(BaseModel):
         tricks = []
         for trick in await collection.find(search, sort=[("technical_coefficient", pymongo.ASCENDING)]).to_list(1000):
 
-            trick = Trick.parse_obj(trick)
+            trick = Trick.model_validate(trick)
             tricks.append(trick)
             if not deleted and cache is not None:
                 cache.add('tricks', trick)

@@ -1,5 +1,5 @@
 import logging
-from pydantic import BaseModel, Field, validator, AnyHttpUrl
+from pydantic import ConfigDict, BaseModel, Field, validator, AnyHttpUrl
 from bson import ObjectId
 from enum import Enum
 from pycountry import countries
@@ -29,23 +29,19 @@ def check_country(cls, v):
     return v
 
 class SeasonResult(BaseModel):
-    pilot: Optional[Pilot]
-    team: Optional[TeamExport]
+    pilot: Optional[Pilot] = None
+    team: Optional[TeamExport] = None
     score: float
-
-    class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True, json_encoders={ObjectId: str})
 
 class SeasonResults(BaseModel):
     type: str
     results: List[SeasonResult]
-
-    class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True, json_encoders={ObjectId: str})
 
 
 class SeasonExport(BaseModel):
@@ -53,19 +49,17 @@ class SeasonExport(BaseModel):
     name: str
     code: str
     year: int
-    image: Optional[AnyHttpUrl]
-    country: Optional[str]
+    image: Optional[AnyHttpUrl] = None
+    country: Optional[str] = None
     index: int = Field(999)
     type: CompetitionType
     number_of_pilots: int
     number_of_teams: int
     competitions: List[CompetitionExport]
     results: List[SeasonResults]
-
-    class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True, json_encoders={ObjectId: str})
 
 
 class SeasonExportLight(BaseModel):
@@ -73,26 +67,24 @@ class SeasonExportLight(BaseModel):
     name: str
     code: str
     year: int
-    image: Optional[AnyHttpUrl]
-    country: Optional[str]
+    image: Optional[AnyHttpUrl] = None
+    country: Optional[str] = None
     index: int = Field(999)
     type: CompetitionType
     number_of_pilots: int
     number_of_teams: int
     number_of_competitions: int
-
-    class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True, json_encoders={ObjectId: str})
 
 class SeasonPublicExport(BaseModel):
     id: str = Field(alias="_id")
     name: str
     code: str
     year: int
-    image: Optional[AnyHttpUrl]
-    country: Optional[str]
+    image: Optional[AnyHttpUrl] = None
+    country: Optional[str] = None
     index: int = Field(999)
     type: CompetitionType
     number_of_pilots: int
@@ -100,36 +92,30 @@ class SeasonPublicExport(BaseModel):
     competitions: List[CompetitionPublicExportWithResults]
     results: List[SeasonResults]
     competitions_results: dict[str, list[CompetitionPilotResultsExport]]
-
-    class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True, json_encoders={ObjectId: str})
 
 class Season(BaseModel):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     name: str = Field(..., description="The name of the season", min_length=2)
-    code: str = Field(description="The short code of the season", regex=r"^[a-z]{3}-[0-9]{4}$")
+    code: str = Field(description="The short code of the season", pattern=r"^[a-z]{3}-[0-9]{4}$")
     year: int = Field(..., description="The year of the season", gt=1900)
-    image: Optional[str]
-    image_url: Optional[AnyHttpUrl]
-    country: Optional[str] = Field(regex=r"^[a-z]{3}")
+    image: Optional[str] = None
+    image_url: Optional[AnyHttpUrl] = None
+    country: Optional[str] = Field(None, pattern=r"^[a-z]{3}")
     index: int = Field(999)
-    deleted: Optional[datetime]
+    deleted: Optional[datetime] = None
 
     _normalize_country = validator('country', allow_reuse=True)(check_country)
-
-
-    class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
-        schema_extra = {
-            "example": {
-                "name": "Acro World Tour 2022",
-                "code": "awt-2022"
-            }
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True, json_encoders={ObjectId: str}, json_schema_extra={
+        "example": {
+            "name": "Acro World Tour 2022",
+            "code": "awt-2022"
         }
+    })
 
     def check(self):
         if self.country is not None:
@@ -190,7 +176,7 @@ class Season(BaseModel):
         season = await collection.find_one(search)
         if season is None:
             raise HTTPException(404, f"Season {id} not found")
-        season = Season.parse_obj(season)
+        season = Season.model_validate(season)
         season.image_url = season.get_image_url()
         if not deleted and cache is not None:
             cache.add('seasons', season)
@@ -208,7 +194,7 @@ class Season(BaseModel):
                     return seasons
         seasons = []
         for season in await collection.find(search, sort=[("level", pymongo.DESCENDING), ("name", pymongo.ASCENDING)]).to_list(1000):
-            season = Season.parse_obj(season)
+            season = Season.model_validate(season)
             season.image_url = season.get_image_url()
             seasons.append(season)
             if not deleted and cache is not None:

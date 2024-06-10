@@ -1,5 +1,5 @@
 import logging
-from pydantic import BaseModel, Field, validator
+from pydantic import field_validator, ConfigDict, BaseModel, Field
 from bson import ObjectId
 from typing import List, Optional
 from fastapi.encoders import jsonable_encoder
@@ -23,25 +23,23 @@ class Team(BaseModel):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     name: str = Field(..., description="The name of the team")
     pilots: List[int] = Field(..., description="The 2 pilots composing the team (by CIVLID)")
-    deleted: Optional[datetime]
+    deleted: Optional[datetime] = None
 
-    @validator('pilots')
+    @field_validator('pilots')
+    @classmethod
     def check_pilots(cls, v):
         if len(v) != 2:
             raise ValueError('2 pilots must compose a team')
         return v
-
-    class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
-        schema_extra = {
-            "example": {
-                "_id": "687687687687aze",
-                "name": "Team Rocket",
-                "pilots": [1234, 4567]
-            }
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True, json_encoders={ObjectId: str}, json_schema_extra={
+        "example": {
+            "_id": "687687687687aze",
+            "name": "Team Rocket",
+            "pilots": [1234, 4567]
         }
+    })
 
     async def check(self):
         pilots = []
@@ -109,7 +107,7 @@ class Team(BaseModel):
         team = await collection.find_one(search)
         if team is None:
             raise HTTPException(404, f"Team {id} not found")
-        team = Team.parse_obj(team)
+        team = Team.model_validate(team)
         if cache is not None:
             cache.add('teams', team)
         return team
@@ -132,7 +130,7 @@ class Team(BaseModel):
 
         teams = []
         for team in await collection.find(search, sort=[("name", pymongo.ASCENDING)]).to_list(1000):
-            team = Team.parse_obj(team)
+            team = Team.model_validate(team)
             teams.append(team)
             if not deleted and cache is not None:
                 cache.add('teams', team)

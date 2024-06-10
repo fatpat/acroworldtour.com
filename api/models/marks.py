@@ -1,5 +1,5 @@
 import logging
-from pydantic import BaseModel, Field, validator
+from pydantic import ConfigDict, BaseModel, Field, validator
 from bson import ObjectId
 from typing import List, Optional; validator
 from fastapi.encoders import jsonable_encoder
@@ -14,20 +14,20 @@ from core.config import settings
 from core.utils import float2digits, float3digits
 
 class JudgeMarkExport(BaseModel):
-    judge: Optional[Judge]
-    technical: Optional[float]
+    judge: Optional[Judge] = None
+    technical: Optional[float] = None
     technical_per_trick: Optional[List[Optional[float]]] = Field(None)
-    choreography: Optional[float]
-    landing: Optional[float]
-    synchro: Optional[float]
+    choreography: Optional[float] = None
+    landing: Optional[float] = None
+    synchro: Optional[float] = None
 
     _technical = validator('technical', allow_reuse=True)(float3digits)
     _choreography = validator('choreography', allow_reuse=True)(float3digits)
     _landing = validator('landing', allow_reuse=True)(float3digits)
     _synchro = validator('synchro', allow_reuse=True)(float3digits)
-
-    class Config:
-        json_encoders = {ObjectId: str}
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(json_encoders={ObjectId: str})
 
 
 class JudgeMark(BaseModel):
@@ -42,17 +42,15 @@ class JudgeMark(BaseModel):
     _choreography = validator('choreography', allow_reuse=True)(float3digits)
     _landing = validator('landing', allow_reuse=True)(float3digits)
     _synchro = validator('synchro', allow_reuse=True)(float3digits)
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "judge": "Jerry The Judge",
-                "technical": 2.5,
-                "choreography": 7,
-                "landing": 7,
-                "synchro": 7
-            }
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "judge": "Jerry The Judge",
+            "technical": 2.5,
+            "choreography": 7,
+            "landing": 7,
+            "synchro": 7
         }
+    })
 
     async def export(self, cache:Cache = None) -> JudgeMarkExport:
         judge = None
@@ -90,9 +88,9 @@ class FinalMarkExport(BaseModel):
     _synchro = validator('synchro', allow_reuse=True)(float3digits)
     _bonus = validator('bonus', allow_reuse=True)(float3digits)
     _score = validator('score', allow_reuse=True)(float3digits)
-
-    class Config:
-        json_encoders = {ObjectId: str}
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(json_encoders={ObjectId: str})
 
 
 class FinalMark(BaseModel):
@@ -117,30 +115,28 @@ class FinalMark(BaseModel):
     _synchro = validator('synchro', allow_reuse=True)(float3digits)
     _bonus = validator('bonus', allow_reuse=True)(float3digits)
     _score = validator('score', allow_reuse=True)(float3digits)
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "judges_mark": {
-                    "judge": "Average of the judges marks",
-                    "technical": 2.5,
-                    "choreography": 7,
-                    "landing": 7,
-                    "synchro": 7
-                },
-                "technicity": 1.87,
-                "bonus_percentage": 23,
-                "technical": 7,
-                "choreography": 6,
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "judges_mark": {
+                "judge": "Average of the judges marks",
+                "technical": 2.5,
+                "choreography": 7,
                 "landing": 7,
-                "synchro": 7,
-                "bonus": 1.23,
-                "score": 9.244,
-                "warnings": ["box","late at briefing"],
-                "malus": 13,
-                "notes": ["Yellow card: big ear to start the run"]
-            }
+                "synchro": 7
+            },
+            "technicity": 1.87,
+            "bonus_percentage": 23,
+            "technical": 7,
+            "choreography": 6,
+            "landing": 7,
+            "synchro": 7,
+            "bonus": 1.23,
+            "score": 9.244,
+            "warnings": ["box","late at briefing"],
+            "malus": 13,
+            "notes": ["Yellow card: big ear to start the run"]
         }
+    })
 
     async def export(self, cache:Cache = None) -> FinalMarkExport:
         return FinalMarkExport(

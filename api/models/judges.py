@@ -1,5 +1,5 @@
 import logging
-from pydantic import BaseModel, Field, validator
+from pydantic import ConfigDict, BaseModel, Field, validator
 from bson import ObjectId
 from enum import Enum
 from pycountry import countries
@@ -32,22 +32,19 @@ class Judge(BaseModel):
     country: str = Field(..., description="The country of the judge using the 3 letter acronym of the country")
     level: JudgeLevel = Field(..., description="The level of the judge")
     civlid: Optional[int] = Field(None, description="The CIVL ID if any (must be registered in the pilot database")
-    deleted: Optional[datetime]
+    deleted: Optional[datetime] = None
 
     _normalize_country = validator('country', allow_reuse=True)(check_country)
-
-    class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
-        schema_extra = {
-            "example": {
-                "name": "Jerry The Judge",
-                "country": "fra",
-                "level": "certified",
-                "civlid": 1234,
-            }
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True, json_encoders={ObjectId: str}, json_schema_extra={
+        "example": {
+            "name": "Jerry The Judge",
+            "country": "fra",
+            "level": "certified",
+            "civlid": 1234,
         }
+    })
 
     async def check(self):
         if self.civlid is not None:
@@ -109,7 +106,7 @@ class Judge(BaseModel):
         if judge is None:
             raise HTTPException(404, f"Judge {id} not found")
 
-        judge = Judge.parse_obj(judge)
+        judge = Judge.model_validate(judge)
         if not deleted and cache is not None:
             cache.add('judges', judge)
         return judge
@@ -126,7 +123,7 @@ class Judge(BaseModel):
                     return judges
         judges = []
         for judge in await collection.find(search, sort=[("level", pymongo.DESCENDING), ("name", pymongo.ASCENDING)]).to_list(1000):
-            judge = Judge.parse_obj(judge)
+            judge = Judge.model_validate(judge)
             judges.append(judge)
             if not deleted and cache is not None:
                 cache.add('judges', judge)

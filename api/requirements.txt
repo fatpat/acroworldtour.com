@@ -12,7 +12,8 @@ motor
 mypy-extensions
 pathspec
 pycodestyle
-pydantic < 2
+pydantic
+pydantic-settings
 pyflakes
 pymongo
 regex

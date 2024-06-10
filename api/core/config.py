@@ -1,7 +1,8 @@
 import secrets
-from typing import List, Union, Dict
+from typing import List, Union, Dict, Optional
 
-from pydantic import AnyHttpUrl, BaseSettings, validator
+from pydantic import AnyHttpUrl, validator
+from pydantic_settings import SettingsConfigDict, BaseSettings
 
 
 class Settings(BaseSettings):
@@ -17,16 +18,14 @@ class Settings(BaseSettings):
 
     MONGODB_URL: str = 'mongodb://127.0.0.1/'
     DATABASE: str = 'acropyx2-database-developtment'
-    TESTDB: str = None
+    TESTDB: Optional[str] = None
     # no auth by default
     ADMIN_USER: str = 'admin'
-    ADMIN_PASS: str = None
+    ADMIN_PASS: Optional[str] = None
 
-    REDIS_URL: str = None
+    REDIS_URL: Optional[str] = None
     CACHE_EXPIRES: int = 60
-
-    class Config:
-        case_sensitive = True
+    model_config = SettingsConfigDict(case_sensitive=True)
 
     class pilots:
         civl_link_all_pilots = 'https://civlcomps.org/ranking/paragliding-aerobatics/pilots'

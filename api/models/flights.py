@@ -1,5 +1,5 @@
 import logging
-from pydantic import BaseModel, Field, validator
+from pydantic import ConfigDict, BaseModel, Field, validator
 from bson import ObjectId
 from typing import List, Optional
 from fastapi.encoders import jsonable_encoder
@@ -18,37 +18,35 @@ from core.config import settings
 log = logging.getLogger(__name__)
 
 class FlightExport(BaseModel):
-    pilot: Optional[Pilot]
-    team: Optional[TeamExport]
+    pilot: Optional[Pilot] = None
+    team: Optional[TeamExport] = None
     tricks: List[UniqueTrick]
     marks: List[JudgeMarkExport]
     did_not_start: bool = False
-    final_marks: Optional[FinalMarkExport]
+    final_marks: Optional[FinalMarkExport] = None
     published: bool = False
     warnings: List[str]
 
 class Flight(BaseModel):
     pilot: int
-    team: Optional[str]
+    team: Optional[str] = None
     tricks: List[UniqueTrick]
     marks: List[JudgeMark]
     did_not_start: bool = False
-    final_marks: Optional[FinalMark]
+    final_marks: Optional[FinalMark] = None
     published: bool = False
     warnings: List[str]
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "pilot": 1234,
-                "tricks": [],
-                "marks": [],
-                "did_not_start": False,
-                "final_marks": {},
-                "published": False,
-                "warnings": []
-            }
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "pilot": 1234,
+            "tricks": [],
+            "marks": [],
+            "did_not_start": False,
+            "final_marks": {},
+            "published": False,
+            "warnings": []
         }
+    })
 
     async def export(self, cache:Cache = None) -> FlightExport:
 
@@ -83,13 +81,11 @@ class FlightNew(BaseModel):
     marks: List[JudgeMark]
     did_not_start: bool = False
     warnings: List[str] = []
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "tricks": ["LM", "Right Misty Flip"],
-                "marks": [],
-                "did_not_start": False,
-                "warnings": []
-            }
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "tricks": ["LM", "Right Misty Flip"],
+            "marks": [],
+            "did_not_start": False,
+            "warnings": []
         }
+    })

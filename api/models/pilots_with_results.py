@@ -33,7 +33,7 @@ class PilotWithResults(Pilot):
         pilot = await Pilot.get(id, cache=cache)
         if pilot is None:
             return None
-        pilot = PilotWithResults.parse_obj(pilot)
+        pilot = PilotWithResults.model_validate(pilot.dict())
 
         seasons = []
         for comp in await Competition.getall(cache=cache):
