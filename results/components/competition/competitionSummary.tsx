@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { relativeToUrl } from "@/utils/common";
 
 import { components } from "@/types";
 
@@ -40,7 +41,7 @@ const CompetitionSummary = ({ competition, className }: Props) => {
     <article className={className}>
       {image && (
         <Image
-          src={image}
+          src={relativeToUrl(image)}
           alt="Competition Image"
           width={512}
           height={0}

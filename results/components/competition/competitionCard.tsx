@@ -1,5 +1,6 @@
 import classNames from "classnames";
 import Link from "next/link";
+import { relativeToUrl } from "@/utils/common";
 
 import { components } from "@/types";
 
@@ -44,7 +45,7 @@ const CompetitionCard = ({ competition }: Props) => {
       className={classNames("max-w-lg flex-grow")}
     >
       <article
-        style={{ backgroundImage: `url(${image})` }}
+        style={{ backgroundImage: `url(${relativeToUrl(image)})` }}
         className={classNames(
           "flex h-48 flex-col justify-between rounded-xl text-white",
           "bg-awt-dark-900/60 bg-cover bg-center bg-no-repeat p-4 bg-blend-multiply",

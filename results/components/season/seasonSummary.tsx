@@ -1,5 +1,6 @@
 import classNames from "classnames";
 import Image from "next/image";
+import { relativeToUrl } from "@/utils/common";
 
 import { components } from "@/types";
 
@@ -54,7 +55,7 @@ const SeasonSummary = ({ season, className }: Props) => {
             return (
               <div
                 key={code}
-                style={{ backgroundImage: `url(${competitionImage})` }}
+                style={{ backgroundImage: `url(${relativeToUrl(competitionImage)})` }}
                 className={classNames(
                   "h-full w-full",
                   "bg-cover bg-center bg-no-repeat",
