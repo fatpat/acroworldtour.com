@@ -53,6 +53,13 @@ export async function APIRequest(route, props={}) {
   return [err, body, res.headers, res.status]
 }
 
+export function relativeToUrl(u) {
+  console.log(u)
+  if (typeof(u) !== 'string') return "";
+  if (u.startsWith('/')) return process.env.NEXT_PUBLIC_API_URL + u;
+  return u;
+}
+
 
 /*
  * Hook to load pilots

@@ -64,7 +64,7 @@ import EnhancedTable from 'src/views/tables/EnhancedTable'
 import CardPilot from 'src/views/cards/CardPilot'
 import { countryListAllIsoData } from 'src/util/countries'
 import { useNotifications } from 'src/util/notifications'
-import { APIRequest, usePilots, useTeams, useJudges, useTricks } from 'src/util/backend'
+import { APIRequest, relativeToUrl, usePilots, useTeams, useJudges, useTricks } from 'src/util/backend'
 import modalStyle from 'src/configs/modalStyle'
 import ResponsiveDatePicker from 'src/components/ResponsiveDatePicker'
 import Editable from 'src/components/Editable'
@@ -600,7 +600,7 @@ const CompetitionPage = () => {
           type="file"
           onChange={uploadImage}
         />
-        <Avatar src={comp.image} onClick={updateImage} variant="square"><NoPhotographyIcon /></Avatar>
+        <Avatar src={relativeToUrl(comp.image)} onClick={updateImage} variant="square"><NoPhotographyIcon /></Avatar>
         { comp.image && <ClearIcon className="hideToPrint" onClick={() => removeImage() } />}
       </Grid>
 

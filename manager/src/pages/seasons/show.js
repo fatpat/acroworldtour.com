@@ -62,7 +62,7 @@ import EnhancedTable from 'src/views/tables/EnhancedTable'
 import CardPilot from 'src/views/cards/CardPilot'
 import { countryListAllIsoData } from 'src/util/countries'
 import { useNotifications } from 'src/util/notifications'
-import { APIRequest, usePilots, useTeams, useJudges, useTricks } from 'src/util/backend'
+import { APIRequest, relativeToUrl, usePilots, useTeams, useJudges, useTricks } from 'src/util/backend'
 import modalStyle from 'src/configs/modalStyle'
 import ResponsiveDatePicker from 'src/components/ResponsiveDatePicker'
 import Editable from 'src/components/Editable'
@@ -271,7 +271,7 @@ const SeasonPage = () => {
           onChange={uploadImage}
         />  
         <Typography variant='h5' sx={{display: 'flex'}}>
-          <Avatar src={season.image} onClick={updateImage}>{season.acronym}</Avatar>
+          <Avatar src={relativeToUrl(season.image)} onClick={updateImage}>{season.acronym}</Avatar>
           &nbsp;
           {season.name}<RefreshIcon className="hideToPrint" onClick={loadSeason} />
         </Typography>
