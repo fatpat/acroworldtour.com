@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     CACHE_EXPIRES: int = 60
     model_config = SettingsConfigDict(case_sensitive=True)
 
+    LOG_LEVEL: str = "INFO"
+
     class pilots:
         civl_link_all_pilots = 'https://civlcomps.org/ranking/paragliding-aerobatics/pilots'
         civl_link_one_pilot = 'https://civlcomps.org/pilot/'
