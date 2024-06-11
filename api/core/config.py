@@ -14,7 +14,6 @@ class Settings(BaseSettings):
     # 60 minutes * 24 hours * 8 days = 8 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
     SERVER_NAME: str = PROJECT_NAME
-    SERVER_HOST: AnyHttpUrl = "http://localhost:8000"
 
     MONGODB_URL: str = 'mongodb://127.0.0.1/'
     DATABASE: str = 'acropyx2-database-developtment'

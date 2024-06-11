@@ -54,8 +54,8 @@ class CompetitionExport(BaseModel):
     state: CompetitionState
     config: CompetitionConfig
     runs: List[RunExport]
-    image: Optional[AnyHttpUrl] = None
-    logo: Optional[AnyHttpUrl] = None
+    image: Optional[AnyHttpUrl | str] = None
+    logo: Optional[AnyHttpUrl | str] = None
     website: Optional[AnyHttpUrl] = None
     seasons: List[str]
     # TODO[pydantic]: The following keys were removed: `json_encoders`.
@@ -77,8 +77,8 @@ class CompetitionPublicExport(BaseModel):
     number_of_teams: int
     number_of_judges: int
     number_of_runs: int
-    image: Optional[AnyHttpUrl] = None
-    logo: Optional[AnyHttpUrl] = None
+    image: Optional[AnyHttpUrl | str] = None
+    logo: Optional[AnyHttpUrl | str] = None
     website: Optional[AnyHttpUrl] = None
     seasons: List[str]
     # TODO[pydantic]: The following keys were removed: `json_encoders`.
@@ -223,12 +223,12 @@ class Competition(CompetitionNew):
 
     def image_url(self):
         if self.image is not None:
-            return f"{settings.SERVER_HOST}/files/{self.image}"
+            return f"/files/{self.image}"
         return None
 
     def logo_url(self):
         if self.logo is not None:
-            return f"{settings.SERVER_HOST}/files/{self.logo}"
+            return f"/files/{self.logo}"
         return None
 
 

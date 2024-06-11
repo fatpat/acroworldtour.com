@@ -49,7 +49,7 @@ class SeasonExport(BaseModel):
     name: str
     code: str
     year: int
-    image: Optional[AnyHttpUrl] = None
+    image: Optional[AnyHttpUrl | str] = None
     country: Optional[str] = None
     index: int = Field(999)
     type: CompetitionType
@@ -67,7 +67,7 @@ class SeasonExportLight(BaseModel):
     name: str
     code: str
     year: int
-    image: Optional[AnyHttpUrl] = None
+    image: Optional[AnyHttpUrl | str] = None
     country: Optional[str] = None
     index: int = Field(999)
     type: CompetitionType
@@ -83,7 +83,7 @@ class SeasonPublicExport(BaseModel):
     name: str
     code: str
     year: int
-    image: Optional[AnyHttpUrl] = None
+    image: Optional[AnyHttpUrl | str] = None
     country: Optional[str] = None
     index: int = Field(999)
     type: CompetitionType
@@ -102,7 +102,7 @@ class Season(BaseModel):
     code: str = Field(description="The short code of the season", pattern=r"^[a-z]{3}-[0-9]{4}$")
     year: int = Field(..., description="The year of the season", gt=1900)
     image: Optional[str] = None
-    image_url: Optional[AnyHttpUrl] = None
+    image_url: Optional[AnyHttpUrl | str] = None
     country: Optional[str] = Field(None, pattern=r"^[a-z]{3}")
     index: int = Field(999)
     deleted: Optional[datetime] = None
@@ -230,7 +230,7 @@ class Season(BaseModel):
 
     def get_image_url(self):
         if self.image is not None:
-            return f"{settings.SERVER_HOST}/files/{self.image}"
+            return f"/files/{self.image}"
         return None
 
     async def export_public(self, cache:Cache=None) -> SeasonPublicExport:

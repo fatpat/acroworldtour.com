@@ -33,8 +33,8 @@ class EventExport(BaseModel):
     location: str = Field(..., description="The place of the event", min_length=2)
     website: Optional[AnyHttpUrl] = None
     description: Optional[str] = None
-    image_url: Optional[AnyHttpUrl] = None
-    logo_url: Optional[AnyHttpUrl] = None
+    image_url: Optional[AnyHttpUrl | str] = None
+    logo_url: Optional[AnyHttpUrl | str] = None
     streaming_url: Optional[AnyHttpUrl] = None
     competitions: List[CompetitionPublicExport]
     # TODO[pydantic]: The following keys were removed: `json_encoders`.
@@ -121,8 +121,8 @@ class Event(BaseModel):
             location = self.location,
             website = self.website,
             description = self.description,
-            image_url = f"{settings.SERVER_HOST}/files/{self.image}" if self.image is not None else None,
-            logo_url = f"{settings.SERVER_HOST}/files/{self.image}" if self.logo is not None else None,
+            image_url = f"/files/{self.image}" if self.image is not None else None,
+            logo_url = f"/files/{self.image}" if self.logo is not None else None,
             streaming_url = self.streaming_url,
             competitions = competitions,
         )

@@ -2,6 +2,7 @@ import logging
 import json
 import re
 import unicodedata
+import base64
 from http import HTTPStatus
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Response, Body
 from typing import List, Any
@@ -19,6 +20,7 @@ from models.tricks import Trick, UniqueTrick
 from models.marks import FinalMark
 from models.flights import Flight, FlightNew
 from models.cache import Cache
+from models.files import File
 from core.config import settings
 from controllers.utils import UtilsCtrl
 from controllers.seasons import SeasonCtrl
@@ -357,3 +359,21 @@ async def simulate(team:str, run:int, download:bool = False):
         headers["Content-Disposition"] = f"inline"
 
     return Response(content=svg, media_type="image/svg+xml", headers=headers)
+
+#
+# GET files
+#
+@public.get(
+    "/files/{id}",
+    response_description="",
+    response_class=Response,
+)
+async def get_file(id: str, download : bool = False):
+    file = await File.get(id)
+    headers = {}
+    if download:
+        headers["Content-Disposition"] = f"attachment; filename=\"{file.filename}\""
+    else:
+        headers["Content-Disposition"] = f"inline"
+
+    return Response(content=base64.b64decode(file.content), media_type=file.content_type, headers=headers)
