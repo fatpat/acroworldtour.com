@@ -22,8 +22,6 @@ class Settings(BaseSettings):
     ADMIN_USER: str = 'admin'
     ADMIN_PASS: Optional[str] = None
 
-    REDIS_URL: Optional[str] = None
-    CACHE_EXPIRES: int = 60
     model_config = SettingsConfigDict(case_sensitive=True)
 
     LOG_LEVEL: str = "INFO"

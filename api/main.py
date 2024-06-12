@@ -3,9 +3,6 @@ import core.logging
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 import time
-from fastapi_cache import FastAPICache
-from fastapi_cache.backends.inmemory import InMemoryBackend
-from fastapi_cache.backends.redis import RedisBackend
 
 from redis import asyncio as aioredis
 
@@ -47,15 +44,6 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_event():
-    log.debug("startup_event()")
-    if settings.REDIS_URL is None:
-        FastAPICache.init(InMemoryBackend())
-        log.info("Using in memory cache")
-    else:
-        redis = aioredis.from_url(settings.REDIS_URL, encoding="utf8", decode_responses=True)
-        FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
-        log.info(f"Using redis cache ({settings.REDIS_URL})")
-
     if "test" in settings.DATABASE:
         log.debug(f"Using a testing database")
         await clean_database()
@@ -75,6 +63,5 @@ async def add_process_time_header(request: Request, call_next):
     process_time = time.time() - start_time
     response.headers["X-Process-Time"] = str(process_time)
     return response
-
 
 app.include_router(router)

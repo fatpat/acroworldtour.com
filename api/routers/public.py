@@ -6,7 +6,6 @@ import base64
 from http import HTTPStatus
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Response, Body
 from typing import List, Any
-from fastapi_cache import FastAPICache
 from fastapi_cache.decorator import cache
 from asyncio import gather
 
@@ -40,7 +39,6 @@ public = APIRouter()
     response_description="List all public",
     response_model=List[Pilot],
 )
-@cache(expire=settings.CACHE_EXPIRES)
 async def list_pilots():
     cache = Cache()
     return await Pilot.getall(cache=cache)
@@ -53,7 +51,6 @@ async def list_pilots():
     response_description="Get a Pilot",
     response_model=PilotWithResults,
 )
-@cache(expire=settings.CACHE_EXPIRES)
 async def get_pilot(civlid: int):
     cache = Cache()
     await gather(
@@ -74,7 +71,6 @@ async def get_pilot(civlid: int):
     response_description="List all teams",
     response_model=List[TeamExport],
 )
-@cache(expire=settings.CACHE_EXPIRES)
 async def list_teams():
     teams = []
     cache = Cache()
@@ -91,7 +87,6 @@ async def list_teams():
     response_description="Get a Team",
     response_model=TeamExport,
 )
-@cache(expire=settings.CACHE_EXPIRES)
 async def get_team(id: str):
     cache = Cache()
     await Pilot.getall(cache=cache),
@@ -106,7 +101,6 @@ async def get_team(id: str):
     response_description="List all judges",
     response_model=List[Judge],
 )
-@cache(expire=settings.CACHE_EXPIRES)
 async def list_judges():
     cache = Cache()
     return await Judge.getall(deleted=False, cache=cache)
@@ -119,7 +113,6 @@ async def list_judges():
     response_description="Get a Judge",
     response_model=Judge,
 )
-@cache(expire=settings.CACHE_EXPIRES)
 async def get_judge(id: str):
     cache = Cache()
     return await Judge.get(id, cache=cache)
@@ -132,7 +125,6 @@ async def get_judge(id: str):
     response_description="List all competitions",
     response_model=List[CompetitionPublicExport],
 )
-@cache(expire=settings.CACHE_EXPIRES)
 async def list_competitions():
     cache = Cache()
     comps = []
@@ -150,7 +142,6 @@ async def list_competitions():
     response_description="Get a Competition",
     response_model=CompetitionPublicExportWithResults,
 )
-@cache(expire=settings.CACHE_EXPIRES)
 async def get_competition(id: str):
     cache = Cache()
     await gather(
@@ -170,7 +161,6 @@ async def get_competition(id: str):
     response_description="export competition overall standing in SVG",
     response_class=Response,
 )
-@cache(expire=settings.CACHE_EXPIRES, coder=GenericResponseCoder)
 async def export_competition_overall_standing_svg(id: str, result_type: str, download: bool = False):
     cache = Cache()
     await gather(
@@ -204,7 +194,6 @@ async def export_competition_overall_standing_svg(id: str, result_type: str, dow
     response_description="export competition run standing in SVG",
     response_class=Response,
 )
-@cache(expire=settings.CACHE_EXPIRES, coder=GenericResponseCoder)
 async def export_competition_overall_standing_svg(id: str, run: int, result_type: str='overall', download: bool = False):
     cache = Cache()
     await gather(
@@ -233,7 +222,6 @@ async def export_competition_overall_standing_svg(id: str, run: int, result_type
     response_description="List all seasons",
     response_model=List[SeasonExportLight],
 )
-@cache(expire=settings.CACHE_EXPIRES)
 async def list_seasons(deleted: bool = False):
     cache = Cache()
     return [await season.export_light(cache=cache) for season in await Season.getall(deleted=deleted, cache=cache)]
@@ -246,7 +234,6 @@ async def list_seasons(deleted: bool = False):
     response_description="Get a Season",
     response_model=SeasonPublicExport,
 )
-@cache(expire=settings.CACHE_EXPIRES)
 async def get_season(id: str, deleted: bool = False):
     cache = Cache()
     await gather(
@@ -266,7 +253,6 @@ async def get_season(id: str, deleted: bool = False):
     response_description="export season standing in SVG",
     response_class=Response,
 )
-@cache(expire=settings.CACHE_EXPIRES, coder=GenericResponseCoder)
 async def export_season_standing_svg(id: str, download: bool = False):
     cache = Cache()
     await gather(
@@ -294,7 +280,6 @@ async def export_season_standing_svg(id: str, download: bool = False):
     response_description="List all tricks",
     response_model=List[Trick],
 )
-@cache(expire=settings.CACHE_EXPIRES)
 async def list(repeatable: bool = None):
     return await Trick.getall(deleted = False, repeatable = repeatable)
 
@@ -306,7 +291,6 @@ async def list(repeatable: bool = None):
     response_description="List all unique tricks",
     response_model=List[UniqueTrick],
 )
-@cache(expire=settings.CACHE_EXPIRES)
 async def list(solo: bool = True, synchro: bool = False):
     return await Trick.get_unique_tricks(solo = solo, synchro = synchro)
 
