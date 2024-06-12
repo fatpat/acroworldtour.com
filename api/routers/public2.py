@@ -3,7 +3,6 @@ import json
 from http import HTTPStatus
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Response
 from typing import List, Any
-from fastapi_cache.decorator import cache
 from asyncio import gather
 
 from models.competitions import Competition, CompetitionExport, CompetitionNew, CompetitionState, CompetitionPublicExport, CompetitionPublicExportWithResults
@@ -18,7 +17,6 @@ from core.config import settings
 from controllers.utils import UtilsCtrl
 from controllers.seasons import SeasonCtrl
 from controllers.competitions import CompCtrl
-from core.utils import GenericResponseCoder
 
 log = logging.getLogger(__name__)
 public2 = APIRouter()

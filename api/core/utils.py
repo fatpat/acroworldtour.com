@@ -1,6 +1,5 @@
 from typing import List, Any
 from statistics import mean
-from fastapi_cache import Coder
 from fastapi import Response
 import json
 
@@ -39,27 +38,3 @@ def float3digits(cls, v) -> float:
 
 def ordinal(n: int):
     return str(n)+("th" if 4<=n%100<=20 else {1:"st",2:"nd",3:"rd"}.get(n%10, "th"))
-
-class GenericResponseCoder(Coder):
-    @classmethod
-    def encode(cls, value: Any) -> bytes:
-        headers = {}
-        for k, v in value.headers.items():
-            headers[k] = v
-
-        return json.dumps({
-            "content": value.body.decode("utf-8"),
-            "status_code": value.status_code,
-            "headers": headers,
-            "media_type": value.media_type,
-        })
-
-    @classmethod
-    def decode(cls, value: bytes) -> Any:
-        j = json.loads(value)
-        return Response(
-            content=j['content'].encode("utf-8"),
-            status_code=j['status_code'],
-            headers=j['headers'],
-            media_type=j['media_type'],
-        )
