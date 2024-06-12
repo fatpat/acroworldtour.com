@@ -46,7 +46,7 @@ const JudgeCard = ({ judge, small }: Props) => {
       )}
     >
       <figure
-        style={{ backgroundImage: `url('${photo}')` }}
+        style={{ backgroundImage: photo ? `url('${photo}')` : undefined }}
         className={classNames(
           "relative flex aspect-square flex-col justify-between",
           "bg-cover bg-center bg-no-repeat",
