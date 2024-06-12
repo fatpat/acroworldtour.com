@@ -1,8 +1,8 @@
 import classNames from "classnames";
 import Link from "next/link";
-import { relativeToUrl } from "@/utils/common";
 
 import { components } from "@/types";
+import { relativeToUrl } from "@/utils/common";
 
 interface Props {
   season: components["schemas"]["SeasonExportLight"];
@@ -34,7 +34,7 @@ const SeasonCard = ({ season }: Props) => {
     ? `${numberOfTeams} team${teamsPlural ? "s" : ""}`
     : "";
 
-  const seasonCover = relativeToUrl(image)
+  const seasonCover = relativeToUrl(image);
 
   return (
     <Link

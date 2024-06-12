@@ -1,7 +1,7 @@
 import Image from "next/image";
-import { relativeToUrl } from "@/utils/common";
 
 import { components } from "@/types";
+import { relativeToUrl } from "@/utils/common";
 
 import CompetitionJudges from "./competitionJudges";
 import CompetitionPilots from "./competitionPilots";

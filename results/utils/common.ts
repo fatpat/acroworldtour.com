@@ -1,4 +1,4 @@
-import { API_URL } from "@/constants";
+import { API_URL } from '@/constants';
 
 export const ordinalSuffixOf = (n: number) => {
   if (n % 10 == 1 && n % 100 != 11) return n + 'st';
@@ -7,8 +7,8 @@ export const ordinalSuffixOf = (n: number) => {
   return n + 'th';
 };
 
-export const relativeToUrl = (u) => {
-  if (typeof(u) !== 'string') return "";
+export const relativeToUrl = (u: string | undefined) => {
+  if (typeof u !== 'string') return '';
   if (u.startsWith('/')) return API_URL + u;
   return u;
-}
+};

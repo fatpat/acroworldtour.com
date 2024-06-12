@@ -1,8 +1,8 @@
 import classNames from "classnames";
 import Link from "next/link";
-import { relativeToUrl } from "@/utils/common";
 
 import { components } from "@/types";
+import { relativeToUrl } from "@/utils/common";
 
 interface Props {
   competition:
