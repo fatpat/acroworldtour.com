@@ -9,7 +9,7 @@ log = logging.getLogger(__name__)
 client = motor.motor_asyncio.AsyncIOMotorClient(settings.MONGODB_URL)
 db = client[settings.DATABASE]
 
-class PyObjectId(str):
+class PyObjectId(ObjectId):
     @classmethod
     def __get_pydantic_core_schema__(
             cls, _source_type: Any, _handler: Any
