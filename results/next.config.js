@@ -15,7 +15,13 @@ const nextConfig = {
     ];
   },
   images: {
-    domains: ['api.acroworldtour.com', 'civlcomps.org'],
+    domains: [
+      '**.acroworldtour.com',
+      'civlcomps.org',
+      '172.17.0.1',
+      'localhost',
+      '127.0.0.1',
+    ],
   },
   reactStrictMode: true,
 };
