@@ -55,7 +55,7 @@ async def get(id: str, deleted: bool = False):
 async def create(team: Team = Body(...)):
     cache = Cache()
     team = await team.create()
-    return await team.export(cache=cache())
+    return await team.export(cache=cache)
 
 #
 # Update an existing Team
