@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router'
 
 // ** auth
-import { withPageAuthRequired, useUser } from '@auth0/nextjs-auth0'
+import { withPageAuthRequired, useUser } from '@auth0/nextjs-auth0/client'
 
 // ** MUI Imports
 import Grid from '@mui/material/Grid'
@@ -30,9 +30,6 @@ import CardActions from '@mui/material/CardActions'
 import Breadcrumbs from '@mui/material/Breadcrumbs'
 import Autocomplete from '@mui/material/Autocomplete'
 import Avatar from '@mui/material/Avatar'
-import { DatePicker } from '@mui/x-date-pickers/DatePicker'
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import TabList from '@mui/lab/TabList'
 import TabPanel from '@mui/lab/TabPanel'
 import TabContext from '@mui/lab/TabContext'
@@ -86,7 +83,6 @@ import { countryListAllIsoData } from 'src/util/countries'
 import { useNotifications } from 'src/util/notifications'
 import { APIRequest, useTricks } from 'src/util/backend'
 import modalStyle from 'src/configs/modalStyle'
-import ResponsiveDatePicker from 'src/components/ResponsiveDatePicker'
 import Editable from 'src/components/Editable'
 
 // ** Tabs Imports
@@ -233,7 +229,7 @@ const RunPage = () => {
         expected_status: 204,
         method: 'PATCH',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(judges.map(p => p.id)),
+        body: JSON.stringify(judges.map(p => p._id)),
     })
 
     if (err) {
@@ -248,7 +244,7 @@ const RunPage = () => {
         expected_status: 204,
         method: 'PATCH',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(tricks.map(t => t.id)),
+        body: JSON.stringify(tricks.map(t => t._id)),
     })
 
     if (err) {

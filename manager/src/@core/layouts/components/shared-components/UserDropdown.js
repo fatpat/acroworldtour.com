@@ -5,7 +5,7 @@ import { useState, Fragment } from 'react'
 import { useRouter } from 'next/router'
 
 // ** Auth
-import { useUser } from '@auth0/nextjs-auth0'
+import { useUser } from '@auth0/nextjs-auth0/client'
 
 // ** MUI Imports
 import Box from '@mui/material/Box'

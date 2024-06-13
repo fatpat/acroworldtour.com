@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import Router from 'next/router'
 
 // ** auth
-import { withPageAuthRequired, useUser } from '@auth0/nextjs-auth0';
+import { withPageAuthRequired, useUser } from '@auth0/nextjs-auth0/client';
 
 // ** MUI Imports
 import Grid from '@mui/material/Grid'
@@ -59,7 +59,7 @@ const JudgesPage = () => {
   const loadJudges = async () => {
     setLoading(true)
 
-    const [err, data, headers] = await APIRequest('/judges', {expect_json: true})
+    let [err, data, headers] = await APIRequest('/judges', {expect_json: true})
 
     if (err) {
         setData(false)
@@ -162,7 +162,7 @@ const JudgesPage = () => {
   }
 
   const updateSearch = async(e) => {
-    const s = e.target.value
+    let s = e.target.value
     // https://stackoverflow.com/questions/990904/remove-accents-diacritics-in-a-string-in-javascript
     // to compare ignoring accents
     s = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -299,7 +299,7 @@ const JudgesPage = () => {
                     <TextField
                       fullWidth name="civlid" label='CIVLD ID' placeholder='CIVL ID (optional)' defaultValue={ newJudge.civlid ?? ""}
                       onChange={(e) => {
-                        const v = e.target.value
+                        let v = e.target.value
                         if (v == "") v = null
                         newJudge.civlid = v
                         setNewJudge(newJudge)

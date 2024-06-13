@@ -61,8 +61,7 @@ const TabFlights = ({ comp, run, rid }) => {
 
   const loadPilot = async(i) => {
     if (i<0 || i>=run.pilots.length) return
-    currentFlight = i
-    pilot = run.pilots[currentFlight]
+    let pilot = run.pilots[i]
     setLoading(`Loading flight for ${pilot.name}`)
 
     const [err, retData, headers, status] = await APIRequest(`/competitions/${comp.code}/runs/${rid}/flights/${pilot.civlid}`, {
@@ -73,6 +72,9 @@ const TabFlights = ({ comp, run, rid }) => {
         setLoading(null)
         return
     }
+    let data
+    let result
+    let resultsOK
     if (status == 404) {
       data = {
         published: false,
@@ -93,7 +95,7 @@ const TabFlights = ({ comp, run, rid }) => {
     setResult(result)
     setResultsOK(resultsOK)
     setPilot(pilot)
-    setCurrentFlight(currentFlight)
+    setCurrentFlight(i)
     setPublished(resultsOK ? data.published : false)
     setLoading(null)
   }
@@ -335,7 +337,7 @@ const TabFlights = ({ comp, run, rid }) => {
     var technical = null
     var choreography = null
     var landing = null
-    for (const m in data.marks) {
+    for (let m in data.marks) {
       m = data.marks[m]
       if (m.judge == j._id) {
         technical = m.technical

@@ -5,37 +5,21 @@ import { useState, useEffect } from 'react';
 import Router from 'next/router'
 
 // ** auth
-import { withPageAuthRequired, useUser } from '@auth0/nextjs-auth0';
+import { withPageAuthRequired, useUser } from '@auth0/nextjs-auth0/client';
 
 // ** MUI Imports
 import Grid from '@mui/material/Grid'
 import Typography from '@mui/material/Typography'
-import Button from '@mui/material/Button'
-import Modal from '@mui/material/Modal'
-import RefreshIcon from '@mui/icons-material/Refresh'
-import TextField from '@mui/material/TextField'
-import CircularProgress from '@mui/material/CircularProgress';
-import LinearProgress from '@mui/material/LinearProgress';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
-import Link from '@mui/material/Link'
-import AddIcon from '@mui/icons-material/Add'
-import CardHeader from '@mui/material/CardHeader'
-import CardContent from '@mui/material/CardContent'
-import FormControl from '@mui/material/FormControl'
-import InputLabel from '@mui/material/InputLabel'
-import Select from '@mui/material/Select'
-import MenuItem from '@mui/material/MenuItem'
-import CardActions from '@mui/material/CardActions'
-import Breadcrumbs from '@mui/material/Breadcrumbs'
-import Autocomplete from '@mui/material/Autocomplete';
-import Checkbox from '@mui/material/Checkbox'
-import FormControlLabel from '@mui/material/FormControlLabel';
+import LinearProgress from '@mui/material/LinearProgress';
+import TextField from '@mui/material/TextField'
+import RefreshIcon from '@mui/icons-material/Refresh'
 
 // ** local
 import EnhancedTable from 'src/views/tables/EnhancedTable'
-import CardPilot from 'src/views/cards/CardPilot'
-import { countryListAllIsoData } from 'src/util/countries'
+//import CardPilot from 'src/views/cards/CardPilot'
+//import { countryListAllIsoData } from 'src/util/countries'
 import { useNotifications } from 'src/util/notifications'
 import { APIRequest } from 'src/util/backend'
 
@@ -69,7 +53,7 @@ const UniqueTricksPage = () => {
   }
 
   const updateSearch = async(e) => {
-    const s = e.target.value
+    let s = e.target.value
     // https://stackoverflow.com/questions/990904/remove-accents-diacritics-in-a-string-in-javascript
     // to compare ignoring accents
     s = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "")

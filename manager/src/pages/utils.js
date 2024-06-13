@@ -1,5 +1,5 @@
 // ** auth
-import { withPageAuthRequired, useUser } from '@auth0/nextjs-auth0';
+import { withPageAuthRequired, useUser } from '@auth0/nextjs-auth0/client';
 
 // ** react
 import { useState, useEffect } from 'react'

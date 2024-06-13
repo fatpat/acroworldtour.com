@@ -6,8 +6,6 @@ import { Router } from 'next/router'
 import NProgress from 'nprogress'
 
 // ** Emotion Imports
-import { CacheProvider } from '@emotion/react'
-
 // ** Config Imports
 import themeConfig from 'src/configs/themeConfig'
 
@@ -17,9 +15,6 @@ import ThemeComponent from 'src/@core/theme/ThemeComponent'
 
 // ** Contexts
 import { SettingsConsumer, SettingsProvider } from 'src/@core/context/settingsContext'
-
-// ** Utils Imports
-import { createEmotionCache } from 'src/@core/utils/create-emotion-cache'
 
 // ** React Perfect Scrollbar Style
 import 'react-perfect-scrollbar/dist/css/styles.css'
@@ -31,7 +26,7 @@ import '../../styles/globals.css'
 import { SnackbarProvider } from 'notistack';
 
 // ** auth
-import { UserProvider, RequestError } from '@auth0/nextjs-auth0'
+import { UserProvider, RequestError } from "@auth0/nextjs-auth0/client";
 
 // ** local
 import { APIRequest } from 'src/util/backend'
@@ -39,7 +34,7 @@ import { APIRequest } from 'src/util/backend'
 // ** jquery
 import $ from 'jquery'
 
-const clientSideEmotionCache = createEmotionCache()
+//const clientSideEmotionCache = createEmotionCache()
 
 // ** Pace Loader
 if (themeConfig.routingLoader) {
@@ -56,7 +51,7 @@ if (themeConfig.routingLoader) {
 
 // ** Configure JSS & ClassName
 const App = props => {
-  const { Component, emotionCache = clientSideEmotionCache, pageProps } = props
+  const { Component, pageProps } = props
   const { user } = pageProps
 
   // Variables
@@ -79,7 +74,6 @@ const App = props => {
 
   return (
     <UserProvider user={user} loginUrl={`${process.env.NEXT_PUBLIC_APP_BASE_PATH}/login`} profileUrl="/auth/me" fetcher={authFetcher}>
-      <CacheProvider value={emotionCache}>
         <Head>
           <title>{`${themeConfig.templateName} - 2022`}</title>
           <meta
@@ -109,7 +103,6 @@ const App = props => {
             }}
           </SettingsConsumer>
         </SettingsProvider>
-      </CacheProvider>
     </UserProvider>
   )
 }

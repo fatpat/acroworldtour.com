@@ -78,12 +78,10 @@ export const usePilots = () => {
           return
       }
 
-      data = data.map(j => {
+      setPilots(data.map(j => {
         j.id = j.civlid
         return j
-      })
-
-      setPilots(data)
+      }))
     }
     asyncFunc()
   }, [])
@@ -109,12 +107,10 @@ export const useTeams = () => {
           return
       }
 
-      data = data.map(j => {
+      setTeams(data.map(j => {
         j.id = j._id
         return j
-      })
-
-      setTeams(data)
+      }))
     }
     asyncFunc()
   }, [])
@@ -140,12 +136,10 @@ export const useJudges = () => {
           return
       }
 
-      data = data.map(j => {
+      setJudges(data.map(j => {
         j.id = j._id
         return j
-      })
-
-      setJudges(data)
+      }))
     }
     asyncFunc()
   }, [])
@@ -171,12 +165,10 @@ export const useTricks = () => {
           return
       }
 
-      data = data.map(j => {
+      setTricks(data.map(j => {
         j.id = j._id
         return j
-      })
-
-      setTricks(data)
+      }))
     }
     asyncFunc()
   }, [])
@@ -204,12 +196,10 @@ export const useUniqueTricks = (type) => {
           return
       }
 
-      data = data.map(j => {
+      setTricks(data.map(j => {
         j.id = j._id
         return j
-      })
-
-      setTricks(data)
+      }))
     }
     asyncFunc()
   }, [])

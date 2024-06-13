@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import Router from 'next/router'
 
 // ** auth
-import { withPageAuthRequired, useUser } from '@auth0/nextjs-auth0';
+import { withPageAuthRequired, useUser } from '@auth0/nextjs-auth0/client';
 
 // ** MUI Imports
 import Grid from '@mui/material/Grid'
@@ -33,8 +33,7 @@ import Breadcrumbs from '@mui/material/Breadcrumbs'
 import Autocomplete from '@mui/material/Autocomplete';
 import Avatar from '@mui/material/Avatar';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFnsV3'
 
 // ** local
 import EnhancedTable from 'src/views/tables/EnhancedTable'
@@ -63,7 +62,7 @@ const CompetitionsPage = () => {
   const loadCompetitions = async () => {
     setLoading(true)
 
-    const [err, data, headers] = await APIRequest('/competitions', {expect_json: true})
+    let [err, data, headers] = await APIRequest('/competitions', {expect_json: true})
 
     if (err) {
         setData(false)
@@ -110,7 +109,7 @@ const CompetitionsPage = () => {
   }
 
   const updateSearch = async(e) => {
-    const s = e.target.value
+    let s = e.target.value
     // https://stackoverflow.com/questions/990904/remove-accents-diacritics-in-a-string-in-javascript
     // to compare ignoring accents
     s = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "")

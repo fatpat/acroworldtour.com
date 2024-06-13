@@ -1,6 +1,8 @@
 const path = require('path')
 
-module.exports = {
+const nextConfig = {
+  output: 'export',
+
   basePath: `${process.env.NEXT_PUBLIC_APP_BASE_PATH}`,
   trailingSlash: false,
   reactStrictMode: false,
@@ -10,7 +12,6 @@ module.exports = {
   },
   experimental: {
     esmExternals: false,
-    jsconfigPaths: true // enables it for both jsconfig.json and tsconfig.json
   },
   webpack: config => {
     config.resolve.alias = {
@@ -21,3 +22,5 @@ module.exports = {
     return config
   }
 }
+
+module.exports = nextConfig

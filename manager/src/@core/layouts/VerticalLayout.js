@@ -22,7 +22,7 @@ import ScrollToTop from 'src/@core/components/scroll-to-top'
 import DatePickerWrapper from 'src/@core/styles/libs/react-datepicker'
 
 // ** auth
-import { withPageAuthRequired, useUser } from '@auth0/nextjs-auth0';
+import { withPageAuthRequired, useUser } from '@auth0/nextjs-auth0/client';
 
 const VerticalLayoutWrapper = styled('div')({
   height: '100%',

@@ -5,7 +5,7 @@ const InputMark = (props) => {
   return (
     <TextField
       onChange={e => {
-        const v = parseInt(e.target.value)
+        let v = parseInt(e.target.value)
         if (!isNaN(v)) {
           v = Math.min(100, Math.max(0, v)) / 10
         }

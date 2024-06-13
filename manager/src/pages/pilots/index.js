@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import Router from 'next/router'
 
 // ** auth
-import { withPageAuthRequired, useUser } from '@auth0/nextjs-auth0';
+import { withPageAuthRequired, useUser } from '@auth0/nextjs-auth0/client';
 
 // ** MUI Imports
 import Grid from '@mui/material/Grid'
@@ -141,7 +141,7 @@ const PilotsPage = () => {
   }
 
   const updateSearch = async(e) => {
-    const s = e.target.value
+    let s = e.target.value
     const civlid = parseInt(s)
     if (civlid > 0) {
       setData(fullData.filter(pilot => pilot.civlid == civlid))
