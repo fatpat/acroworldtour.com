@@ -268,11 +268,13 @@ const TricksPage = () => {
         <TextField fullWidth id='outlined-basic' label='Search trick' variant='outlined' onChange={updateSearch} />
       </Grid>
       <Grid item xs={8} sm={8} container>
+{/*
         <Button
           variant='contained'
           onClick={openCreateModal}
           startIcon={<AddIcon />}
         >new trick</Button>
+*/}
         <Modal
           open={modalOpen}
           onClose={() => setModalOpen(false)}
