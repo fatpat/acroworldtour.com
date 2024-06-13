@@ -16,7 +16,10 @@ const nextConfig = {
   },
   images: {
     domains: [
-      '**.acroworldtour.com',
+      'api.acroworldtour.com',
+      'proxy.acroworldtour.com',
+      'api.training.acroworldtour.com',
+      'proxy.training.acroworldtour.com',
       'civlcomps.org',
       '172.17.0.1',
       'localhost',
