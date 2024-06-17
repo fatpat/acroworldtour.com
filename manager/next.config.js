@@ -3,7 +3,6 @@ const path = require('path')
 const nextConfig = {
   output: 'export',
 
-  basePath: `${process.env.NEXT_PUBLIC_APP_BASE_PATH}`,
   trailingSlash: false,
   reactStrictMode: false,
   images: {
