@@ -10,7 +10,7 @@ const Logout = () => {
   useEffect(() => {
     localStorage.removeItem('token')
     success('Logout successfull')
-    window.location = `${process.env.NEXT_PUBLIC_APP_BASE_PATH}/login`
+    window.location = '/login'
   }, [])
 
   return 'logout'

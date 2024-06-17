@@ -73,7 +73,7 @@ const App = props => {
   }
 
   return (
-    <UserProvider user={user} loginUrl={`${process.env.NEXT_PUBLIC_APP_BASE_PATH}/login`} profileUrl="/auth/me" fetcher={authFetcher}>
+    <UserProvider user={user} loginUrl="/login" profileUrl="/auth/me" fetcher={authFetcher}>
         <Head>
           <title>{`${themeConfig.templateName} - 2022`}</title>
           <meta

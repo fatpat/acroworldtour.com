@@ -152,7 +152,7 @@ const UserDropdown = () => {
         </MenuItem>
         <Divider />
 */}
-        <MenuItem sx={{ py: 2 }} onClick={() => window.location = `${process.env.NEXT_PUBLIC_APP_BASE_PATH}/logout`}>
+        <MenuItem sx={{ py: 2 }} onClick={() => window.location = '/logout'}>
           <LogoutVariant sx={{ marginRight: 2, fontSize: '1.375rem', color: 'text.secondary' }} />
           Logout
         </MenuItem>

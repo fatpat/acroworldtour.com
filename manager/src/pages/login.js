@@ -39,7 +39,7 @@ const Login = () => {
   const loginSubmit = async (event) => {
     event.preventDefault()
     const form = new FormData(event.target)
-    var params = new URLSearchParams(data)
+    var params = new URLSearchParams('')
     params.append('grand__type', 'password')
     params.append('username', form.get('username'))
     params.append('password', form.get('password'))
@@ -59,7 +59,7 @@ const Login = () => {
 
     const queryParams = new URLSearchParams(window.location.search);
     const returnTo = queryParams.get('returnTo');
-    window.location = returnTo || `${process.env.NEXT_PUBLIC_APP_BASE_PATH}/`
+    window.location = returnTo || '/'
   }
 
   return (

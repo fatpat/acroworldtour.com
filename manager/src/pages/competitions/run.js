@@ -333,7 +333,7 @@ const RunPage = () => {
 
       <Grid item xs={12}>
         <Typography variant='h6'>
-          <Link href={`${process.env.NEXT_PUBLIC_APP_BASE_PATH}/competitions/show?cid=${comp.code}`}>{comp.name}</Link>
+          <Link href={`/competitions/show?cid=${comp.code}`}>{comp.name}</Link>
         </Typography>
         <Typography variant='h3' className="hideToPrint">Run #{parseInt(rid)+1}<RefreshIcon onClick={loadCompetition} /></Typography>
       </Grid>
