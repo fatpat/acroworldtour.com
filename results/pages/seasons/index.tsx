@@ -59,9 +59,12 @@ const Seasons = () => {
       a.name.localeCompare(b.name),
   );
 
+/* FIXME: wait for fix about AWT pilots status change over years
   const years = [
     ...new Set(seasons.map((season) => Number(season.year))).add(currentYear),
   ].sort((a, b) => b - a);
+*/
+  const years = [2024];
 
   const YearSelector = ({ years }: { years: number[] }) => {
     const handleYearChange = ({ target }: ChangeEvent<HTMLSelectElement>) => {
