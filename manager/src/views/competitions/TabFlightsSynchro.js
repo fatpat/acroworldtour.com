@@ -199,6 +199,7 @@ const TabFlightsSynchro = ({ comp, run, rid }) => {
   const addWarning = async(e, warning) => {
     if (!warning || warning === "") warning = prompt("Warning message")
     if (!warning || warning === "") return
+    if (!data.warnings) data.warnings = []
     data.warnings.push(warning)
     setData(data)
     simulateScore(data)
