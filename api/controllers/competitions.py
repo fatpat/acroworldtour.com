@@ -6,6 +6,7 @@ from fastapi import HTTPException
 from models.competitions import Competition, CompetitionResultsExport, CompetitionType, CompetitionExport, CompetitionResults
 from models.results import RunResultsExport
 from models.svg_data import SvgData
+from models.pilots import GenderEnum
 from controllers.utils import UtilsCtrl
 
 log = logging.getLogger(__name__)
@@ -198,6 +199,20 @@ class CompCtrl:
 
     @staticmethod
     def svg_overall(competition: CompetitionResults, result_type: str = 'overall'):
+
+        competition.results["awt"] = []
+        competition.results["awq"] = []
+        competition.results["women"] = []
+
+        for result in competition.results["overall"]:
+            if result.pilot.is_awt:
+                competition.results["awt"].append(result)
+            else:
+                competition.results["awq"].append(result)
+
+            if result.pilot.gender == GenderEnum.woman:
+                competition.results["women"].append(result)
+
         if result_type not in competition.results:
             raise HTTPException(status_code=404, detail=f"Result Type not found for this competition")
         results = []
@@ -217,9 +232,23 @@ class CompCtrl:
             competition = competition.runs_results[run-1]
         except:
             raise HTTPException(status_code=404, detail=f"Run not found for this competition")
-        results = []
+
+        competition.results["awt"] = []
+        competition.results["awq"] = []
+        competition.results["women"] = []
+
+        for result in competition.results["overall"]:
+            if result.pilot.is_awt:
+                competition.results["awt"].append(result)
+            else:
+                competition.results["awq"].append(result)
+
+            if result.pilot.gender == GenderEnum.woman:
+                competition.results["women"].append(result)
+
         if result_type not in competition.results:
             raise HTTPException(status_code=404, detail=f"Result Type not found for this run")
+        results = []
         competition.results[result_type].sort(key=lambda e: -e.final_marks.score)
         for rank, result in enumerate(competition.results[result_type]):
             results.append(SvgData(
