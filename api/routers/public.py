@@ -159,7 +159,7 @@ async def get_competition(id: str):
     response_description="export competition overall standing in SVG",
     response_class=Response,
 )
-async def export_competition_overall_standing_svg(id: str, result_type: str, download: bool = False):
+async def export_competition_overall_standing_svg(id: str, result_type: str, download: bool = False, animated: bool=False):
     cache = Cache()
     await gather(
         Pilot.getall(cache=cache),
@@ -169,7 +169,7 @@ async def export_competition_overall_standing_svg(id: str, result_type: str, dow
     )
     competition = await Competition.get(id, deleted=False, cache=cache)
     results = await competition.results()
-    svg = CompCtrl.svg_overall(competition=await results.export(cache=cache), result_type=result_type)
+    svg = CompCtrl.svg_overall(competition=await results.export(cache=cache), result_type=result_type, animated=animated)
 
     headers = {}
     if download:
@@ -192,7 +192,7 @@ async def export_competition_overall_standing_svg(id: str, result_type: str, dow
     response_description="export competition run standing in SVG",
     response_class=Response,
 )
-async def export_competition_overall_standing_svg(id: str, run: int, result_type: str='overall', download: bool = False):
+async def export_competition_overall_standing_svg(id: str, run: int, result_type: str='overall', download: bool = False, animated: bool = False):
     cache = Cache()
     await gather(
         Pilot.getall(cache=cache),
@@ -202,7 +202,7 @@ async def export_competition_overall_standing_svg(id: str, run: int, result_type
     )
     competition = await Competition.get(id, deleted=False, cache=cache)
     results = await competition.results()
-    svg = CompCtrl.svg_run(competition=await results.export(cache=cache), run=run, result_type=result_type)
+    svg = CompCtrl.svg_run(competition=await results.export(cache=cache), run=run, result_type=result_type, animated=animated)
 
     headers = {}
     if download:

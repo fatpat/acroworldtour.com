@@ -198,7 +198,7 @@ class CompCtrl:
         return ret
 
     @staticmethod
-    def svg_overall(competition: CompetitionResults, result_type: str = 'overall'):
+    def svg_overall(competition: CompetitionResults, result_type: str = 'overall', animated: bool = False):
 
         competition.results["awt"] = []
         competition.results["awq"] = []
@@ -224,10 +224,10 @@ class CompCtrl:
                 score="%.3f" % result.score
             ))
 
-        return UtilsCtrl.svg(results)
+        return UtilsCtrl.svg(results, animated=animated)
 
     @staticmethod
-    def svg_run(competition: CompetitionResults, run: int, result_type: str = 'overall'):
+    def svg_run(competition: CompetitionResults, run: int, result_type: str = 'overall', animated: bool = False):
         try:
             competition = competition.runs_results[run-1]
         except:
@@ -258,4 +258,4 @@ class CompCtrl:
                 score="%.3f" % result.final_marks.score
             ))
 
-        return UtilsCtrl.svg(results)
+        return UtilsCtrl.svg(results, animated=animated)
