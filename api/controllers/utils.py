@@ -52,7 +52,7 @@ class UtilsCtrl:
             await Pilot.delete(pilot)
 
     @staticmethod
-    def svg(datas: list[SvgData], animated: bool = False):
+    def svg(datas: list[SvgData], animated: int = -1):
         #datas = datas[0:15]
         max_lines = 10
         line_height = 40
@@ -68,7 +68,7 @@ class UtilsCtrl:
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="{width}" height="{height}" viewBox="0 0 {width} {height}" style="border-radius:20px; border-color: black; border-width: 1px;">
 ''')
         svg.append(f'  <g id="pilots">')
-        if nb_lines > max_lines and animated:
+        if nb_lines > max_lines and animated >= 0:
             if len(datas) % 2 == 0:
                 datas.append(None) # 2 empty lines when number of lines is even to ensure to keep the colors right
             datas.append(None) # empty line between last and first
@@ -77,22 +77,24 @@ class UtilsCtrl:
 
             translate_y = -line_height * (len(datas) - max_lines)
             duration = int(len(datas) - max_lines * 2/3)
-            svg.append(f'    <animateTransform attributeName="transform" type="translate" values="0 0; 0 {translate_y};" dur="{duration}s" repeatCount="indefinite" begin="3s" />')
+            svg.append(f'''
+    <animateTransform attributeName="transform" type="translate" values="0 0; 0 {translate_y};" dur="{duration}s" repeatCount="indefinite" begin="{animated}s" />
+''')
 
         for i, data in enumerate(datas):
             if data is None: # handle empty line
                 continue
 
-            svg.append(f'''      <rect x="0" y="{line_height * (1 + i)}" width="{width}" height="{line_height}" fill="{"#e5e5e5" if i%2==0 else "#f5f5f5"}" fill-opacity="0.4" />
-      <text x="20" y="{line_height * (1 + i + 0.6)}" font-size="{font_size}" font-family="Exo" font-style="italic" font-weight="700" fill="{text_color}">{data.rank}</text>''')
+            svg.append(f'''    <rect x="0" y="{line_height * (1 + i)}" width="{width}" height="{line_height}" fill="{"#e5e5e5" if i%2==0 else "#f5f5f5"}" fill-opacity="0.4" />
+    <text x="20" y="{line_height * (1 + i + 0.6)}" font-size="{font_size}" font-family="Exo" font-style="italic" font-weight="700" fill="{text_color}">{data.rank}</text>''')
             try:
                 country = countries.get(alpha_3=data.country).alpha_2.lower()
                 flag = base64.b64encode(open(f"flags/{country}.svg", "rb").read()).decode('ascii')
-                svg.append(f'      <image fill="#000000" x="60" y="{line_height * (1 + i + 0.6) - 15}" width="20"  href="data:image/svg+xml;base64,{flag}"/>')
+                svg.append(f'    <image fill="#000000" x="60" y="{line_height * (1 + i + 0.6) - 15}" width="20"  href="data:image/svg+xml;base64,{flag}"/>')
             except:
                 pass
-            svg.append(f'''      <text x="90" y="{line_height * (1 + i + 0.6)}" font-size="{font_size}" font-family="Exo" font-style="normal" font-weight="700" fill="#000000">{data.name}</text>
-      <text x="480" y="{line_height * (1 + i + 0.6)}" font-size="{font_size}" font-family="Exo" font-style="normal" font-weight="700" fill="#000000" text-anchor="end">{data.score:5.3f}</text>
+            svg.append(f'''    <text x="90" y="{line_height * (1 + i + 0.6)}" font-size="{font_size}" font-family="Exo" font-style="normal" font-weight="700" fill="#000000">{data.name}</text>
+    <text x="480" y="{line_height * (1 + i + 0.6)}" font-size="{font_size}" font-family="Exo" font-style="normal" font-weight="700" fill="#000000" text-anchor="end">{data.score:5.3f}</text>
 ''')
 
 
