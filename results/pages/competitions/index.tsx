@@ -82,7 +82,7 @@ const Competitions = () => {
     b.start_date.localeCompare(a.start_date),
   );
 
-/* FIXME: wait for fix about AWT pilots status change over years
+  /* FIXME: wait for fix about AWT pilots status change over years
   const years = [
     ...new Set(
       competitions.flatMap((comp) => [
@@ -92,7 +92,7 @@ const Competitions = () => {
     ).add(currentYear),
   ].sort((a, b) => b - a);
 */
-  const years = [2024]
+  const years = [2024];
   const YearSelector = ({ years }: { years: number[] }) => {
     const handleYearChange = ({ target }: ChangeEvent<HTMLSelectElement>) => {
       const year = parseInt(target.value);
