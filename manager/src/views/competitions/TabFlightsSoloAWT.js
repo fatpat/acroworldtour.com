@@ -28,6 +28,7 @@ import NativeSelect from '@mui/material/NativeSelect'
 import LinearProgress from '@mui/material/LinearProgress'
 import Checkbox from '@mui/material/Checkbox'
 import DeleteIcon from '@mui/icons-material/Delete'
+import WarningIcon from '@mui/icons-material/Warning'
 
 // ** local
 import EnhancedTable from 'src/views/tables/EnhancedTable'
@@ -118,7 +119,7 @@ const TabFlights = ({ comp, run, rid }) => {
       warnings: data.warnings,
     }
 
-    const [err, retData, headers] = await APIRequest(`/competitions/${comp.code}/runs/${rid}/flights/${pilot.civlid}/new?save=${false}`, {
+    const [err, retData, headers] = await APIRequest(`/competitions/${comp.code}/runs/${rid}/flights/${pilot.civlid}/new?save=${false}&mark_type=awt`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(body),
@@ -184,7 +185,7 @@ const TabFlights = ({ comp, run, rid }) => {
       warnings: data.warnings,
     }
 
-    const [err, retData, headers] = await APIRequest(`/competitions/${comp.code}/runs/${rid}/flights/${pilot.civlid}/new?published=${publish}&save=${true}`, {
+    const [err, retData, headers] = await APIRequest(`/competitions/${comp.code}/runs/${rid}/flights/${pilot.civlid}/new?published=${publish}&save=${true}&mark_type=awt`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(body),
@@ -395,7 +396,7 @@ const TabFlights = ({ comp, run, rid }) => {
         <Grid item xs={6}>
           {/* scores */}
           <Grid container>
-            <Typography variant="h4">Scores</Typography>
+            <Typography variant="h4">Scores ({result.mark_type != "awt" && <WarningIcon />}{result.mark_type ?? "old"})</Typography>
             <Table>
               <TableBody>
                 <TableRow>

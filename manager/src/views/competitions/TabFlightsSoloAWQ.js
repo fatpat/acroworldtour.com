@@ -28,6 +28,7 @@ import NativeSelect from '@mui/material/NativeSelect'
 import LinearProgress from '@mui/material/LinearProgress'
 import Checkbox from '@mui/material/Checkbox'
 import DeleteIcon from '@mui/icons-material/Delete'
+import WarningIcon from '@mui/icons-material/Warning'
 
 // ** local
 import EnhancedTable from 'src/views/tables/EnhancedTable'
@@ -61,7 +62,8 @@ const TabFlights = ({ comp, run, rid }) => {
 
   const loadPilot = async(i) => {
     if (i<0 || i>=run.pilots.length) return
-    let pilot = run.pilots[i]
+    const currentFlight = i
+    let pilot = run.pilots[currentFlight]
     setLoading(`Loading flight for ${pilot.name}`)
 
     const [err, retData, headers, status] = await APIRequest(`/competitions/${comp.code}/runs/${rid}/flights/${pilot.civlid}`, {
@@ -95,7 +97,7 @@ const TabFlights = ({ comp, run, rid }) => {
     setResult(result)
     setResultsOK(resultsOK)
     setPilot(pilot)
-    setCurrentFlight(i)
+    setCurrentFlight(currentFlight)
     setPublished(resultsOK ? data.published : false)
     setLoading(null)
   }
@@ -117,7 +119,7 @@ const TabFlights = ({ comp, run, rid }) => {
       warnings: data.warnings,
     }
 
-    const [err, retData, headers] = await APIRequest(`/competitions/${comp.code}/runs/${rid}/flights/${pilot.civlid}/new?save=${false}`, {
+    const [err, retData, headers] = await APIRequest(`/competitions/${comp.code}/runs/${rid}/flights/${pilot.civlid}/new?save=${false}&mark_type=awq`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(body),
@@ -129,7 +131,6 @@ const TabFlights = ({ comp, run, rid }) => {
           notes: [err],
         })
         setResultsOK(false)
-        warning(err)
         return
     }
     setResult(retData)
@@ -155,6 +156,25 @@ const TabFlights = ({ comp, run, rid }) => {
     setData(data)
     simulateScore(data)
   }
+  
+  const setMarkTechnicalDetail = (judge, index, mark) => {
+    // ensure corresponding trick exists
+    if (index >= data.tricks.length) return;
+    if (!data.tricks[index]) return;
+
+    if (isNaN(mark)) mark = undefined
+
+    // is there already the corresponding judge registered ?
+    m = data.marks.find((m) => m.judge == judge._id)
+    if (!m) {
+      var m = {judge: judge._id}
+      data.marks.push(m)
+    }
+    m['technical_per_trick'] ||= Array(data.tricks.length).fill(undefined)
+    m['technical_per_trick'][index] = mark
+    setData(data)
+    simulateScore(data)
+  }
 
   const saveResults = async(publish, next) => {
 
@@ -165,7 +185,7 @@ const TabFlights = ({ comp, run, rid }) => {
       warnings: data.warnings,
     }
 
-    const [err, retData, headers] = await APIRequest(`/competitions/${comp.code}/runs/${rid}/flights/${pilot.civlid}/new?published=${publish}&save=${true}`, {
+    const [err, retData, headers] = await APIRequest(`/competitions/${comp.code}/runs/${rid}/flights/${pilot.civlid}/new?published=${publish}&save=${true}&mark_type=awq`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(body),
@@ -234,12 +254,6 @@ const TabFlights = ({ comp, run, rid }) => {
     )
   }
 
-  let has_technical_marks_per_trick = false
-  data.marks.forEach((m) => {
-    console.log(m)
-    if (m.technical_per_trick != null) has_technical_marks_per_trick = true
-  })
-
   return (
     <CardContent>
 { pilot &&
@@ -255,7 +269,7 @@ const TabFlights = ({ comp, run, rid }) => {
                       options={run.pilots}
                       value={pilot}
                       getOptionLabel={(p) => `${p.name} (${p.civlid})`}
-                      renderInput={(params) => <TextField {...params} name="pilot" label="Pilot" />}
+                      renderInput={(params) => <TextField {...params} inputProps={{ ...params.inputProps, tabIndex: 1 }} name="pilot" label="Pilot" />}
                       onChange={(e, v) => {
                         if (!v) return
                         for(const [i,p] of run.pilots.entries()){
@@ -274,104 +288,115 @@ const TabFlights = ({ comp, run, rid }) => {
         </Grid>
       </Grid>
 }
-{ has_technical_marks_per_trick && <Typography variant="h5">The run has already been marked with technichal mark per trick. Please use the "Flights AWQ or AWT" tab instead.</Typography> }
-{ has_technical_marks_per_trick || <>
       <Grid container spacing={2}>
         &nbsp;
       </Grid>
       <Grid container spacing={2}>
-        {/* 1st column / maneuvers*/}
-        <Grid item xs={6}>
-            <Grid item xs={12}>
-              <Typography variant="h5">Maneuvers</Typography>
-            </Grid>
+        <TableContainer>
+          <Table sx={{ minWidth: 750 }}>
+            <TableHead>
+              <TableRow>
+                <TableCell style={{width: '60%'}}>Trick</TableCell>
+{ run.judges.map((judge) => {
+                return(<TableCell key={judge.name} align="center">{judge.name}</TableCell>)
+})}
+              </TableRow>
+            </TableHead>
+            <TableBody>
 { [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20].map(i =>{
             var trick = null
             if (data && data.tricks && data.tricks[i]) trick = data.tricks[i]
             return(
-            <Grid item xs={12} key={i}>
-                    <Autocomplete
-                      id="autocomplete-trick-{i}"
-                      key={i}
-                      options={uniqueTricks}
-                      groupBy={t => t.base_trick}
-                      getOptionLabel={(p) => `${p.name} (${p.acronym}) (${p.technical_coefficient})`}
-                      renderInput={(params) => <TextField {...params} name="trick" />}
-                      value={trick}
-                      isOptionEqualToValue={(a,b) => a.acronym == b.acronym}
-                      onChange={(e, v) => {
-                          data.tricks[i] = v
-                          simulateScore(data)
-                          setData(data)
-                      }}
-                    />
-            </Grid>
-)})}
-        </Grid>
-        {/* 2nd column */}
-        <Grid item xs={6}>
-          {/* marks */}
-          <Grid item xs={12}>
-            <Typography variant="h5">Marks</Typography>
-    <Box sx={{ width: '100%' }}>
-      <Paper sx={{ width: '100%', mb: 2 }}>
-        <TableContainer>
-          <Table sx={{ minWidth: 750 }}>
-    <TableHead>
-      <TableRow>
-          <TableCell>
-            Judge
-          </TableCell>
-          <TableCell>
-            Technical
-          </TableCell>
-          <TableCell>
-            Choreography
-          </TableCell>
-          <TableCell>
-            Landing
-          </TableCell>
-      </TableRow>
-    </TableHead>
-            <TableBody>
-{ run.judges.map((j) => {
-    var technical = null
-    var choreography = null
-    var landing = null
-    for (let m in data.marks) {
-      m = data.marks[m]
-      if (m.judge == j._id) {
-        technical = m.technical
-        choreography = m.choreography
-        landing = m.landing
-        break
-      }
-    }
-    return (
-              <TableRow key={j._id}>
+              <TableRow key={i}>
                 <TableCell>
-                  <Typography>{ j.name }</Typography>
+                  <Autocomplete
+                    id="autocomplete-trick-{i}"
+                    key={i}
+                    options={uniqueTricks}
+                    groupBy={t => t.base_trick}
+                    getOptionLabel={(p) => `${p.name} (${p.acronym}) (${p.technical_coefficient})`}
+                    renderInput={(params) => <TextField {...params} inputProps={{ ...params.inputProps, tabIndex: 100 + i }} name="trick" />}
+                    value={trick}
+                    isOptionEqualToValue={(a,b) => a.acronym == b.acronym}
+                    onChange={(e, v) => {
+                        data.tricks[i] = v
+                        simulateScore(data)
+                        setData(data)
+                    }}
+                  />
                 </TableCell>
-                <TableCell>
-                  <InputMark onChange={value => {setMark('technical', j, value)}} value={technical} />
-                </TableCell>
-                <TableCell>
-                  <InputMark onChange={value => {setMark('choreography', j, value)}} value={choreography} />
-                </TableCell>
-                <TableCell>
-                  <InputMark onChange={value => {setMark('landing', j, value)}} value={landing} />
-                </TableCell>
-            </TableRow>
-)})}
+  { run.judges.map((judge, judge_i) => {
+                let technical = undefined
+                let mark = data.marks.find((e) => e.judge == judge._id)
+                if (mark && Array.isArray(mark['technical_per_trick']) && i < mark['technical_per_trick'].length) {
+                  technical = mark['technical_per_trick'][i]
+                }
+                return(
+                  <TableCell key={judge.name} >
+                    <InputMark onChange={value => {setMarkTechnicalDetail(judge, i, value)}} value={technical} tabindex={1000 * (judge_i + 1) + i} />
+                  </TableCell>
+                )
+  })}
+              </TableRow>
+            )
+})}
             </TableBody>
           </Table>
         </TableContainer>
-      </Paper>
-    </Box>
-          </Grid>
+      </Grid>
+      <Grid container spacing={2}>
+        &nbsp;
+      </Grid>
+      <Grid container spacing={2}>
+        {/* 1st column /  judges marks */}
+        <Grid item xs={6}>
+          <Typography variant="h4">Marks</Typography>
+          <Box>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Judge</TableCell>
+                      <TableCell>Choreography</TableCell>
+                      <TableCell>Landing</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+{ run.judges.map((j, judge_i) => {
+                  let technical = null
+                  let choreography = null
+                  let landing = null
+                  for (let m in data.marks) {
+                    m = data.marks[m]
+                    if (m.judge == j._id) {
+                      technical = m.technical
+                      choreography = m.choreography
+                      landing = m.landing
+                      console.log(m.judge, technical, choreography, landing)
+                      break
+                    }
+                  }
+                  return (
+                    <TableRow key={j.name}>
+                      <TableCell>
+                        <Typography>{ j.name }</Typography>
+                      </TableCell>
+                      <TableCell>
+                        <InputMark onChange={value => {setMark('choreography', j, value)}} value={choreography} tabindex={ 5000 +judge_i*10 } />
+                      </TableCell>
+                      <TableCell>
+                        <InputMark onChange={value => {setMark('landing', j, value)}} value={landing} tabindex={ 5000 + judge_i*10 + 1 } />
+                      </TableCell>
+                    </TableRow>
+)})}
+                  </TableBody>
+                </Table>
+          </Box>
+        </Grid>
+        {/* 2nd column */}
+        <Grid item xs={6}>
           {/* scores */}
-          <Grid item xs={12}>
-            <Typography variant="h5">Scores</Typography>
+          <Grid container>
+            <Typography variant="h4">Scores ({result.mark_type != "awq" && <WarningIcon />}{result.mark_type ?? "old"})</Typography>
             <Table>
               <TableBody>
                 <TableRow>
@@ -430,7 +455,7 @@ const TabFlights = ({ comp, run, rid }) => {
   { result.warnings && result.warnings.length > 0 && (<>
                     <Typography>warnings:</Typography>
   <ul>
-  { result.warnings.map((warning, i) => <li key={i}>{warning} <DeleteIcon onClick={() => removeWarning(i)} /></li>)}
+  { result.warnings.map((warning, i) => <li>{warning} <DeleteIcon onClick={() => removeWarning(i)} /></li>)}
   </ul>
   </>)}
                   </TableCell>
@@ -441,23 +466,22 @@ const TabFlights = ({ comp, run, rid }) => {
           {/* actions */}
           <Grid container>
               <Grid item xs={4}>
-                <Button variant="contained" disabled={!resultsOK} onClick={e => saveResults(false, 0)}>Save</Button>
-                <Button variant="contained" disabled={!resultsOK} onClick={e => saveResults(false, 1)}>Save & Next</Button>
+                <Button variant="contained" disabled={!resultsOK} onClick={e => saveResults(false, 0)} tabindex="10000">Save</Button>
+                <Button variant="contained" disabled={!resultsOK} onClick={e => saveResults(false, 1)} tabindex="10001">Save & Next</Button>
               </Grid>
               <Grid item xs={4}>
-                <Button variant="contained" disabled={!resultsOK} onClick={e => saveResults(true, 0)}>Save & Publish</Button>
-                <Button variant="contained" disabled={!resultsOK} onClick={e => saveResults(true, 1)}>Save & Publish & Next</Button>
+                <Button variant="contained" disabled={!resultsOK} onClick={e => saveResults(true, 0)} tabindex="10002">Save & Publish</Button>
+                <Button variant="contained" disabled={!resultsOK} onClick={e => saveResults(true, 1)} tabindex="10003">Save & Publish & Next</Button>
               </Grid>
               <Grid item xs={4}>
-                <Button onClick={didNotStart}>Did not start</Button>
-                <Button onClick={addWarning}>Add warning</Button>
-                <Button onClick={e => addWarning(e, "flight over the public")}>flight over the public</Button>
-                <Button onClick={deleteRun}>Delete</Button>
+                <Button onClick={didNotStart} tabindex="10004">Did not start</Button>
+                <Button onClick={addWarning} tabindex="10005">Add warning</Button>
+                <Button onClick={e => addWarning(e, "flight over the public")} tabindex="10006">flight over the public</Button>
+                <Button onClick={deleteRun} tabindex="10007">Delete</Button>
               </Grid>
           </Grid>
         </Grid>
       </Grid>
-</>}
     </CardContent>
   )
 }

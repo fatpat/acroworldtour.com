@@ -94,7 +94,8 @@ import TabConfig from 'src/views/competitions/TabConfig'
 import TabRunResults from 'src/views/competitions/TabRunResults'
 import TabRepeatableTricks from 'src/views/competitions/TabRepeatableTricks'
 import TabFlightsSolo from 'src/views/competitions/TabFlightsSolo'
-import TabFlightsSoloDetails from 'src/views/competitions/TabFlightsSoloDetails'
+import TabFlightsSoloAWQ from 'src/views/competitions/TabFlightsSoloAWQ'
+import TabFlightsSoloAWT from 'src/views/competitions/TabFlightsSoloAWT'
 import TabFlightsSynchro from 'src/views/competitions/TabFlightsSynchro'
 import SortablePilotStartingOrder from 'src/views/runs/SortablePilotStartingOrder'
 
@@ -419,17 +420,28 @@ const RunPage = () => {
                 label={
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     <ParaglidingIcon />
-                    <TabName>Flights</TabName>
+                    <TabName>Flights (old)</TabName>
                   </Box>
                 }
               />
 { comp.type == "solo" &&
               <Tab
-                value='flights_details'
+                value='flights_awq'
                 label={
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     <FunctionsIcon />
-                    <TabName>Flights Details</TabName>
+                    <TabName>Flights (AWQ)</TabName>
+                  </Box>
+                }
+              />
+}
+{ comp.type == "solo" &&
+              <Tab
+                value='flights_awt'
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <FunctionsIcon />
+                    <TabName>Flights (AWT)</TabName>
                   </Box>
                 }
               />
@@ -474,8 +486,13 @@ const RunPage = () => {
 { comp.type == "synchro" && <TabFlightsSynchro comp={comp} run={run} rid={rid}/>}
             </TabPanel>
 { comp.type == "solo" &&
-            <TabPanel sx={{ p: 0 }} value='flights_details'>
-              <TabFlightsSoloDetails comp={comp} run={run} rid={rid}/>
+            <TabPanel sx={{ p: 0 }} value='flights_awq'>
+              <TabFlightsSoloAWQ comp={comp} run={run} rid={rid}/>
+            </TabPanel>
+}
+{ comp.type == "solo" &&
+            <TabPanel sx={{ p: 0 }} value='flights_awt'>
+              <TabFlightsSoloAWT comp={comp} run={run} rid={rid}/>
             </TabPanel>
 }
             <TabPanel sx={{ p: 0 }} value='starting_order'>
