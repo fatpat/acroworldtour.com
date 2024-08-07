@@ -2,6 +2,7 @@ import logging
 import core.logging
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 import time
 
 from redis import asyncio as aioredis
@@ -17,6 +18,21 @@ from controllers.competitions import CompCtrl
 from controllers.seasons import SeasonCtrl
 
 log = logging.getLogger(__name__)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    if "test" in settings.DATABASE:
+        log.debug(f"Using a testing database")
+        await clean_database()
+
+    JudgeCtrl.start()
+    PilotCtrl.start()
+    TeamCtrl.start()
+    TrickCtrl.start()
+    CompCtrl.start()
+    SeasonCtrl.start()
+    yield
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description=settings.PROJECT_DESCRIPTION,
@@ -29,7 +45,8 @@ app = FastAPI(
     license_info= {
         "name": "WTFPL 2",
         "url": "http://www.wtfpl.net/txt/copying/"
-    }
+    },
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -40,20 +57,6 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=['Content-Disposition'],
 )
-
-
-@app.on_event("startup")
-async def startup_event():
-    if "test" in settings.DATABASE:
-        log.debug(f"Using a testing database")
-        await clean_database()
-
-    JudgeCtrl.start()
-    PilotCtrl.start()
-    TeamCtrl.start()
-    TrickCtrl.start()
-    CompCtrl.start()
-    SeasonCtrl.start()
 
 # add a X-Process-Time header
 @app.middleware("http")
