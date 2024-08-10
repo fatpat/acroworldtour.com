@@ -79,6 +79,7 @@ class FinalMarkExport(BaseModel):
     warnings: list[str]
     malus: float 
     notes: List[str] 
+    mark_type: Optional[str] = None
 
     _technicity = validator('technicity', allow_reuse=True)(float3digits)
     _bonus_percentage = validator('bonus_percentage', allow_reuse=True)(float3digits)
@@ -106,6 +107,7 @@ class FinalMark(BaseModel):
     warnings: list[str]
     malus: float = Field(..., ge=0)
     notes: List[str] = []
+    mark_type: Optional[str] = None
 
     _technicity = validator('technicity', allow_reuse=True)(float3digits)
     _bonus_percentage = validator('bonus_percentage', allow_reuse=True)(float3digits)
@@ -152,4 +154,5 @@ class FinalMark(BaseModel):
             warnings = self.warnings,
             malus = self.malus,
             notes = self.notes,
+            mark_type = self.mark_type,
         )

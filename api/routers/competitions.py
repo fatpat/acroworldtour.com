@@ -357,10 +357,10 @@ async def flight_delete(id: str, i: int, pilot_team_id):
     response_model=FinalMarkExport,
     dependencies=[Depends(auth)],
 )
-async def flight_save(id: str, i: int, pilot_team_id, save: bool, published:bool = False, flight: FlightNew = Body(...)):
+async def flight_save(id: str, i: int, pilot_team_id, save: bool, published:bool = False, mark_type:str = None, flight: FlightNew = Body(...)):
     cache = Cache()
     comp = await Competition.get(id, cache=cache)
-    mark = await comp.flight_save(run_i=i, id=pilot_team_id, flight=flight, save=save, published=published, cache=cache)
+    mark = await comp.flight_save(run_i=i, id=pilot_team_id, flight=flight, save=save, published=published, mark_type=mark_type, cache=cache)
     return await mark.export(cache=cache)
 
 @competitions.get(

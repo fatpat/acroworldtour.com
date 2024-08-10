@@ -49,6 +49,7 @@ class UniqueTrick(BaseModel):
     solo_awt: Optional[bool] = None
     types: List[str] = []
     technical_mark: Optional[float] = None
+    technical_marks: Optional[dict[str, float]] = None
     model_config = ConfigDict(json_schema_extra={
         "example": {
             "name": "twisted left Misty to Helicopter reverse",

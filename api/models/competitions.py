@@ -47,7 +47,7 @@ class CompetitionExport(BaseModel):
     location: str
     published: bool
     type: CompetitionType
-    pilots: List[Pilot] 
+    pilots: List[Pilot]
     teams: List[TeamExport]
     judges: List[Judge]
     repeatable_tricks: List[Trick]
@@ -662,7 +662,7 @@ class Competition(CompetitionNew):
                 warnings = flight.warnings,
         )
 
-    async def flight_save(self, run_i: int, id, flight: FlightNew, save: bool=False, published: bool=False, saveToDB : bool = True, cache:Cache = None) -> FinalMark:
+    async def flight_save(self, run_i: int, id, flight: FlightNew, save: bool=False, published: bool=False, saveToDB : bool = True, mark_type:str = None, cache:Cache = None) -> FinalMark:
         run = await self.run_get(run_i)
 
         is_awt = False
@@ -683,7 +683,7 @@ class Competition(CompetitionNew):
                 raise HTTPException(400, f"Team #{id} does not participate in this comp ({self.name})")
 
         new_flight = await self.flight_convert(id, flight)
-        mark = await self.calculate_score(flight=new_flight, run_i=run_i, is_awt_pilot=is_awt, cache=cache)
+        mark = await self.calculate_score(flight=new_flight, run_i=run_i, is_awt_pilot=is_awt, mark_type=mark_type, cache=cache)
         if not save:
             return mark
 
@@ -832,7 +832,7 @@ class Competition(CompetitionNew):
                 women_results.sort(key=lambda e: e.score if hasattr(e, 'score') else e.final_marks.score)
                 results["women"] = list(women_results[::-1])
 
-    
+
     #
     #
     #   Static methods
@@ -908,7 +908,7 @@ class Competition(CompetitionNew):
         return bool([s for s in self.seasons if re.match('^awq-', s)])
 
 
-    async def calculate_score(self, flight: Flight, run_i: int = -1, is_awt_pilot=False, cache:Cache = None) -> FinalMark:
+    async def calculate_score(self, flight: Flight, run_i: int = -1, is_awt_pilot=False, mark_type:str = None, cache:Cache = None) -> FinalMark:
         mark = FinalMark(
             judges_mark = JudgeMark(
                 judge = "",
@@ -927,6 +927,7 @@ class Competition(CompetitionNew):
             score=0,
             warnings=flight.warnings,
             malus=0,
+            mark_type=mark_type,
         )
 
         # for lukas :-)
@@ -947,25 +948,38 @@ class Competition(CompetitionNew):
         else:
             config = run.config
 
+        judges = {}
+        for m in flight.marks:
+            if m.judge not in judges:
+                judge = await Judge.get(m.judge, cache=cache)
+                if judge is None:
+                    raise HTTPException(400, f"judge '{m.judge}' not found")
+                judges[m.judge] = judge
 
-        # if a technical mark has been set for each trick individually
-        # let's calculate now the average of the technical mark for each trick
-        # and associate the resulted technical mark to the trick directly
-        for i, trick in enumerate(flight.tricks):
-            technicals = None
-            for m in flight.marks:
-                if m.technical_per_trick is not None:
-                    if i < len(m.technical_per_trick):
-                        if m.technical_per_trick[i] is not None:
-                            judge = await Judge.get(m.judge, cache=cache)
-                            if judge is None:
-                                raise HTTPException(400, f"judge '{m.judge}' not found")
-                            weight = dict(config.judge_weights)[judge.level.value]
-                            if technicals is None:
-                                technicals = []
-                            technicals.append((m.technical_per_trick[i], weight))
-            if technicals is not None:
-                trick.technical_mark = weight_average(technicals)
+        if mark_type in ["awq", "awt"]:
+            # associate technical mark to each trick
+            for i, trick in enumerate(flight.tricks):
+                trick.technical_mark = None
+                trick.technical_marks = {}
+                for m in flight.marks:
+                    if m.technical_per_trick is None:
+                        continue
+                    if i >= len(m.technical_per_trick):
+                        continue
+                    trick.technical_marks[m.judge] = m.technical_per_trick[i]
+
+                if len(trick.technical_marks) == 0:
+                    raise HTTPException(400, f"no technical mark for trick {trick.acronym}")
+
+                # calculate technical average for this trick
+                if mark_type == "awt" and len(trick.technical_marks) > 0:
+                    technicals = []
+                    for j, m in trick.technical_marks.items():
+                        judge = judges[j]
+                        weight = dict(config.judge_weights)[judge.level.value]
+                        technicals.append((m, weight))
+                    trick.technical_mark = weight_average(technicals)
+
 
         #
         # check if a trick is not perform in a allowed position (not the first or not as a last x maneuvers)
@@ -1039,7 +1053,6 @@ class Competition(CompetitionNew):
         choreographies = []
         landings = []
         synchros = []
-        technical_marks_per_trick = False
         for m in flight.marks:
             judge = await Judge.get(m.judge)
             if judge is None:
@@ -1054,11 +1067,18 @@ class Competition(CompetitionNew):
             if self.type == CompetitionType.synchro:
                 if m.synchro is not None:
                     synchros.append((m.synchro, weight))
-            if m.technical_per_trick is not None:
-                technical_marks_per_trick = True
 
-        if ((len(technicals) == 0 and not technical_marks_per_trick) or len(choreographies) == 0 or len(landings) == 0 or (self.type == CompetitionType.synchro and  len(synchros) == 0)):
-            raise HTTPException(400, f"not enough marks")
+        if len(technicals) == 0 and mark_type not in ["awq", "awt"]:
+            raise HTTPException(400, f"not enough technical marks")
+
+        if len(choreographies) == 0:
+            raise HTTPException(400, f"not enough choreography marks")
+
+        if len(landings) == 0:
+            raise HTTPException(400, f"not enough landing marks")
+
+        if self.type == CompetitionType.synchro and len(synchros) == 0:
+            raise HTTPException(400, f"not enough synchro marks")
 
         mark.judges_mark.technical = weight_average(technicals)
         mark.judges_mark.choreography = weight_average(choreographies)
@@ -1109,11 +1129,10 @@ class Competition(CompetitionNew):
         # ignore tricks
         #
         tricks = [] # the list of tricks that will be used to calculate the scores
+        technical_marks_per_judges = {}
         n_bonuses = {}
         limits_per_type = {}
-        i = 0
-        for trick in flight.tricks:
-            i += 1
+        for i, trick in enumerate(flight.tricks):
             ignoring = False
 
             #
@@ -1258,17 +1277,36 @@ class Competition(CompetitionNew):
         # handle the technical mark per trick (as per §6.6.1)
         # technical marks = average of marks of each trick
         #
-        technical_marks_per_trick = None
-        for trick in tricks:
-            if trick.technical_mark is not None:
-                if technical_marks_per_trick is None:
-                    technical_marks_per_trick = []
-                technical_marks_per_trick.append(trick.technical_mark)
+        if mark_type == "awt":
+            technical_marks = []
+            for trick in tricks:
+                if trick.technical_mark is None:
+                    raise HTTPException(400, f"not enough technicals marks for trick {trick.acronym}")
+                technical_marks.append(trick.technical_mark)
 
-        if technical_marks_per_trick is not None:
-            if len(technical_marks_per_trick) != len(tricks):
+            if len(technical_marks) != len(tricks):
                 raise HTTPException(400, f"not enough technicals marks")
-            mark.judges_mark.technical = average(technical_marks_per_trick)
+            mark.judges_mark.technical = average(technical_marks)
+
+        elif mark_type == "awq":
+            technical_marks_per_judge = {}
+            for trick in tricks:
+                if len(trick.technical_marks) == 0:
+                    raise HTTPException(400, f"not enough technicals marks for trick {trick.acronym}")
+                for j, m in trick.technical_marks.items():
+                    if j not in technical_marks_per_judge:
+                        technical_marks_per_judge[j] = []
+                    technical_marks_per_judge[j].append(m)
+
+            technical_marks = []
+            for j, marks in technical_marks_per_judge.items():
+                _mark = average(marks)
+                judge = judges[j]
+                weight = dict(config.judge_weights)[judge.level.value]
+                technical_marks.append((_mark, weight))
+
+            mark.judges_mark.technical = weight_average(technical_marks)
+
         #
         # endof technical mark per trick
         #
@@ -1304,7 +1342,7 @@ class Competition(CompetitionNew):
                 mark.notes.append(f"Initial total bonus of {bonuses_total}% has been lowered by technical mark to {round(bonuses_details_total,3)}%")
                 bonuses_total = bonuses_details_total
 
-        # calculate the technicity of the run as stated in 7B 
+        # calculate the technicity of the run as stated in 7B
         # §"6.3.1.1 Technicity in Solo"
         # The technicity is a difficulty coefficient calculated as the average
         # of the 3 highest coefficient manoeuvres flown during the run.
@@ -1321,7 +1359,7 @@ class Competition(CompetitionNew):
         mark_percentage = dict(config.mark_percentages)[self.type.value]
         mark.technical = mark.technicity * mark.judges_mark.technical * mark_percentage.technical / 100
         if len(tricks) > 0:
-            mark.choreography = mark.judges_mark.choreography * mark_percentage.choreography / 100 
+            mark.choreography = mark.judges_mark.choreography * mark_percentage.choreography / 100
         mark.landing = mark.judges_mark.landing * mark_percentage.landing / 100
 
         if self.type == CompetitionType.synchro:
