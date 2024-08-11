@@ -3,6 +3,8 @@ import json
 import re
 import unicodedata
 import base64
+import io
+import zipfile
 from http import HTTPStatus
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Response, Body
 from typing import List, Any
@@ -309,7 +311,7 @@ async def simulate(t: CompetitionType, flights: List[FlightNew] = Body(...), res
     "/live/overlay/pilot/{civlid}/run/{run}",
     response_class=Response,
 )
-async def simulate(civlid:int, run:int, download:bool = False):
+async def live_overlay_pilot(civlid:int, run:int, download:bool = False):
     pilot, svg = await LiveCtrl.pilot_overlay(civlid, run)
     pilot = ''.join(c for c in unicodedata.normalize('NFD', pilot) if unicodedata.category(c) != 'Mn')
     pilot = re.sub(r'[^\x00-\x7f]',r'', pilot)
@@ -329,7 +331,7 @@ async def simulate(civlid:int, run:int, download:bool = False):
     "/live/overlay/team/{team}/run/{run}",
     response_class=Response,
 )
-async def simulate(team:str, run:int, download:bool = False):
+async def live_overlay_team(team:str, run:int, download:bool = False):
     team, svg = await LiveCtrl.team_overlay(team, run)
     team = ''.join(c for c in unicodedata.normalize('NFD', team) if unicodedata.category(c) != 'Mn')
     team = re.sub(r'[^\x00-\x7f]',r'', team)
@@ -342,6 +344,45 @@ async def simulate(team:str, run:int, download:bool = False):
 
     return Response(content=svg, media_type="image/svg+xml", headers=headers)
 
+#
+# get all templates for a competition
+#
+@public.get(
+    "/live/overlay/competition/{id}",
+    response_class=Response,
+)
+async def live_overlay_competition(id:str,n_run:int = 10):
+
+    cache = Cache()
+    competition = await Competition.get(id, deleted=False, cache=cache)
+
+    files=[]
+    if competition.type == CompetitionType.solo:
+        for civlid in competition.pilots:
+            for run in range(1, n_run+1):
+                pilot, svg = await LiveCtrl.pilot_overlay(civlid, run)
+                pilot = ''.join(c for c in unicodedata.normalize('NFD', pilot) if unicodedata.category(c) != 'Mn')
+                pilot = re.sub(r'[^\x00-\x7f]',r'', pilot)
+                filename = f"live.overlay.pilot.run{run}.pilot.{pilot}.svg"
+                files.append((filename, svg))
+    else:
+        for t in competition.teams:
+            for run in range(1, n_run+1):
+                team, svg = await LiveCtrl.team_overlay(t, run)
+                team = ''.join(c for c in unicodedata.normalize('NFD', team) if unicodedata.category(c) != 'Mn')
+                team = re.sub(r'[^\x00-\x7f]',r'', team)
+                filename = f"live.overlay.team.run{run}.team.{team}.svg"
+                files.append((filename, svg))
+
+
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
+        for filename, svg in files:
+            zip_file.writestr(filename, svg)
+
+    headers = {}
+    headers["Content-Disposition"] = f"attachment; filename=\"live.overlay.competition.{id}.zip\""
+    return Response(content=zip_buffer.getvalue(), media_type="application/zip", headers=headers)
 #
 # GET files
 #
