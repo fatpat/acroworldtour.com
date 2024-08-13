@@ -6,7 +6,10 @@ import json
 def average(list: List[float]) -> float:
     if len(list) == 0:
         return 0.0
-    return mean(list)
+    try:
+        return mean(list)
+    except:
+        return 0.0
 
 def weight_average(list: List[tuple]) -> float:
     if len(list) == 0:

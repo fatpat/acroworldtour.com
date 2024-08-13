@@ -22,6 +22,7 @@
     {"name": "twisted","bonus": 3.5},
     {"name": "twisted exit","bonus": 4.5},
     {"name": "devil twist","bonus": 2},
+    {"name": "flip","bonus": 5},
     {"name": "hardcore entry","bonus": 5},
     {"name": "cab slide","bonus": 2}
   ],
