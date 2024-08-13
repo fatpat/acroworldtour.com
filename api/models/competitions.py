@@ -1373,7 +1373,9 @@ class Competition(CompetitionNew):
         # 0.5 per warnings
         # §7.2.2 in 7B
         if len(mark.warnings) > 0:
-            mark.score -= ((len(mark.warnings) + previous_warnings)* config.warning)
+            penalty = (len(mark.warnings) + previous_warnings) * config.warning
+            mark.notes.append(f"final mark has been lowered by {penalty} because of warning")
+            mark.score -= penalty
         if mark.score < 0:
             mark.score = 0
 
