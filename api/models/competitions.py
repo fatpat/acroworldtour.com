@@ -1372,7 +1372,8 @@ class Competition(CompetitionNew):
         # remove warning deduction points
         # 0.5 per warnings
         # §7.2.2 in 7B
-        mark.score -= ((len(mark.warnings) - previous_warnings)* config.warning)
+        if len(mark.warnings) > 0:
+            mark.score -= ((len(mark.warnings) + previous_warnings)* config.warning)
         if mark.score < 0:
             mark.score = 0
 
