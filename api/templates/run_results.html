@@ -26,6 +26,7 @@ Last update: {{ results.last_update.strftime('%Y-%m-%d %H:%M') }} UTC
             <th>Sponsors</th>
             <th>Warnings</th>
             <th>Judges Marks</th>
+            <th>Technicity</th>
             <th>Bonus</th>
             <th>Score</th>
         </tr>
@@ -96,6 +97,7 @@ Last update: {{ results.last_update.strftime('%Y-%m-%d %H:%M') }} UTC
 {% endif %}
                 </table>
             </td>
+            <td>{{ "%.3f" | format(res.final_marks.technicity) }}</td>
             <td>{{ "%.1f%%" | format(res.final_marks.bonus_percentage) }}</td>
             <th>{{ "%.3f" | format(res.final_marks.score) }}</th>
         </tr>
