@@ -1,12 +1,22 @@
 {% extends "base.html" %}
-{% set final = "" if results.final else " intermediate" %}
-{% block title %}{{comp.name}} run {{rid+1}}{{ final }} results{{ limit }}{% endblock %}
+{% set final = " final" if results.final else " intermediate" %}
+{% block comp_title %}{{comp.name}}{% endblock %}
+{% block result_title %}run {{rid+1}}{{ final }} results{% endblock %}
 {% block content %}
 {% for result_type, _results in results.results.items() %}
-    <h1>{{ comp.name }} run {{rid+1}}{{ final }} {{ result_type}} results{{ limit }}</h1>
+{% if seasons[result_type] %}
+{% set season = seasons[result_type].name %}
+{% else %}
+{% set season = result_type | capitalize %}
+{% endif %}
+{% if loop.index > 1 %}
+    <div class="pagebreak"> </div>
+{% endif %}
+    <h3>{{ season }}</h3>
     <table class="main">
         <tr class="borderBottom">
             <th>Rank</th>
+            <th>Country</th>
             <th>{{ "Pilot" if comp.type == "solo" else "Team" }}</th>
             <th>Sponsors</th>
             <th>Warnings</th>
@@ -17,6 +27,18 @@
 {% for res in _results %}
         <tr class="borderBottom results {{ class }} {{ loop.cycle('odd', 'even') }}">
             <th>{{ loop.index }}</th>
+            <td>
+{% if comp.type == "solo" %}
+                {{ res.pilot.country | upper }}
+{% else %}
+                &nbsp;
+                <ul class="nobullet">
+                {% for pilot in res.team.pilots %}
+                    <li>{{ pilot.country | upper }}</li>
+                {% endfor %}
+                </ul>
+{% endif %}
+            </td>
 {% if comp.type == "solo" %}
             <td>
                 <a href="https://results.acroworldtour.com/pilots/{{ res.pilot.civlid }}/{{ res.pilot.name }}" target="_blank">{{ res.pilot.name }}</a>
@@ -24,7 +46,7 @@
 {% else %}
             <td>
                 {{ res.team.name }}
-                <ul class="nobullets">
+                <ul>
 {% for pilot in res.team.pilots %}
                     <li>{{ pilot.name }}</li>
 {% endfor %}
@@ -36,7 +58,7 @@
                 <ul class="nobullets" style="padding: 0;">
 {%     for sponsor in res.pilot.sponsors %}
                     <li>
-{%       if sponsor.link and sponsor.link | length > 0 %}
+{%       if sponsor.link and sponsor.link | string | length > 0 %}
                         <a href="{{ sponsor.link }}" target="_blank">{{ sponsor.name }}</a>
 {%       else %}
                         {{ sponsor.name }}
@@ -48,7 +70,12 @@
             </td>
             <td>
 {%   if res.final_marks.warnings | length > 0 %}
-                <p>warnings: {{ res.final_marks.warnings | length }}</p>
+                <ul class="nobullets">
+{%      for warning in res.final_marks.warnings %}
+                    <li>{{ warning }}</li>
+{%      endfor %}
+                <ul class="nobullets">
+                </ul>
 {%   endif %}
 {%   if res.final_marks.malus > 0 %}
                 <p>Malus: {{ "%d%%" | format(res.final_marks.malus) }}</p>

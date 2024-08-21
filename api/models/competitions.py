@@ -588,19 +588,32 @@ class Competition(CompetitionNew):
     async def run_results(self, run_i: int, published_only: bool = True) -> RunResults:
         run = await self.run_get(run_i)
 
-        flights = []
         all_published=True
+        overall = {}
         for flight in run.flights:
             if not flight.published:
                 all_published=False
                 if published_only:
                   continue
-            flights.append(flight)
+            if self.type == CompetitionType.solo:
+                overall[flight.pilot] = flight
+            else:
+                overall[flight.team] = flight
 
-        flights.sort(key=lambda e: e.final_marks.score)
+        overall_results = list(overall.values())
+        overall_results.sort(key=lambda e: e.final_marks.score)
+
+        results = {}
+        results["overall"] = overall_results[::-1]
+
+        pilots = []
+        if self.type == CompetitionType.solo:
+            pilots = await Pilot.getall(list(overall.keys()))
+
+        self.create_sub_results(results, pilots)
 
         return RunResults(
-            results = {"overall": flights},
+            results = results,
             type = self.type,
             final = (run.state == RunState.closed) and all_published
         )
@@ -828,7 +841,7 @@ class Competition(CompetitionNew):
         if self.type == CompetitionType.solo:
             women_pilots = list(filter(lambda p: p.gender == 'woman', pilots))
             women_results = list(filter(lambda r: next((p for p in women_pilots if p.civlid == r.pilot), None) is not None, results['overall']))
-            if len(women_pilots) > 3:
+            if len(women_pilots) >= 3:
                 women_results.sort(key=lambda e: e.score if hasattr(e, 'score') else e.final_marks.score)
                 results["women"] = list(women_results[::-1])
 

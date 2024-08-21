@@ -1,7 +1,8 @@
 {% extends "base.html" %}
-{% set final = "" if results.final else " intermediate" %}
+{% set final = "final" if results.final else " intermediate" %}
 {% set limit = "" if limit_run == -1 else " after run " ~ (limit_run+1) | string %}
-{% block title %}{{comp.name}} {{ final }} results{{ limit }}{% endblock %}
+{% block comp_title %}{{comp.name}}{% endblock %}
+{% block result_title %}{{ final }} results{{ limit }}{% endblock %}
 {% block content %}
 {% for result_type, _results in results.results.items() %}
 {% if seasons[result_type] %}
@@ -12,11 +13,11 @@
 {% if loop.index > 1 %}
     <div class="pagebreak"> </div>
 {% endif %}
-    <h1>{{ comp.name }}</h1>
-    <h2>{{ season }}{{ final }} results{{ limit }}</h2>
+    <h3>{{ season }}</h3>
     <table class="main">
         <tr class="noborder">
             <th rowspan="2" width="8%" class="borderBottom">Rank</th>
+            <th rowspan="2" width="8%" class="borderBottom">Country</th>
             <th rowspan="2" class="borderBottom">{{ "Pilot" if comp.type == "solo" else "Team" }}</th>
 {% if comp.type == "solo" %}
             <th rowspan="2" class="borderBottom">Sponsors</th>
@@ -33,14 +34,26 @@
         {% set parity = "odd" if loop.index % 2 == 1 else "even" %}
         <tr class="results {{ class }} {{ parity }}">
             <th rowspan="{{ res.result_per_run | length}}" class="borderBottom">{{ loop.index }}</th>
+            <td rowspan="{{ res.result_per_run | length}}" class="borderBottom">
+            {% if comp.type == "solo" %}
+                {{ res.pilot.country | upper }}
+            {% else %}
+                &nbsp;
+                <ul class="nobullet">
+                {% for pilot in res.team.pilots %}
+                    <li>{{ pilot.country | upper }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+            </td>
         {% if comp.type == "solo" %}
             <td rowspan="{{ res.result_per_run | length}}" class="borderBottom">
-                <a href="https://results.acroworldtour.com/pilots/{{ res.pilot.civlid }}/{{ res.pilot.name }}" target="_blank">{{ res.pilot.name }} ({{ res.pilot.country | upper }})</a>
+                <a href="https://results.acroworldtour.com/pilots/{{ res.pilot.civlid }}/{{ res.pilot.name }}" target="_blank">{{ res.pilot.name }}</a>
             </td>
         {% else %}
             <td rowspan="{{ res.result_per_run | length}}" class="borderBottom">
                 {{ res.team.name }}
-                <ul class="nobullet">
+                <ul>
             {% for pilot in res.team.pilots %}
                     <li>{{ pilot.name }}</li>
             {% endfor %}
@@ -53,7 +66,7 @@
                 <ul class="nobullets" style="padding: 0;">
 {%     for sponsor in res.pilot.sponsors %}
                     <li>
-{%       if sponsor.link and sponsor.link | length > 0 %}
+{%       if sponsor.link and sponsor.link | string | length > 0 %}
                         <a href="{{ sponsor.link }}" target="_blank">{{ sponsor.name }}</a>
 {%       else %}
                         {{ sponsor.name }}

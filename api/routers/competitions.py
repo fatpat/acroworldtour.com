@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from datetime import datetime
 from http import HTTPStatus
 from fastapi import APIRouter, Depends, Body, HTTPException, Request, BackgroundTasks
@@ -33,7 +34,7 @@ templates = Jinja2Templates(directory="templates")
     response_model=List[CompetitionPublicExport],
     dependencies=[Depends(auth)]
 )
-async def list():
+async def list_competitions():
     comps = []
     for comp in await Competition.getall():
         comp = await comp.export_public()
@@ -387,6 +388,18 @@ async def get_export_results(request: Request, id: str, bg_tasks: BackgroundTask
     cache = Cache()
     comp = await Competition.get(id, cache=cache)
     res = await comp.results(limit = limit_run)
+
+    # skip overall if it's a tour competition
+    if any(re.search(r"^aw[tqs]", s) for s in comp.seasons):
+        del res.results['overall']
+
+    # if it's a World Acro Championship, no seasons in results
+    if any(re.search(r"^wac-", s) for s in comp.seasons):
+        comp.seasons = []
+        for key in list(res.results.keys()).copy():
+            if key not in ["overall", "women"]:
+                del(res.results[key])
+
     res = await res.export(cache=cache)
     seasons = {}
     for season in comp.seasons:
@@ -430,13 +443,30 @@ async def run_get_results(request: Request, id: str, i: int, bg_tasks: Backgroun
     cache = Cache()
     comp = await Competition.get(id, cache=cache)
     res = await comp.run_results(run_i=i)
+
+    # skip overall if it's a tour competition
+    if any(re.search(r"^aw[tqs]", s) for s in comp.seasons):
+        del res.results['overall']
+
+    # if it's a World Acro Championship, no seasons in results
+    if any(re.search(r"^wac-", s) for s in comp.seasons):
+        comp.seasons = []
+        for key in list(res.results.keys()).copy():
+            if key not in ["overall", "women"]:
+                del(res.results[key])
+
     res = await res.export(cache=cache)
+
+    seasons = {}
+    for season in comp.seasons:
+        seasons[season] = await Season.get(season)
+
     if filetype == "xls":
         file = CompCtrl.run_to_xlsx(res, comp.type)
     elif filetype == "html":
         for result_type in res.results:
             res.results[result_type].sort(key=lambda e: -e.final_marks.score)
-        return templates.TemplateResponse("run_results.html", {"request": request, "results":res, "comp":comp, "rid": i})
+        return templates.TemplateResponse("run_results.html", {"request": request, "results":res, "comp":comp, "rid": i, "seasons": seasons})
     else:
         raise HTTPException(status_code=400, detail="wrong file type, must be xls or html")
     bg_tasks.add_task(os.remove, file)
