@@ -101,11 +101,11 @@ const CompetitionDetails = ({ competition }: Props) => {
 
                 <h3 className="capitalize">Overall Results{compText}</h3>
                 {Object.keys(globalResults).map((resultsType) => {
+                  if (/^wac-/.test(resultsType)) return;
                   if (
                     resultsType == "overall" &&
-                    Object.keys(globalResults).length > 1
-                  )
-                    return;
+                    Object.keys(globalResults).some((e) => /^aw[tqs]-/.test(e))
+                  ) return;
                   return (
                     <Fragment key={`overall-${resultsType}`}>
                       <button
@@ -119,9 +119,7 @@ const CompetitionDetails = ({ competition }: Props) => {
                           changeResults(`overall-${resultsType}`)
                         }
                       >
-                        <h4 className="capitalize">
-                          {resultsType === "overall" ? "open" : resultsType}
-                        </h4>
+                        <h4 className="capitalize">{resultsType}</h4>
                         <ChevronIcon
                           className={classNames(
                             "ml-2 h-3 w-auto",
@@ -161,11 +159,11 @@ const CompetitionDetails = ({ competition }: Props) => {
                         {runText}
                       </h3>
                       {Object.keys(run.results).map((resultsType) => {
+                        if (/^wac-/.test(resultsType)) return;
                         if (
                           resultsType == "overall" &&
-                          Object.keys(run.results).length > 1
-                        )
-                          return;
+                          Object.keys(globalResults).some((e) => /^aw[tqs]-/.test(e))
+                        ) return;
                         return (
                           <Fragment key={`run${runIndex}-${resultsType}`}>
                             <button
@@ -181,11 +179,7 @@ const CompetitionDetails = ({ competition }: Props) => {
                                 changeResults(`run${runIndex}-${resultsType}`)
                               }
                             >
-                              <h4 className="capitalize">
-                                {resultsType === "overall"
-                                  ? "open"
-                                  : resultsType}
-                              </h4>
+                              <h4 className="capitalize">{resultsType}</h4>
                               <ChevronIcon
                                 className={classNames(
                                   "ml-2 h-3 w-auto",
