@@ -42,6 +42,7 @@ class RunExport(BaseModel):
     # TODO[pydantic]: The following keys were removed: `json_encoders`.
     # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
     model_config = ConfigDict(json_encoders={ObjectId: str})
+    last_update: Optional[datetime] = None
 
 class Run(BaseModel):
     state: RunState
@@ -52,6 +53,7 @@ class Run(BaseModel):
     config: CompetitionConfig
     flights: List[Flight]
     repetitions_reset_policy: RunRepetitionsResetPolicy = Field(RunRepetitionsResetPolicy.none)
+    last_update: Optional[datetime] = None
     model_config = ConfigDict(json_schema_extra={
         "example": {
             "state": "init",
@@ -99,4 +101,5 @@ class Run(BaseModel):
             config=self.config,
             flights=flights,
             repetitions_reset_policy=self.repetitions_reset_policy,
+            last_update=self.last_update,
         )

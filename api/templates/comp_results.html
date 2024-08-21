@@ -4,6 +4,11 @@
 {% block comp_title %}{{comp.name}}{% endblock %}
 {% block result_title %}{{ final }} results{{ limit }}{% endblock %}
 {% block content %}
+{% if comp.last_update %}
+<p style="text-align: right; margin-right: 20px;">
+Last update: {{ comp.last_update.strftime('%Y-%m-%d %H:%M') }} UTC
+</p>
+{% endif %}
 {% for result_type, _results in results.results.items() %}
 {% if seasons[result_type] %}
 {% set season = seasons[result_type].name %}

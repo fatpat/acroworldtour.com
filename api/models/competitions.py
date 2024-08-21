@@ -58,6 +58,7 @@ class CompetitionExport(BaseModel):
     logo: Optional[AnyHttpUrl | str] = None
     website: Optional[AnyHttpUrl] = None
     seasons: List[str]
+    last_update: Optional[datetime] = None
     # TODO[pydantic]: The following keys were removed: `json_encoders`.
     # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
     model_config = ConfigDict(json_encoders={ObjectId: str})
@@ -81,6 +82,7 @@ class CompetitionPublicExport(BaseModel):
     logo: Optional[AnyHttpUrl | str] = None
     website: Optional[AnyHttpUrl] = None
     seasons: List[str]
+    last_update: Optional[datetime] = None
     # TODO[pydantic]: The following keys were removed: `json_encoders`.
     # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
     model_config = ConfigDict(json_encoders={ObjectId: str})
@@ -103,6 +105,7 @@ class CompetitionNew(BaseModel):
     logo: Optional[str] = None
     website: Optional[AnyHttpUrl] = None
     seasons: List[str] = Field([])
+    last_update: Optional[datetime] = None
 
 
     async def create(self):
@@ -278,6 +281,7 @@ class Competition(CompetitionNew):
             logo = self.logo_url(),
             website = self.website,
             seasons = self.seasons,
+            last_update = self.last_update,
         )
 
     async def export_public(self, cache:Cache = None) -> CompetitionPublicExport:
@@ -302,6 +306,7 @@ class Competition(CompetitionNew):
             logo = self.logo_url(),
             website = self.website,
             seasons = self.seasons,
+            last_update = self.last_update,
         )
 
     async def export_public_with_results(self, cache:Cache = None) -> CompetitionPublicExportWithResults:
@@ -337,6 +342,7 @@ class Competition(CompetitionNew):
             logo = comp.logo,
             website = comp.website,
             seasons = comp.seasons,
+            last_update = self.last_update,
         )
 
 #    async def sort_pilots(self):
@@ -615,7 +621,8 @@ class Competition(CompetitionNew):
         return RunResults(
             results = results,
             type = self.type,
-            final = (run.state == RunState.closed) and all_published
+            final = (run.state == RunState.closed) and all_published,
+            last_update = run.last_update,
         )
 
     async def flight_get(self, run_i: int, pilot_or_team) -> Flight:
@@ -702,15 +709,19 @@ class Competition(CompetitionNew):
 
         new_flight.final_marks = mark
         new_flight.published = published
+        new_flight.last_update = datetime.now()
+        self.last_update = new_flight.last_update
 
         for i, f in enumerate(self.runs[run_i].flights):
             if (self.type == CompetitionType.solo and f.pilot == new_flight.pilot) or (self.type == CompetitionType.synchro and f.team == new_flight.team):
                 self.runs[run_i].flights[i] = new_flight
+                self.runs[run_i].last_update = new_flight.last_update
                 if saveToDB:
                     await self.save()
                 return mark
 
         self.runs[run_i].flights.append(new_flight)
+        self.runs[run_i].last_update = new_flight.last_update
         if saveToDB:
             await self.save()
         return mark

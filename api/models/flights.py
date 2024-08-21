@@ -26,6 +26,7 @@ class FlightExport(BaseModel):
     final_marks: Optional[FinalMarkExport] = None
     published: bool = False
     warnings: List[str]
+    last_update: Optional[datetime] = None
 
 class Flight(BaseModel):
     pilot: int
@@ -36,6 +37,7 @@ class Flight(BaseModel):
     final_marks: Optional[FinalMark] = None
     published: bool = False
     warnings: List[str]
+    last_update: Optional[datetime] = None
     model_config = ConfigDict(json_schema_extra={
         "example": {
             "pilot": 1234,
@@ -74,6 +76,7 @@ class Flight(BaseModel):
             final_marks = await self.final_marks.export(cache=cache),
             published = self.published,
             warnings = self.warnings,
+            last_update = self.last_update,
         )
 
 class FlightNew(BaseModel):

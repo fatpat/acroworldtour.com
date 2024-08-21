@@ -24,11 +24,13 @@ class RunResultsExport(BaseModel):
     # TODO[pydantic]: The following keys were removed: `json_encoders`.
     # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
     model_config = ConfigDict(json_encoders={ObjectId: str})
+    last_update: Optional[datetime] = None
 
 class RunResults(BaseModel):
     final: bool
     type: str
     results: dict[str, List[Flight]]
+    last_update: Optional[datetime] = None
     model_config = ConfigDict(json_schema_extra={
         "example": {
             "final": False,
@@ -47,6 +49,7 @@ class RunResults(BaseModel):
             final = self.final,
             type = self.type,
             results = results,
+            last_update = self.last_update,
         )
 
 class RunResultSummary(BaseModel):
