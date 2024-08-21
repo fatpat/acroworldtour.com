@@ -109,7 +109,7 @@ const CompetitionDetails = ({ competition }: Props) => {
                   return (
                     <Fragment key={`overall-${resultsType}`}>
                       <button
-                        title="Click to open/close ${resultsType} results"
+                        title={`Click to open/close ${resultsType} results`}
                         className={classNames(
                           "col-span-full flex cursor-pointer items-baseline justify-center",
                         )}
