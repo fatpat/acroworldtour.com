@@ -430,16 +430,20 @@ const TabFlightsSynchro = ({ comp, run, rid }) => {
                   <TableCell>
                     <Typography variant="h5">Final Score: {result.score ?? ""}</Typography>
                   </TableCell>
+                  <TableCell colSpan={2}>
+  { result.notes && result.notes.length > 0 && (<>
+                    <Typography>notes:</Typography>
+  <ul>
+  { result.notes.map((note, i) => <li key={i}>{note}</li>)}
+  </ul>
+  </>)}
   { result.warnings && result.warnings.length > 0 && (<>
-                  <TableCell>
-                  </TableCell>
-                  <TableCell>
                     <Typography>warnings:</Typography>
   <ul>
   { result.warnings.map((warning, i) => <li>{warning} <DeleteIcon onClick={() => removeWarning(i)} /></li>)}
   </ul>
-                  </TableCell>
   </>)}
+                  </TableCell>
                 </TableRow>
               </TableBody>
             </Table>
