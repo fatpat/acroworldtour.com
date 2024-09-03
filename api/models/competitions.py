@@ -1117,7 +1117,10 @@ class Competition(CompetitionNew):
         #
         # tricks direction odd-even check
         #
-        if len(flight.tricks) > 1: # this does not make sense with only 1 trick
+        # judging marks must always put 1 for left/right odd-even choreo point
+        # and for solo only, lower the choreo by 1 point of left/right is not even
+        #
+        if self.type != CompetitionType.synchro and len(flight.tricks) > 1: # this does not make sense with only 1 trick
             directions = []
             available_directions = list(map(lambda  x:x['name'], settings.tricks.available_directions))
 
