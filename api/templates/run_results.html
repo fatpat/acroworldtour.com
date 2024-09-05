@@ -23,7 +23,6 @@ Last update: {{ results.last_update.strftime('%Y-%m-%d %H:%M') }} UTC
             <th>Rank</th>
             <th>Country</th>
             <th>{{ "Pilot" if comp.type == "solo" else "Team" }}</th>
-            <th>Sponsors</th>
             <th>Warnings</th>
             <th>Judges Marks</th>
             <th>Technicity</th>
@@ -59,21 +58,6 @@ Last update: {{ results.last_update.strftime('%Y-%m-%d %H:%M') }} UTC
                 </ul>
             </td>
 {% endif %}
-            <td>
-{%   if res.pilot.sponsors and res.pilot.sponsors | length > 0 %}
-                <ul class="nobullets" style="padding: 0;">
-{%     for sponsor in res.pilot.sponsors %}
-                    <li>
-{%       if sponsor.link and sponsor.link | string | length > 0 %}
-                        <a href="{{ sponsor.link }}" target="_blank">{{ sponsor.name }}</a>
-{%       else %}
-                        {{ sponsor.name }}
-{%       endif %}
-                    </li>
-{%     endfor %}
-                </ul>
-{%   endif %}
-            </td>
             <td>
 {%   if res.final_marks.warnings | length > 0 %}
                 <ul class="nobullets">
