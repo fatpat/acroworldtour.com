@@ -58,6 +58,7 @@ import Table from '@mui/material/Table'
 import TableContainer from '@mui/material/TableContainer'
 import List from "@mui/material/List";
 import FunctionsIcon from '@mui/icons-material/Functions';
+import ArticleIcon from '@mui/icons-material/Article'
 
 // ** others
 import Moment from 'react-moment'
@@ -498,6 +499,9 @@ const RunPage = () => {
             <TabPanel sx={{ p: 0 }} value='starting_order'>
               <TableContainer>
                 <CardContent>
+      <Box sx={{display: 'flex',justifyContent: 'right'}}>
+        <Button href={new URL(`/competitions/${comp.code}/starting_order/${rid}/export`, process.env.NEXT_PUBLIC_API_URL).toString()} startIcon={<ArticleIcon />} target="_blank" rel="noreferrer">PDF Starting Orders</Button>
+      </Box>
                   <Box sx={{display: 'flex',justifyContent: 'center'}}>
                     <Typography variant="h4">
                       Run {parseInt(rid)+1} Starting Order
