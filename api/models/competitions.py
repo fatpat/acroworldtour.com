@@ -1153,6 +1153,81 @@ class Competition(CompetitionNew):
 
 
         #
+        # search for repetitions
+        # §6.5.1 from 7B
+        # each trick can be performed left/right and reversed without malus
+        # during the same competition
+        # search in the previous runs
+        # and in the current un from the previous tricks flown
+        #
+
+        repeatable_tricks=[]
+        for trick in self.repeatable_tricks:
+            trick = await Trick.get(trick)
+            if trick is not None:
+                repeatable_tricks.append(trick.name)
+
+        first_run_to_check_repetitions = 0
+        if self.type == CompetitionType.solo:
+            for i in range(len(self.runs)):
+                if self.runs[i].repetitions_reset_policy == RunRepetitionsResetPolicy.none:
+                    continue
+                if self.runs[i].repetitions_reset_policy == RunRepetitionsResetPolicy.all:
+                    first_run_to_check_repetitions = i
+                    continue
+                if self.runs[i].repetitions_reset_policy == RunRepetitionsResetPolicy.awt and is_awt_pilot and self.is_awt_season():
+                    first_run_to_check_repetitions = i
+                    continue
+                if self.runs[i].repetitions_reset_policy == RunRepetitionsResetPolicy.awq and not is_awt_pilot and self.is_awq_season():
+                    first_run_to_check_repetitions = i
+                    continue
+
+        if len(self.runs) > 0 and run_i > 0:
+            trick_i = 0
+            for trick in flight.tricks: # for each trick detect repetition before
+                trick_i += 1
+                if trick.base_trick in repeatable_tricks:
+                    continue
+                # loop over all previous runs
+                for i in range(len(self.runs)):
+                    if i < first_run_to_check_repetitions:
+                        continue
+                    if i >= run_i:
+                        break
+                    r = self.runs[i]
+                    broke = False
+                    for f in r.flights:
+                        if (self.type == CompetitionType.solo and flight.pilot != f.pilot) or (self.type == CompetitionType.synchro and flight.team != f.team):
+                            continue
+                        for t in f.tricks:
+                            if t.base_trick == trick.base_trick and t.uniqueness == trick.uniqueness:
+                                mark.malus += config.malus_repetition
+                                mark.notes.append(f"trick number #{trick_i} ({trick.name}) has already been performed in a previous run. Adding a {config.malus_repetition}% malus.")
+                                broke = True
+                                break
+                    if broke:
+                        break
+
+        trick_i = 0
+        for trick in flight.tricks: # for each trick detect repetition before
+            trick_i += 1
+            if trick.base_trick in repeatable_tricks:
+                continue
+            t_i = 0
+            for t in flight.tricks:
+                t_i += 1
+                if t_i >= trick_i:
+                    break
+                if t.base_trick == trick.base_trick and t.uniqueness == trick.uniqueness:
+                    mark.malus += config.malus_repetition
+                    mark.notes.append(f"trick number #{trick_i} ({trick.name}) has already been performed in this run. Adding a {config.malus_repetition}% malus.")
+                    break
+        #
+        # endof search for repetitions
+        #
+
+
+        #
         # ignore tricks
         #
         tricks = [] # the list of tricks that will be used to calculate the scores
@@ -1221,81 +1296,6 @@ class Competition(CompetitionNew):
                 tricks.append(trick)
         #
         # endof ignore tricks
-        #
-
-
-        #
-        # search for repetitions
-        # §6.5.1 from 7B
-        # each trick can be performed left/right and reversed without malus
-        # during the same competition
-        # search in the previous runs
-        # and in the current un from the previous tricks flown
-        #
-
-        repeatable_tricks=[]
-        for trick in self.repeatable_tricks:
-            trick = await Trick.get(trick)
-            if trick is not None:
-                repeatable_tricks.append(trick.name)
-
-        first_run_to_check_repetitions = 0
-        if self.type == CompetitionType.solo:
-            for i in range(len(self.runs)):
-                if self.runs[i].repetitions_reset_policy == RunRepetitionsResetPolicy.none:
-                    continue
-                if self.runs[i].repetitions_reset_policy == RunRepetitionsResetPolicy.all:
-                    first_run_to_check_repetitions = i
-                    continue
-                if self.runs[i].repetitions_reset_policy == RunRepetitionsResetPolicy.awt and is_awt_pilot and self.is_awt_season():
-                    first_run_to_check_repetitions = i
-                    continue
-                if self.runs[i].repetitions_reset_policy == RunRepetitionsResetPolicy.awq and not is_awt_pilot and self.is_awq_season():
-                    first_run_to_check_repetitions = i
-                    continue
-
-        if len(self.runs) > 0 and run_i > 0:
-            trick_i = 0
-            for trick in tricks: # for each trick detect repetition before
-                trick_i += 1
-                if trick.base_trick in repeatable_tricks:
-                    continue
-                # loop over all previous runs
-                for i in range(len(self.runs)):
-                    if i < first_run_to_check_repetitions:
-                        continue
-                    if i >= run_i:
-                        break
-                    r = self.runs[i]
-                    broke = False
-                    for f in r.flights:
-                        if (self.type == CompetitionType.solo and flight.pilot != f.pilot) or (self.type == CompetitionType.synchro and flight.team != f.team):
-                            continue
-                        for t in f.tricks:
-                            if t.base_trick == trick.base_trick and t.uniqueness == trick.uniqueness:
-                                mark.malus += config.malus_repetition
-                                mark.notes.append(f"trick number #{trick_i} ({trick.name}) has already been performed in a previous run. Adding a {config.malus_repetition}% malus.")
-                                broke = True
-                                break
-                    if broke:
-                        break
-
-        trick_i = 0
-        for trick in tricks: # for each trick detect repetition before
-            trick_i += 1
-            if trick.base_trick in repeatable_tricks:
-                continue
-            t_i = 0
-            for t in tricks:
-                t_i += 1
-                if t_i >= trick_i:
-                    break
-                if t.base_trick == trick.base_trick and t.uniqueness == trick.uniqueness:
-                    mark.malus += config.malus_repetition
-                    mark.notes.append(f"trick number #{trick_i} ({trick.name}) has already been performed in this run. Adding a {config.malus_repetition}% malus.")
-                    break
-        #
-        # endof search for repetitions
         #
 
 
