@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block comp_title %}{{comp.name}}{% endblock %}
+{% block result_title %}run {{rid+1}}{% endblock %}
+{% block content %}
+<p style="text-align: right; margin-right: 20px;">
+Last update: {{ last_update.strftime('%Y-%m-%d %H:%M') }} UTC
+</p>
+{% for season, orders in starting_order.items() %}
+{% if loop.index > 1 %}
+    <div class="pagebreak"> </div>
+{% endif %}
+    <h3>{{ season }} Starting Order</h3>
+    <table class="main">
+        <tr class="borderBottom">
+            <th>Starting position</th>
+            <th>Country</th>
+            <th>{{ "Pilot" if comp.type == "solo" else "Team" }}</th>
+        </tr>
+{% for order in orders %}
+        <tr class="borderBottom results {{ class }} {{ loop.cycle('odd', 'even') }}">
+            <th>{{ loop.index }}</th>
+            <td>
+{% if comp.type == "solo" %}
+                {{ order.country | upper }}
+{% else %}
+                &nbsp;
+                <ul class="nobullet">
+                {% for pilot in order.pilots %}
+                    <li>{{ pilot.country | upper }}</li>
+                {% endfor %}
+                </ul>
+{% endif %}
+            </td>
+{% if comp.type == "solo" %}
+            <td>
+                {{ order.name }}
+            </td>
+{% else %}
+            <td>
+                {{ order.name }}
+                <ul>
+{% for pilot in order.pilots %}
+                    <li>{{ pilot.name }}</li>
+{% endfor %}
+                </ul>
+            </td>
+{% endif %}
+            <td>
+        </tr>
+{% endfor %}
+    </table>
+{% endfor %}
+{% endblock %}

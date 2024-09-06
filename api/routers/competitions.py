@@ -10,12 +10,13 @@ from fastapi.templating import Jinja2Templates
 
 from core.security import auth
 
-from models.competitions import Competition, CompetitionExport, CompetitionNew, CompetitionState, CompetitionPublicExport
+from models.competitions import Competition, CompetitionExport, CompetitionNew, CompetitionState, CompetitionPublicExport, CompetitionType
 from models.competition_configs import CompetitionConfig
 from models.runs import Run, RunExport, RunRepetitionsResetPolicy
 from models.marks import FinalMark, FinalMarkExport
 from models.flights import Flight, FlightNew, FlightExport
 from models.results import RunResults, CompetitionResults, CompetitionResultsExport, RunResultsExport
+from models.pilots import Pilot
 from models.cache import Cache
 from models.seasons import Season
 from controllers.competitions import CompCtrl
@@ -472,3 +473,49 @@ async def run_get_results(request: Request, id: str, i: int, bg_tasks: Backgroun
     bg_tasks.add_task(os.remove, file)
     filename=f"{id}-run{i+1}-results-{datetime.now().strftime('%Y-%m-%d-%H%M%S')}.xlsx"
     return FileResponse(path=file, filename=filename, background=bg_tasks)
+
+
+@competitions.get(
+    "/{id}/starting_order/{i}/export",
+    status_code=200,
+    response_description="export the starting order of a specific run of competition",
+    response_class=FileResponse,
+#    dependencies=[Depends(auth)],
+)
+async def export_starting_order(request: Request, id: str, i: int, bg_tasks: BackgroundTasks, filetype: str = "xls"):
+    cache = Cache()
+    comp = await Competition.get(id, cache=cache)
+    run = comp.runs[i]
+    starting_order = {}
+
+
+    if comp.type == CompetitionType.synchro:
+        starting_order["overall"] = run.teams
+    else:
+        if any(re.search(r"^aw[tqs]", s) for s in comp.seasons):
+            for season in comp.seasons:
+                if season.startswith("awt"):
+                    season = await Season.get(season)
+                    starting_order[season.name] = []
+                    for pilot in run.pilots:
+                        pilot = await Pilot.get(pilot)
+                        if pilot.is_awt:
+                            starting_order[season.name].append(pilot)
+
+                elif season.startswith("awq"):
+                    season = await Season.get(season)
+                    starting_order[season.name] = []
+                    for pilot in run.pilots:
+                        pilot = await Pilot.get(pilot)
+                        if not pilot.is_awt:
+                            starting_order[season.name].append(pilot)
+        else:
+            starting_order["overall"] = comp.pilots
+
+    return templates.TemplateResponse("run_starting_order.html", {
+        "request": request,
+        "starting_order": starting_order,
+        "comp":comp,
+        "rid": i,
+        "last_update": datetime.now(),
+    })
