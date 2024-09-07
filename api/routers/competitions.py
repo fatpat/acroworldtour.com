@@ -391,7 +391,7 @@ async def get_export_results(request: Request, id: str, bg_tasks: BackgroundTask
     res = await comp.results(limit = limit_run)
 
     # skip overall if it's a tour competition
-    if any(re.search(r"^aw[tqs]", s) for s in comp.seasons):
+    if filetype != "xls" and any(re.search(r"^aw[tqs]", s) for s in comp.seasons):
         del res.results['overall']
 
     # if it's a World Acro Championship, no seasons in results
@@ -446,7 +446,7 @@ async def run_get_results(request: Request, id: str, i: int, bg_tasks: Backgroun
     res = await comp.run_results(run_i=i)
 
     # skip overall if it's a tour competition
-    if any(re.search(r"^aw[tqs]", s) for s in comp.seasons):
+    if filetype != "xls" and any(re.search(r"^aw[tqs]", s) for s in comp.seasons):
         del res.results['overall']
 
     # if it's a World Acro Championship, no seasons in results
