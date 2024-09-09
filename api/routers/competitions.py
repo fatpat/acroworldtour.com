@@ -494,9 +494,9 @@ async def export_starting_order(request: Request, id: str, i: int, bg_tasks: Bac
         starting_order["overall"] = []
         for team in run.teams:
             team = await Team.get(team)
-            for i, pilot in enumerate(team.pilots):
+            for j, pilot in enumerate(team.pilots):
                 pilot = await Pilot.get(pilot)
-                team.pilots[i] = pilot
+                team.pilots[j] = pilot
             starting_order["overall"].append(team)
     else:
         if any(re.search(r"^aw[tqs]", s) for s in comp.seasons):
@@ -522,6 +522,7 @@ async def export_starting_order(request: Request, id: str, i: int, bg_tasks: Bac
                 pilot = await Pilot.get(pilot)
                 starting_order["overall"].append(pilot)
 
+    log.warning(i)
     return templates.TemplateResponse("run_starting_order.html", {
         "request": request,
         "starting_order": starting_order,
