@@ -19,6 +19,7 @@ from models.results import RunResults, CompetitionResults, CompetitionResultsExp
 from models.pilots import Pilot
 from models.cache import Cache
 from models.seasons import Season
+from models.teams import Team
 from controllers.competitions import CompCtrl
 from controllers.utils import UtilsCtrl
 
@@ -490,7 +491,13 @@ async def export_starting_order(request: Request, id: str, i: int, bg_tasks: Bac
 
 
     if comp.type == CompetitionType.synchro:
-        starting_order["overall"] = run.teams
+        starting_order["overall"] = []
+        for team in run.teams:
+            team = await Team.get(team)
+            for i, pilot in enumerate(team.pilots):
+                pilot = await Pilot.get(pilot)
+                team.pilots[i] = pilot
+            starting_order["overall"].append(team)
     else:
         if any(re.search(r"^aw[tqs]", s) for s in comp.seasons):
             for season in comp.seasons:
@@ -510,7 +517,10 @@ async def export_starting_order(request: Request, id: str, i: int, bg_tasks: Bac
                         if not pilot.is_awt:
                             starting_order[season.name].append(pilot)
         else:
-            starting_order["overall"] = comp.pilots
+            starting_order["overall"] = []
+            for pilot in run.pilots:
+                pilot = await Pilot.get(pilot)
+                starting_order["overall"].append(pilot)
 
     return templates.TemplateResponse("run_starting_order.html", {
         "request": request,
