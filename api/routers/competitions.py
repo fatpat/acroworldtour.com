@@ -396,8 +396,7 @@ async def get_export_results(request: Request, id: str, bg_tasks: BackgroundTask
         del res.results['overall']
 
     # if it's a World Acro Championship, no seasons in results
-    if any(re.search(r"^wac-", s) for s in comp.seasons):
-        comp.seasons = []
+    if len(comp.seasons) == 0:
         for key in list(res.results.keys()).copy():
             if key not in ["overall", "women"]:
                 del(res.results[key])
@@ -408,7 +407,7 @@ async def get_export_results(request: Request, id: str, bg_tasks: BackgroundTask
         seasons[season] = await Season.get(season)
 
     if filetype == "xls":
-        file = CompCtrl.comp_to_xlsx(res, comp.type)
+        file = CompCtrl.comp_to_xlsx(res, comp)
     elif filetype == "html":
         log.debug(seasons)
         return templates.TemplateResponse("comp_results.html", {"request": request, "results":res, "comp":comp, "limit_run":limit_run, "seasons": seasons})
@@ -451,8 +450,8 @@ async def run_get_results(request: Request, id: str, i: int, bg_tasks: Backgroun
         del res.results['overall']
 
     # if it's a World Acro Championship, no seasons in results
-    if any(re.search(r"^wac-", s) for s in comp.seasons):
-        comp.seasons = []
+    print(f"seasons={comp.seasons}")
+    if len(comp.seasons) == 0:
         for key in list(res.results.keys()).copy():
             if key not in ["overall", "women"]:
                 del(res.results[key])
@@ -464,7 +463,7 @@ async def run_get_results(request: Request, id: str, i: int, bg_tasks: Backgroun
         seasons[season] = await Season.get(season)
 
     if filetype == "xls":
-        file = CompCtrl.run_to_xlsx(res, comp.type)
+        file = CompCtrl.run_to_xlsx(res, comp)
     elif filetype == "html":
         for result_type in res.results:
             res.results[result_type].sort(key=lambda e: -e.final_marks.score)

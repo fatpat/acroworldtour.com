@@ -17,13 +17,13 @@ class CompCtrl:
         Competition.createIndexes()
 
     @staticmethod
-    def comp_to_xlsx(comp:CompetitionResultsExport, type:CompetitionType):
+    def comp_to_xlsx(comp_results:CompetitionResultsExport, comp:Competition):
         ret = None
         wb = Workbook()
         ws = wb.active
-        ws.title = f"overall {type}"
+        ws.title = f"overall {comp.type}"
 
-        if type == CompetitionType.solo:
+        if comp.type == CompetitionType.solo:
             ws.cell(column=1, row=1, value="Rank")
             ws.cell(column=2, row=1, value="Number")
             ws.cell(column=3, row=1, value="First Name")
@@ -35,7 +35,7 @@ class CompCtrl:
             ws.cell(column=9, row=1, value="CIVL ID")
             ws.cell(column=10, row=1, value="Score")
 
-        if type == CompetitionType.synchro:
+        if comp.type == CompetitionType.synchro:
             ws.cell(column=1, row=1, value="Rank")
             ws.cell(column=2, row=1, value="Team")
             ws.cell(column=3, row=1, value="Number")
@@ -48,10 +48,10 @@ class CompCtrl:
             ws.cell(column=10, row=1, value="CIVL ID")
             ws.cell(column=11, row=1, value="Score")
 
-        all_results = comp.results["overall"]
-        if type == CompetitionType.solo:
-            awt_results = list(filter(lambda r: r.pilot.is_awt, comp.results["overall"]))
-            awq_results = list(filter(lambda r: not r.pilot.is_awt, comp.results["overall"]))
+        all_results = comp_results.results["overall"]
+        if comp.type == CompetitionType.solo:
+            awt_results = list(filter(lambda r: r.pilot.is_awt, comp_results.results["overall"]))
+            awq_results = list(filter(lambda r: not r.pilot.is_awt, comp_results.results["overall"]))
             all_results = awt_results + awq_results
 
         rank = 0
@@ -61,11 +61,12 @@ class CompCtrl:
         for res in all_results:
             rank += 1
 
-            if type == CompetitionType.solo and not first_awq and not res.pilot.is_awt:
-                score = 80
-                first_awq = True
+            if any(re.search(r"^aw[tqs]", s) for s in comp.seasons):
+                if comp.type == CompetitionType.solo and not first_awq and not res.pilot.is_awt:
+                    score = 80
+                    first_awq = True
 
-            if type == CompetitionType.solo:
+            if comp.type == CompetitionType.solo:
                 row += 1
                 ws.cell(column=1, row=row, value=rank)
                 ws.cell(column=2, row=row, value=res.pilot.civlid)
@@ -78,7 +79,7 @@ class CompCtrl:
                 ws.cell(column=9, row=row, value=res.pilot.civlid)
                 ws.cell(column=10, row=row, value=score)
 
-            if type == CompetitionType.synchro:
+            if comp.type == CompetitionType.synchro:
                 for i, pilot in enumerate(res.team.pilots):
                     row += 1
                     ws.cell(column=1, row=row, value=rank)
@@ -105,15 +106,15 @@ class CompCtrl:
         return ret
 
     @staticmethod
-    def run_to_xlsx(run:RunResultsExport, type:CompetitionType):
+    def run_to_xlsx(run:RunResultsExport, comp: Competition):
         if not run.final:
             raise HTTPException(400, f"Can't export run because it's not marked as final")
         ret = None
         wb = Workbook()
         ws = wb.active
-        ws.title = f"run {type}"
+        ws.title = f"run {comp.type}"
 
-        if type == CompetitionType.solo:
+        if comp.type == CompetitionType.solo:
             ws.cell(column=1, row=1, value="Rank")
             ws.cell(column=2, row=1, value="Number")
             ws.cell(column=3, row=1, value="First Name")
@@ -125,7 +126,7 @@ class CompCtrl:
             ws.cell(column=9, row=1, value="CIVL ID")
             ws.cell(column=10, row=1, value="Score")
 
-        if type == CompetitionType.synchro:
+        if comp.type == CompetitionType.synchro:
             ws.cell(column=1, row=1, value="Rank")
             ws.cell(column=2, row=1, value="Team")
             ws.cell(column=3, row=1, value="Number")
@@ -142,7 +143,7 @@ class CompCtrl:
         run.results["overall"].sort(key=lambda e: -e.final_marks.score)
         all_results = run.results["overall"]
 
-        if type == CompetitionType.solo:
+        if comp.type == CompetitionType.solo:
             awt_results = list(filter(lambda r: r.pilot.is_awt, run.results["overall"]))
             awq_results = list(filter(lambda r: not r.pilot.is_awt, run.results["overall"]))
             all_results = awt_results + awq_results
@@ -154,11 +155,12 @@ class CompCtrl:
         for res in all_results:
             rank += 1
 
-            if type == CompetitionType.solo and not first_awq and not res.pilot.is_awt:
-                score = 80
-                first_awq = True
+            if any(re.search(r"^aw[tqs]", s) for s in comp.seasons):
+                if comp.type == CompetitionType.solo and not first_awq and not res.pilot.is_awt:
+                    score = 80
+                    first_awq = True
 
-            if type == CompetitionType.solo:
+            if comp.type == CompetitionType.solo:
                 row += 1
                 ws.cell(column=1, row=row, value=rank)
                 ws.cell(column=2, row=row, value=res.pilot.civlid)
@@ -171,7 +173,7 @@ class CompCtrl:
                 ws.cell(column=9, row=row, value=res.pilot.civlid)
                 ws.cell(column=10, row=row, value=score)
 
-            if type == CompetitionType.synchro:
+            if comp.type == CompetitionType.synchro:
                 for i, pilot in enumerate(res.team.pilots):
                     row += 1
                     ws.cell(column=1, row=row, value=rank)
