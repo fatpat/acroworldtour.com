@@ -147,9 +147,16 @@ class CompetitionResults(BaseModel):
             for r in self.results[result_type]:
                 results[result_type].append(await r.export(cache=cache))
 
+        for t in results:
+            if self.type == "solo":
+                results[t].sort(key=lambda r: (-r.score, r.pilot.name))
+            elif self.type == "synchro":
+                results[t].sort(key=lambda r: (-r.score, r.team.name))
+
         runs_results = []
         for r in self.runs_results:
             runs_results.append(await r.export(cache=cache))
+
 
         return CompetitionResultsExport(
             final = self.final,
