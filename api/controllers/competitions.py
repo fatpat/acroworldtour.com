@@ -2,6 +2,7 @@ import logging
 from tempfile import NamedTemporaryFile
 from openpyxl import Workbook
 from fastapi import HTTPException
+import re
 
 from models.competitions import Competition, CompetitionResultsExport, CompetitionType, CompetitionExport, CompetitionResults
 from models.results import RunResultsExport
@@ -48,11 +49,21 @@ class CompCtrl:
             ws.cell(column=10, row=1, value="CIVL ID")
             ws.cell(column=11, row=1, value="Score")
 
-        all_results = comp_results.results["overall"]
-        if comp.type == CompetitionType.solo:
+        if comp.type == CompetitionType.solo and any(re.search(r"^aw[tqs]", s) for s in comp.seasons):
             awt_results = list(filter(lambda r: r.pilot.is_awt, comp_results.results["overall"]))
+            awt_results.sort(key=lambda e: (-e.score, e.pilot.name))
+
             awq_results = list(filter(lambda r: not r.pilot.is_awt, comp_results.results["overall"]))
+            awq_results.sort(key=lambda e: (-e.score, e.pilot.name))
+
             all_results = awt_results + awq_results
+
+        else:
+            all_results = comp_results.results["overall"]
+            if comp.type == CompetitionType.solo:
+                all_results.sort(key=lambda e: (-e.score, e.pilot.name))
+            elif comp.type == CompetitionType.synchro:
+                all_results.sort(key=lambda e: (-e.score, e.team.name))
 
         rank = 0
         row = 1
@@ -140,13 +151,23 @@ class CompCtrl:
             ws.cell(column=11, row=1, value="Score")
 
 
-        run.results["overall"].sort(key=lambda e: -e.final_marks.score)
-        all_results = run.results["overall"]
 
-        if comp.type == CompetitionType.solo:
+
+        if comp.type == CompetitionType.solo and any(re.search(r"^aw[tqs]", s) for s in comp.seasons):
             awt_results = list(filter(lambda r: r.pilot.is_awt, run.results["overall"]))
+            awt_results.sort(key=lambda e: [e.score, e.pilot.name], reverse=True)
+
             awq_results = list(filter(lambda r: not r.pilot.is_awt, run.results["overall"]))
+            awq_results.sort(key=lambda e: [e.score, e.pilot.name], reverse=True)
+
             all_results = awt_results + awq_results
+
+        else:
+            all_results = run.results["overall"]
+            if comp.type == CompetitionType.solo:
+                all_results.sort(key=lambda e: (-e.score, e.pilot.name))
+            elif comp.type == CompetitionType.synchro:
+                all_results.sort(key=lambda e: (-e.score, e.team.name))
 
         rank = 0
         row = 1
