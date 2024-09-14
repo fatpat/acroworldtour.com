@@ -23,8 +23,8 @@ const CompetitionDetails = ({ competition }: Props) => {
     globalResults[resultsType]?.sort((a, b) => {
         let cmp = b.score - a.score
         if (cmp == 0) {
-            let a_name = a.pilot?.name || a.team.name
-            let b_name = b.pilot?.name || b.team.name
+            let a_name = a.pilot?.name || a.team?.name || ""
+            let b_name = b.pilot?.name || b.team?.name || ""
             console.log(a_name)
             console.log(b_name)
             cmp = a_name.localeCompare(b_name)
