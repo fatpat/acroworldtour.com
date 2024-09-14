@@ -20,7 +20,19 @@ const CompetitionDetails = ({ competition }: Props) => {
     results.results;
 
   for (var resultsType in globalResults) {
-    globalResults[resultsType]?.sort((a, b) => b.score - a.score);
+    globalResults[resultsType]?.sort((a, b) => {
+        let cmp = b.score - a.score
+        if (cmp == 0) {
+            let a_name = a.pilot?.name || a.team.name
+            let b_name = b.pilot?.name || b.team.name
+            console.log(a_name)
+            console.log(b_name)
+            cmp = a_name.localeCompare(b_name)
+            console.log(`${a_name} / ${b_name} -> ${cmp}`)
+            return cmp
+        }
+        return cmp
+    });
   }
   const runsResults = results.runs_results;
 
