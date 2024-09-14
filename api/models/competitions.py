@@ -757,7 +757,7 @@ class Competition(CompetitionNew):
                             result_per_run=[]
                         )
 
-                    overall[result.pilot].score += result.final_marks.score
+                    overall[result.pilot].score = round(overall[result.pilot].score + result.final_marks.score, 3)
                     overall[result.pilot].result_per_run.append(run_result_summary)
 
                 if self.type == CompetitionType.synchro:
@@ -769,7 +769,7 @@ class Competition(CompetitionNew):
                             result_per_run=[]
                         )
 
-                    overall[result.team].score += result.final_marks.score
+                    overall[result.team].score = round(overall[result.team].score + result.final_marks.score, 3)
                     overall[result.team].result_per_run.append(run_result_summary)
 
         overall_results = list(overall.values())
