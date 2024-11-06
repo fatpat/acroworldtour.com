@@ -155,19 +155,20 @@ class CompCtrl:
 
         if comp.type == CompetitionType.solo and any(re.search(r"^aw[tqs]", s) for s in comp.seasons):
             awt_results = list(filter(lambda r: r.pilot.is_awt, run.results["overall"]))
-            awt_results.sort(key=lambda e: [e.score, e.pilot.name], reverse=True)
+            awt_results.sort(key=lambda e: [e.final_marks.score, e.pilot.name], reverse=True)
 
             awq_results = list(filter(lambda r: not r.pilot.is_awt, run.results["overall"]))
-            awq_results.sort(key=lambda e: [e.score, e.pilot.name], reverse=True)
+            awq_results.sort(key=lambda e: [e.final_marks.score, e.pilot.name], reverse=True)
 
             all_results = awt_results + awq_results
 
         else:
             all_results = run.results["overall"]
+            print(all_results)
             if comp.type == CompetitionType.solo:
-                all_results.sort(key=lambda e: (-e.score, e.pilot.name))
+                all_results.sort(key=lambda e: (-e.final_marks.score, e.pilot.name))
             elif comp.type == CompetitionType.synchro:
-                all_results.sort(key=lambda e: (-e.score, e.team.name))
+                all_results.sort(key=lambda e: (-e.final_marks.score, e.team.name))
 
         rank = 0
         row = 1

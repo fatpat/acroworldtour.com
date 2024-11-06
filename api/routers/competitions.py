@@ -409,7 +409,6 @@ async def get_export_results(request: Request, id: str, bg_tasks: BackgroundTask
     if filetype == "xls":
         file = CompCtrl.comp_to_xlsx(res, comp)
     elif filetype == "html":
-        log.debug(seasons)
         return templates.TemplateResponse("comp_results.html", {"request": request, "results":res, "comp":comp, "limit_run":limit_run, "seasons": seasons})
     else:
         raise HTTPException(status_code=400, detail="wrong file type, must be xls or html")
