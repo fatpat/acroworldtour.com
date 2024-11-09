@@ -104,9 +104,9 @@ class CompCtrl:
                     ws.cell(column=9, row=row, value=f"")
                     ws.cell(column=10, row=row, value=pilot.civlid)
                     ws.cell(column=11, row=row, value=score)
-                ws.merge_cells(start_row=row-1, start_column=1, end_row=row, end_column=1)
-                ws.merge_cells(start_row=row-1, start_column=2, end_row=row, end_column=2)
-                ws.merge_cells(start_row=row-1, start_column=11, end_row=row, end_column=11)
+#                ws.merge_cells(start_row=row-1, start_column=1, end_row=row, end_column=1)
+#                ws.merge_cells(start_row=row-1, start_column=2, end_row=row, end_column=2)
+#                ws.merge_cells(start_row=row-1, start_column=11, end_row=row, end_column=11)
 
             score = score - 1
 
@@ -209,9 +209,9 @@ class CompCtrl:
                     ws.cell(column=9, row=row, value=f"")
                     ws.cell(column=10, row=row, value=pilot.civlid)
                     ws.cell(column=11, row=row, value=score)
-                ws.merge_cells(start_row=row-1, start_column=1, end_row=row, end_column=1)
-                ws.merge_cells(start_row=row-1, start_column=2, end_row=row, end_column=2)
-                ws.merge_cells(start_row=row-1, start_column=11, end_row=row, end_column=11)
+#                ws.merge_cells(start_row=row-1, start_column=1, end_row=row, end_column=1)
+#                ws.merge_cells(start_row=row-1, start_column=2, end_row=row, end_column=2)
+#                ws.merge_cells(start_row=row-1, start_column=11, end_row=row, end_column=11)
 
             score = score - 1
 
