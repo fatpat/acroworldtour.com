@@ -972,6 +972,7 @@ class Competition(CompetitionNew):
         else:
             config = run.config
 
+        # get judge details
         judges = {}
         for m in flight.marks:
             if m.judge not in judges:
@@ -979,6 +980,54 @@ class Competition(CompetitionNew):
                 if judge is None:
                     raise HTTPException(400, f"judge '{m.judge}' not found")
                 judges[m.judge] = judge
+
+        # check that we have all technical marks for every judges
+        number_of_marks_without_technical_per_trick = len(flight.marks)
+        for m in flight.marks:
+            judge = judges[m.judge].name
+            if m.technical_per_trick is None:
+                number_of_marks_without_technical_per_tricki -= 1
+                continue
+
+            n_technical_per_trick = len(m.technical_per_trick)
+            n_tricks = len(flight.tricks)
+            if n_technical_per_trick != n_tricks:
+                raise HTTPException(400, f"judge '{judge}' did not mark enough tricks ({n_technical_per_trick} instead of {n_tricks})")
+
+        if number_of_marks_without_technical_per_trick > 0 and number_of_marks_without_technical_per_trick < len(flight.marks):
+            raise HTTPException(400, f"somes judges sent technical mark per trick while other(s) did not")
+
+        # only for marks with technical_marks
+        if number_of_marks_without_technical_per_trick > 0:
+            # when a mark is missing
+            # try to make average from other marks if possible
+
+            # iterate over tricks
+            for i, trick in enumerate(flight.tricks):
+
+                # retrieve marks for this trick
+                marks = [m.technical_per_trick[i] for m in flight.marks]
+
+                # if all marks are set, no need to guess anything
+                if len([m for m in marks if m is None]) == 0:
+                    continue
+
+                # retrieve marks that are set
+                set_marks = [m for m in marks if m is not None]
+
+                # if no mark have been set for this trick
+                if len(set_marks) == 0:
+                    raise HTTPException(400, f"not enough marks for {trick.name}")
+
+                # guess the mark from the average of the others
+                # and set it to replace unset marks
+                guessed_mark = average(set_marks)
+                for m in flight.marks:
+                    judge = judges[m.judge].name
+                    if m.technical_per_trick[i] is None:
+                        m.technical_per_trick[i] = guessed_mark
+                        log.error(f"{judge}/{trick.name} set mark to {guessed_mark}")
+
 
         if mark_type in ["awq", "awt"]:
             # associate technical mark to each trick
