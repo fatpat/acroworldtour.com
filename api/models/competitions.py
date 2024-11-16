@@ -1422,7 +1422,8 @@ class Competition(CompetitionNew):
         # §"6.3.1.1 Technicity in Solo"
         # The technicity is a difficulty coefficient calculated as the average
         # of the 3 highest coefficient manoeuvres flown during the run.
-        technicals = sorted(technicals, reverse=True)
+        # add 3 virtual 1.0 tricks to ensure to make an average over 3 tricks
+        technicals = sorted(technicals, reverse=True) + [1.0,1.0,1.0]
         mark.technicity = average(technicals[0:3])
 
         # calculate the bonus of the run as stated in 7B
