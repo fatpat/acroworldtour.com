@@ -64,7 +64,7 @@ const Seasons = () => {
     ...new Set(seasons.map((season) => Number(season.year))).add(currentYear),
   ].sort((a, b) => b - a);
 */
-  const years = [2024];
+  const years = [2025];
 
   const YearSelector = ({ years }: { years: number[] }) => {
     const handleYearChange = ({ target }: ChangeEvent<HTMLSelectElement>) => {

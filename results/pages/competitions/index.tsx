@@ -92,7 +92,7 @@ const Competitions = () => {
     ).add(currentYear),
   ].sort((a, b) => b - a);
 */
-  const years = [2024];
+  const years = [2025];
   const YearSelector = ({ years }: { years: number[] }) => {
     const handleYearChange = ({ target }: ChangeEvent<HTMLSelectElement>) => {
       const year = parseInt(target.value);
