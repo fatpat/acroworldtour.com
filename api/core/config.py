@@ -8,7 +8,7 @@ from pydantic_settings import SettingsConfigDict, BaseSettings
 class Settings(BaseSettings):
     PROJECT_NAME: str = "acroworldtour.com API"
     PROJECT_DESCRIPTION: str = "API to manage and access Paragliding Aerobatics competitions results"
-    VERSION: str = "2023.2"
+    VERSION: str = "2025.4"
     JWT_SECRET: str = "TEST_SECRET_DO_NOT_USE_IN_PROD"
     JWT_ALGORITHM: str = "HS256"
     # 60 minutes * 24 hours * 8 days = 8 days
