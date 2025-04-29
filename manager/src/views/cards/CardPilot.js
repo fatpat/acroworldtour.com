@@ -1,3 +1,5 @@
+import { range } from 'src/util/misc'
+
 // ** MUI Imports
 import Box from '@mui/material/Box'
 import Badge from '@mui/material/Badge'
@@ -43,9 +45,7 @@ const CardPilot = (props) => {
           <Box sx={{ mr: 2, mb: 1, display: 'flex', flexDirection: 'column' }}>
             <Typography variant='h6'>
               <Link href={pilot.link} target="_blank" rel="noopener noreferrer">{pilot.name}</Link>{' '}
-              <span onClick={() => props.changeGender(pilot.civlid)}>{pilot.gender == "man" ? "♂️" : "♀️"}</span>
-              &nbsp;
-              <span onClick={() => props.changeAWT(pilot.civlid)}>{pilot.is_awt ? "⭐" : "🌑"}</span>
+              <span onClick={() => props.changeGender(pilot.civlid)} style={{ cursor: 'pointer' }}>{pilot.gender == "man" ? "♂️" : "♀️"}</span>
               &nbsp;
               <ReactCountryFlag
                 countryCode={countriesQuery.convertAlphaCode(pilot.country)}
@@ -55,6 +55,11 @@ const CardPilot = (props) => {
             </Typography>
             <Typography variant='caption'>CIVL ID: {pilot.civlid}</Typography>
             <Typography variant='caption'>Rank: #{pilot.rank == 9999 ? 'unranked' : pilot.rank}</Typography>
+            {range(2022, new Date().getFullYear()).map(year => (
+              <Typography variant='caption' id={year} onClick={() =>  props.changeAWT(pilot.civlid, year)} style={{ cursor: 'pointer' }}>
+                {year}: {pilot.awt_years.includes(year) ? '⭐AWT' : '🌑AWQ'} pilot
+              </Typography>
+            ))}
           </Box>
           <Button variant='contained' onClick={() => props.updatePilot(pilot.civlid)} >
             Update pilot

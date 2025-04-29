@@ -85,19 +85,20 @@ const PilotsPage = () => {
       success(`Pilot #${civlid} gender changed to ${retData.gender}`)
   }
 
-  const changeAWT = async(civlid) => {
-      if (civlid < 1 || isNaN(civlid)) return
-      setLoading(`Chaging awt status of pilot #${civlid}`)
-      const [err, retData, headers] = await APIRequest(`/pilots/${civlid}/awt`, {method: 'PATCH', expected_status: 200})
+  const changeAWT = async(civlid, year) => {
+      if (isNaN(civlid) || civlid < 1) return
+      if (isNaN(year) || year < 2022 || year > new Date().getFullYear()) return
+      setLoading(`Chaging awt status of pilot #${civlid} for ${year}`)
+      const [err, retData, headers] = await APIRequest(`/pilots/${civlid}/awt?year=${year}`, {method: 'PATCH', expected_status: 200})
       if (err) {
-          return error(`Error changing awt of pilot #${civlid}: ${err}`)
+          return error(`Error changing awt of pilot #${civlid} for ${year}: ${err}`)
       }
 
       setData(data.map(p => p.civlid == civlid ? retData : p))
       setFullData(fullData.map(p => p.civlid == civlid ? retData : p))
       setLoading(null)
 
-      success(`Pilot #${civlid} AWT changed to ${retData.gender}`)
+      success(`Pilot #${civlid} AWT changed for ${year}`)
 
   }
 
