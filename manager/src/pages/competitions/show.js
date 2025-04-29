@@ -407,7 +407,7 @@ const CompetitionPage = () => {
           onChange={uploadLogo}
         />
         <Typography variant='h5' sx={{display: 'flex'}}>
-          <Avatar src={comp.logo} onClick={updateLogo}>{comp.acronym}</Avatar>
+          <Avatar src={relativeToUrl(comp.logo)} onClick={updateLogo}>{comp.acronym}</Avatar>
           &nbsp;
           {comp.name}<RefreshIcon className="hideToPrint" onClick={loadCompetition} />
           {comp.logo && <ClearIcon className="hideToPrint" onClick={() => removeLogo() } />}
