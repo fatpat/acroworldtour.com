@@ -43,14 +43,17 @@ const Pilots = () => {
   if (error) return <FetchError />;
   if (!pilots) return <h2>No pilots found.</h2>;
 
-  const awtPilots = pilots.filter((pilot) => pilot.is_awt);
+  const awtPilots = pilots.filter((pilot) =>
+    pilot.awt_years.includes(new Date().getFullYear()),
+  );
   const awqPilots = pilots.filter(
-    (pilot) => !pilot.is_awt && pilot.rank < 9999,
+    (pilot) =>
+      !pilot.awt_years.includes(new Date().getFullYear()) && pilot.rank < 9999,
   );
 
   return (
     <>
-      <h2>AWT Pilots</h2>
+      <h2>Current AWT Pilots</h2>
       <section className="wrapper">
         {awtPilots.map((pilot) => (
           <PilotCard key={pilot.civlid} pilot={pilot} />

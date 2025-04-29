@@ -23,6 +23,7 @@ const PilotDetails = ({ pilot }: Props) => {
     about,
     social_links: socialLinks,
     sponsors,
+    awt_years,
     competitions_results: competitionsResults,
     seasons_results: seasonsResults,
   } = pilot;
@@ -73,6 +74,9 @@ const PilotDetails = ({ pilot }: Props) => {
           </h2>
           <h3 className="font-semibold">FAI Rank #{rank}</h3>
         </Link>
+        {awt_years.length > 0 && (
+          <h5>AWT pilot in {awt_years.sort().join(", ")}</h5>
+        )}
       </article>
       <article className="mt-8 p-4">
         <h4>About:</h4>

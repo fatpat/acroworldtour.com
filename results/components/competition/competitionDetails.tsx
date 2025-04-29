@@ -21,17 +21,17 @@ const CompetitionDetails = ({ competition }: Props) => {
 
   for (var resultsType in globalResults) {
     globalResults[resultsType]?.sort((a, b) => {
-        let cmp = b.score - a.score
-        if (cmp == 0) {
-            let a_name = a.pilot?.name || a.team?.name || ""
-            let b_name = b.pilot?.name || b.team?.name || ""
-            console.log(a_name)
-            console.log(b_name)
-            cmp = a_name.localeCompare(b_name)
-            console.log(`${a_name} / ${b_name} -> ${cmp}`)
-            return cmp
-        }
-        return cmp
+      let cmp = b.score - a.score;
+      if (cmp == 0) {
+        let a_name = a.pilot?.name || a.team?.name || "";
+        let b_name = b.pilot?.name || b.team?.name || "";
+        console.log(a_name);
+        console.log(b_name);
+        cmp = a_name.localeCompare(b_name);
+        console.log(`${a_name} / ${b_name} -> ${cmp}`);
+        return cmp;
+      }
+      return cmp;
     });
   }
   const runsResults = results.runs_results;
@@ -117,7 +117,8 @@ const CompetitionDetails = ({ competition }: Props) => {
                   if (
                     resultsType == "overall" &&
                     Object.keys(globalResults).some((e) => /^aw[tqs]-/.test(e))
-                  ) return;
+                  )
+                    return;
                   return (
                     <Fragment key={`overall-${resultsType}`}>
                       <button
@@ -174,8 +175,11 @@ const CompetitionDetails = ({ competition }: Props) => {
                         if (/^wac-/.test(resultsType)) return;
                         if (
                           resultsType == "overall" &&
-                          Object.keys(globalResults).some((e) => /^aw[tqs]-/.test(e))
-                        ) return;
+                          Object.keys(globalResults).some((e) =>
+                            /^aw[tqs]-/.test(e),
+                          )
+                        )
+                          return;
                         return (
                           <Fragment key={`run${runIndex}-${resultsType}`}>
                             <button
