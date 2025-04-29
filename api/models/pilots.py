@@ -46,7 +46,7 @@ class Pilot(BaseModel):
     last_update: Optional[datetime] = Field(None, description="Last time the pilot has been updated")
     rank: int = Field(..., description="Current pilot's ranking in the aerobatic solo overwall world ranking")
     gender: GenderEnum = Field(GenderEnum.man, description="Pilot's sex")
-    is_awt: bool = Field(False, description="the pilot is part of the current's year pro tour (AWT)")
+    awt_years: List[int] = Field([], description="Years for which pilot has been in the world tour")
     # TODO[pydantic]: The following keys were removed: `json_encoders`.
     # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
     model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True, json_encoders={ObjectId: str}, json_schema_extra={
@@ -94,8 +94,14 @@ class Pilot(BaseModel):
         elif self.gender == GenderEnum.woman:
             self.gender = GenderEnum.man
 
-    def change_awt(self):
-        self.is_awt ^= True
+    def change_awt(self, year: int):
+        if year in self.awt_years:
+            self.awt_years.remove(year)
+        else:
+            self.awt_years.append(year)
+
+    def is_awt(self, year: int = datetime.now().year):
+        return (year in self.awt_years)
 
     @staticmethod
     async def get(id: int, cache:Cache = None):
@@ -112,7 +118,7 @@ class Pilot(BaseModel):
                 photo = "http://no.where/",
                 background_picture = "http://no.where/",
                 rank = 9999,
-                is_awt = (id % 2 == 0),
+                awt_years = [datetime.now().year if id % 2 == 0 else 0],
             )
 
         if id <= 0:

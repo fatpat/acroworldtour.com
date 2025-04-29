@@ -50,10 +50,10 @@ class CompCtrl:
             ws.cell(column=11, row=1, value="Score")
 
         if comp.type == CompetitionType.solo and any(re.search(r"^aw[tqs]", s) for s in comp.seasons):
-            awt_results = list(filter(lambda r: r.pilot.is_awt, comp_results.results["overall"]))
+            awt_results = list(filter(lambda r: r.pilot.is_awt(comp.start_date.year), comp_results.results["overall"]))
             awt_results.sort(key=lambda e: (-e.score, e.pilot.name))
 
-            awq_results = list(filter(lambda r: not r.pilot.is_awt, comp_results.results["overall"]))
+            awq_results = list(filter(lambda r: not r.pilot.is_awt(comp.start_date.year), comp_results.results["overall"]))
             awq_results.sort(key=lambda e: (-e.score, e.pilot.name))
 
             all_results = awt_results + awq_results
@@ -73,7 +73,7 @@ class CompCtrl:
             rank += 1
 
             if any(re.search(r"^aw[tqs]", s) for s in comp.seasons):
-                if comp.type == CompetitionType.solo and not first_awq and not res.pilot.is_awt:
+                if comp.type == CompetitionType.solo and not first_awq and not res.pilot.is_awt(comp.start_date.year):
                     score = 80
                     first_awq = True
 
@@ -154,10 +154,10 @@ class CompCtrl:
 
 
         if comp.type == CompetitionType.solo and any(re.search(r"^aw[tqs]", s) for s in comp.seasons):
-            awt_results = list(filter(lambda r: r.pilot.is_awt, run.results["overall"]))
+            awt_results = list(filter(lambda r: r.pilot.is_awt(comp.start_date.year), run.results["overall"]))
             awt_results.sort(key=lambda e: [e.final_marks.score, e.pilot.name], reverse=True)
 
-            awq_results = list(filter(lambda r: not r.pilot.is_awt, run.results["overall"]))
+            awq_results = list(filter(lambda r: not r.pilot.is_awt(comp.start_date.year), run.results["overall"]))
             awq_results.sort(key=lambda e: [e.final_marks.score, e.pilot.name], reverse=True)
 
             all_results = awt_results + awq_results
@@ -178,7 +178,7 @@ class CompCtrl:
             rank += 1
 
             if any(re.search(r"^aw[tqs]", s) for s in comp.seasons):
-                if comp.type == CompetitionType.solo and not first_awq and not res.pilot.is_awt:
+                if comp.type == CompetitionType.solo and not first_awq and not res.pilot.is_awt(comp.start_date.year):
                     score = 80
                     first_awq = True
 
@@ -229,7 +229,7 @@ class CompCtrl:
         competition.results["women"] = []
 
         for result in competition.results["overall"]:
-            if result.pilot.is_awt:
+            if result.pilot.is_awt(competition.competition.start_date.year):
                 competition.results["awt"].append(result)
             else:
                 competition.results["awq"].append(result)
@@ -262,7 +262,7 @@ class CompCtrl:
         competition.results["women"] = []
 
         for result in competition.results["overall"]:
-            if result.pilot.is_awt:
+            if result.pilot.is_awt(competition.competition.start_date.year):
                 competition.results["awt"].append(result)
             else:
                 competition.results["awq"].append(result)

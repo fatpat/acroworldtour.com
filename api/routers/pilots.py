@@ -2,6 +2,7 @@ import logging
 from http import HTTPStatus
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Response
 from typing import List
+from datetime import datetime
 
 from core.security import auth
 from models.pilots import Pilot, collection
@@ -98,7 +99,7 @@ async def change_gender(civlid: int):
     response_model=Pilot,
     dependencies=[Depends(auth)],
 )
-async def change_gender(civlid: int):
+async def change_awt(civlid: int, year: int = datetime.now().year):
     pilot = await Pilot.get(civlid)
-    pilot.change_awt()
+    pilot.change_awt(year)
     return await pilot.save()

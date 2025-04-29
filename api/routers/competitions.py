@@ -504,7 +504,7 @@ async def export_starting_order(request: Request, id: str, i: int, bg_tasks: Bac
                     starting_order[season.name] = []
                     for pilot in run.pilots:
                         pilot = await Pilot.get(pilot)
-                        if pilot.is_awt:
+                        if season.year in pilot.awt_year:
                             starting_order[season.name].append(pilot)
 
                 elif season.startswith("awq"):
@@ -512,7 +512,7 @@ async def export_starting_order(request: Request, id: str, i: int, bg_tasks: Bac
                     starting_order[season.name] = []
                     for pilot in run.pilots:
                         pilot = await Pilot.get(pilot)
-                        if not pilot.is_awt:
+                        if season.year not in pilot.awt_years:
                             starting_order[season.name].append(pilot)
         else:
             starting_order["overall"] = []

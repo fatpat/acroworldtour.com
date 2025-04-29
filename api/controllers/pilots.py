@@ -279,7 +279,7 @@ class PilotCtrl:
         try:
             previousPilot = await Pilot.get(civlid)
             pilot.gender = previousPilot.gender
-            pilot.is_awt = previousPilot.is_awt
+            pilot.awt_years = previousPilot.awt_years
         except Exception:
             pass
 

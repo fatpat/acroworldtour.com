@@ -694,7 +694,7 @@ class Competition(CompetitionNew):
                 raise HTTPException(400, f"Pilot #{id} does not participate in this comp ({self.name})")
 
             pilot = await Pilot.get(int(id))
-            is_awt = pilot.is_awt
+            is_awt = pilot.is_awt(self.start_date.year)
 
         if self.type == CompetitionType.synchro:
             if id not in run.teams:
@@ -826,14 +826,14 @@ class Competition(CompetitionNew):
                 continue
 
             if re.search('^awt-\d{4}$', season):
-                awt_pilots = list(filter(lambda p: p.is_awt, pilots))
+                awt_pilots = list(filter(lambda p: p.is_awt(self.start_date.year), pilots))
                 awt_results = list(filter(lambda r: next((p for p in awt_pilots if p.civlid == r.pilot), None) is not None, results['overall']))
                 awt_results.sort(key=lambda e: e.score if hasattr(e, 'score') else e.final_marks.score)
                 results[season] = list(awt_results[::-1])
                 continue
 
             if re.search('^awq-\d{4}$', season):
-                awq_pilots = list(filter(lambda p: not p.is_awt, pilots))
+                awq_pilots = list(filter(lambda p: not p.is_awt(self.start_date.year), pilots))
                 awq_results = list(filter(lambda r: next((p for p in awq_pilots if p.civlid == r.pilot), None) is not None, results['overall']))
                 awq_results.sort(key=lambda e: e.score if hasattr(e, 'score') else e.final_marks.score)
                 results[season] = list(awq_results[::-1])
