@@ -44,7 +44,8 @@ const TabFlightsSynchro = ({ comp, run, rid }) => {
     tricks: [],
     marks: [],
     did_not_start: false,
-    warnings: []
+    warnings: [],
+    tip_touch_bonuses: 0
   })
   const [result, setResult] = useState({
       judges_mark:{}
@@ -112,6 +113,7 @@ const TabFlightsSynchro = ({ comp, run, rid }) => {
       marks: data.marks,
       did_no_start: data.did_not_start,
       warnings: data.warnings,
+      tip_touch_bonuses: data.tip_touch_bonuses
     }
 
     const [err, retData, headers] = await APIRequest(`/competitions/${comp.code}/runs/${rid}/flights/${team._id}/new?save=${false}`, {
@@ -208,6 +210,15 @@ const TabFlightsSynchro = ({ comp, run, rid }) => {
   const removeWarning = async(i) => {
     if (i<0 || i>= data.warnings.length) return
     data.warnings.splice(i, 1)
+    setData(data)
+    simulateScore(data)
+  }
+
+  const setTipTouchBonuses = async(e) => {
+    let n = parseInt(prompt("How many tip touches ?"), 10)
+    console.log(`setTipTouchBonuses => ${n}`)
+    if (Number.isNaN(n) || n < 1 || n > 3) n = 0
+    data.tip_touch_bonuses = n
     setData(data)
     simulateScore(data)
   }
@@ -462,6 +473,7 @@ const TabFlightsSynchro = ({ comp, run, rid }) => {
                 <Button onClick={didNotStart}>Did not start</Button>
                 <Button onClick={addWarning}>Add warning</Button>
                 <Button onClick={e => addWarning(e, "flight over the public")}>flight over the public</Button>
+                <Button onClick={e => setTipTouchBonuses(e)}>Tip Touch Bonuses</Button>
                 <Button onClick={deleteRun}>Delete</Button>
               </Grid>
           </Grid>
