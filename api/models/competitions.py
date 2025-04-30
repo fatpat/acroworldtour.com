@@ -1088,6 +1088,10 @@ class Competition(CompetitionNew):
                     mark.warnings.append(f"{trick.name} can't be the last maneuver")
                 else:
                     mark.warnings.append(f"{trick.name} can't be one of the last {t.no_last_maneuver} maneuvers")
+
+            # no flip as a last 2 manoeuver
+            if "flip" in trick.bonus_types and i >= len(flight.tricks) - 2:
+                mark.warnings.append(f"flips can't be performed as one of the last 2 maneuvers ({trick.name})")
         #
         # endof check if a trick is not perform in a allowed position (not the first or not as a last x maneuvers)
         #
