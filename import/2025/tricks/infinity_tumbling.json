@@ -1,0 +1,40 @@
+{
+  "name": "Infinity Tumbling",
+  "acronym": "I",
+  "types": ["tumbling"],
+  "directions": ["left", "right"],
+  "solo": true,
+  "solo_awt": true,
+  "synchro": true,
+  "repeatable": false,
+  "description": "Series of perfect Tumbling (pitch movement)",
+  "minimum": "entry plus 5 rotations",
+  "criterias": {
+    "normal": "rhythm, flow, trajectory (no roll movement), tension in the lines and glider, duration, exit or connection",
+    "twisted": "twisted on the entry, must stay twisted, untwist at exit and NOT during the turns",
+    "flip": "body flip either forward or backwards during the Infinite Tumbling. Flip must begin and end at the same point of one full rotation",
+    "devil twist": "from a twisted situation, change of twist direction (within one turn)",
+    "hardcore entry": "twisted on the speed taking, getting untwisted and twisted in the other direction while pulling the entry",
+    "cab slide": "get twisted during an infinity tumbling turn"
+  },
+  "connection": "Forbidden connection to Tumbling or Anti-Rhythmic SAT",
+  "forbid_last_two": true,
+  "technical_coefficient": 1.85,
+  "bonuses": [
+    {"name": "twisted","bonus": 3.5},
+    {"name": "twisted exit","bonus": 4.5},
+    {"name": "devil twist","bonus": 2},
+    {"name": "flip","bonus": 5},
+    {"name": "hardcore entry","bonus": 5},
+    {"name": "cab slide","bonus": 2}
+  ],
+  "bonus_constraints": [
+    ["twisted", "hardcore entry"],
+    ["twisted", "cab slide"],
+    ["hardcore entry", "cab slide"]
+  ],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 2
+}

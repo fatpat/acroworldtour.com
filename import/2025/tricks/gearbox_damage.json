@@ -1,0 +1,22 @@
+{
+  "name": "Gearbox Damage",
+  "acronym": "GD",
+  "directions": [],
+  "solo": false,
+  "solo_awt": false,
+  "synchro": true,
+  "repeatable": true,
+  "description": "Minimum 720 synchro spiral then exit max 4 turns synchro sat and then again synchro spiral at least 360 degree",
+  "minimum": "",
+  "criterias": {
+    "normal": "closeness in the spirals: 2 touches for max score, rapidity of connexion"
+  },
+  "repetition_allowed": true,
+  "technical_coefficient": 2,
+  "bonuses": [],
+  "bonus_constraints": [],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

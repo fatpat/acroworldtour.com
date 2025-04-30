@@ -1,0 +1,31 @@
+{
+  "name": "Corkscrew",
+  "acronym": "K",
+  "directions": ["left", "right"],
+  "solo": true,
+  "solo_awt": true,
+  "synchro": true,
+  "repeatable": false,
+  "description": "Spin during the entry over the glider into a Helicopter",
+  "minimum": "120°",
+  "criterias": {
+    "normal": "energy on entry, timing, flow. Stable entry into the Helicopter",
+    "twisted": "twisted during the entry, untwisted by the rotation of the cork",
+    "reverse": "immediate transition to a Helicopter in the opposite direction",
+    "devil twist": "Twisted during the entry, untwisted during the rotation of the cork, re twisted by the connection. Must stay twisted for minimum 2 turns of heli. Can untwist for the exitForbidden connection to helicopter"
+  },
+  "connection": "Forbidden connection to helicopter",
+  "technical_coefficient": 1.9,
+  "bonuses": [
+    {"name": "twisted","bonus": 4.5},
+    {"name": "reverse","bonus": 4.5},
+    {"name": "devil twist","bonus": 7}
+  ],
+  "bonus_constraints": [
+      ["twisted", "devil twist"]
+  ],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

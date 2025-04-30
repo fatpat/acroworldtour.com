@@ -1,0 +1,47 @@
+{
+  "name": "MistyFly",
+  "acronym": "MF",
+  "types": ["to infinite", "tumbling"],
+  "directions": [],
+  "solo": true,
+  "solo_awt": true,
+  "synchro": true,
+  "repeatable": false,
+  "description": "Misty to Tail Slide or Deep Stall directly connected into an Infinite Tumbling. The Tail Slide/Deep  Stall must not necessarily be long but shall be entered directly from the exit a misty",
+  "minimum": "entry + 3 rotation",
+  "criterias": {
+    "normal": "Rhythm, flow, trajectory (no roll movement), tension in the lines and glider, duration, exit or connection",
+    "twisted": "Twisted on the entry, untwist by the misty  and proceed into the Infinity Tumbling without twist",
+    "twisted exit": "stay twisted during the exit of the Infinity Tumbling",
+    "full twisted": "Twisted on the entry and stay twisted until the exit of the infinity tumbling",
+    "hardcore entry": "Same as full twisted but with change of twist direction in the entry of the misty",
+    "cab slide": "get twisted during an infinity tumbling turn",
+    "devil twist": "from a twisted situation, change of twist direction (within one turn)"
+  },
+  "connection": "Forbidden connection to Tumbling or Anti-Rhythmic SAT",
+  "technical_coefficient": 2.10,
+  "bonuses": [
+    {"name": "twisted","bonus": 2.5},
+    {"name": "twisted exit","bonus": 3},
+    {"name": "full twisted","bonus": 8},
+    {"name": "hardcore entry","bonus": 8},
+    {"name": "cab slide","bonus": 2},
+    {"name": "devil twist","bonus": 2}
+  ],
+  "bonus_constraints": [
+    ["twisted", "full twisted"],
+    ["twisted", "hardcore entry"],
+    ["full twisted", "cab slide"],
+    ["full twisted", "hardcore entry"],
+    ["hardcore entry", "cab slide"]
+  ],
+  "tricks_constraints": [
+    "MacFly",
+    "HeliFly",
+    "SatFly"
+  ],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 2
+}

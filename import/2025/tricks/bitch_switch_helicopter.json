@@ -1,0 +1,21 @@
+{
+  "name": "Bitch Switch Helicopter",
+  "acronym": "BSH",
+  "directions": ["left", "right", "opposite"],
+  "solo": false,
+  "solo_awt": false,
+  "synchro": true,
+  "repeatable": false,
+  "description": "Rodeo HELICOPTER + connection to Rodeo HELICOPTER with pilots replacing each other",
+  "minimum": "Min 1 revolution of spiral",
+  "criterias": {
+    "normal": "same as for SAT"
+  },
+  "technical_coefficient": 1.75,
+  "bonuses": [],
+  "bonus_constraints": [],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

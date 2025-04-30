@@ -1,0 +1,42 @@
+{
+  "name": "X-Chopper to Infinity Tumbling",
+  "acronym": "XI",
+  "types": ["to infinite", "tumbling"],
+  "directions": ["left", "right"],
+  "solo": true,
+  "solo_awt": true,
+  "synchro": true,
+  "repeatable": false,
+  "description": "X-Chopper (Min 360° spin rotation) followed by a high Tumbling using the dive from the X- Chopper",
+  "minimum": "3 rotations of tumbling",
+  "criterias": {
+    "normal": "energy on entry, timing, flow, tumbling minimum 3 rotations. Perfectly straight axis on the first rotation of tumbling for max score",
+    "twisted": "twisted on the entry, untwisted by the rotation of the glider",
+    "full twisted": "twisted during the whole X-Chopper, staying twisted during the shoot and until the exit of the tumbling",
+    "hardcore entry": "untwisted during the rotation of the X-Chopper immediately followed by a twist to the other direction, staying twisted during the shoot and until the exit of the tumbling",
+    "cab slide": "get twisted during an infinity tumbling turn",
+    "devil twist": "from a twisted situation, change of twist direction (within one turn)"
+  },
+
+  "connection": "Forbidden connection to Tumbling or Anti-Rhythmic SAT",
+  "technical_coefficient": 1.95,
+  "bonuses": [
+    {"name": "twisted","bonus": 3.5},
+    {"name": "full twisted","bonus": 7.5},
+    {"name": "hardcore entry","bonus": 7.5},
+    {"name": "cab slide","bonus": 2},
+    {"name": "twisted exit","bonus": 3},
+    {"name": "devil twist","bonus": 2}
+  ],
+  "bonus_constraints": [
+    ["twisted", "full twisted"],
+    ["twisted", "hardcore entry"],
+    ["full twisted", "hardcore entry"],
+    ["full twisted", "cab slide"],
+    ["hardcore entry", "cab slide"]
+  ],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 2
+}

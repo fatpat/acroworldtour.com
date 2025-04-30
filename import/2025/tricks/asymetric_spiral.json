@@ -1,0 +1,23 @@
+{
+  "name": "Asymetric Spiral",
+  "acronym": "A3",
+  "directions": ["left", "right"],
+  "solo": true,
+  "solo_awt": true,
+  "synchro": true,
+  "repeatable": false,
+  "description": "Series of pendulum turns in the same direction each time",
+  "criterias": {
+    "normal": "rhythm, flow, trajectory, angle (135° for maximum score\\ –\\ the higher the better)",
+    "twisted": "twisted all the way from entry to exit"
+  },
+  "technical_coefficient": 1.35,
+  "bonuses": [
+    {"name": "twisted","bonus": 2.5}
+  ],
+  "bonus_constraints": [],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

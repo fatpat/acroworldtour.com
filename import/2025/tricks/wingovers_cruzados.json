@@ -1,0 +1,22 @@
+{
+  "name": "Wingovers Cruzados",
+  "acronym": "WC",
+  "directions": [],
+  "solo": false,
+  "solo_awt": false,
+  "synchro": true,
+  "repeatable": true,
+  "description": "Same as Wingover Opposite but the pilots must cross each other during the manoeuvre",
+  "minimum": null,
+  "criterias": {
+    "normal": "same as Wingover Opposite"
+  },
+  "repetition_allowed": true,
+  "technical_coefficient": 1.85,
+  "bonuses": [],
+  "bonus_constraints": [],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

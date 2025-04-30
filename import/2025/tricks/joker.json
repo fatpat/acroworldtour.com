@@ -1,0 +1,30 @@
+{
+  "name": "Joker",
+  "acronym": "J",
+  "directions": ["left", "right"],
+  "solo": true,
+  "solo_awt": true,
+  "synchro": true,
+  "repeatable": false,
+  "description": "Tumbling entry. 1 rotation only, stopped during the dive. Exit with high energy connected to a Helicopter to the same side + SAT to Helicopter connection",
+  "criterias": {
+    "normal": "energy on entry, timing, flow, energy on exit, angle, connection to Helicopter (fluidity, rapidity). Only 1 Tumbling rotation",
+    "twisted": "twisted on the entry, twisted on the dive, must untwist during the connection into helicopter",
+    "reverse": "immediate transition to a Helicopter in the opposite direction.",
+    "devil twist": "Twisted during the entry, untwisted during the beginning of the connection, re twisted by the connection to heli. Must stay twisted for minimum 2 turns of heli. Can untwist for the exit"
+  },
+  "connection": "Forbidden connection to Helicopter",
+  "technical_coefficient": 1.90,
+  "bonuses": [
+    {"name": "twisted","bonus": 4.5},
+    {"name": "reverse","bonus": 4.5},
+    {"name": "devil twist","bonus": 7}
+  ],
+  "bonus_constraints": [
+      ["twisted", "devil twist"]
+  ],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

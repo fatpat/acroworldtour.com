@@ -1,0 +1,30 @@
+{
+  "name": "Misty Flip",
+  "acronym": "M",
+  "directions": ["left", "right"],
+  "solo": true,
+  "solo_awt": true,
+  "synchro": true,
+  "repeatable": false,
+  "description": "Straight entry & climb, 360° spin, straight horizontal dive, exit not more than 180° from the direction of entry",
+  "criterias": {
+    "normal": "importance of pitch on entry, 360° rotation, maintenance of shape, strong dive, no rotation on entry and exit, direction",
+    "twisted": "twisted on the entry, untwisted by the rotation of the glider",
+    "twisted exit": "the twist shall be kept for at least 3 seconds",
+    "full twisted": "keep the twist during the whole manoeuvre from beginning till exit as well as during the whole rotation. No change of direction of the twist. Twist shall be kept for at least 3 seconds or until the next trick"
+  },
+  "technical_coefficient": 1.65,
+  "bonuses": [
+    {"name": "twisted","bonus": 2.5},
+    {"name": "twisted exit","bonus": 3.5},
+    {"name": "full twisted","bonus": 6}
+  ],
+  "bonus_constraints": [
+    ["twisted", "full twisted"],
+    ["twisted exit", "full twisted"]
+  ],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

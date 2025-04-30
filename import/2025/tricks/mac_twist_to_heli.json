@@ -1,0 +1,30 @@
+{
+  "name": "Mac Twist to Helicopter",
+  "acronym": "MCH",
+  "directions": ["left", "right"],
+  "solo": true,
+  "solo_awt": true,
+  "synchro": true,
+  "repeatable": false,
+  "description": "Mac Twist with the spiral maintained to Helicopter",
+  "minimum": "same as Mac Twist and Helicopter",
+  "criterias": {
+    "normal": "flow and speed of transition",
+    "twisted": "must be twisted during the entry, untwisted by the rotation of the Mac Twist",
+    "reverse": "immediate transition to a Helicopter in the opposite direction",
+    "devil twist": "Twisted during the entry, untwisted during the beginning of the connection, re twisted by the connection to heli. Must stay twisted for minimum 2 turns of heli. Can untwist for the exit"
+  },
+  "technical_coefficient": 1.85,
+  "bonuses": [
+    {"name": "twisted","bonus": 4},
+    {"name": "reverse","bonus": 3.5},
+    {"name": "devil twist","bonus": 7}
+  ],
+  "bonus_constraints": [
+    ["twisted", "devil twist"]
+  ],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

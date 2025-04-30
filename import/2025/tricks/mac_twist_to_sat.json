@@ -1,0 +1,33 @@
+{
+  "name": "Mac Twist to SAT",
+  "acronym": "MCS",
+  "directions": ["left", "right"],
+  "solo": true,
+  "solo_awt": true,
+  "synchro": true,
+  "repeatable": false,
+  "description": "A mactwist directly connected into a SAT maneuver with a fast and clean transition",
+  "minimum": "Mactwist criteria, a more sideway exit of the mactwist is allowed, no spiral during the connection for max score, sat criteria.",
+  "criterias": {
+    "normal": "Speed, flow, connection, angle, fluidity",
+    "twisted": "twisted on the mactwist entry, untwisted by the rotation",
+    "full twisted": "wisted on the mactwist entry, staying twisted during the whole rotation and connection, must stay twisted for min 1 turn in SAT. Can untwist for the SAT exit",
+    "devil twist": "wisted on the mactwist entry, untwisted by the rotation and twisted again during the end of the rotation, staying twisted during the connection, must stay twisted for min 1 turn in SAT. Can untwist for the SAT exit"
+  },
+  "connection": "Forbidden connection to SAT",
+  "technical_coefficient": 1.85,
+  "bonuses": [
+    {"name": "twisted","bonus": 4},
+    {"name": "full twisted","bonus": 8},
+    {"name": "devil twist","bonus": 6.5}
+  ],
+  "bonus_constraints": [
+    ["twisted", "full twisted"],
+    ["twisted", "devil twist"],
+    ["full twisted", "devil twist"]
+  ],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

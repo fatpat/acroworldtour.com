@@ -1,0 +1,30 @@
+{
+  "name": "Misty to Tumbling",
+  "acronym": "MT",
+  "types": ["to infinite", "tumbling"],
+  "directions": ["left", "right"],
+  "solo": true,
+  "solo_awt": true,
+  "synchro": true,
+  "repeatable": false,
+  "description": "Misty Flip (360° spin rotation) followed by a high Tumbling using the dive from the Misty Flip",
+  "criterias": {
+    "normal": "energy on entry, timing, flow",
+    "twisted": "twisted on the entry, untwisted by the rotation of the glider",
+    "cab slide": "get twisted during an infinity tumbling turn",
+    "devil twist": "from a twisted situation, change of twist direction (within one turn)"
+  },
+  "connection": "Forbidden connection to Infinite Tumbling nor Anty-rhythmic",
+  "technical_coefficient": 2.15,
+  "bonuses": [
+    {"name": "twisted","bonus": 6},
+    {"name": "cab slide","bonus": 2},
+    {"name": "devil twist","bonus": 2},
+    {"name": "twisted exit","bonus": 4.5}
+  ],
+  "bonus_constraints": [],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 2
+}

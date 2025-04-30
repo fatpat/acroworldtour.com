@@ -1,0 +1,31 @@
+{
+  "name": "Super Cowboy",
+  "acronym": "SC",
+  "directions": ["left", "right"],
+  "solo": true,
+  "solo_awt": true,
+  "synchro": true,
+  "repeatable": false,
+  "description": "Mactwist to dive to Helicopter",
+  "minimum": "45° climb before rotation",
+  "criterias": {
+    "normal": "Mactwist criteria + forward dive + short SAT move + transition to Helicopter + Helicopter criteria",
+    "twisted": "twisted during the entry, untwisted by the rotation of the Mactwist",
+    "devil twist": "twisted during the entry, untwisted by the rotation of the Mactwist and re twisted before the dive, then untwisted and re twisted again during the connection into heli, must stay twisted during at least 2 rotation of helicopter. Can untwist for the exit",
+    "reverse": "immediate transition to a Helicopter in the opposite direction"
+  },
+  "connection": "Forbidden connection to Helicopter",
+  "technical_coefficient": 1.9,
+  "bonuses": [
+    {"name": "twisted","bonus": 4},
+    {"name": "devil twist","bonus": 8},
+    {"name": "reverse","bonus": 4.5}
+  ],
+  "bonus_constraints": [
+      ["twisted", "devil twist"]
+  ],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

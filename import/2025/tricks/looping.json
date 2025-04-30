@@ -1,0 +1,25 @@
+{
+  "name": "Looping",
+  "acronym": "L",
+  "directions": ["left", "right"],
+  "solo": true,
+  "solo_awt": true,
+  "synchro": true,
+  "repeatable": false,
+  "name_alt": "Inversion",
+  "description": "Entry from asymmetric spiral or a normal spiral. Reversal of a revolution that makes the pilot turn around the wing in a roll movement",
+  "minimum": "135° angle",
+  "criterias": {
+    "normal": "entry, energy, timing, flow, trajectory (pitch movement), angle (180° for maximum score), exit or connection",
+    "twisted": "twisted on the entry, must stay twisted until the glider stabilises"
+  },
+  "technical_coefficient": 1.5,
+  "bonuses": [
+    {"name": "twisted","bonus": 3.5}
+  ],
+  "bonus_constraints": [],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

@@ -1,0 +1,31 @@
+{
+  "name": "Rythmic SAT",
+  "acronym": "R",
+  "types": ["tumbling"],
+  "directions": ["left", "right"],
+  "solo": true,
+  "solo_awt": true,
+  "synchro": true,
+  "repeatable": false,
+  "description": "Entry without pitch, constant progression until reaching 180° + 1 straight rotation at the end",
+  "minimum": "135° in the best rotation",
+  "criterias": {
+    "normal": "rhythm and regularity of the variation of the axis, flow, angle, exit or connection",
+    "twisted": "twisted on the entry, must stay twisted, untwist at the exit and NOT during the turns",
+    "devil twist": "from a twisted situation, change of twist direction (within one turn)"
+  },
+  "connection": "Forbidden connection to Tumbling, Infinite and Anti Rhythmic",
+  "technical_coefficient": 1.95,
+  "bonuses": [
+    {"name": "twisted","bonus": 4},
+    {"name": "twisted exit","bonus": 4.5},
+    {"name": "devil twist","bonus": 2}
+  ],
+  "bonus_constraints": [
+    ["twisted", "devil twist"]
+  ],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}

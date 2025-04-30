@@ -1,0 +1,30 @@
+{
+  "name": "Helicopter",
+  "acronym": "H",
+  "directions": ["left", "right"],
+  "solo": true,
+  "solo_awt": true,
+  "synchro": true,
+  "repeatable": false,
+  "description": "Perfect spin with open glider and vertical axe of rotation",
+  "minimum": "3 rotations",
+  "criterias": {
+    "normal": "maintenance of the shape, stability of rotation axis (vertical), speed of rotation, low sink rate, duration, exit or connection",
+    "twisted": "twisting during the helicopter, must stay twisted for 2 turns, can untwist for the exit"
+  },
+  "technical_coefficient": 1.7,
+  "bonuses": [
+    {"name": "twisted","bonus": 3},
+    {"name": "full twisted","bonus": 9},
+    {"name": "twisted exit","bonus": 3}
+  ],
+  "bonus_constraints": [
+    ["twisted", "twisted exit"],
+    ["twisted", "full twisted"],
+    ["twisted exit", "full twisted"]
+  ],
+  "first_maneuver": 0,
+  "no_first_maneuver": 0,
+  "last_maneuver": 0,
+  "no_last_maneuver": 0
+}
