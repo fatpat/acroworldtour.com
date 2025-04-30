@@ -680,6 +680,7 @@ class Competition(CompetitionNew):
                 marks = flight.marks,
                 did_not_start = flight.did_not_start,
                 warnings = flight.warnings,
+                tip_touch_bonuses = flight.tip_touch_bonuses,
         )
 
     async def flight_save(self, run_i: int, id, flight: FlightNew, save: bool=False, published: bool=False, saveToDB : bool = True, mark_type:str = None, cache:Cache = None) -> FinalMark:
@@ -986,7 +987,7 @@ class Competition(CompetitionNew):
         for m in flight.marks:
             judge = judges[m.judge].name
             if m.technical_per_trick is None:
-                number_of_marks_without_technical_per_tricki -= 1
+                number_of_marks_without_technical_per_trick -= 1
                 continue
 
             n_technical_per_trick = len(m.technical_per_trick)
@@ -1432,6 +1433,15 @@ class Competition(CompetitionNew):
         #    minus the malus (the malus is applied right after to avoid confusion
         #    we don't want to include the malus in the bonus percentage that is exported to the result site
         mark.bonus_percentage = bonuses_total
+
+        # §6.6 tip touch bonus
+        # In Synchro a bonus will be awarded each time the glider of a team touch each other.
+        # The said bonus will be 2%/touch with a maximum of 6% bonus earned during a run.
+        log.info(f"tip touch {flight.tip_touch_bonuses} {flight}")
+        if self.type == CompetitionType.synchro and flight.tip_touch_bonuses > 0:
+            tip_touch_bonuses = min(flight.tip_touch_bonuses * 2, 6) # 2% per bonus, max 3 bonus (6%)
+            mark.notes.append(f"{tip_touch_bonuses}% tip-touch bonus")
+            mark.bonus_percentage += tip_touch_bonuses
 
         mark_percentage = dict(config.mark_percentages)[self.type.value]
         mark.technical = mark.technicity * mark.judges_mark.technical * mark_percentage.technical / 100
