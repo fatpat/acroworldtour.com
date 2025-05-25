@@ -47,7 +47,8 @@ const TabFlights = ({ comp, run, rid }) => {
     tricks: [],
     marks: [],
     did_not_start: false,
-    warnings: []
+    warnings: [],
+    warnings2: [],
   })
   const [result, setResult] = useState({
       judges_mark:{}
@@ -115,6 +116,7 @@ const TabFlights = ({ comp, run, rid }) => {
       marks: data.marks,
       did_not_start: data.did_not_start,
       warnings: data.warnings,
+      warnings2: data.warnings2,
     }
 
     const [err, retData, headers] = await APIRequest(`/competitions/${comp.code}/runs/${rid}/flights/${pilot.civlid}/new?save=${false}`, {
@@ -163,6 +165,7 @@ const TabFlights = ({ comp, run, rid }) => {
       marks: data.marks,
       did_not_start: data.did_not_start,
       warnings: data.warnings,
+      warnings2: data.warnings2,
     }
 
     const [err, retData, headers] = await APIRequest(`/competitions/${comp.code}/runs/${rid}/flights/${pilot.civlid}/new?published=${publish}&save=${true}`, {
@@ -188,18 +191,27 @@ const TabFlights = ({ comp, run, rid }) => {
     saveResults(true, false)
   }
 
-  const addWarning = async(e, warning) => {
+  const addWarning = async(e, cat, warning) => {
     if (!warning || warning === "") warning = prompt("Warning message")
     if (!warning || warning === "") return
+
     if (!data.warnings) data.warnings = []
-    data.warnings.push(warning)
+    if (!data.warnings2) data.warnings2 = []
+
+    if (cat == 2) {
+      data.warnings2.push(warning)
+    } else {
+      data.warnings.push(warning)
+    }
     setData(data)
     simulateScore(data)
   }
 
-  const removeWarning = async(i) => {
-    if (i<0 || i>= data.warnings.length) return
-    data.warnings.splice(i, 1)
+  const removeWarning = async(cat, i) => {
+    let warnings = data.warnings
+    if (cat == 2) warnings = data.warnings2
+    if (i<0 || i>= warnings.length) return
+    warnings.splice(i, 1)
     setData(data)
     simulateScore(data)
   }
@@ -428,9 +440,15 @@ const TabFlights = ({ comp, run, rid }) => {
   </ul>
   </>)}
   { result.warnings && result.warnings.length > 0 && (<>
-                    <Typography>warnings:</Typography>
+                    <Typography>cat 1 warnings (0.5 pts):</Typography>
   <ul>
-  { result.warnings.map((warning, i) => <li key={i}>{warning} <DeleteIcon onClick={() => removeWarning(i)} /></li>)}
+  { result.warnings.map((warning, i) => <li key={i}>{warning} <DeleteIcon onClick={() => removeWarning(1, i)} /></li>)}
+  </ul>
+  </>)}
+  { result.warnings2 && result.warnings2.length > 0 && (<>
+                    <Typography>cat 2 warnings (1 pts):</Typography>
+  <ul>
+  { result.warnings2.map((warning, i) => <li key={i}>{warning} <DeleteIcon onClick={() => removeWarning(2, i)} /></li>)}
   </ul>
   </>)}
                   </TableCell>
@@ -450,9 +468,17 @@ const TabFlights = ({ comp, run, rid }) => {
               </Grid>
               <Grid item xs={4}>
                 <Button onClick={didNotStart}>Did not start</Button>
-                <Button onClick={addWarning}>Add warning</Button>
-                <Button onClick={e => addWarning(e, "flight over the public")}>flight over the public</Button>
-                <Button onClick={deleteRun}>Delete</Button>
+                <Button onClick={e => addWarning(e, 1)}>Add cat 1 warning (0.5 pts)</Button>
+                <Button onClick={e => addWarning(e, 2)}>Add cat 2 warning (1 pts)</Button>
+                <Button onClick={e => addWarning(e, 1, "flight over the public")}>flight over the public</Button>
+                <Button onClick={e => addWarning(e, 1, "disregard of the flightbox")}>disregard of the flight box</Button>
+                <Button onClick={e => addWarning(e, 1, "missing or late at briefing")}>missing or late at briefing</Button>
+                <Button onClick={e => addWarning(e, 1, "missing or late at shuttle")}>missing or late at shuttle</Button>
+                <Button onClick={e => addWarning(e, 1, "not ready before deadline")}>not ready before deadline</Button>
+                <Button onClick={e => addWarning(e, 2, "dangerous flying")}>dangerous flying</Button>
+                <Button onClick={e => addWarning(e, 2, "not using the rescue")}>not using the rescue</Button>
+                <Button onClick={e => addWarning(e, 2, "unsportmanship behavior")}>unsportmanship behavior</Button>
+                <Button onClick={deleteRun}>Delete flight</Button>
               </Grid>
           </Grid>
         </Grid>
