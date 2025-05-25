@@ -7,7 +7,7 @@
 export interface paths {
   "/auth/login": {
     /**
-     * Login 
+     * Login
      * @description Get the JWT for a user with data from OAuth2 request form body.
      */
     post: operations["login_auth_login_post"];
@@ -43,8 +43,8 @@ export interface paths {
     patch: operations["change_gender_pilots__civlid__gender_patch"];
   };
   "/pilots/{civlid}/awt": {
-    /** Change Gender */
-    patch: operations["change_gender_pilots__civlid__awt_patch"];
+    /** Change Awt */
+    patch: operations["change_awt_pilots__civlid__awt_patch"];
   };
   "/judges/": {
     /** List */
@@ -119,8 +119,8 @@ export interface paths {
     post: operations["create_import_tricks_import_post"];
   };
   "/competitions/": {
-    /** List */
-    get: operations["list_competitions__get"];
+    /** List Competitions */
+    get: operations["list_competitions_competitions__get"];
   };
   "/competitions/{id}": {
     /** Get By Id */
@@ -209,6 +209,8 @@ export interface paths {
   "/competitions/{id}/runs/{i}/flights/{pilot_team_id}": {
     /** Flight Get */
     get: operations["flight_get_competitions__id__runs__i__flights__pilot_team_id__get"];
+    /** Flight Delete */
+    delete: operations["flight_delete_competitions__id__runs__i__flights__pilot_team_id__delete"];
   };
   "/competitions/{id}/runs/{i}/flights/{pilot_team_id}/new": {
     /** Flight Save */
@@ -229,6 +231,10 @@ export interface paths {
   "/competitions/{id}/results/{i}/export": {
     /** Run Get Results */
     get: operations["run_get_results_competitions__id__results__i__export_get"];
+  };
+  "/competitions/{id}/starting_order/{i}/export": {
+    /** Export Starting Order */
+    get: operations["export_starting_order_competitions__id__starting_order__i__export_get"];
   };
   "/scores/simulate/{t}": {
     /** Simulate */
@@ -303,12 +309,20 @@ export interface paths {
     post: operations["simulate_public_simulate_competition__t__post"];
   };
   "/public/live/overlay/pilot/{civlid}/run/{run}": {
-    /** Simulate */
-    get: operations["simulate_public_live_overlay_pilot__civlid__run__run__get"];
+    /** Live Overlay Pilot */
+    get: operations["live_overlay_pilot_public_live_overlay_pilot__civlid__run__run__get"];
   };
   "/public/live/overlay/team/{team}/run/{run}": {
-    /** Simulate */
-    get: operations["simulate_public_live_overlay_team__team__run__run__get"];
+    /** Live Overlay Team */
+    get: operations["live_overlay_team_public_live_overlay_team__team__run__run__get"];
+  };
+  "/public/live/overlay/competition/{id}": {
+    /** Live Overlay Competition */
+    get: operations["live_overlay_competition_public_live_overlay_competition__id__get"];
+  };
+  "/public/files/{id}": {
+    /** Get File */
+    get: operations["get_file_public_files__id__get"];
   };
   "/utils/backup": {
     /** Backup */
@@ -361,34 +375,34 @@ export interface components {
     /** Body_login_auth_login_post */
     Body_login_auth_login_post: {
       /** Grant Type */
-      grant_type?: string;
+      grant_type?: string | null;
       /** Username */
       username: string;
       /** Password */
       password: string;
       /**
-       * Scope 
+       * Scope
        * @default
        */
       scope?: string;
       /** Client Id */
-      client_id?: string;
+      client_id?: string | null;
       /** Client Secret */
-      client_secret?: string;
+      client_secret?: string | null;
     };
     /** Body_post_file_files_new_post */
     Body_post_file_files_new_post: {
       /**
-       * File 
+       * File
        * Format: binary
        */
       file: string;
     };
     /**
-     * Bonus 
+     * Bonus
      * @example {
-     *   "name": "twisted",
-     *   "bonus": 2.5
+     *   "bonus": 2.5,
+     *   "name": "twisted"
      * }
      */
     Bonus: {
@@ -396,64 +410,66 @@ export interface components {
       name: string;
       /** Bonus */
       bonus: number;
-      /**
-       * Sample Video 
-       * Format: uri
-       */
-      sample_video?: string;
+      /** Sample Video */
+      sample_video?: string | null;
     };
     /**
-     * CompetitionConfig 
+     * CompetitionConfig
      * @example {
-     *   "warning": 0.5,
-     *   "malus_repetition": 13,
-     *   "warnings_to_dsq": 3,
      *   "judges_weight": {
-     *     "senior": 100,
      *     "certified": 100,
+     *     "senior": 100,
      *     "trainee": 20
      *   },
+     *   "malus_repetition": 13,
      *   "mark_percentages": {
      *     "solo": {
-     *       "technical": 40,
      *       "choreography": 40,
-     *       "landing": 20
+     *       "landing": 20,
+     *       "technical": 40
      *     },
      *     "synchro": {
-     *       "technical": 25,
      *       "choreography": 25,
      *       "landing": 25,
-     *       "synchro": 25
+     *       "synchro": 25,
+     *       "technical": 25
      *     }
      *   },
      *   "max_bonus_per_run": {
-     *     "twist": 5,
+     *     "flip": 1,
      *     "reverse": 3,
-     *     "flip": 1
-     *   }
+     *     "twist": 5
+     *   },
+     *   "warning": 0.5,
+     *   "warnings_to_dsq": 3
      * }
      */
-    CompetitionConfig: {
+    "CompetitionConfig-Input": {
       /**
-       * Warning 
-       * @description The point deduction for a warning 
+       * Warning
+       * @description The point deduction for a category 1 warning
        * @default 0.5
        */
       warning?: number;
       /**
-       * Malus Repetition 
-       * @description % reduction malus of choreography for repetition 
+       * Warning2
+       * @description The point deduction for a category 2 warning
+       * @default 1
+       */
+      warning2?: number;
+      /**
+       * Malus Repetition
+       * @description % reduction malus of choreography for repetition
        * @default 13
        */
       malus_repetition?: number;
       /**
-       * Warnings To Dsq 
-       * @description number of warnings in a comp that lead to DSQ 
+       * Warnings To Dsq
+       * @description number of warnings in a comp that lead to DSQ
        * @default 3
        */
       warnings_to_dsq?: number;
       /**
-       * Judge Weights 
        * @default {
        *   "senior": 100,
        *   "certified": 100,
@@ -462,24 +478,111 @@ export interface components {
        */
       judge_weights?: components["schemas"]["JudgeWeights"];
       /**
-       * Mark Percentages 
        * @default {
        *   "solo": {
-       *     "technical": 40,
        *     "choreography": 40,
-       *     "landing": 20
+       *     "landing": 20,
+       *     "technical": 40
        *   },
        *   "synchro": {
-       *     "technical": 20,
        *     "choreography": 20,
        *     "landing": 20,
-       *     "synchro": 40
+       *     "synchro": 40,
+       *     "technical": 20
        *   }
        * }
        */
       mark_percentages?: components["schemas"]["MarkPercentages"];
       /**
-       * Max Bonus Per Run 
+       * @default {
+       *   "twist": 5,
+       *   "reverse": 3,
+       *   "flip": 2
+       * }
+       */
+      max_bonus_per_run?: components["schemas"]["MaxBonusPerRun"];
+    };
+    /**
+     * CompetitionConfig
+     * @example {
+     *   "judges_weight": {
+     *     "certified": 100,
+     *     "senior": 100,
+     *     "trainee": 20
+     *   },
+     *   "malus_repetition": 13,
+     *   "mark_percentages": {
+     *     "solo": {
+     *       "choreography": 40,
+     *       "landing": 20,
+     *       "technical": 40
+     *     },
+     *     "synchro": {
+     *       "choreography": 25,
+     *       "landing": 25,
+     *       "synchro": 25,
+     *       "technical": 25
+     *     }
+     *   },
+     *   "max_bonus_per_run": {
+     *     "flip": 1,
+     *     "reverse": 3,
+     *     "twist": 5
+     *   },
+     *   "warning": 0.5,
+     *   "warnings_to_dsq": 3
+     * }
+     */
+    "CompetitionConfig-Output": {
+      /**
+       * Warning
+       * @description The point deduction for a category 1 warning
+       * @default 0.5
+       */
+      warning?: number;
+      /**
+       * Warning2
+       * @description The point deduction for a category 2 warning
+       * @default 1
+       */
+      warning2?: number;
+      /**
+       * Malus Repetition
+       * @description % reduction malus of choreography for repetition
+       * @default 13
+       */
+      malus_repetition?: number;
+      /**
+       * Warnings To Dsq
+       * @description number of warnings in a comp that lead to DSQ
+       * @default 3
+       */
+      warnings_to_dsq?: number;
+      /**
+       * @default {
+       *   "senior": 100,
+       *   "certified": 100,
+       *   "trainee": 20
+       * }
+       */
+      judge_weights?: components["schemas"]["JudgeWeights"];
+      /**
+       * @default {
+       *   "solo": {
+       *     "choreography": 40,
+       *     "landing": 20,
+       *     "technical": 40
+       *   },
+       *   "synchro": {
+       *     "choreography": 20,
+       *     "landing": 20,
+       *     "synchro": 40,
+       *     "technical": 20
+       *   }
+       * }
+       */
+      mark_percentages?: components["schemas"]["MarkPercentages"];
+      /**
        * @default {
        *   "twist": 5,
        *   "reverse": 3,
@@ -497,12 +600,12 @@ export interface components {
       /** Code */
       code: string;
       /**
-       * Start Date 
+       * Start Date
        * Format: date
        */
       start_date: string;
       /**
-       * End Date 
+       * End Date
        * Format: date
        */
       end_date: string;
@@ -512,48 +615,41 @@ export interface components {
       published: boolean;
       type: components["schemas"]["CompetitionType"];
       /** Pilots */
-      pilots: (components["schemas"]["Pilot"])[];
+      pilots: components["schemas"]["Pilot"][];
       /** Teams */
-      teams: (components["schemas"]["TeamExport"])[];
+      teams: components["schemas"]["TeamExport"][];
       /** Judges */
-      judges: (components["schemas"]["Judge"])[];
+      judges: components["schemas"]["Judge"][];
       /** Repeatable Tricks */
-      repeatable_tricks: (components["schemas"]["Trick"])[];
+      repeatable_tricks: components["schemas"]["Trick-Output"][];
       state: components["schemas"]["CompetitionState"];
-      config: components["schemas"]["CompetitionConfig"];
+      config: components["schemas"]["CompetitionConfig-Output"];
       /** Runs */
-      runs: (components["schemas"]["RunExport"])[];
-      /**
-       * Image 
-       * Format: uri
-       */
-      image?: string;
-      /**
-       * Logo 
-       * Format: uri
-       */
-      logo?: string;
-      /**
-       * Website 
-       * Format: uri
-       */
-      website?: string;
+      runs: components["schemas"]["RunExport"][];
+      /** Image */
+      image?: string | null;
+      /** Logo */
+      logo?: string | null;
+      /** Website */
+      website?: string | null;
       /** Seasons */
-      seasons: (string)[];
+      seasons: string[];
+      /** Last Update */
+      last_update?: string | null;
     };
     /** CompetitionNew */
     CompetitionNew: {
       /** Name */
       name: string;
       /** Code */
-      code?: string;
+      code?: string | null;
       /**
-       * Start Date 
+       * Start Date
        * Format: date
        */
       start_date: string;
       /**
-       * End Date 
+       * End Date
        * Format: date
        */
       end_date: string;
@@ -563,26 +659,25 @@ export interface components {
       published: boolean;
       type: components["schemas"]["CompetitionType"];
       /** Image */
-      image?: string;
+      image?: string | null;
       /** Logo */
-      logo?: string;
+      logo?: string | null;
+      /** Website */
+      website?: string | null;
       /**
-       * Website 
-       * Format: uri
-       */
-      website?: string;
-      /**
-       * Seasons 
+       * Seasons
        * @default []
        */
-      seasons?: (string)[];
+      seasons?: string[];
+      /** Last Update */
+      last_update?: string | null;
     };
     /** CompetitionPilotResultsExport */
     CompetitionPilotResultsExport: {
-      pilot?: components["schemas"]["Pilot"];
-      team?: components["schemas"]["TeamExport"];
+      pilot?: components["schemas"]["Pilot"] | null;
+      team?: components["schemas"]["TeamExport"] | null;
       /** Result Per Run */
-      result_per_run: (components["schemas"]["RunResultSummary"])[];
+      result_per_run: components["schemas"]["RunResultSummary"][];
       /** Score */
       score: number;
     };
@@ -595,12 +690,12 @@ export interface components {
       /** Code */
       code: string;
       /**
-       * Start Date 
+       * Start Date
        * Format: date
        */
       start_date: string;
       /**
-       * End Date 
+       * End Date
        * Format: date
        */
       end_date: string;
@@ -618,23 +713,16 @@ export interface components {
       number_of_judges: number;
       /** Number Of Runs */
       number_of_runs: number;
-      /**
-       * Image 
-       * Format: uri
-       */
-      image?: string;
-      /**
-       * Logo 
-       * Format: uri
-       */
-      logo?: string;
-      /**
-       * Website 
-       * Format: uri
-       */
-      website?: string;
+      /** Image */
+      image?: string | null;
+      /** Logo */
+      logo?: string | null;
+      /** Website */
+      website?: string | null;
       /** Seasons */
-      seasons: (string)[];
+      seasons: string[];
+      /** Last Update */
+      last_update?: string | null;
     };
     /** CompetitionPublicExportWithResults */
     CompetitionPublicExportWithResults: {
@@ -645,12 +733,12 @@ export interface components {
       /** Code */
       code: string;
       /**
-       * Start Date 
+       * Start Date
        * Format: date
        */
       start_date: string;
       /**
-       * End Date 
+       * End Date
        * Format: date
        */
       end_date: string;
@@ -668,30 +756,23 @@ export interface components {
       number_of_judges: number;
       /** Number Of Runs */
       number_of_runs: number;
-      /**
-       * Image 
-       * Format: uri
-       */
-      image?: string;
-      /**
-       * Logo 
-       * Format: uri
-       */
-      logo?: string;
-      /**
-       * Website 
-       * Format: uri
-       */
-      website?: string;
+      /** Image */
+      image?: string | null;
+      /** Logo */
+      logo?: string | null;
+      /** Website */
+      website?: string | null;
       /** Seasons */
-      seasons: (string)[];
+      seasons: string[];
+      /** Last Update */
+      last_update?: string | null;
       results: components["schemas"]["CompetitionResultsExport"];
       /** Pilots */
-      pilots: (components["schemas"]["Pilot"])[];
+      pilots: components["schemas"]["Pilot"][];
       /** Teams */
-      teams: (components["schemas"]["TeamExport"])[];
+      teams: components["schemas"]["TeamExport"][];
       /** Judges */
-      judges: (components["schemas"]["Judge"])[];
+      judges: components["schemas"]["Judge"][];
     };
     /** CompetitionResult */
     CompetitionResult: {
@@ -707,20 +788,18 @@ export interface components {
       type: string;
       /** Results */
       results: {
-        [key: string]: (components["schemas"]["CompetitionPilotResultsExport"])[] | undefined;
+        [key: string]: components["schemas"]["CompetitionPilotResultsExport"][];
       };
       /** Runs Results */
-      runs_results: (components["schemas"]["RunResultsExport"])[];
+      runs_results: components["schemas"]["RunResultsExport"][];
     };
     /**
-     * CompetitionState 
-     * @description An enumeration. 
+     * CompetitionState
      * @enum {string}
      */
     CompetitionState: "init" | "open" | "closed";
     /**
-     * CompetitionType 
-     * @description An enumeration. 
+     * CompetitionType
      * @enum {string}
      */
     CompetitionType: "solo" | "synchro";
@@ -730,30 +809,30 @@ export interface components {
       id: string;
     };
     /**
-     * FinalMark 
+     * FinalMark
      * @example {
-     *   "judges_mark": {
-     *     "judge": "Average of the judges marks",
-     *     "technical": 2.5,
-     *     "choreography": 7,
-     *     "landing": 7,
-     *     "synchro": 7
-     *   },
-     *   "technicity": 1.87,
-     *   "bonus_percentage": 23,
-     *   "technical": 7,
-     *   "choreography": 6,
-     *   "landing": 7,
-     *   "synchro": 7,
      *   "bonus": 1.23,
-     *   "score": 9.244,
-     *   "warnings": [
-     *     "box",
-     *     "late at briefing"
-     *   ],
+     *   "bonus_percentage": 23,
+     *   "choreography": 6,
+     *   "judges_mark": {
+     *     "choreography": 7,
+     *     "judge": "Average of the judges marks",
+     *     "landing": 7,
+     *     "synchro": 7,
+     *     "technical": 2.5
+     *   },
+     *   "landing": 7,
      *   "malus": 13,
      *   "notes": [
      *     "Yellow card: big ear to start the run"
+     *   ],
+     *   "score": 9.244,
+     *   "synchro": 7,
+     *   "technical": 7,
+     *   "technicity": 1.87,
+     *   "warnings": [
+     *     "box",
+     *     "late at briefing"
      *   ]
      * }
      */
@@ -776,14 +855,21 @@ export interface components {
       /** Score */
       score: number;
       /** Warnings */
-      warnings: (string)[];
+      warnings: string[];
+      /**
+       * Warnings2
+       * @default []
+       */
+      warnings2?: string[];
       /** Malus */
       malus: number;
       /**
-       * Notes 
+       * Notes
        * @default []
        */
-      notes?: (string)[];
+      notes?: string[];
+      /** Mark Type */
+      mark_type?: string | null;
     };
     /** FinalMarkExport */
     FinalMarkExport: {
@@ -805,21 +891,28 @@ export interface components {
       /** Score */
       score: number;
       /** Warnings */
-      warnings: (string)[];
+      warnings: string[];
+      /**
+       * Warnings2
+       * @default []
+       */
+      warnings2?: string[];
       /** Malus */
       malus: number;
       /** Notes */
-      notes: (string)[];
+      notes: string[];
+      /** Mark Type */
+      mark_type?: string | null;
     };
     /**
-     * Flight 
+     * Flight
      * @example {
-     *   "pilot": 1234,
-     *   "tricks": [],
-     *   "marks": [],
      *   "did_not_start": false,
      *   "final_marks": {},
+     *   "marks": [],
+     *   "pilot": 1234,
      *   "published": false,
+     *   "tricks": [],
      *   "warnings": []
      * }
      */
@@ -827,189 +920,218 @@ export interface components {
       /** Pilot */
       pilot: number;
       /** Team */
-      team?: string;
+      team?: string | null;
       /** Tricks */
-      tricks: (components["schemas"]["UniqueTrick"])[];
+      tricks: components["schemas"]["UniqueTrick"][];
       /** Marks */
-      marks: (components["schemas"]["JudgeMark"])[];
+      marks: components["schemas"]["JudgeMark"][];
       /**
-       * Did Not Start 
+       * Did Not Start
        * @default false
        */
       did_not_start?: boolean;
-      final_marks?: components["schemas"]["FinalMark"];
+      final_marks?: components["schemas"]["FinalMark"] | null;
       /**
-       * Published 
+       * Published
        * @default false
        */
       published?: boolean;
       /** Warnings */
-      warnings: (string)[];
+      warnings: string[];
+      /**
+       * Warnings2
+       * @default []
+       */
+      warnings2?: string[];
+      /**
+       * Tip Touch Bonuses
+       * @default 0
+       */
+      tip_touch_bonuses?: number;
+      /** Last Update */
+      last_update?: string | null;
     };
     /** FlightExport */
     FlightExport: {
-      pilot?: components["schemas"]["Pilot"];
-      team?: components["schemas"]["TeamExport"];
+      pilot?: components["schemas"]["Pilot"] | null;
+      team?: components["schemas"]["TeamExport"] | null;
       /** Tricks */
-      tricks: (components["schemas"]["UniqueTrick"])[];
+      tricks: components["schemas"]["UniqueTrick"][];
       /** Marks */
-      marks: (components["schemas"]["JudgeMarkExport"])[];
+      marks: components["schemas"]["JudgeMarkExport"][];
       /**
-       * Did Not Start 
+       * Did Not Start
        * @default false
        */
       did_not_start?: boolean;
-      final_marks?: components["schemas"]["FinalMarkExport"];
+      final_marks?: components["schemas"]["FinalMarkExport"] | null;
       /**
-       * Published 
+       * Published
        * @default false
        */
       published?: boolean;
       /** Warnings */
-      warnings: (string)[];
+      warnings: string[];
+      /**
+       * Warnings2
+       * @default []
+       */
+      warnings2?: string[];
+      /**
+       * Tip Touch Bonuses
+       * @default 0
+       */
+      tip_touch_bonuses?: number;
+      /** Last Update */
+      last_update?: string | null;
     };
     /**
-     * FlightNew 
+     * FlightNew
      * @example {
+     *   "did_not_start": false,
+     *   "marks": [],
      *   "tricks": [
      *     "LM",
      *     "Right Misty Flip"
      *   ],
-     *   "marks": [],
-     *   "did_not_start": false,
      *   "warnings": []
      * }
      */
     FlightNew: {
       /** Tricks */
-      tricks: (string)[];
+      tricks: string[];
       /** Marks */
-      marks: (components["schemas"]["JudgeMark"])[];
+      marks: components["schemas"]["JudgeMark"][];
       /**
-       * Did Not Start 
+       * Did Not Start
        * @default false
        */
       did_not_start?: boolean;
       /**
-       * Warnings 
+       * Warnings
        * @default []
        */
-      warnings?: (string)[];
+      warnings?: string[];
+      /**
+       * Warnings2
+       * @default []
+       */
+      warnings2?: string[];
+      /**
+       * Tip Touch Bonuses
+       * @default 0
+       */
+      tip_touch_bonuses?: number;
     };
     /**
-     * GenderEnum 
-     * @description An enumeration. 
+     * GenderEnum
      * @enum {string}
      */
     GenderEnum: "man" | "woman" | "none";
     /** HTTPValidationError */
     HTTPValidationError: {
       /** Detail */
-      detail?: (components["schemas"]["ValidationError"])[];
+      detail?: components["schemas"]["ValidationError"][];
     };
     /**
-     * Judge 
+     * Judge
      * @example {
-     *   "name": "Jerry The Judge",
+     *   "civlid": 1234,
      *   "country": "fra",
      *   "level": "certified",
-     *   "civlid": 1234
+     *   "name": "Jerry The Judge"
      * }
      */
     Judge: {
       /** Id */
       _id?: string;
       /**
-       * Name 
+       * Name
        * @description The full name of the judge
        */
       name: string;
       /**
-       * Country 
+       * Country
        * @description The country of the judge using the 3 letter acronym of the country
        */
       country: string;
       /** @description The level of the judge */
       level: components["schemas"]["JudgeLevel"];
       /**
-       * Civlid 
+       * Civlid
        * @description The CIVL ID if any (must be registered in the pilot database
        */
-      civlid?: number;
-      /**
-       * Deleted 
-       * Format: date-time
-       */
-      deleted?: string;
+      civlid?: number | null;
+      /** Deleted */
+      deleted?: string | null;
     };
     /**
-     * JudgeLevel 
-     * @description An enumeration. 
-     * @enum {unknown}
+     * JudgeLevel
+     * @enum {string}
      */
     JudgeLevel: "trainee" | "certified" | "senior";
     /**
-     * JudgeMark 
+     * JudgeMark
      * @example {
-     *   "judge": "Jerry The Judge",
-     *   "technical": 2.5,
      *   "choreography": 7,
+     *   "judge": "Jerry The Judge",
      *   "landing": 7,
-     *   "synchro": 7
+     *   "synchro": 7,
+     *   "technical": 2.5
      * }
      */
     JudgeMark: {
       /** Judge */
       judge: string;
       /** Technical */
-      technical?: number;
+      technical?: number | null;
       /** Technical Per Trick */
-      technical_per_trick?: (number)[];
+      technical_per_trick?: ((number | null)[]) | null;
       /** Choreography */
-      choreography?: number;
+      choreography?: number | null;
       /** Landing */
-      landing?: number;
+      landing?: number | null;
       /** Synchro */
-      synchro?: number;
+      synchro?: number | null;
     };
     /** JudgeMarkExport */
     JudgeMarkExport: {
-      judge?: components["schemas"]["Judge"];
+      judge?: components["schemas"]["Judge"] | null;
       /** Technical */
-      technical?: number;
+      technical?: number | null;
       /** Technical Per Trick */
-      technical_per_trick?: (number)[];
+      technical_per_trick?: ((number | null)[]) | null;
       /** Choreography */
-      choreography?: number;
+      choreography?: number | null;
       /** Landing */
-      landing?: number;
+      landing?: number | null;
       /** Synchro */
-      synchro?: number;
+      synchro?: number | null;
     };
     /**
-     * JudgeWeights 
+     * JudgeWeights
      * @example {
-     *   "senior": 100,
      *   "certified": 100,
+     *   "senior": 100,
      *   "trainee": 20
      * }
      */
     JudgeWeights: {
       /**
-       * Senior 
-       * @description weight of a senior judge's mark 
+       * Senior
+       * @description weight of a senior judge's mark
        * @default 100
        */
       senior?: number;
       /**
-       * Certified 
-       * @description weight of a certified judge's mark 
+       * Certified
+       * @description weight of a certified judge's mark
        * @default 100
        */
       certified?: number;
       /**
-       * Trainee 
-       * @description weight of a trainee judge's mark 
+       * Trainee
+       * @description weight of a trainee judge's mark
        * @default 20
        */
       trainee?: number;
@@ -1019,93 +1141,92 @@ export interface components {
       /** Name */
       name: string;
       /**
-       * Link 
+       * Link
        * Format: uri
        */
       link: string;
     };
     /**
-     * MarkPercentageSolo 
+     * MarkPercentageSolo
      * @example {
-     *   "technical": 40,
      *   "choreography": 40,
-     *   "landing": 20
+     *   "landing": 20,
+     *   "technical": 40
      * }
      */
     MarkPercentageSolo: {
       /**
-       * Technical 
-       * @description % of the technical part in the final score for solo runs 
+       * Technical
+       * @description % of the technical part in the final score for solo runs
        * @default 40
        */
       technical?: number;
       /**
-       * Choreography 
-       * @description % of the choreography part in the final score for solo runs 
+       * Choreography
+       * @description % of the choreography part in the final score for solo runs
        * @default 40
        */
       choreography?: number;
       /**
-       * Landing 
-       * @description % of the landing part in the final score for solo runs 
+       * Landing
+       * @description % of the landing part in the final score for solo runs
        * @default 20
        */
       landing?: number;
     };
     /**
-     * MarkPercentageSynchro 
+     * MarkPercentageSynchro
      * @example {
-     *   "technical": 25,
      *   "choreography": 25,
      *   "landing": 25,
-     *   "synchro": 25
+     *   "synchro": 25,
+     *   "technical": 25
      * }
      */
     MarkPercentageSynchro: {
       /**
-       * Technical 
-       * @description % of the technical part in the final score for synchro runs 
+       * Technical
+       * @description % of the technical part in the final score for synchro runs
        * @default 20
        */
       technical?: number;
       /**
-       * Choreography 
-       * @description % of the choreography part in the final score for synchro runs 
+       * Choreography
+       * @description % of the choreography part in the final score for synchro runs
        * @default 20
        */
       choreography?: number;
       /**
-       * Landing 
-       * @description % of the landing part in the final score for synchro runs 
+       * Landing
+       * @description % of the landing part in the final score for synchro runs
        * @default 20
        */
       landing?: number;
       /**
-       * Synchro 
-       * @description % of the synchro part in the final score for synchro runs 
+       * Synchro
+       * @description % of the synchro part in the final score for synchro runs
        * @default 40
        */
       synchro?: number;
     };
     /**
-     * MarkPercentages 
+     * MarkPercentages
      * @example {
      *   "solo": {
-     *     "technical": 40,
      *     "choreography": 40,
-     *     "landing": 20
+     *     "landing": 20,
+     *     "technical": 40
      *   },
      *   "synchro": {
-     *     "technical": 25,
      *     "choreography": 25,
      *     "landing": 25,
-     *     "synchro": 25
+     *     "synchro": 25,
+     *     "technical": 25
      *   }
      * }
      */
     MarkPercentages: {
       /**
-       * Solo 
        * @default {
        *   "technical": 40,
        *   "choreography": 40,
@@ -1114,7 +1235,6 @@ export interface components {
        */
       solo?: components["schemas"]["MarkPercentageSolo"];
       /**
-       * Synchro 
        * @default {
        *   "technical": 20,
        *   "choreography": 20,
@@ -1125,356 +1245,353 @@ export interface components {
       synchro?: components["schemas"]["MarkPercentageSynchro"];
     };
     /**
-     * MaxBonusPerRun 
+     * MaxBonusPerRun
      * @example {
-     *   "twist": 5,
+     *   "flip": 1,
      *   "reverse": 3,
-     *   "flip": 1
+     *   "twist": 5
      * }
      */
     MaxBonusPerRun: {
       /**
-       * Twist 
-       * @description maximum number of twisted tricks per run 
+       * Twist
+       * @description maximum number of twisted tricks per run
        * @default 5
        */
       twist?: number;
       /**
-       * Reverse 
-       * @description maximum number of reverse tricks per run 
+       * Reverse
+       * @description maximum number of reverse tricks per run
        * @default 3
        */
       reverse?: number;
       /**
-       * Flip 
-       * @description maximum number of flip tricks per run 
+       * Flip
+       * @description maximum number of flip tricks per run
        * @default 2
        */
       flip?: number;
     };
     /**
-     * Pilot 
+     * Pilot
      * @example {
-     *   "civlid": 67619,
-     *   "name": "Luke de Weert",
-     *   "civl_link": "https://civlcomps.org/pilot/67619",
-     *   "country": "nld",
      *   "about": "\"I am an athlete who believes that dedication is the core of the thing that keeps me pushing and motivating me to achieve all my goals, and even set new goals where I never thought it was possible.\"",
+     *   "background_picture": "https://civlcomps.org/uploads/images/pilot_header/9/c017697641aa9ef817c4c17728e9e6d6/08788da048eea61f93be8591e97f6a0c.jpg",
+     *   "civl_link": "https://civlcomps.org/pilot/67619",
+     *   "civlid": 67619,
+     *   "country": "nld",
+     *   "last_update": "2022-06-03T19:05:59.325692",
+     *   "name": "Luke de Weert",
+     *   "photo": "https://civlcomps.org/uploads/resize/profile/header/676/7bdecbee5d2246b1ebc14248dc1af935/8bfbe7e62a481a19145c55c9dc97e6ab.jpeg",
+     *   "photo_highres": "https://civlcomps.org/uploads/images/profile/676/7bdecbee5d2246b1ebc14248dc1af935/8bfbe7e62a481a19145c55c9dc97e6ab.jpeg",
+     *   "rank": 2,
      *   "social_links": [
      *     {
-     *       "name": "facebook",
-     *       "link": "https://www.facebook.com/deweert.luke"
+     *       "link": "https://www.facebook.com/deweert.luke",
+     *       "name": "facebook"
      *     },
      *     {
-     *       "name": "instagram",
-     *       "link": "https://www.instagram.com/luke_deweert/"
+     *       "link": "https://www.instagram.com/luke_deweert/",
+     *       "name": "instagram"
      *     },
      *     {
-     *       "name": "twitter",
-     *       "link": "https://twitter.com/luke_deweert"
+     *       "link": "https://twitter.com/luke_deweert",
+     *       "name": "twitter"
      *     },
      *     {
-     *       "name": "youtube",
-     *       "link": "https://www.youtube.com/lukedeweert"
+     *       "link": "https://www.youtube.com/lukedeweert",
+     *       "name": "youtube"
      *     },
      *     {
-     *       "name": "Website",
-     *       "link": "https://lukedeweert.nl"
+     *       "link": "https://lukedeweert.nl",
+     *       "name": "Website"
      *     },
      *     {
-     *       "name": "Tiktok",
-     *       "link": "https://www.tiktok.com/@lukedeweert"
+     *       "link": "https://www.tiktok.com/@lukedeweert",
+     *       "name": "Tiktok"
      *     }
      *   ],
      *   "sponsors": [
      *     {
-     *       "name": "Sky Paragliders",
+     *       "img": "https://civlcomps.org/uploads/images/ems_event_sponsor_logo/1/4cbe1ebac175a9cde7a4c9d8769ba0c4/509e4e83c097d02828403b5a67e8c0b5.png",
      *       "link": "https://sky-cz.com/en",
-     *       "img": "https://civlcomps.org/uploads/images/ems_event_sponsor_logo/1/4cbe1ebac175a9cde7a4c9d8769ba0c4/509e4e83c097d02828403b5a67e8c0b5.png"
+     *       "name": "Sky Paragliders"
      *     },
      *     {
-     *       "name": "Sinner",
+     *       "img": "https://civlcomps.org/uploads/images/ems_event_sponsor_logo/1/dddccfa819ee01d9b2410ba49fa432fc/eeff42d05ffefb8ef945dc83485007ea.png",
      *       "link": "https://www.sinner.eu/nl/",
-     *       "img": "https://civlcomps.org/uploads/images/ems_event_sponsor_logo/1/dddccfa819ee01d9b2410ba49fa432fc/eeff42d05ffefb8ef945dc83485007ea.png"
+     *       "name": "Sinner"
      *     },
      *     {
-     *       "name": "Wanbound",
+     *       "img": "https://civlcomps.org/uploads/images/ems_event_sponsor_logo/1/aa675f347b7d7933332df96f08b21199/4ff22ae0404446f203ba682751e1e7b8.png",
      *       "link": "https://www.wanbound.com/",
-     *       "img": "https://civlcomps.org/uploads/images/ems_event_sponsor_logo/1/aa675f347b7d7933332df96f08b21199/4ff22ae0404446f203ba682751e1e7b8.png"
+     *       "name": "Wanbound"
      *     },
      *     {
-     *       "name": "KNVvL",
+     *       "img": "https://civlcomps.org/uploads/images/ems_event_sponsor_logo/1/53ee05f2c2172541b7f1dd99e67a59f9/0f68789e476c0494019a750a6da9c6aa.png",
      *       "link": "https://www.knvvl.nl/",
-     *       "img": "https://civlcomps.org/uploads/images/ems_event_sponsor_logo/1/53ee05f2c2172541b7f1dd99e67a59f9/0f68789e476c0494019a750a6da9c6aa.png"
+     *       "name": "KNVvL"
      *     }
-     *   ],
-     *   "photo": "https://civlcomps.org/uploads/resize/profile/header/676/7bdecbee5d2246b1ebc14248dc1af935/8bfbe7e62a481a19145c55c9dc97e6ab.jpeg",
-     *   "photo_highres": "https://civlcomps.org/uploads/images/profile/676/7bdecbee5d2246b1ebc14248dc1af935/8bfbe7e62a481a19145c55c9dc97e6ab.jpeg",
-     *   "background_picture": "https://civlcomps.org/uploads/images/pilot_header/9/c017697641aa9ef817c4c17728e9e6d6/08788da048eea61f93be8591e97f6a0c.jpg",
-     *   "last_update": "2022-06-03T19:05:59.325692",
-     *   "rank": 2
+     *   ]
      * }
      */
     Pilot: {
       /** Id */
       _id: number;
       /**
-       * Civlid 
+       * Civlid
        * @description The CIVL ID of the pilot
        */
       civlid: number;
       /**
-       * Name 
+       * Name
        * @description The complete name of the pilot
        */
       name: string;
       /**
-       * Civl Link 
-       * Format: uri 
+       * Civl Link
+       * Format: uri
        * @description The link to the CIVL pilot page
        */
       civl_link: string;
       /**
-       * Country 
+       * Country
        * @description The country of the pilot
        */
       country: string;
       /**
-       * About 
+       * About
        * @description About text of the pilot
        */
       about: string;
       /**
-       * Social Links 
+       * Social Links
        * @description List of pilot's links (socials medias, ...)
        */
-      social_links: (components["schemas"]["Link"])[];
+      social_links: components["schemas"]["Link"][];
       /**
-       * Sponsors 
+       * Sponsors
        * @description List of the pilot's sponsors
        */
-      sponsors: (components["schemas"]["Sponsor"])[];
+      sponsors: components["schemas"]["Sponsor"][];
       /**
-       * Photo 
-       * Format: uri 
+       * Photo
+       * Format: uri
        * @description Link to the profile image of the pilot
        */
       photo: string;
       /**
-       * Photo Highres 
-       * Format: uri 
+       * Photo Highres
        * @description Link to the highres profile image of the pilot
        */
-      photo_highres?: string;
+      photo_highres?: string | null;
       /**
-       * Background Picture 
-       * Format: uri 
+       * Background Picture
+       * Format: uri
        * @description Link to the background profile image of the pilot
        */
       background_picture: string;
       /**
-       * Last Update 
-       * Format: date-time 
+       * Last Update
        * @description Last time the pilot has been updated
        */
-      last_update?: string;
+      last_update?: string | null;
       /**
-       * Rank 
+       * Rank
        * @description Current pilot's ranking in the aerobatic solo overwall world ranking
        */
       rank: number;
       /**
-       * @description Pilot's sex 
+       * @description Pilot's sex
        * @default man
        */
       gender?: components["schemas"]["GenderEnum"];
       /**
-       * Is Awt 
-       * @description the pilot is part of the current's year pro tour (AWT) 
-       * @default false
+       * Awt Years
+       * @description Years for which pilot has been in the world tour
+       * @default []
        */
-      is_awt?: boolean;
+      awt_years?: number[];
     };
     /**
-     * PilotWithResults 
+     * PilotWithResults
      * @example {
-     *   "civlid": 67619,
-     *   "name": "Luke de Weert",
-     *   "civl_link": "https://civlcomps.org/pilot/67619",
-     *   "country": "nld",
      *   "about": "\"I am an athlete who believes that dedication is the core of the thing that keeps me pushing and motivating me to achieve all my goals, and even set new goals where I never thought it was possible.\"",
+     *   "background_picture": "https://civlcomps.org/uploads/images/pilot_header/9/c017697641aa9ef817c4c17728e9e6d6/08788da048eea61f93be8591e97f6a0c.jpg",
+     *   "civl_link": "https://civlcomps.org/pilot/67619",
+     *   "civlid": 67619,
+     *   "country": "nld",
+     *   "last_update": "2022-06-03T19:05:59.325692",
+     *   "name": "Luke de Weert",
+     *   "photo": "https://civlcomps.org/uploads/resize/profile/header/676/7bdecbee5d2246b1ebc14248dc1af935/8bfbe7e62a481a19145c55c9dc97e6ab.jpeg",
+     *   "photo_highres": "https://civlcomps.org/uploads/images/profile/676/7bdecbee5d2246b1ebc14248dc1af935/8bfbe7e62a481a19145c55c9dc97e6ab.jpeg",
+     *   "rank": 2,
      *   "social_links": [
      *     {
-     *       "name": "facebook",
-     *       "link": "https://www.facebook.com/deweert.luke"
+     *       "link": "https://www.facebook.com/deweert.luke",
+     *       "name": "facebook"
      *     },
      *     {
-     *       "name": "instagram",
-     *       "link": "https://www.instagram.com/luke_deweert/"
+     *       "link": "https://www.instagram.com/luke_deweert/",
+     *       "name": "instagram"
      *     },
      *     {
-     *       "name": "twitter",
-     *       "link": "https://twitter.com/luke_deweert"
+     *       "link": "https://twitter.com/luke_deweert",
+     *       "name": "twitter"
      *     },
      *     {
-     *       "name": "youtube",
-     *       "link": "https://www.youtube.com/lukedeweert"
+     *       "link": "https://www.youtube.com/lukedeweert",
+     *       "name": "youtube"
      *     },
      *     {
-     *       "name": "Website",
-     *       "link": "https://lukedeweert.nl"
+     *       "link": "https://lukedeweert.nl",
+     *       "name": "Website"
      *     },
      *     {
-     *       "name": "Tiktok",
-     *       "link": "https://www.tiktok.com/@lukedeweert"
+     *       "link": "https://www.tiktok.com/@lukedeweert",
+     *       "name": "Tiktok"
      *     }
      *   ],
      *   "sponsors": [
      *     {
-     *       "name": "Sky Paragliders",
+     *       "img": "https://civlcomps.org/uploads/images/ems_event_sponsor_logo/1/4cbe1ebac175a9cde7a4c9d8769ba0c4/509e4e83c097d02828403b5a67e8c0b5.png",
      *       "link": "https://sky-cz.com/en",
-     *       "img": "https://civlcomps.org/uploads/images/ems_event_sponsor_logo/1/4cbe1ebac175a9cde7a4c9d8769ba0c4/509e4e83c097d02828403b5a67e8c0b5.png"
+     *       "name": "Sky Paragliders"
      *     },
      *     {
-     *       "name": "Sinner",
+     *       "img": "https://civlcomps.org/uploads/images/ems_event_sponsor_logo/1/dddccfa819ee01d9b2410ba49fa432fc/eeff42d05ffefb8ef945dc83485007ea.png",
      *       "link": "https://www.sinner.eu/nl/",
-     *       "img": "https://civlcomps.org/uploads/images/ems_event_sponsor_logo/1/dddccfa819ee01d9b2410ba49fa432fc/eeff42d05ffefb8ef945dc83485007ea.png"
+     *       "name": "Sinner"
      *     },
      *     {
-     *       "name": "Wanbound",
+     *       "img": "https://civlcomps.org/uploads/images/ems_event_sponsor_logo/1/aa675f347b7d7933332df96f08b21199/4ff22ae0404446f203ba682751e1e7b8.png",
      *       "link": "https://www.wanbound.com/",
-     *       "img": "https://civlcomps.org/uploads/images/ems_event_sponsor_logo/1/aa675f347b7d7933332df96f08b21199/4ff22ae0404446f203ba682751e1e7b8.png"
+     *       "name": "Wanbound"
      *     },
      *     {
-     *       "name": "KNVvL",
+     *       "img": "https://civlcomps.org/uploads/images/ems_event_sponsor_logo/1/53ee05f2c2172541b7f1dd99e67a59f9/0f68789e476c0494019a750a6da9c6aa.png",
      *       "link": "https://www.knvvl.nl/",
-     *       "img": "https://civlcomps.org/uploads/images/ems_event_sponsor_logo/1/53ee05f2c2172541b7f1dd99e67a59f9/0f68789e476c0494019a750a6da9c6aa.png"
+     *       "name": "KNVvL"
      *     }
-     *   ],
-     *   "photo": "https://civlcomps.org/uploads/resize/profile/header/676/7bdecbee5d2246b1ebc14248dc1af935/8bfbe7e62a481a19145c55c9dc97e6ab.jpeg",
-     *   "photo_highres": "https://civlcomps.org/uploads/images/profile/676/7bdecbee5d2246b1ebc14248dc1af935/8bfbe7e62a481a19145c55c9dc97e6ab.jpeg",
-     *   "background_picture": "https://civlcomps.org/uploads/images/pilot_header/9/c017697641aa9ef817c4c17728e9e6d6/08788da048eea61f93be8591e97f6a0c.jpg",
-     *   "last_update": "2022-06-03T19:05:59.325692",
-     *   "rank": 2
+     *   ]
      * }
      */
     PilotWithResults: {
       /** Id */
       _id: number;
       /**
-       * Civlid 
+       * Civlid
        * @description The CIVL ID of the pilot
        */
       civlid: number;
       /**
-       * Name 
+       * Name
        * @description The complete name of the pilot
        */
       name: string;
       /**
-       * Civl Link 
-       * Format: uri 
+       * Civl Link
+       * Format: uri
        * @description The link to the CIVL pilot page
        */
       civl_link: string;
       /**
-       * Country 
+       * Country
        * @description The country of the pilot
        */
       country: string;
       /**
-       * About 
+       * About
        * @description About text of the pilot
        */
       about: string;
       /**
-       * Social Links 
+       * Social Links
        * @description List of pilot's links (socials medias, ...)
        */
-      social_links: (components["schemas"]["Link"])[];
+      social_links: components["schemas"]["Link"][];
       /**
-       * Sponsors 
+       * Sponsors
        * @description List of the pilot's sponsors
        */
-      sponsors: (components["schemas"]["Sponsor"])[];
+      sponsors: components["schemas"]["Sponsor"][];
       /**
-       * Photo 
-       * Format: uri 
+       * Photo
+       * Format: uri
        * @description Link to the profile image of the pilot
        */
       photo: string;
       /**
-       * Photo Highres 
-       * Format: uri 
+       * Photo Highres
        * @description Link to the highres profile image of the pilot
        */
-      photo_highres?: string;
+      photo_highres?: string | null;
       /**
-       * Background Picture 
-       * Format: uri 
+       * Background Picture
+       * Format: uri
        * @description Link to the background profile image of the pilot
        */
       background_picture: string;
       /**
-       * Last Update 
-       * Format: date-time 
+       * Last Update
        * @description Last time the pilot has been updated
        */
-      last_update?: string;
+      last_update?: string | null;
       /**
-       * Rank 
+       * Rank
        * @description Current pilot's ranking in the aerobatic solo overwall world ranking
        */
       rank: number;
       /**
-       * @description Pilot's sex 
+       * @description Pilot's sex
        * @default man
        */
       gender?: components["schemas"]["GenderEnum"];
       /**
-       * Is Awt 
-       * @description the pilot is part of the current's year pro tour (AWT) 
-       * @default false
-       */
-      is_awt?: boolean;
-      /**
-       * Competitions Results 
-       * @description List of competitions results 
+       * Awt Years
+       * @description Years for which pilot has been in the world tour
        * @default []
        */
-      competitions_results?: (components["schemas"]["CompetitionResult"])[];
+      awt_years?: number[];
       /**
-       * Seasons Results 
-       * @description List of seasons results 
+       * Competitions Results
+       * @description List of competitions results
        * @default []
        */
-      seasons_results?: (components["schemas"]["models__pilots_with_results__SeasonResult"])[];
+      competitions_results?: components["schemas"]["CompetitionResult"][];
+      /**
+       * Seasons Results
+       * @description List of seasons results
+       * @default []
+       */
+      seasons_results?: components["schemas"]["models__pilots_with_results__SeasonResult"][];
     };
     /** RunExport */
     RunExport: {
       state: components["schemas"]["RunState"];
       /** Pilots */
-      pilots: (components["schemas"]["Pilot"])[];
+      pilots: components["schemas"]["Pilot"][];
       /** Teams */
-      teams: (components["schemas"]["TeamExport"])[];
+      teams: components["schemas"]["TeamExport"][];
       /** Judges */
-      judges: (components["schemas"]["Judge"])[];
+      judges: components["schemas"]["Judge"][];
       /** Repeatable Tricks */
-      repeatable_tricks: (components["schemas"]["Trick"])[];
-      config: components["schemas"]["CompetitionConfig"];
+      repeatable_tricks: components["schemas"]["Trick-Output"][];
+      config: components["schemas"]["CompetitionConfig-Output"];
       /** Flights */
-      flights: (components["schemas"]["FlightExport"])[];
+      flights: components["schemas"]["FlightExport"][];
       /** @default 0 */
       repetitions_reset_policy?: components["schemas"]["RunRepetitionsResetPolicy"];
+      /** Last Update */
+      last_update?: string | null;
     };
     /**
-     * RunRepetitionsResetPolicy 
-     * @description An enumeration. 
+     * RunRepetitionsResetPolicy
      * @enum {integer}
      */
     RunRepetitionsResetPolicy: 0 | 1 | 2 | 3;
     /**
-     * RunResultSummary 
+     * RunResultSummary
      * @example {
      *   "rank": "1",
      *   "score": 12.5
@@ -1494,59 +1611,54 @@ export interface components {
       type: string;
       /** Results */
       results: {
-        [key: string]: (components["schemas"]["FlightExport"])[] | undefined;
+        [key: string]: components["schemas"]["FlightExport"][];
       };
+      /** Last Update */
+      last_update?: string | null;
     };
     /**
-     * RunState 
-     * @description An enumeration. 
+     * RunState
      * @enum {string}
      */
     RunState: "init" | "open" | "closed";
     /**
-     * Season 
+     * Season
      * @example {
-     *   "name": "Acro World Tour 2022",
-     *   "code": "awt-2022"
+     *   "code": "awt-2022",
+     *   "name": "Acro World Tour 2022"
      * }
      */
     Season: {
       /** Id */
       _id?: string;
       /**
-       * Name 
+       * Name
        * @description The name of the season
        */
       name: string;
       /**
-       * Code 
+       * Code
        * @description The short code of the season
        */
       code: string;
       /**
-       * Year 
+       * Year
        * @description The year of the season
        */
       year: number;
       /** Image */
-      image?: string;
-      /**
-       * Image Url 
-       * Format: uri
-       */
-      image_url?: string;
+      image?: string | null;
+      /** Image Url */
+      image_url?: string | null;
       /** Country */
-      country?: string;
+      country?: string | null;
       /**
-       * Index 
+       * Index
        * @default 999
        */
       index?: number;
-      /**
-       * Deleted 
-       * Format: date-time
-       */
-      deleted?: string;
+      /** Deleted */
+      deleted?: string | null;
     };
     /** SeasonExport */
     SeasonExport: {
@@ -1558,15 +1670,12 @@ export interface components {
       code: string;
       /** Year */
       year: number;
-      /**
-       * Image 
-       * Format: uri
-       */
-      image?: string;
+      /** Image */
+      image?: string | null;
       /** Country */
-      country?: string;
+      country?: string | null;
       /**
-       * Index 
+       * Index
        * @default 999
        */
       index?: number;
@@ -1576,9 +1685,9 @@ export interface components {
       /** Number Of Teams */
       number_of_teams: number;
       /** Competitions */
-      competitions: (components["schemas"]["CompetitionExport"])[];
+      competitions: components["schemas"]["CompetitionExport"][];
       /** Results */
-      results: (components["schemas"]["SeasonResults"])[];
+      results: components["schemas"]["SeasonResults"][];
     };
     /** SeasonExportLight */
     SeasonExportLight: {
@@ -1590,15 +1699,12 @@ export interface components {
       code: string;
       /** Year */
       year: number;
-      /**
-       * Image 
-       * Format: uri
-       */
-      image?: string;
+      /** Image */
+      image?: string | null;
       /** Country */
-      country?: string;
+      country?: string | null;
       /**
-       * Index 
+       * Index
        * @default 999
        */
       index?: number;
@@ -1620,15 +1726,12 @@ export interface components {
       code: string;
       /** Year */
       year: number;
-      /**
-       * Image 
-       * Format: uri
-       */
-      image?: string;
+      /** Image */
+      image?: string | null;
       /** Country */
-      country?: string;
+      country?: string | null;
       /**
-       * Index 
+       * Index
        * @default 999
        */
       index?: number;
@@ -1638,12 +1741,12 @@ export interface components {
       /** Number Of Teams */
       number_of_teams: number;
       /** Competitions */
-      competitions: (components["schemas"]["CompetitionPublicExportWithResults"])[];
+      competitions: components["schemas"]["CompetitionPublicExportWithResults"][];
       /** Results */
-      results: (components["schemas"]["SeasonResults"])[];
+      results: components["schemas"]["SeasonResults"][];
       /** Competitions Results */
       competitions_results: {
-        [key: string]: (components["schemas"]["CompetitionPilotResultsExport"])[] | undefined;
+        [key: string]: components["schemas"]["CompetitionPilotResultsExport"][];
       };
     };
     /** SeasonResults */
@@ -1651,22 +1754,19 @@ export interface components {
       /** Type */
       type: string;
       /** Results */
-      results: (components["schemas"]["models__seasons__SeasonResult"])[];
+      results: components["schemas"]["models__seasons__SeasonResult"][];
     };
     /** Sponsor */
     Sponsor: {
       /** Name */
       name: string;
-      /**
-       * Link 
-       * Format: uri
-       */
-      link?: string;
+      /** Link */
+      link?: string | null;
       /** Img */
       img: string;
     };
     /**
-     * Status 
+     * Status
      * @example {
      *   "project": "Acropyx2",
      *   "version": "2.0.1"
@@ -1679,7 +1779,7 @@ export interface components {
       version: string;
     };
     /**
-     * Team 
+     * Team
      * @example {
      *   "_id": "687687687687aze",
      *   "name": "Team Rocket",
@@ -1693,20 +1793,17 @@ export interface components {
       /** Id */
       _id?: string;
       /**
-       * Name 
+       * Name
        * @description The name of the team
        */
       name: string;
       /**
-       * Pilots 
+       * Pilots
        * @description The 2 pilots composing the team (by CIVLID)
        */
-      pilots: (number)[];
-      /**
-       * Deleted 
-       * Format: date-time
-       */
-      deleted?: string;
+      pilots: number[];
+      /** Deleted */
+      deleted?: string | null;
     };
     /** TeamExport */
     TeamExport: {
@@ -1715,213 +1812,390 @@ export interface components {
       /** Name */
       name: string;
       /** Pilots */
-      pilots: (components["schemas"]["Pilot"])[];
+      pilots: components["schemas"]["Pilot"][];
     };
     /**
-     * Trick 
+     * Trick
      * @example {
      *   "_id": "bababababaabababababab",
-     *   "name": "Misty to Helicopter",
      *   "acronym": "MH",
-     *   "solo": true,
-     *   "synchro": true,
+     *   "bonuses": [
+     *     {
+     *       "bonus": 3,
+     *       "name": "twisted"
+     *     },
+     *     {
+     *       "bonus": 3,
+     *       "name": "reverse"
+     *     }
+     *   ],
      *   "directions": [
      *     "left",
      *     "right"
      *   ],
-     *   "technical_coefficient": 1.75,
-     *   "bonuses": [
-     *     {
-     *       "name": "twisted",
-     *       "bonus": 3
-     *     },
-     *     {
-     *       "name": "reverse",
-     *       "bonus": 3
-     *     }
-     *   ],
      *   "first_maneuver": 0,
-     *   "no_first_maneuver": 0,
      *   "last_maneuver": 0,
+     *   "name": "Misty to Helicopter",
+     *   "no_first_maneuver": 0,
      *   "no_last_maneuver": 0,
      *   "repeatable": false,
+     *   "solo": true,
+     *   "synchro": true,
+     *   "technical_coefficient": 1.75,
      *   "tricks": [
      *     {
-     *       "name": "left Misty to Helicopter",
      *       "acronym": "LMH",
-     *       "technical_coefficient": 1.75,
-     *       "bonus": 0
+     *       "bonus": 0,
+     *       "name": "left Misty to Helicopter",
+     *       "technical_coefficient": 1.75
      *     },
      *     {
-     *       "name": "right Misty to Helicopter",
      *       "acronym": "RMH",
-     *       "technical_coefficient": 1.75,
-     *       "bonus": 0
+     *       "bonus": 0,
+     *       "name": "right Misty to Helicopter",
+     *       "technical_coefficient": 1.75
      *     },
      *     {
-     *       "name": "twisted left Misty to Helicopter",
      *       "acronym": "/LMH",
-     *       "technical_coefficient": 1.75,
-     *       "bonus": 3
+     *       "bonus": 3,
+     *       "name": "twisted left Misty to Helicopter",
+     *       "technical_coefficient": 1.75
      *     },
      *     {
-     *       "name": "twisted right Misty to Helicopter",
      *       "acronym": "/RMH",
-     *       "technical_coefficient": 1.75,
-     *       "bonus": 3
+     *       "bonus": 3,
+     *       "name": "twisted right Misty to Helicopter",
+     *       "technical_coefficient": 1.75
      *     },
      *     {
-     *       "name": "left Misty to Helicopter reverse",
      *       "acronym": "LMHR",
-     *       "technical_coefficient": 1.75,
-     *       "bonus": 3
+     *       "bonus": 3,
+     *       "name": "left Misty to Helicopter reverse",
+     *       "technical_coefficient": 1.75
      *     },
      *     {
-     *       "name": "right Misty to Helicopter reverse",
      *       "acronym": "RMHR",
-     *       "technical_coefficient": 1.75,
-     *       "bonus": 3
+     *       "bonus": 3,
+     *       "name": "right Misty to Helicopter reverse",
+     *       "technical_coefficient": 1.75
      *     },
      *     {
-     *       "name": "twisted left Misty to Helicopter reverse",
      *       "acronym": "/LMHR",
-     *       "technical_coefficient": 1.75,
-     *       "bonus": 6
+     *       "bonus": 6,
+     *       "name": "twisted left Misty to Helicopter reverse",
+     *       "technical_coefficient": 1.75
      *     },
      *     {
-     *       "name": "twisted right Misty to Helicopter reverse",
      *       "acronym": "/RMHR",
-     *       "technical_coefficient": 1.75,
-     *       "bonus": 6
+     *       "bonus": 6,
+     *       "name": "twisted right Misty to Helicopter reverse",
+     *       "technical_coefficient": 1.75
      *     }
      *   ]
      * }
      */
-    Trick: {
+    "Trick-Input": {
       /** Id */
       _id?: string;
       /**
-       * Name 
+       * Name
        * @description The name of the trick (without bonuses)
        */
       name: string;
       /**
-       * Acronym 
+       * Acronym
        * @description The acronym of the trick (without bonuses)
        */
       acronym: string;
       /**
-       * Types 
-       * @description List of trick types 
+       * Types
+       * @description List of trick types
        * @default []
        */
-      types?: (string)[];
+      types?: string[];
       /**
-       * Solo 
+       * Solo
        * @description Is this trick valid for solo competitions
        */
       solo: boolean;
       /**
-       * Solo Awt 
-       * @description Is this trick valid for solo competitions 
+       * Solo Awt
+       * @description Is this trick valid for solo competitions
        * @default true
        */
       solo_awt?: boolean;
       /**
-       * Synchro 
+       * Synchro
        * @description Is this trick valid for synchro competitions
        */
       synchro: boolean;
       /**
-       * Directions 
+       * Directions
        * @description List of allowed diredctions for the trick. Empty list implies a trick with a unique direction
        */
-      directions: (string)[];
+      directions: string[];
       /**
-       * Technical Coefficient 
+       * Technical Coefficient
        * @description The technical coefficient of the trick
        */
       technical_coefficient: number;
       /**
-       * Bonuses 
+       * Bonuses
        * @description List of all bonuses that can apply to this trick
        */
-      bonuses: (components["schemas"]["Bonus"])[];
+      bonuses: components["schemas"]["Bonus"][];
       /**
-       * Bonus Constraints 
-       * @description List of bonuses that are exclusive to each other 
+       * Bonus Constraints
+       * @description List of bonuses that are exclusive to each other
        * @default []
        */
-      bonus_constraints?: ((string)[])[];
+      bonus_constraints?: string[][];
       /**
-       * Tricks Constraints 
-       * @description List of tricks that cannot be performed during the same competition. 
+       * Tricks Constraints
+       * @description List of tricks that cannot be performed during the same competition.
        * @default []
        */
-      tricks_constraints?: (string)[];
+      tricks_constraints?: string[];
       /**
-       * First Maneuver 
-       * @description If positive, indicates that the trick must be performed in the first N tricks of the run 
+       * First Maneuver
+       * @description If positive, indicates that the trick must be performed in the first N tricks of the run
        * @default 0
        */
       first_maneuver?: number;
       /**
-       * No First Maneuver 
-       * @description If positive, indicates that the trick must not be performed in the first N tricks of the run 
+       * No First Maneuver
+       * @description If positive, indicates that the trick must not be performed in the first N tricks of the run
        * @default 0
        */
       no_first_maneuver?: number;
       /**
-       * Last Maneuver 
-       * @description If positive, indicates that the trick must be performed in the last N tricks of the run 
+       * Last Maneuver
+       * @description If positive, indicates that the trick must be performed in the last N tricks of the run
        * @default 0
        */
       last_maneuver?: number;
       /**
-       * No Last Maneuver 
-       * @description If positive, indicates that the trick must not be performed in the last N tricks of the run 
+       * No Last Maneuver
+       * @description If positive, indicates that the trick must not be performed in the last N tricks of the run
        * @default 0
        */
       no_last_maneuver?: number;
       /**
-       * Tricks 
-       * @description List of all the variant of the trick (this is automatically generated) 
+       * Tricks
+       * @description List of all the variant of the trick (this is automatically generated)
        * @default []
        */
-      tricks?: (components["schemas"]["UniqueTrick"])[];
+      tricks?: components["schemas"]["UniqueTrick"][];
       /**
-       * Repeatable 
-       * @description Is this trick can be repeatable 
+       * Repeatable
+       * @description Is this trick can be repeatable
        * @default false
        */
       repeatable?: boolean;
-      /**
-       * Deleted 
-       * Format: date-time
-       */
-      deleted?: string;
-      /**
-       * Sample Video 
-       * Format: uri
-       */
-      sample_video?: string;
+      /** Deleted */
+      deleted?: string | null;
+      /** Sample Video */
+      sample_video?: string | null;
     };
     /**
-     * UniqueTrick 
+     * Trick
      * @example {
-     *   "name": "twisted left Misty to Helicopter reverse",
-     *   "acronym": "/LMHR",
+     *   "_id": "bababababaabababababab",
+     *   "acronym": "MH",
+     *   "bonuses": [
+     *     {
+     *       "bonus": 3,
+     *       "name": "twisted"
+     *     },
+     *     {
+     *       "bonus": 3,
+     *       "name": "reverse"
+     *     }
+     *   ],
+     *   "directions": [
+     *     "left",
+     *     "right"
+     *   ],
+     *   "first_maneuver": 0,
+     *   "last_maneuver": 0,
+     *   "name": "Misty to Helicopter",
+     *   "no_first_maneuver": 0,
+     *   "no_last_maneuver": 0,
+     *   "repeatable": false,
+     *   "solo": true,
+     *   "synchro": true,
      *   "technical_coefficient": 1.75,
+     *   "tricks": [
+     *     {
+     *       "acronym": "LMH",
+     *       "bonus": 0,
+     *       "name": "left Misty to Helicopter",
+     *       "technical_coefficient": 1.75
+     *     },
+     *     {
+     *       "acronym": "RMH",
+     *       "bonus": 0,
+     *       "name": "right Misty to Helicopter",
+     *       "technical_coefficient": 1.75
+     *     },
+     *     {
+     *       "acronym": "/LMH",
+     *       "bonus": 3,
+     *       "name": "twisted left Misty to Helicopter",
+     *       "technical_coefficient": 1.75
+     *     },
+     *     {
+     *       "acronym": "/RMH",
+     *       "bonus": 3,
+     *       "name": "twisted right Misty to Helicopter",
+     *       "technical_coefficient": 1.75
+     *     },
+     *     {
+     *       "acronym": "LMHR",
+     *       "bonus": 3,
+     *       "name": "left Misty to Helicopter reverse",
+     *       "technical_coefficient": 1.75
+     *     },
+     *     {
+     *       "acronym": "RMHR",
+     *       "bonus": 3,
+     *       "name": "right Misty to Helicopter reverse",
+     *       "technical_coefficient": 1.75
+     *     },
+     *     {
+     *       "acronym": "/LMHR",
+     *       "bonus": 6,
+     *       "name": "twisted left Misty to Helicopter reverse",
+     *       "technical_coefficient": 1.75
+     *     },
+     *     {
+     *       "acronym": "/RMHR",
+     *       "bonus": 6,
+     *       "name": "twisted right Misty to Helicopter reverse",
+     *       "technical_coefficient": 1.75
+     *     }
+     *   ]
+     * }
+     */
+    "Trick-Output": {
+      /** Id */
+      _id?: string;
+      /**
+       * Name
+       * @description The name of the trick (without bonuses)
+       */
+      name: string;
+      /**
+       * Acronym
+       * @description The acronym of the trick (without bonuses)
+       */
+      acronym: string;
+      /**
+       * Types
+       * @description List of trick types
+       * @default []
+       */
+      types?: string[];
+      /**
+       * Solo
+       * @description Is this trick valid for solo competitions
+       */
+      solo: boolean;
+      /**
+       * Solo Awt
+       * @description Is this trick valid for solo competitions
+       * @default true
+       */
+      solo_awt?: boolean;
+      /**
+       * Synchro
+       * @description Is this trick valid for synchro competitions
+       */
+      synchro: boolean;
+      /**
+       * Directions
+       * @description List of allowed diredctions for the trick. Empty list implies a trick with a unique direction
+       */
+      directions: string[];
+      /**
+       * Technical Coefficient
+       * @description The technical coefficient of the trick
+       */
+      technical_coefficient: number;
+      /**
+       * Bonuses
+       * @description List of all bonuses that can apply to this trick
+       */
+      bonuses: components["schemas"]["Bonus"][];
+      /**
+       * Bonus Constraints
+       * @description List of bonuses that are exclusive to each other
+       * @default []
+       */
+      bonus_constraints?: string[][];
+      /**
+       * Tricks Constraints
+       * @description List of tricks that cannot be performed during the same competition.
+       * @default []
+       */
+      tricks_constraints?: string[];
+      /**
+       * First Maneuver
+       * @description If positive, indicates that the trick must be performed in the first N tricks of the run
+       * @default 0
+       */
+      first_maneuver?: number;
+      /**
+       * No First Maneuver
+       * @description If positive, indicates that the trick must not be performed in the first N tricks of the run
+       * @default 0
+       */
+      no_first_maneuver?: number;
+      /**
+       * Last Maneuver
+       * @description If positive, indicates that the trick must be performed in the last N tricks of the run
+       * @default 0
+       */
+      last_maneuver?: number;
+      /**
+       * No Last Maneuver
+       * @description If positive, indicates that the trick must not be performed in the last N tricks of the run
+       * @default 0
+       */
+      no_last_maneuver?: number;
+      /**
+       * Tricks
+       * @description List of all the variant of the trick (this is automatically generated)
+       * @default []
+       */
+      tricks?: components["schemas"]["UniqueTrick"][];
+      /**
+       * Repeatable
+       * @description Is this trick can be repeatable
+       * @default false
+       */
+      repeatable?: boolean;
+      /** Deleted */
+      deleted?: string | null;
+      /** Sample Video */
+      sample_video?: string | null;
+    };
+    /**
+     * UniqueTrick
+     * @example {
+     *   "acronym": "/LMHR",
+     *   "base_trick": "Misty To Helicoper",
      *   "bonus": 6,
      *   "bonus_types": [
      *     "twist",
      *     "reverse"
      *   ],
+     *   "name": "twisted left Misty to Helicopter reverse",
+     *   "technical_coefficient": 1.75,
      *   "uniqueness": [
      *     "left",
      *     "reverse"
-     *   ],
-     *   "base_trick": "Misty To Helicoper"
+     *   ]
      * }
      */
     UniqueTrick: {
@@ -1934,29 +2208,33 @@ export interface components {
       /** Bonus */
       bonus: number;
       /** Bonus Types */
-      bonus_types: (string)[];
+      bonus_types: string[];
       /** Base Trick */
       base_trick: string;
       /** Uniqueness */
-      uniqueness: (string)[];
+      uniqueness: string[];
       /**
-       * Bonuses 
+       * Bonuses
        * @default []
        */
-      bonuses?: (components["schemas"]["Bonus"])[];
+      bonuses?: components["schemas"]["Bonus"][];
       /** Synchro */
-      synchro?: boolean;
+      synchro?: boolean | null;
       /** Solo */
-      solo?: boolean;
+      solo?: boolean | null;
       /** Solo Awt */
-      solo_awt?: boolean;
+      solo_awt?: boolean | null;
       /**
-       * Types 
+       * Types
        * @default []
        */
-      types?: (string)[];
+      types?: string[];
       /** Technical Mark */
-      technical_mark?: number;
+      technical_mark?: number | null;
+      /** Technical Marks */
+      technical_marks?: {
+        [key: string]: number;
+      } | null;
     };
     /** ValidationError */
     ValidationError: {
@@ -1975,8 +2253,8 @@ export interface components {
     };
     /** SeasonResult */
     models__seasons__SeasonResult: {
-      pilot?: components["schemas"]["Pilot"];
-      team?: components["schemas"]["TeamExport"];
+      pilot?: components["schemas"]["Pilot"] | null;
+      team?: components["schemas"]["TeamExport"] | null;
       /** Score */
       score: number;
     };
@@ -1988,12 +2266,14 @@ export interface components {
   pathItems: never;
 }
 
+export type $defs = Record<string, never>;
+
 export type external = Record<string, never>;
 
 export interface operations {
 
   /**
-   * Login 
+   * Login
    * @description Get the JWT for a user with data from OAuth2 request form body.
    */
   login_auth_login_post: {
@@ -2045,7 +2325,7 @@ export interface operations {
       /** @description List all pilots */
       200: {
         content: {
-          "application/json": (components["schemas"]["Pilot"])[];
+          "application/json": components["schemas"]["Pilot"][];
         };
       };
     };
@@ -2098,14 +2378,18 @@ export interface operations {
   sync_pilots_update_all_post: {
     responses: {
       /** @description Create all missing pilots from CIVL database */
-      201: never;
+      201: {
+        content: never;
+      };
     };
   };
   /** Update Rankings */
   update_rankings_pilots_update_rankings_post: {
     responses: {
       /** @description Update ranking of all registered pilots from CIVL database */
-      201: never;
+      201: {
+        content: never;
+      };
     };
   };
   /** Change Gender */
@@ -2130,9 +2414,12 @@ export interface operations {
       };
     };
   };
-  /** Change Gender */
-  change_gender_pilots__civlid__awt_patch: {
+  /** Change Awt */
+  change_awt_pilots__civlid__awt_patch: {
     parameters: {
+      query?: {
+        year?: number;
+      };
       path: {
         civlid: number;
       };
@@ -2163,7 +2450,7 @@ export interface operations {
       /** @description List all judges */
       200: {
         content: {
-          "application/json": (components["schemas"]["Judge"])[];
+          "application/json": components["schemas"]["Judge"][];
         };
       };
       /** @description Validation Error */
@@ -2180,7 +2467,7 @@ export interface operations {
       /** @description Get list of judges levels */
       200: {
         content: {
-          "application/json": (components["schemas"]["JudgeLevel"])[];
+          "application/json": components["schemas"]["JudgeLevel"][];
         };
       };
     };
@@ -2224,7 +2511,9 @@ export interface operations {
     };
     responses: {
       /** @description Add new Judge */
-      204: never;
+      204: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -2245,7 +2534,9 @@ export interface operations {
     };
     responses: {
       /** @description Delete a Judge */
-      204: never;
+      204: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -2287,7 +2578,7 @@ export interface operations {
       /** @description List all teams */
       200: {
         content: {
-          "application/json": (components["schemas"]["TeamExport"])[];
+          "application/json": components["schemas"]["TeamExport"][];
         };
       };
       /** @description Validation Error */
@@ -2337,7 +2628,9 @@ export interface operations {
     };
     responses: {
       /** @description Update an existing Team */
-      204: never;
+      204: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -2358,7 +2651,9 @@ export interface operations {
     };
     responses: {
       /** @description Delete a Team */
-      204: never;
+      204: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -2401,7 +2696,7 @@ export interface operations {
       /** @description List all tricks */
       200: {
         content: {
-          "application/json": (components["schemas"]["Trick"])[];
+          "application/json": components["schemas"]["Trick-Output"][];
         };
       };
       /** @description Validation Error */
@@ -2424,7 +2719,7 @@ export interface operations {
       /** @description Get all unique tricks */
       200: {
         content: {
-          "application/json": (components["schemas"]["UniqueTrick"])[];
+          "application/json": components["schemas"]["UniqueTrick"][];
         };
       };
       /** @description Validation Error */
@@ -2441,7 +2736,9 @@ export interface operations {
       /** @description Get available bonuses */
       200: {
         content: {
-          "application/json": (Record<string, never>)[];
+          "application/json": {
+              [key: string]: unknown;
+            }[];
         };
       };
     };
@@ -2452,7 +2749,9 @@ export interface operations {
       /** @description Get available directions */
       200: {
         content: {
-          "application/json": (Record<string, never>)[];
+          "application/json": {
+              [key: string]: unknown;
+            }[];
         };
       };
     };
@@ -2493,7 +2792,7 @@ export interface operations {
       /** @description Get a Trick */
       200: {
         content: {
-          "application/json": components["schemas"]["Trick"];
+          "application/json": components["schemas"]["Trick-Output"];
         };
       };
       /** @description Validation Error */
@@ -2513,12 +2812,14 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["Trick"];
+        "application/json": components["schemas"]["Trick-Input"];
       };
     };
     responses: {
       /** @description Update existing Trick */
-      204: never;
+      204: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -2539,7 +2840,9 @@ export interface operations {
     };
     responses: {
       /** @description Delete a Trick */
-      204: never;
+      204: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -2552,14 +2855,14 @@ export interface operations {
   create_tricks_new_post: {
     requestBody: {
       content: {
-        "application/json": components["schemas"]["Trick"];
+        "application/json": components["schemas"]["Trick-Input"];
       };
     };
     responses: {
       /** @description Add new Trick */
       201: {
         content: {
-          "application/json": components["schemas"]["Trick"];
+          "application/json": components["schemas"]["Trick-Output"];
         };
       };
       /** @description Validation Error */
@@ -2574,7 +2877,7 @@ export interface operations {
   create_import_tricks_import_post: {
     requestBody: {
       content: {
-        "application/json": (components["schemas"]["Trick"])[];
+        "application/json": components["schemas"]["Trick-Input"][];
       };
     };
     responses: {
@@ -2592,13 +2895,13 @@ export interface operations {
       };
     };
   };
-  /** List */
-  list_competitions__get: {
+  /** List Competitions */
+  list_competitions_competitions__get: {
     responses: {
       /** @description List all competitions */
       200: {
         content: {
-          "application/json": (components["schemas"]["CompetitionPublicExport"])[];
+          "application/json": components["schemas"]["CompetitionPublicExport"][];
         };
       };
     };
@@ -2640,7 +2943,9 @@ export interface operations {
     };
     responses: {
       /** @description Delete a Competition */
-      204: never;
+      204: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -2663,7 +2968,9 @@ export interface operations {
     };
     responses: {
       /** @description Update a competition */
-      204: never;
+      204: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -2703,12 +3010,14 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": (number)[];
+        "application/json": number[];
       };
     };
     responses: {
       /** @description Replace the pilot's list */
-      204: never;
+      204: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -2726,12 +3035,14 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": (string)[];
+        "application/json": string[];
       };
     };
     responses: {
       /** @description Replace the teams's list */
-      204: never;
+      204: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -2749,12 +3060,14 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": (string)[];
+        "application/json": string[];
       };
     };
     responses: {
       /** @description Replace the judge's list */
-      204: never;
+      204: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -2772,12 +3085,14 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": (string)[];
+        "application/json": string[];
       };
     };
     responses: {
       /** @description Replace the repeatable tricks list */
-      204: never;
+      204: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -2795,12 +3110,14 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["CompetitionConfig"];
+        "application/json": components["schemas"]["CompetitionConfig-Input"];
       };
     };
     responses: {
       /** @description Replace the competition config */
-      204: never;
+      204: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -2818,7 +3135,9 @@ export interface operations {
     };
     responses: {
       /** @description Open a competition (change status from not started to open) */
-      204: never;
+      204: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -2836,7 +3155,9 @@ export interface operations {
     };
     responses: {
       /** @description Close a competition (change status from open to close) */
-      204: never;
+      204: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -2854,7 +3175,9 @@ export interface operations {
     };
     responses: {
       /** @description Reopen a closed competition (change status from close to open) */
-      204: never;
+      204: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -2922,12 +3245,14 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": (number)[];
+        "application/json": number[];
       };
     };
     responses: {
       /** @description Replace the run pilots list */
-      204: never;
+      204: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -2946,12 +3271,14 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": (string)[];
+        "application/json": string[];
       };
     };
     responses: {
       /** @description Replace the run teams list */
-      204: never;
+      204: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -2970,12 +3297,14 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": (string)[];
+        "application/json": string[];
       };
     };
     responses: {
       /** @description Replace the run judges list */
-      204: never;
+      204: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -2994,12 +3323,14 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": (string)[];
+        "application/json": string[];
       };
     };
     responses: {
       /** @description Replace the run repeatable tricks list */
-      204: never;
+      204: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -3018,12 +3349,14 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["CompetitionConfig"];
+        "application/json": components["schemas"]["CompetitionConfig-Input"];
       };
     };
     responses: {
       /** @description Replace the run config */
-      204: never;
+      204: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -3042,7 +3375,9 @@ export interface operations {
     };
     responses: {
       /** @description Open a run (change status from not started to open) */
-      204: never;
+      204: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -3061,7 +3396,9 @@ export interface operations {
     };
     responses: {
       /** @description Close a run (change status from not started to open) */
-      204: never;
+      204: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -3080,7 +3417,9 @@ export interface operations {
     };
     responses: {
       /** @description Reopen a run (change status from not started to open) */
-      204: never;
+      204: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -3113,12 +3452,35 @@ export interface operations {
       };
     };
   };
+  /** Flight Delete */
+  flight_delete_competitions__id__runs__i__flights__pilot_team_id__delete: {
+    parameters: {
+      path: {
+        id: string;
+        i: number;
+        pilot_team_id: unknown;
+      };
+    };
+    responses: {
+      /** @description delete a flight from a pilot */
+      204: {
+        content: never;
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   /** Flight Save */
   flight_save_competitions__id__runs__i__flights__pilot_team_id__new_post: {
     parameters: {
       query: {
         save: boolean;
         published?: boolean;
+        mark_type?: string;
       };
       path: {
         id: string;
@@ -3181,7 +3543,9 @@ export interface operations {
     };
     responses: {
       /** @description Rietrieve the results of the competition */
-      200: never;
+      200: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -3229,7 +3593,33 @@ export interface operations {
     };
     responses: {
       /** @description export the results of a specific run of competition */
-      200: never;
+      200: {
+        content: never;
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Export Starting Order */
+  export_starting_order_competitions__id__starting_order__i__export_get: {
+    parameters: {
+      query?: {
+        filetype?: string;
+      };
+      path: {
+        id: string;
+        i: number;
+      };
+    };
+    responses: {
+      /** @description export the starting order of a specific run of competition */
+      200: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -3271,7 +3661,7 @@ export interface operations {
       /** @description List all public */
       200: {
         content: {
-          "application/json": (components["schemas"]["Pilot"])[];
+          "application/json": components["schemas"]["Pilot"][];
         };
       };
     };
@@ -3304,7 +3694,7 @@ export interface operations {
       /** @description List all teams */
       200: {
         content: {
-          "application/json": (components["schemas"]["TeamExport"])[];
+          "application/json": components["schemas"]["TeamExport"][];
         };
       };
     };
@@ -3337,7 +3727,7 @@ export interface operations {
       /** @description List all judges */
       200: {
         content: {
-          "application/json": (components["schemas"]["Judge"])[];
+          "application/json": components["schemas"]["Judge"][];
         };
       };
     };
@@ -3370,7 +3760,7 @@ export interface operations {
       /** @description List all competitions */
       200: {
         content: {
-          "application/json": (components["schemas"]["CompetitionPublicExport"])[];
+          "application/json": components["schemas"]["CompetitionPublicExport"][];
         };
       };
     };
@@ -3402,6 +3792,7 @@ export interface operations {
     parameters: {
       query?: {
         download?: boolean;
+        animated?: number;
       };
       path: {
         id: string;
@@ -3410,7 +3801,9 @@ export interface operations {
     };
     responses: {
       /** @description export competition overall standing in SVG */
-      200: never;
+      200: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -3424,6 +3817,7 @@ export interface operations {
     parameters: {
       query?: {
         download?: boolean;
+        animated?: number;
       };
       path: {
         id: string;
@@ -3433,7 +3827,9 @@ export interface operations {
     };
     responses: {
       /** @description export competition run standing in SVG */
-      200: never;
+      200: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -3448,6 +3844,7 @@ export interface operations {
       query?: {
         result_type?: string;
         download?: boolean;
+        animated?: number;
       };
       path: {
         id: string;
@@ -3456,7 +3853,9 @@ export interface operations {
     };
     responses: {
       /** @description export competition run standing in SVG */
-      200: never;
+      200: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -3476,7 +3875,7 @@ export interface operations {
       /** @description List all seasons */
       200: {
         content: {
-          "application/json": (components["schemas"]["SeasonExportLight"])[];
+          "application/json": components["schemas"]["SeasonExportLight"][];
         };
       };
       /** @description Validation Error */
@@ -3524,7 +3923,9 @@ export interface operations {
     };
     responses: {
       /** @description export season standing in SVG */
-      200: never;
+      200: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -3544,7 +3945,7 @@ export interface operations {
       /** @description List all tricks */
       200: {
         content: {
-          "application/json": (components["schemas"]["Trick"])[];
+          "application/json": components["schemas"]["Trick-Output"][];
         };
       };
       /** @description Validation Error */
@@ -3567,7 +3968,7 @@ export interface operations {
       /** @description List all unique tricks */
       200: {
         content: {
-          "application/json": (components["schemas"]["UniqueTrick"])[];
+          "application/json": components["schemas"]["UniqueTrick"][];
         };
       };
       /** @description Validation Error */
@@ -3590,14 +3991,14 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": (components["schemas"]["FlightNew"])[];
+        "application/json": components["schemas"]["FlightNew"][];
       };
     };
     responses: {
       /** @description Successful Response */
       200: {
         content: {
-          "application/json": (components["schemas"]["Flight"])[];
+          "application/json": components["schemas"]["Flight"][];
         };
       };
       /** @description Validation Error */
@@ -3608,8 +4009,8 @@ export interface operations {
       };
     };
   };
-  /** Simulate */
-  simulate_public_live_overlay_pilot__civlid__run__run__get: {
+  /** Live Overlay Pilot */
+  live_overlay_pilot_public_live_overlay_pilot__civlid__run__run__get: {
     parameters: {
       query?: {
         download?: boolean;
@@ -3621,7 +4022,9 @@ export interface operations {
     };
     responses: {
       /** @description Successful Response */
-      200: never;
+      200: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -3630,8 +4033,8 @@ export interface operations {
       };
     };
   };
-  /** Simulate */
-  simulate_public_live_overlay_team__team__run__run__get: {
+  /** Live Overlay Team */
+  live_overlay_team_public_live_overlay_team__team__run__run__get: {
     parameters: {
       query?: {
         download?: boolean;
@@ -3643,7 +4046,54 @@ export interface operations {
     };
     responses: {
       /** @description Successful Response */
-      200: never;
+      200: {
+        content: never;
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Live Overlay Competition */
+  live_overlay_competition_public_live_overlay_competition__id__get: {
+    parameters: {
+      query?: {
+        n_run?: number;
+      };
+      path: {
+        id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: never;
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get File */
+  get_file_public_files__id__get: {
+    parameters: {
+      query?: {
+        download?: boolean;
+      };
+      path: {
+        id: string;
+      };
+    };
+    responses: {
+      200: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -3656,14 +4106,18 @@ export interface operations {
   backup_utils_backup_get: {
     responses: {
       /** @description backup all database */
-      200: never;
+      200: {
+        content: never;
+      };
     };
   };
   /** Backup */
   backup_utils_cleanup_pilots_post: {
     responses: {
       /** @description backup all database */
-      204: never;
+      204: {
+        content: never;
+      };
     };
   };
   /** Get File */
@@ -3677,7 +4131,9 @@ export interface operations {
       };
     };
     responses: {
-      200: never;
+      200: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -3698,7 +4154,9 @@ export interface operations {
     };
     responses: {
       /** @description Delete a File */
-      204: never;
+      204: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -3739,7 +4197,7 @@ export interface operations {
       /** @description List all seasons */
       200: {
         content: {
-          "application/json": (components["schemas"]["SeasonExportLight"])[];
+          "application/json": components["schemas"]["SeasonExportLight"][];
         };
       };
       /** @description Validation Error */
@@ -3789,7 +4247,9 @@ export interface operations {
     };
     responses: {
       /** @description update Season */
-      204: never;
+      204: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
@@ -3810,7 +4270,9 @@ export interface operations {
     };
     responses: {
       /** @description Delete a Season */
-      204: never;
+      204: {
+        content: never;
+      };
       /** @description Validation Error */
       422: {
         content: {
