@@ -77,6 +77,7 @@ class FinalMarkExport(BaseModel):
     bonus: float 
     score: float 
     warnings: list[str]
+    warnings2: list[str] = []
     malus: float 
     notes: List[str] 
     mark_type: Optional[str] = None
@@ -105,6 +106,7 @@ class FinalMark(BaseModel):
     bonus: float
     score: float = Field(..., ge=0)
     warnings: list[str]
+    warnings2: list[str] = []
     malus: float = Field(..., ge=0)
     notes: List[str] = []
     mark_type: Optional[str] = None
@@ -152,6 +154,7 @@ class FinalMark(BaseModel):
             bonus = self.bonus,
             score = self.score,
             warnings = self.warnings,
+            warnings2 = self.warnings2,
             malus = self.malus,
             notes = self.notes,
             mark_type = self.mark_type,

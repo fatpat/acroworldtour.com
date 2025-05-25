@@ -680,6 +680,7 @@ class Competition(CompetitionNew):
                 marks = flight.marks,
                 did_not_start = flight.did_not_start,
                 warnings = flight.warnings,
+                warnings2 = flight.warnings2,
                 tip_touch_bonuses = flight.tip_touch_bonuses,
         )
 
@@ -951,6 +952,7 @@ class Competition(CompetitionNew):
             bonus=0,
             score=0,
             warnings=flight.warnings,
+            warnings2=flight.warnings2,
             malus=0,
             mark_type=mark_type,
         )
@@ -1101,6 +1103,7 @@ class Competition(CompetitionNew):
         # count previous warnings and check if not previous DSQ
         #
         previous_warnings = 0
+        previous_warnings2 = 0
         if run_i>0 and run is not None:
 
             # loop over all previous runs
@@ -1111,13 +1114,14 @@ class Competition(CompetitionNew):
                 for f in r.flights:
                     if (self.type == CompetitionType.solo and flight.pilot == f.pilot) or (self.type == CompetitionType.synchro and flight.team == f.team):
                         previous_warnings += len(f.warnings)
+                        previous_warnings2 += len(f.warnings2)
                         break
 
-            if previous_warnings >= config.warnings_to_dsq:
+            if previous_warnings + previous_warnings2 >= config.warnings_to_dsq:
                 mark.notes.append(f"Pilot has been DSQ because he/she already had {config.warnings_to_dsq} warnings")
                 return mark
 
-        if len(mark.warnings) + previous_warnings >= config.warnings_to_dsq:
+        if len(mark.warnings) + len(mark.warnings2) + previous_warnings + previous_warnings2 >= config.warnings_to_dsq:
             mark.notes.append(f"Pilot has been DSQ he/she's got {config.warnings_to_dsq} warnings")
             return mark
         #
@@ -1463,10 +1467,15 @@ class Competition(CompetitionNew):
         # remove warning deduction points
         # 0.5 per warnings
         # §7.2.2 in 7B
+        penalty = 0
         if len(mark.warnings) > 0:
-            penalty = (len(mark.warnings) + previous_warnings) * config.warning
-            mark.notes.append(f"final mark has been lowered by {penalty} because of warning")
-            mark.score -= penalty
+            penalty += (len(mark.warnings) + previous_warnings) * config.warning
+            mark.notes.append(f"final mark has been lowered by {penalty} because of category 1 warning(s)")
+        if len(mark.warnings2) > 0:
+            penalty += (len(mark.warnings2) + previous_warnings2) * config.warning2
+            mark.notes.append(f"final mark has been lowered by {penalty} because of category 2 warning(s)")
+
+        mark.score -= penalty
         if mark.score < 0:
             mark.score = 0
 

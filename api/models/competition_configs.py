@@ -74,7 +74,8 @@ class MaxBonusPerRun(BaseModel):
     })
 
 class CompetitionConfig(BaseModel):
-    warning: float = Field(settings.competitions.warning, description="The point deduction for a warning")
+    warning: float = Field(settings.competitions.warning, description="The point deduction for a category 1 warning")
+    warning2: float = Field(settings.competitions.warning2, description="The point deduction for a category 2 warning")
     malus_repetition: float = Field(settings.competitions.malus_repartition, description="% reduction malus of choreography for repetition")
     warnings_to_dsq: int = Field(settings.competitions.warnings_to_dsq, description="number of warnings in a comp that lead to DSQ")
     judge_weights: JudgeWeights = JudgeWeights()

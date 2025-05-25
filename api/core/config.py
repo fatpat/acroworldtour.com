@@ -56,6 +56,7 @@ class Settings(BaseSettings):
 
     class competitions:
         warning : float = 0.5
+        warning2 : float = 1
         malus_repartition : float = 13
         warnings_to_dsq : int = 3
         judges_weight_senior : int = 100

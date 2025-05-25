@@ -26,6 +26,7 @@ class FlightExport(BaseModel):
     final_marks: Optional[FinalMarkExport] = None
     published: bool = False
     warnings: List[str]
+    warnings2: List[str] = []
     tip_touch_bonuses: int = 0
     last_update: Optional[datetime] = None
 
@@ -38,6 +39,7 @@ class Flight(BaseModel):
     final_marks: Optional[FinalMark] = None
     published: bool = False
     warnings: List[str]
+    warnings2: List[str] = []
     tip_touch_bonuses: int = 0
     last_update: Optional[datetime] = None
     model_config = ConfigDict(json_schema_extra={
@@ -78,6 +80,7 @@ class Flight(BaseModel):
             final_marks = await self.final_marks.export(cache=cache),
             published = self.published,
             warnings = self.warnings,
+            warnings2 = self.warnings2,
             tip_touch_bonuses = self.tip_touch_bonuses,
             last_update = self.last_update,
         )
@@ -87,6 +90,7 @@ class FlightNew(BaseModel):
     marks: List[JudgeMark]
     did_not_start: bool = False
     warnings: List[str] = []
+    warnings2: List[str] = []
     tip_touch_bonuses: int = 0
     model_config = ConfigDict(json_schema_extra={
         "example": {
