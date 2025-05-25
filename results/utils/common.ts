@@ -7,7 +7,7 @@ export const ordinalSuffixOf = (n: number) => {
   return n + 'th';
 };
 
-export const relativeToUrl = (u: string | undefined) => {
+export const relativeToUrl = (u: string | undefined | null) => {
   if (typeof u !== 'string') return '';
   if (u.startsWith('/')) return API_URL + u;
   return u;

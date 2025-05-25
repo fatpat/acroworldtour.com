@@ -1,7 +1,7 @@
 import { components } from "@/types";
 
 interface Props {
-  tricks: components["schemas"]["Trick"][];
+  tricks: components["schemas"]["Trick-Input"][];
   className?: string;
 }
 

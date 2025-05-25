@@ -8,7 +8,7 @@ import FetchLoading from "@/components/ui/fetchLoading";
 import { API_URL } from "@/constants";
 import { components } from "@/types";
 
-type Trick = components["schemas"]["Trick"];
+type Trick = components["schemas"]["Trick-Input"];
 
 const Tricks = () => {
   const {

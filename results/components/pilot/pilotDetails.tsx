@@ -74,7 +74,7 @@ const PilotDetails = ({ pilot }: Props) => {
           </h2>
           <h3 className="font-semibold">FAI Rank #{rank}</h3>
         </Link>
-        {awt_years.length > 0 && (
+        {awt_years && awt_years.length > 0 && (
           <h5>AWT pilot in {awt_years.sort().join(", ")}</h5>
         )}
       </article>

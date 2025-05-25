@@ -44,11 +44,11 @@ const Pilots = () => {
   if (!pilots) return <h2>No pilots found.</h2>;
 
   const awtPilots = pilots.filter((pilot) =>
-    pilot.awt_years.includes(new Date().getFullYear()),
+    pilot.awt_years && pilot.awt_years.includes(new Date().getFullYear()),
   );
   const awqPilots = pilots.filter(
     (pilot) =>
-      !pilot.awt_years.includes(new Date().getFullYear()) && pilot.rank < 9999,
+      pilot.rank >=9999 || !pilot.awt_years || !pilot.awt_years.includes(new Date().getFullYear()),
   );
 
   return (

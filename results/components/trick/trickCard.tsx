@@ -1,7 +1,7 @@
 import { components } from "@/types";
 
 interface Props {
-  trick: components["schemas"]["Trick"];
+  trick: components["schemas"]["Trick-Input"];
 }
 
 const TrickCard = ({ trick }: Props) => {
