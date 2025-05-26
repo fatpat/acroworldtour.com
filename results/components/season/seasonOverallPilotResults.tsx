@@ -47,6 +47,20 @@ const SeasonOverallPilotResults = ({
     });
   }
 
+  pilotResults.sort((a, b) => {
+    const { competition: competitionCode_a } = a;
+    const { competition: competitionCode_b } = b;
+
+    const competition_a = competitions.find(
+      (comp) => comp.code === competitionCode_a,
+    )
+    const competition_b = competitions.find(
+      (comp) => comp.code === competitionCode_b,
+    )
+
+    return new Date(competition_a.start_date) - new Date(competition_b.start_date)
+  }) 
+
   return (
     <Fragment>
       {pilotResults.map((result, index) => {
