@@ -51,14 +51,14 @@ const SeasonOverallPilotResults = ({
     const { competition: competitionCode_a } = a;
     const { competition: competitionCode_b } = b;
 
-    const competition_a = competitions.find(
+    const date_a = competitions.find(
       (comp) => comp.code === competitionCode_a,
-    )
-    const competition_b = competitions.find(
+    )?.start_date ?? ""
+    const date_b = competitions.find(
       (comp) => comp.code === competitionCode_b,
-    )
+    )?.start_date ?? ""
 
-    return new Date(competition_a.start_date) - new Date(competition_b.start_date)
+    return (new Date(date_a)).getTime() - (new Date(date_b)).getTime()
   }) 
 
   return (
