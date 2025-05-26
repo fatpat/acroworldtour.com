@@ -25,7 +25,7 @@ const JudgeCard = ({ judge, small }: Props) => {
     data: pilot,
     error,
     isLoading,
-  } = useSWR<Pilot, Error>(civlid ? `${API_URL}/pilots/${civlid}` : null);
+  } = useSWR<Pilot, Error>(civlid ? `${API_URL}/pilots/${civlid}?results=false` : null);
 
   if (civlid && isLoading) return <FetchLoading />;
   if (civlid && error) return <FetchError />;
