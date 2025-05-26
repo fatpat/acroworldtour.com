@@ -31,6 +31,8 @@ cssselect
 python-multipart
 python-jose[cryptography]
 pytest
+pytest-env
+mongomock
 requests
 redis
 jinja2

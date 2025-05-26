@@ -55,9 +55,9 @@ async def get_pilot(civlid: int,results: bool=True):
     cache = Cache()
     if results:
         await gather(
-            Pilot.getall(cache=cache),
-            Team.getall(cache=cache),
-            Judge.getall(cache=cache),
+#            Pilot.getall(cache=cache),
+#            Team.getall(cache=cache),
+#            Judge.getall(cache=cache),
             Trick.getall(cache=cache),
             Competition.getall(cache=cache),
             Season.getall(cache=cache),
@@ -77,7 +77,9 @@ async def get_pilot(civlid: int,results: bool=True):
 async def list_teams():
     teams = []
     cache = Cache()
-    await Pilot.getall(cache=cache),
+    await gather(
+        Pilot.getall(cache=cache),
+    )
     for team in await Team.getall(deleted=False, cache=cache):
         teams.append(await team.export(cache=cache))
     return teams
@@ -92,7 +94,9 @@ async def list_teams():
 )
 async def get_team(id: str):
     cache = Cache()
-    await Pilot.getall(cache=cache),
+    await gather(
+        Pilot.getall(cache=cache),
+    )
     team = await Team.get(id, cache=cache)
     return await team.export(cache=cache)
 
@@ -227,6 +231,9 @@ async def export_competition_overall_standing_svg(id: str, run: int, result_type
 )
 async def list_seasons(deleted: bool = False):
     cache = Cache()
+    await gather(
+        Competition.getall(cache=cache),
+    )
     return [await season.export_light(cache=cache) for season in await Season.getall(deleted=deleted, cache=cache)]
 
 #

@@ -1,10 +1,6 @@
-version: '3'
 services:
   api:
     build: ./api
-    environment: 
-      - MONGODB_URL=mongodb://mongo:mongo@mongodb
-      - DATABASE=acropyx2-dev
     ports:
       - 8000:8000
     volumes:
@@ -13,12 +9,16 @@ services:
     environment:
       - MONGODB_URL=mongodb://mongo:mongo@mongodb/
       - DATABASE=acropyx2-dev
-      - CACHE_EXPIRES=30
-      - REDIS_URL=redis://redis:6379
+      - __MONGODB_URL=mongodb+srv://acroworldtour:twuR2iO70dzTFWPVb84Q@mongodb-c59cc3c1-oc9ba1bd0.database.cloud.ovh.net/acroworldtour?replicaSet=replicaset&tls=true&authSource=admin
+      - __DATABASE=acroworldtour
+      - CACHE_EXPIRES=0
+      - _REDIS_URL=redis://redis:6379
+      - LOG_LEVEL=DEBUG
+#      - SERVER_HOST=http://172.17.0.1:8000
 
   manager:
     image: node:20-alpine
-    command: sh -c "yarn install && yarn run dev"
+    command: sh -c "npm install -g pnpm && pnpm install && pnpm run dev"
     working_dir: /app
     ports:
       - 3001:3001
@@ -26,7 +26,9 @@ services:
       - ./manager:/app
     environment:
       - NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
-#      - NEXT_PUBLIC_API_URL=https://api-preprod.acroworldtour.com
+#      - NEXT_PUBLIC_API_URL=https://api.acroworldtour.com
+      - NEXT_PUBLIC_BORDER_COLOR=blueviolet
+      - NEXT_TELEMETRY_DISABLED=1
 
   results:
     image: node:20-alpine
@@ -40,6 +42,7 @@ services:
       - NEXT_PUBLIC_API_URL=http://127.0.0.1:8000/public
 #      - NEXT_PUBLIC_API_URL=https://api.acroworldtour.com/public
       - NEXT_CACHE_DURATION=1
+      - NEXT_TELEMETRY_DISABLED=1
 
   www:
     image: nginx

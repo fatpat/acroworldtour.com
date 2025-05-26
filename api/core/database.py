@@ -6,7 +6,8 @@ from typing import Any
 from pydantic_core import core_schema
 
 log = logging.getLogger(__name__)
-client = motor.motor_asyncio.AsyncIOMotorClient(settings.MONGODB_URL)
+logging.getLogger("pymongo").setLevel(logging.INFO)
+client = motor.motor_asyncio.AsyncIOMotorClient(settings.MONGODB_URL, timeoutMS=1000)
 db = client[settings.DATABASE]
 
 class PyObjectId(ObjectId):
