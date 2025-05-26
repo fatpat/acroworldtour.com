@@ -51,17 +51,20 @@ async def list_pilots():
     response_description="Get a Pilot",
     response_model=PilotWithResults,
 )
-async def get_pilot(civlid: int):
+async def get_pilot(civlid: int,results: bool=True):
     cache = Cache()
-    await gather(
-        Pilot.getall(cache=cache),
-        Team.getall(cache=cache),
-        Judge.getall(cache=cache),
-        Trick.getall(cache=cache),
-        Competition.getall(cache=cache),
-        Season.getall(cache=cache),
-    )
-    return await PilotWithResults.get(civlid, cache=cache)
+    if results:
+        await gather(
+            Pilot.getall(cache=cache),
+            Team.getall(cache=cache),
+            Judge.getall(cache=cache),
+            Trick.getall(cache=cache),
+            Competition.getall(cache=cache),
+            Season.getall(cache=cache),
+        )
+        return await PilotWithResults.get(civlid, cache=cache)
+
+    return await Pilot.get(civlid,cache=cache)
 
 #
 # Get all teams
