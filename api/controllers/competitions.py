@@ -222,14 +222,16 @@ class CompCtrl:
         return ret
 
     @staticmethod
-    def svg_overall(competition: CompetitionResults, result_type: str = 'overall', animated: int = -1):
+    def svg_overall(competition: CompetitionResults, comp:Competition, result_type: str = 'overall', animated: int = -1):
+
+        log.info(competition)
 
         competition.results["awt"] = []
         competition.results["awq"] = []
         competition.results["women"] = []
 
         for result in competition.results["overall"]:
-            if result.pilot.is_awt(competition.competition.start_date.year):
+            if result.pilot.is_awt(comp.start_date.year):
                 competition.results["awt"].append(result)
             else:
                 competition.results["awq"].append(result)
@@ -251,7 +253,7 @@ class CompCtrl:
         return UtilsCtrl.svg(results, animated=animated)
 
     @staticmethod
-    def svg_run(competition: CompetitionResults, run: int, result_type: str = 'overall', animated: int = -1):
+    def svg_run(competition: CompetitionResults, comp:Competition, run: int, result_type: str = 'overall', animated: int = -1):
         try:
             competition = competition.runs_results[run-1]
         except:
@@ -262,7 +264,7 @@ class CompCtrl:
         competition.results["women"] = []
 
         for result in competition.results["overall"]:
-            if result.pilot.is_awt(competition.competition.start_date.year):
+            if result.pilot.is_awt(comp.start_date.year):
                 competition.results["awt"].append(result)
             else:
                 competition.results["awq"].append(result)
