@@ -51,15 +51,15 @@ const SeasonOverallPilotResults = ({
     const { competition: competitionCode_a } = a;
     const { competition: competitionCode_b } = b;
 
-    const date_a = competitions.find(
-      (comp) => comp.code === competitionCode_a,
-    )?.start_date ?? ""
-    const date_b = competitions.find(
-      (comp) => comp.code === competitionCode_b,
-    )?.start_date ?? ""
+    const date_a =
+      competitions.find((comp) => comp.code === competitionCode_a)
+        ?.start_date ?? "";
+    const date_b =
+      competitions.find((comp) => comp.code === competitionCode_b)
+        ?.start_date ?? "";
 
-    return (new Date(date_a)).getTime() - (new Date(date_b)).getTime()
-  }) 
+    return new Date(date_a).getTime() - new Date(date_b).getTime();
+  });
 
   return (
     <Fragment>
