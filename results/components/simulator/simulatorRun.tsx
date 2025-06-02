@@ -405,14 +405,19 @@ const SimulatorRun = ({
               </>
             )}
             {/* warnings */}
-            {(results.final_marks?.warnings.length || 0) > 0 && (
+            {((results.final_marks?.warnings?.length || 0) + (results.final_marks?.warnings2?.length || 0)) > 0 && (
               <>
                 <h4 className="col-span-full col-start-1 bg-awt-dark-500 py-3 text-white">
                   Warnings
                 </h4>
-                {results.final_marks?.warnings.map((w) => (
+                {results.final_marks?.warnings2?.map((w) => (
                   <p key={w} className="col-span-1 col-span-full py-1">
-                    {w}
+                    {w} (1pt)
+                  </p>
+                ))}
+                {results.final_marks?.warnings?.map((w) => (
+                  <p key={w} className="col-span-1 col-span-full py-1">
+                    {w} (0.5pt)
                   </p>
                 ))}
               </>

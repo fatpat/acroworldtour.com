@@ -59,6 +59,7 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
           synchro: synchroFinal,
           bonus,
           warnings,
+          warnings2,
           notes,
         } = final_marks ?? {};
 
@@ -106,7 +107,7 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
             <p className="col-span-3 py-3 text-center">
               {roundedScore}
               {(malus || 0) > 0 && "🔻"}
-              {(warnings?.length || 0) > 0 && " ⚠️"}
+              {((warnings?.length || 0) + (warnings2?.length || 0)) > 0 && " ⚠️"}
             </p>
 
             {showDetails[resultIndex] && (
@@ -260,17 +261,26 @@ const CompetitionRunMain = ({ results, type, className }: Props) => {
                 <p className="col-span-full col-start-1 py-1 text-center">
                   {bonus?.toFixed(3)}
                 </p>
-                {(warnings?.length || 0) > 0 && (
+                {((warnings?.length || 0) + (warnings2?.length || 0)) > 0 && (
                   <>
                     <h5 className="col-span-full col-start-1 border-t-[1px] py-2">
                       Warnings
                     </h5>
                     <ul className="col-span-full col-start-1 py-1 text-center">
+                      {warnings2?.map((warning, warningIndex) => {
+                        return (
+                          <li key={warningIndex}>
+                            <p className="py-1 pl-6 pr-2 text-left -indent-5">
+                              ⚠️ {capitalise(warning)} (1pt)
+                            </p>
+                          </li>
+                        );
+                      })}
                       {warnings?.map((warning, warningIndex) => {
                         return (
                           <li key={warningIndex}>
                             <p className="py-1 pl-6 pr-2 text-left -indent-5">
-                              ⚠️ {capitalise(warning)}
+                              ⚠️ {capitalise(warning)} (0.5pt)
                             </p>
                           </li>
                         );
