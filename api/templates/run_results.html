@@ -59,10 +59,13 @@ Last update: {{ results.last_update.strftime('%Y-%m-%d %H:%M') }} UTC
             </td>
 {% endif %}
             <td>
-{%   if res.final_marks.warnings | length > 0 %}
+{%   if ((res.final_marks.warnings | length) + (res.final_marks.warnings2 | length))> 0 %}
                 <ul class="nobullets">
+{%      for warning in res.final_marks.warnings2 %}
+                    <li>{{ warning }} (1pt)</li>
+{%      endfor %}
 {%      for warning in res.final_marks.warnings %}
-                    <li>{{ warning }}</li>
+                    <li>{{ warning }} (0.5pt)</li>
 {%      endfor %}
                 <ul class="nobullets">
                 </ul>
