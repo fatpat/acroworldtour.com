@@ -68,7 +68,7 @@ class UtilsCtrl:
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="{width}" height="{height}" viewBox="0 0 {width} {height}" style="border-radius:20px; border-color: black; border-width: 1px;">
 ''')
         svg.append(f'  <g id="pilots">')
-        if nb_lines > max_lines and animated >= 0:
+        if animated >= 0:
             if len(datas) % 2 == 0:
                 datas.append(None) # 2 empty lines when number of lines is even to ensure to keep the colors right
             datas.append(None) # empty line between last and first
