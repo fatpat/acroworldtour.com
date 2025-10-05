@@ -1,6 +1,6 @@
 import logging
 import core.logging
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import time
@@ -48,6 +48,18 @@ app = FastAPI(
     },
     lifespan=lifespan,
 )
+
+@app.middleware('http')
+async def validate_ip(request: Request, call_next):
+    # Get client IP
+    ip = str(request.client.host)
+                
+    # Check if IP is allowed
+    if ip not in [""]:
+        return JSONResponse(status_code=status.HTTP_403_FORBIDDEN)
+
+    # Proceed if IP is allowed
+    return await call_next(request)
 
 app.add_middleware(
     CORSMiddleware,
