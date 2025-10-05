@@ -57,7 +57,7 @@ async def validate_ip(request: Request, call_next):
                 
     # Check if IP is allowed
     if ip not in [""]:
-        return JSONResponse(status_code=status.HTTP_403_FORBIDDEN)
+        return JSONResponse(status_code=status.HTTP_403_FORBIDDEN, content="/dev/null")
 
     # Proceed if IP is allowed
     return await call_next(request)
