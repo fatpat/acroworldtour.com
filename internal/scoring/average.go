@@ -31,7 +31,9 @@ func Average(xs []float64) float64 {
 func WeightedAverage(pairs []Weighted) float64 {
 	var top, bottom float64
 	for _, p := range pairs {
-		top += p.Value * p.Weight
+		// The conversion prevents a fused multiply-add, which the Go spec
+		// allows on some architectures and Python never does.
+		top += float64(p.Value * p.Weight)
 		bottom += p.Weight
 	}
 	if bottom <= 0 {

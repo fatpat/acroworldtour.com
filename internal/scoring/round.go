@@ -1,8 +1,3 @@
-// Package scoring implements the AcroWorldTour scoring engine.
-//
-// The package is pure: no I/O, no database, no clock, no globals, no logging.
-// It must reproduce the legacy Python engine's floats exactly (see
-// specifications/03-scoring-rules.md).
 package scoring
 
 import "strconv"
