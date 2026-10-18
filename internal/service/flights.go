@@ -70,6 +70,48 @@ func round3Mark(v *float64) *float64 {
 	return &r
 }
 
+// UnknownTricksError lists the flown tricks that are not in the
+// competition-year catalog, in first-seen order. Its message is the legacy
+// 400 text; it unwraps to a scoring.ValidationError so that callers mapping
+// engine refusals keep working.
+type UnknownTricksError struct {
+	Tricks []string
+}
+
+func (e *UnknownTricksError) Error() string {
+	return "Unknown trick(s): " + strings.Join(e.Tricks, ", ")
+}
+
+func (e *UnknownTricksError) Unwrap() error { return scoring.ValidationError{Msg: e.Error()} }
+
+// ErrStaleFlight: the flight was saved or deleted since the form was
+// loaded (optimistic concurrency of the judging screen). It is an
+// ErrConflict.
+var ErrStaleFlight error = staleFlightError{}
+
+type staleFlightError struct{}
+
+func (staleFlightError) Error() string {
+	return "this flight was changed by someone else — reload to see it"
+}
+
+func (staleFlightError) Is(target error) bool { return target == ErrConflict }
+
+// checkVersion compares the version a form was loaded with to the stored
+// flight: "" means a new flight, which must not exist yet.
+func checkVersion(cur gen.Flight, exists bool, expected string) error {
+	if !exists {
+		if expected != "" {
+			return ErrStaleFlight
+		}
+		return nil
+	}
+	if expected != strconv.FormatInt(cur.Version, 10) {
+		return ErrStaleFlight
+	}
+	return nil
+}
+
 // resolveTricks snapshots the flown tricks from the competition-year
 // catalog (decision 0008): by acronym (unique), else by unique-trick name.
 // Unknown tricks give the legacy 400 message; a name shared by several
@@ -106,7 +148,7 @@ func resolveTricks(ctx context.Context, q *gen.Queries, year int, names []string
 		out = append(out, scoring.FlownTrick{UniqueTrick: u})
 	}
 	if len(unknown) > 0 {
-		return nil, scoring.ValidationError{Msg: "Unknown trick(s): " + strings.Join(unknown, ", ")}
+		return nil, &UnknownTricksError{Tricks: unknown}
 	}
 	return out, nil
 }
@@ -209,7 +251,7 @@ func prepareFlight(ctx context.Context, q *gen.Queries, c Competition, r Run, pa
 // stored run and competition rankings, and the season rankings when the
 // competition is closed (only closed competitions count in a season).
 // Live events are published after commit.
-func (s *Service) SaveFlight(ctx context.Context, compID string, run int, participant string, in FlightInput, publish bool) (scoring.Result, error) {
+func (s *Service) SaveFlight(ctx context.Context, compID string, run int, participant string, in FlightInput, publish bool, version string) (scoring.Result, error) {
 	var res scoring.Result
 	var c Competition
 	err := s.db.Tx(ctx, func(q *gen.Queries) error {
@@ -231,21 +273,22 @@ func (s *Service) SaveFlight(ctx context.Context, compID string, run int, partic
 		if res, err = scoreFlight(ctx, q, env, run, p, flight); err != nil {
 			return err
 		}
+		cur, exists, err := storedFlight(ctx, q, c.ID, run, p)
+		if err != nil {
+			return err
+		}
+		if err := checkVersion(cur, exists, version); err != nil {
+			return err
+		}
 		if err := storeFlight(ctx, q, env, run, p, flight, res, &publish); err != nil {
 			return err
 		}
-		for later := run + 1; later < len(env.runs); later++ {
-			f, ok, err := storedFlight(ctx, q, c.ID, later, p)
-			if err != nil {
-				return err
-			}
-			if ok {
-				if err := rescoreFlight(ctx, q, env, later, p, f); err != nil {
-					return err
-				}
+		if exists {
+			if err := q.BumpFlightVersion(ctx, cur.ID); err != nil {
+				return fmt.Errorf("bump version of flight %d: %w", cur.ID, err)
 			}
 		}
-		return rebuildRankings(ctx, q, compID, c.State == domain.CompetitionClosed)
+		return rescoreLaterAndRank(ctx, q, env, run, p, c)
 	})
 	if err != nil {
 		return scoring.Result{}, err
@@ -256,6 +299,79 @@ func (s *Service) SaveFlight(ctx context.Context, compID string, run int, partic
 		s.publish(KindFlight, competitionTopic(c.Code))
 	}
 	return res, nil
+}
+
+// rescoreLaterAndRank rescores the participant's flights of the runs after
+// run (decision 0006 #14) and rebuilds the stored rankings, the season ones
+// when the competition is closed.
+func rescoreLaterAndRank(ctx context.Context, q *gen.Queries, env *scoringEnv, run int, p ranking.Participant, c Competition) error {
+	for later := run + 1; later < len(env.runs); later++ {
+		f, ok, err := storedFlight(ctx, q, c.ID, later, p)
+		if err != nil {
+			return err
+		}
+		if ok {
+			if err := rescoreFlight(ctx, q, env, later, p, f); err != nil {
+				return err
+			}
+		}
+	}
+	return rebuildRankings(ctx, q, c.ID, c.State == domain.CompetitionClosed)
+}
+
+// DeleteFlight deletes a participant's flight of an open run (the scorer
+// starts it again from scratch), rescores the participant's later flights
+// and rebuilds the rankings in the same transaction; version is the one the
+// form was loaded with. Live events are published after commit.
+func (s *Service) DeleteFlight(ctx context.Context, compID string, run int, participant string, version string) error {
+	var c Competition
+	err := s.db.Tx(ctx, func(q *gen.Queries) error {
+		var err error
+		if c, _, err = editable(ctx, q, compID); err != nil {
+			return err
+		}
+		r, _, err := loadRun(ctx, q, c.ID, run)
+		if err != nil {
+			return err
+		}
+		if err := domain.CanSaveFlight(r.State); err != nil {
+			return fmt.Errorf("run %d: %w", run+1, err)
+		}
+		env, err := loadScoringEnv(ctx, q, c)
+		if err != nil {
+			return err
+		}
+		p, err := env.participant(r, participant)
+		if err != nil {
+			return err
+		}
+		cur, exists, err := storedFlight(ctx, q, c.ID, run, p)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			if version != "" {
+				return ErrStaleFlight
+			}
+			return fmt.Errorf("flight of %s in run %d: %w", participantKey(p), run+1, ErrNotFound)
+		}
+		if err := checkVersion(cur, exists, version); err != nil {
+			return err
+		}
+		if err := q.DeleteFlight(ctx, cur.ID); err != nil {
+			return fmt.Errorf("delete flight %d: %w", cur.ID, err)
+		}
+		return rescoreLaterAndRank(ctx, q, env, run, p, c)
+	})
+	if err != nil {
+		return err
+	}
+	if c.State == domain.CompetitionClosed {
+		s.publish(KindFlight, c.topics()...)
+	} else {
+		s.publish(KindFlight, competitionTopic(c.Code))
+	}
+	return nil
 }
 
 // rescoreCompetition rescores every stored flight of a competition in run
@@ -351,9 +467,10 @@ func storeFlight(ctx context.Context, q *gen.Queries, env *scoringEnv, idx int, 
 	return writeFlightChildren(ctx, q, id, res, flight)
 }
 
-// writeFlightChildren replaces a flight's tricks and marks (as computed by
-// the engine: per-trick technical marks, filled per-trick judge marks) and
-// its operator warnings.
+// writeFlightChildren replaces a flight's tricks (as computed by the
+// engine, with their per-trick technical marks), its judges' marks as
+// entered (a blank per-trick mark stays null: the engine fills it in again
+// at every scoring) and its operator warnings.
 func writeFlightChildren(ctx context.Context, q *gen.Queries, id int64, res scoring.Result, flight scoring.Flight) error {
 	if err := q.DeleteFlightTricks(ctx, id); err != nil {
 		return fmt.Errorf("clear tricks of flight %d: %w", id, err)
@@ -373,7 +490,7 @@ func writeFlightChildren(ctx context.Context, q *gen.Queries, id int64, res scor
 			return fmt.Errorf("save trick %d of flight %d: %w", i, id, err)
 		}
 	}
-	for _, m := range res.Marks {
+	for _, m := range flight.Marks {
 		p := gen.InsertFlightMarkParams{
 			FlightID: id, JudgeID: m.Judge, Technical: nullFloat(m.Technical), Choreography: nullFloat(m.Choreography),
 			Landing: nullFloat(m.Landing), Synchro: nullFloat(m.Synchro),

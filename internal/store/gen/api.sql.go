@@ -471,7 +471,7 @@ func (q *Queries) ApiListPublishedCompetitionsOfSeason(ctx context.Context, seas
 }
 
 const apiListPublishedFlightsOfRun = `-- name: ApiListPublishedFlightsOfRun :many
-SELECT id, competition_id, run_idx, civlid, team_id, did_not_start, tip_touches, published, mark_type, save_seq, final_mark, score, updated_at FROM flights WHERE competition_id = ? AND run_idx = ? AND published = 1 ORDER BY id
+SELECT id, competition_id, run_idx, civlid, team_id, did_not_start, tip_touches, published, mark_type, save_seq, final_mark, score, updated_at, version FROM flights WHERE competition_id = ? AND run_idx = ? AND published = 1 ORDER BY id
 `
 
 type ApiListPublishedFlightsOfRunParams struct {
@@ -502,6 +502,7 @@ func (q *Queries) ApiListPublishedFlightsOfRun(ctx context.Context, arg ApiListP
 			&i.FinalMark,
 			&i.Score,
 			&i.UpdatedAt,
+			&i.Version,
 		); err != nil {
 			return nil, err
 		}

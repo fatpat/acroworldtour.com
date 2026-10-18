@@ -86,7 +86,16 @@ func (e *flightEnv) input(t float64, tricks ...string) FlightInput {
 
 func (e *flightEnv) save(t *testing.T, run, pilot int, in FlightInput, publish bool) scoring.Result {
 	t.Helper()
-	return must(e.svc.SaveFlight(context.Background(), e.comp.ID, run, fmt.Sprint(pilot), in, publish))(t)
+	return must(e.svc.SaveFlight(context.Background(), e.comp.ID, run, fmt.Sprint(pilot), in, publish, e.version(t, run, pilot)))(t)
+}
+
+// version is the current version of a pilot's stored flight ("" when none),
+// as the judging form quotes it.
+func (e *flightEnv) version(t *testing.T, run, pilot int) string {
+	t.Helper()
+	f, _, err := e.svc.GetFlight(context.Background(), e.comp.ID, run, fmt.Sprint(pilot))
+	ok(t, err)
+	return f.Version
 }
 
 // storedFlight reads a pilot's stored flight row and final mark.
@@ -241,13 +250,13 @@ func TestSaveRefusedWhenRunNotOpen(t *testing.T) {
 	e := newFlightEnv(t, []int{201, 202}, nil, nil)
 	ctx := context.Background()
 	must(e.svc.NewRun(ctx, e.comp.ID, 0, scoring.ResetNone))(t) // run 2 stays init
-	if _, err := e.svc.SaveFlight(ctx, e.comp.ID, 1, "201", e.input(7, "LM"), true); !errors.Is(err, domain.ErrInvalidTransition) {
+	if _, err := e.svc.SaveFlight(ctx, e.comp.ID, 1, "201", e.input(7, "LM"), true, ""); !errors.Is(err, domain.ErrInvalidTransition) {
 		t.Errorf("init run: %v", err)
 	}
 	e.save(t, 0, 201, e.input(7, "LM"), true)
 	e.save(t, 0, 202, e.input(7, "LM"), true)
 	ok(t, e.svc.CloseRun(ctx, e.comp.ID, 0))
-	if _, err := e.svc.SaveFlight(ctx, e.comp.ID, 0, "201", e.input(8, "LM"), true); !errors.Is(err, domain.ErrInvalidTransition) {
+	if _, err := e.svc.SaveFlight(ctx, e.comp.ID, 0, "201", e.input(8, "LM"), true, ""); !errors.Is(err, domain.ErrInvalidTransition) {
 		t.Errorf("closed run: %v", err)
 	}
 	if _, fm := e.storedFlight(t, 0, 201); scoring.Round3(fm.Score) == 0 {
@@ -257,7 +266,7 @@ func TestSaveRefusedWhenRunNotOpen(t *testing.T) {
 	ok(t, err)
 	_, err = e.db.Write.ExecContext(ctx, `UPDATE competitions SET frozen = 1 WHERE id = ?`, e.comp.ID)
 	ok(t, err)
-	if _, err := e.svc.SaveFlight(ctx, e.comp.ID, 0, "201", e.input(8, "LM"), true); !errors.Is(err, ErrFrozen) {
+	if _, err := e.svc.SaveFlight(ctx, e.comp.ID, 0, "201", e.input(8, "LM"), true, ""); !errors.Is(err, ErrFrozen) {
 		t.Errorf("frozen competition: %v", err)
 	}
 }
@@ -266,13 +275,86 @@ func TestUnknownTrickError(t *testing.T) {
 	e := newFlightEnv(t, []int{201, 202}, nil, nil)
 	ctx := context.Background()
 	var ve scoring.ValidationError
-	_, err := e.svc.SaveFlight(ctx, e.comp.ID, 0, "201", e.input(7, "LM", "XYZ"), true)
+	_, err := e.svc.SaveFlight(ctx, e.comp.ID, 0, "201", e.input(7, "LM", "XYZ"), true, "")
 	if !errors.As(err, &ve) || ve.Msg != "Unknown trick(s): XYZ" {
 		t.Errorf("unknown trick: %v", err)
 	}
 	_, err = e.svc.SimulateFlight(ctx, e.comp.ID, 0, "201", e.input(7, "XYZ", "LM", "ABC", "XYZ"))
 	if !errors.As(err, &ve) || ve.Msg != "Unknown trick(s): XYZ, ABC" {
 		t.Errorf("unknown tricks: %v", err)
+	}
+	// The typed error lists the tricks, first seen first, without duplicates.
+	var ue *UnknownTricksError
+	if !errors.As(err, &ue) || strings.Join(ue.Tricks, "|") != "XYZ|ABC" {
+		t.Errorf("typed unknown tricks: %#v", err)
+	}
+}
+
+// TestRawMarksStored: flight_marks keep the judges' marks as entered (a
+// blank per-trick mark stays null); the engine fills it in at every
+// scoring, so a rescore gives the same score.
+func TestRawMarksStored(t *testing.T) {
+	e := newFlightEnv(t, []int{201, 202}, []int{201}, []string{"awt-2025"})
+	ctx := context.Background()
+	in := e.input(7, "LM", "RMC")
+	in.Marks[1].TechnicalPerTrick[1] = nil
+	res := e.save(t, 0, 201, in, true)
+	row, _ := e.storedFlight(t, 0, 201)
+	marks, err := gen.New(e.db.Read).ListFlightMarks(ctx, row.ID)
+	ok(t, err)
+	var nulls int
+	for _, m := range marks {
+		nulls += strings.Count(m.TechnicalPerTrick.String, "null")
+	}
+	if nulls != 1 {
+		t.Fatalf("stored per-trick marks %+v, want exactly one null", marks)
+	}
+	got, _, err := e.svc.GetFlight(ctx, e.comp.ID, 0, "201")
+	ok(t, err)
+	for _, m := range got.Input.Marks {
+		if m.Judge == in.Marks[1].Judge && m.TechnicalPerTrick[1] != nil {
+			t.Fatalf("blank mark read back as %v", *m.TechnicalPerTrick[1])
+		}
+	}
+	ok(t, e.db.Tx(ctx, func(q *gen.Queries) error { return rescoreCompetition(ctx, q, e.comp) }))
+	after, _ := e.storedFlight(t, 0, 201)
+	if after.Score.Float64 != scoring.Round3(res.Final.Score) {
+		t.Fatalf("rescored score %v, saved %v", after.Score.Float64, scoring.Round3(res.Final.Score))
+	}
+}
+
+func TestFlightVersionAndDelete(t *testing.T) {
+	e := newFlightEnv(t, []int{201, 202}, nil, nil)
+	ctx := context.Background()
+	// New flight: no version; the same stale "new" form cannot save twice.
+	must(e.svc.SaveFlight(ctx, e.comp.ID, 0, "201", e.input(7, "LM"), true, ""))(t)
+	if _, err := e.svc.SaveFlight(ctx, e.comp.ID, 0, "201", e.input(8, "LM"), true, ""); !errors.Is(err, ErrConflict) || !errors.Is(err, ErrStaleFlight) {
+		t.Fatalf("second new save: %v", err)
+	}
+	must(e.svc.SaveFlight(ctx, e.comp.ID, 0, "201", e.input(8, "LM"), true, "1"))(t)
+	if _, err := e.svc.SaveFlight(ctx, e.comp.ID, 0, "201", e.input(9, "LM"), true, "1"); !errors.Is(err, ErrStaleFlight) {
+		t.Fatalf("stale save: %v", err)
+	}
+	if v := e.version(t, 0, 201); v != "2" {
+		t.Fatalf("version = %s, want 2", v)
+	}
+	if got := e.ranking(t, store.ScopeCompetition, e.comp.ID, "overall"); len(got) != 1 {
+		t.Fatalf("competition ranking before delete: %v", got)
+	}
+
+	// Delete: stale version refused, then deleted and the ranking rebuilt.
+	if err := e.svc.DeleteFlight(ctx, e.comp.ID, 0, "201", "1"); !errors.Is(err, ErrStaleFlight) {
+		t.Fatalf("stale delete: %v", err)
+	}
+	ok(t, e.svc.DeleteFlight(ctx, e.comp.ID, 0, "201", "2"))
+	if _, found, _ := e.svc.GetFlight(ctx, e.comp.ID, 0, "201"); found {
+		t.Fatal("flight not deleted")
+	}
+	if got := e.ranking(t, store.ScopeCompetition, e.comp.ID, "overall"); len(got) != 0 {
+		t.Fatalf("competition ranking after delete: %v", got)
+	}
+	if err := e.svc.DeleteFlight(ctx, e.comp.ID, 0, "201", ""); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("delete of no flight: %v", err)
 	}
 }
 
@@ -283,26 +365,26 @@ func TestSaveFlightValidation(t *testing.T) {
 	var ve *ValidationError
 	bad := e.input(7, "LM")
 	bad.Marks[0].Landing = ptr(10.5)
-	if _, err := e.svc.SaveFlight(ctx, e.comp.ID, 0, "201", bad, true); !errors.As(err, &ve) {
+	if _, err := e.svc.SaveFlight(ctx, e.comp.ID, 0, "201", bad, true, ""); !errors.As(err, &ve) {
 		t.Errorf("mark 10.5: %v", err)
 	}
 	bad = e.input(7, "LM")
 	bad.Marks[1].TechnicalPerTrick[0] = ptr(-1)
-	if _, err := e.svc.SaveFlight(ctx, e.comp.ID, 0, "201", bad, true); !errors.As(err, &ve) {
+	if _, err := e.svc.SaveFlight(ctx, e.comp.ID, 0, "201", bad, true, ""); !errors.As(err, &ve) {
 		t.Errorf("per-trick mark -1: %v", err)
 	}
 	bad = e.input(7, "LM")
 	bad.Marks[1].Judge = stranger.ID
-	if _, err := e.svc.SaveFlight(ctx, e.comp.ID, 0, "201", bad, true); !errors.As(err, &ve) ||
+	if _, err := e.svc.SaveFlight(ctx, e.comp.ID, 0, "201", bad, true, ""); !errors.As(err, &ve) ||
 		ve.Fields[0].Msg != fmt.Sprintf("judge %s is not a judge of this run", stranger.ID) {
 		t.Errorf("judge outside the run: %v", err)
 	}
 	bad = e.input(7, "LM")
 	bad.Marks[1].Judge = bad.Marks[0].Judge
-	if _, err := e.svc.SaveFlight(ctx, e.comp.ID, 0, "201", bad, true); !errors.As(err, &ve) {
+	if _, err := e.svc.SaveFlight(ctx, e.comp.ID, 0, "201", bad, true, ""); !errors.As(err, &ve) {
 		t.Errorf("duplicate judge: %v", err)
 	}
-	if _, err := e.svc.SaveFlight(ctx, e.comp.ID, 0, "999", e.input(7, "LM"), true); !errors.As(err, &ve) {
+	if _, err := e.svc.SaveFlight(ctx, e.comp.ID, 0, "999", e.input(7, "LM"), true, ""); !errors.As(err, &ve) {
 		t.Errorf("pilot outside the run: %v", err)
 	}
 	// nil marks are "no mark": no choreography at all is a legacy 400
@@ -311,7 +393,7 @@ func TestSaveFlightValidation(t *testing.T) {
 		none.Marks[i].Choreography = nil
 	}
 	var se scoring.ValidationError
-	if _, err := e.svc.SaveFlight(ctx, e.comp.ID, 0, "201", none, true); !errors.As(err, &se) || se.Msg != "not enough choreography marks" {
+	if _, err := e.svc.SaveFlight(ctx, e.comp.ID, 0, "201", none, true, ""); !errors.As(err, &se) || se.Msg != "not enough choreography marks" {
 		t.Errorf("no choreography: %v", err)
 	}
 	if n := len(must(gen.New(e.db.Read).ListFlightsOfRun(ctx, gen.ListFlightsOfRunParams{CompetitionID: e.comp.ID}))(t)); n != 0 {
@@ -363,7 +445,7 @@ func TestConcurrentFlightSaves(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_, err := e.svc.SaveFlight(ctx, e.comp.ID, 0, fmt.Sprint(p), e.input(5+float64(i)/10, "LM", "RMC", "LS"), true)
+			_, err := e.svc.SaveFlight(ctx, e.comp.ID, 0, fmt.Sprint(p), e.input(5+float64(i)/10, "LM", "RMC", "LS"), true, "")
 			errs <- err
 		}()
 	}
@@ -398,7 +480,7 @@ func TestSavePublishesEvent(t *testing.T) {
 	season, unsubscribeSeason := e.bus.Subscribe("season:awt-2025")
 	defer unsubscribeSeason()
 
-	if _, err := e.svc.SaveFlight(ctx, e.comp.ID, 0, "201", e.input(7, "XYZ"), true); err == nil {
+	if _, err := e.svc.SaveFlight(ctx, e.comp.ID, 0, "201", e.input(7, "XYZ"), true, ""); err == nil {
 		t.Fatal("want error")
 	}
 	if _, err := e.svc.SimulateFlight(ctx, e.comp.ID, 0, "201", e.input(7, "LM")); err != nil {
@@ -615,7 +697,7 @@ func TestSynchroTipTouches(t *testing.T) {
 	for _, j := range []string{j1.ID, j2.ID} {
 		in.Marks = append(in.Marks, MarkInput{Judge: j, Technical: ptr(7), Choreography: ptr(6), Landing: ptr(6), Synchro: ptr(8)})
 	}
-	r := must(f.svc.SaveFlight(ctx, c.ID, 0, t1.ID, in, true))(t)
+	r := must(f.svc.SaveFlight(ctx, c.ID, 0, t1.ID, in, true, ""))(t)
 	if r.Final.MarkType != scoring.MarkClassic || r.Final.BonusPercentage != 4 || !hasString(r.Final.Notes, "4% tip-touch bonus") || r.Final.Synchro == 0 {
 		t.Errorf("synchro flight: %+v", r.Final)
 	}
@@ -624,7 +706,7 @@ func TestSynchroTipTouches(t *testing.T) {
 	if len(rows) != 1 || rows[0].TeamID.String != t1.ID || rows[0].Score != scoring.Round3(r.Final.Score) {
 		t.Errorf("synchro ranking %+v", rows)
 	}
-	if _, err := f.svc.SaveFlight(ctx, c.ID, 0, "201", in, true); err == nil {
+	if _, err := f.svc.SaveFlight(ctx, c.ID, 0, "201", in, true, ""); err == nil {
 		t.Error("pilot id accepted in a synchro run")
 	}
 }

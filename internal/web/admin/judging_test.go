@@ -149,7 +149,7 @@ func TestJudgingSaveAndPublish(t *testing.T) {
 	e := newJudging(t, domain.TypeSolo, nil, true)
 	page := e.get(e.base)
 	e.wantStatus(page, 200, "Pilot 101", "Pilot 102", "Pilot 103", "not flown", `id="participants"`, `id="flight"`,
-		`hx-post="`+e.base+`/101/simulate"`, `hx-sync="this:replace"`, "js/judging.js")
+		`hx-post="`+e.base+`/101/simulate"`, `hx-sync="this:queue last"`, "js/judging.js")
 	if strings.Contains(page.Body.String(), "chip--saved") {
 		t.Fatal("a participant is marked saved before any save")
 	}
@@ -164,7 +164,10 @@ func TestJudgingSaveAndPublish(t *testing.T) {
 		t.Fatalf("status after save = %+v", st["101"])
 	}
 
-	// Save & publish without JS: redirect to the next participant.
+	// Save & publish without JS (from the reloaded form: its version):
+	// redirect to the next participant.
+	saved, _ := e.stored("101")
+	form.Set("version", saved.Version)
 	form.Set("publish", "1")
 	form.Del("_csrf")
 	e.wantRedirect(e.post(e.base+"/101/save", form), e.base+"/102?ok=published")
@@ -185,6 +188,7 @@ func TestJudgingSaveAndPublish(t *testing.T) {
 
 	// The last participant stays selected after a save.
 	form.Set("publish", "0")
+	form.Del("version")
 	e.wantRedirect(e.post(e.base+"/103/save", form), e.base+"/103?ok=saved")
 
 	// Unknown participant.
@@ -397,5 +401,151 @@ func TestJudgingGuards(t *testing.T) {
 	big := url.Values{"trick": {strings.Repeat("x", 70<<10)}}
 	if rec := e.postAs(&e.scorer, e.base+"/101/simulate", big, true); rec.Code != http.StatusRequestEntityTooLarge {
 		t.Fatalf("oversized body = %d", rec.Code)
+	}
+}
+
+func TestJudgingRequestSync(t *testing.T) {
+	e := newJudging(t, domain.TypeSolo, nil, true)
+	form := e.classicForm("7")
+	form.Set("publish", "0")
+	e.wantStatus(e.hx(e.base+"/101/save", form), 200)
+	body := e.get(e.base + "/101").Body.String()
+	// The live simulate queues on the form's queue; it never aborts a save.
+	if !regexp.MustCompile(`<form id="flight-form"[^>]*hx-sync="this:queue last"`).MatchString(body) {
+		t.Fatal("form does not queue its simulate requests")
+	}
+	// Save, edit and delete abort a pending simulate, and set hx-sync
+	// themselves (an inherited "queue last" would make them wait).
+	for _, re := range []string{
+		`name="publish" value="0" hx-post="[^"]*/save"[^>]*hx-sync="closest form:replace"`,
+		`name="publish" value="1" hx-post="[^"]*/save"[^>]*hx-sync="closest form:replace"`,
+		`name="op" value="trick-add"[^>]*hx-sync="closest form:replace"`,
+		`hx-post="[^"]*/delete"[^>]*hx-sync="closest form:replace"`,
+		`hx-post="[^"]*/simulate"[^>]*hx-sync="closest form:queue last"`,
+	} {
+		if !regexp.MustCompile(re).MatchString(body) {
+			t.Errorf("no %s", re)
+		}
+	}
+	if !strings.Contains(body, `hx-disabled-elt="#flight-actions button"`) {
+		t.Error("save buttons are not disabled while saving")
+	}
+}
+
+func TestJudgingStaleSaveRefused(t *testing.T) {
+	e := newJudging(t, domain.TypeSolo, nil, true)
+	// Two scorers load the new flight (no version) and both save.
+	form := e.classicForm("7")
+	form.Set("publish", "0")
+	e.wantStatus(e.hx(e.base+"/101/save", form), 200, "Saved")
+	stale := e.classicForm("9")
+	stale.Set("publish", "0")
+	rec := e.hx(e.base+"/101/save", stale)
+	e.wantStatus(rec, http.StatusConflict, "This flight was changed by someone else", `value="9"`)
+
+	// Two saves from the same loaded form (version 1): the second is refused.
+	v1, _ := e.stored("101")
+	for i, want := range []int{200, http.StatusConflict} {
+		f := e.classicForm("8")
+		f.Set("publish", "0")
+		f.Set("version", v1.Version)
+		f.Del("_csrf")
+		if rec := e.post(e.base+"/101/save", f); rec.Code != want && !(want == 200 && rec.Code == http.StatusSeeOther) {
+			t.Fatalf("save %d = %d, want %d: %.300s", i, rec.Code, want, rec.Body.String())
+		}
+	}
+	got, _ := e.stored("101")
+	if got.Version != "2" || *got.Input.Marks[0].Technical != 8 {
+		t.Fatalf("stored version %s technical %v", got.Version, *got.Input.Marks[0].Technical)
+	}
+}
+
+func TestJudgingDeleteFlight(t *testing.T) {
+	e := newJudging(t, domain.TypeSolo, nil, true)
+	ctx := context.Background()
+	form := e.classicForm("7")
+	form.Set("publish", "1")
+	e.wantStatus(e.hx(e.base+"/101/save", form), 200)
+	f, _ := e.stored("101")
+	e.wantStatus(e.get(e.base+"/101"), 200, "Delete flight")
+
+	del := url.Values{"version": {f.Version}}
+	// CSRF required.
+	if rec := e.postAs(&e.admin, e.base+"/101/delete", del, false); rec.Code != http.StatusForbidden {
+		t.Fatalf("delete without CSRF = %d", rec.Code)
+	}
+	// First post asks for confirmation, nothing deleted.
+	e.wantStatus(e.hx(e.base+"/101/delete", url.Values{"version": {f.Version}}), 200, "Confirm delete")
+	if _, ok := e.stored("101"); !ok {
+		t.Fatal("deleted without confirmation")
+	}
+	// A stale version is refused.
+	e.wantStatus(e.hx(e.base+"/101/delete", url.Values{"version": {"99"}, "confirm": {"1"}}), http.StatusConflict, "changed by someone else")
+	// Confirmed: deleted, participant shown again as not flown.
+	rec := e.hx(e.base+"/101/delete", url.Values{"version": {f.Version}, "confirm": {"1"}})
+	e.wantStatus(rec, 200, "Flight deleted.", `id="participants" hx-swap-oob="true"`)
+	if _, ok := e.stored("101"); ok {
+		t.Fatal("flight not deleted")
+	}
+	if st, _ := e.svc.RunFlightStatuses(ctx, e.c.ID, 0); len(st) != 0 {
+		t.Fatalf("statuses after delete: %v", st)
+	}
+
+	// Closed run: refused with the domain message.
+	for _, p := range []string{"101", "102", "103"} {
+		form := e.classicForm("7")
+		form.Set("publish", "1")
+		e.wantStatus(e.hx(e.base+"/"+p+"/save", form), 200)
+	}
+	e.mustOK(e.svc.CloseRun(ctx, e.c.ID, 0))
+	f, _ = e.stored("101")
+	e.wantStatus(e.hx(e.base+"/101/delete", url.Values{"version": {f.Version}, "confirm": {"1"}}), http.StatusConflict, "open run")
+	if _, ok := e.stored("101"); !ok {
+		t.Fatal("flight deleted in a closed run")
+	}
+}
+
+func TestJudgingRawPerTrickMarks(t *testing.T) {
+	e := newJudging(t, domain.TypeSolo, []string{"awt-2025"}, true)
+	j0, j1 := e.judges[0], e.judges[1]
+	form := url.Values{"trick": {"LM", "RMC"}, "publish": {"0"}}
+	for _, j := range e.judges {
+		form.Set("mark."+j+".t.0", "7")
+		form.Set("mark."+j+".choreography", "6")
+		form.Set("mark."+j+".landing", "6")
+	}
+	form.Set("mark."+j0+".t.1", "8")
+	form.Set("mark."+j1+".t.1", "") // blank: guessed by the engine
+	e.wantStatus(e.hx(e.base+"/101/save", form), 200, "Saved")
+	page := e.get(e.base + "/101").Body.String()
+	if got := perTrickValue(t, page, j1, 1); got != "" {
+		t.Fatalf("blank cell reopened as %q", got)
+	}
+	if got := perTrickValue(t, page, j0, 1); got != "8" {
+		t.Fatalf("typed cell reopened as %q", got)
+	}
+
+	// Junk under a blank trick row is flagged instead of dropped.
+	junk := url.Values{"trick": {"LM", ""}}
+	junk.Set("mark."+j0+".t.1", "7")
+	rec := e.hx(e.base+"/101/simulate", junk)
+	e.wantStatus(rec, http.StatusUnprocessableEntity)
+	if !regexp.MustCompile(`id="err-m0-t1"[^>]*>No trick in this row<`).MatchString(rec.Body.String()) {
+		t.Fatalf("junk cell not flagged: %s", rec.Body.String())
+	}
+}
+
+func TestJudgingCSRFAndUnknownParticipant(t *testing.T) {
+	e := newJudging(t, domain.TypeSolo, nil, true)
+	for _, p := range []string{"/101/simulate", "/101/edit", "/101/save", "/101/delete"} {
+		if rec := e.postAs(&e.admin, e.base+p, e.classicForm("7"), false); rec.Code != http.StatusForbidden {
+			t.Errorf("POST %s without CSRF = %d", p, rec.Code)
+		}
+	}
+	form := e.classicForm("7")
+	form.Set("publish", "1")
+	e.wantStatus(e.post(e.base+"/999/save", form), http.StatusNotFound)
+	if st, _ := e.svc.RunFlightStatuses(context.Background(), e.c.ID, 0); len(st) != 0 {
+		t.Fatalf("unknown participant wrote flights: %v", st)
 	}
 }

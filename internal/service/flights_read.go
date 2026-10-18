@@ -21,13 +21,13 @@ type FlightStatus struct {
 }
 
 // StoredFlight is a saved flight as the judging screen edits it: the input
-// it was scored from, its published flag and its final mark. Per-trick
-// marks are stored after the engine's fill-in (spec 03 §5.0 step 4), so a
-// guessed mark comes back as a value.
+// it was scored from (judges' marks as entered, blanks kept), its published
+// flag, its final mark and the version a later save or delete must quote.
 type StoredFlight struct {
 	Input     FlightInput
 	Published bool
 	Final     scoring.FinalMark
+	Version   string
 }
 
 // RunFlightStatuses returns the saved flights of run idx keyed by
@@ -73,7 +73,7 @@ func (s *Service) GetFlight(ctx context.Context, compID string, idx int, partici
 	if err != nil {
 		return StoredFlight{}, false, err
 	}
-	out := StoredFlight{Published: row.Published, Input: FlightInput{
+	out := StoredFlight{Published: row.Published, Version: strconv.FormatInt(row.Version, 10), Input: FlightInput{
 		DidNotStart: f.DidNotStart, TipTouches: f.TipTouches, Warnings1: f.Warnings1, Warnings2: f.Warnings2,
 	}}
 	for _, t := range f.Tricks {

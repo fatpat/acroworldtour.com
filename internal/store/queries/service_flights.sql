@@ -16,3 +16,9 @@ SELECT c.id FROM competitions c
 JOIN competition_seasons cs ON cs.competition_id = c.id
 WHERE cs.season_code = ? AND c.deleted_at IS NULL
 ORDER BY c.name, c.id;
+
+-- name: BumpFlightVersion :exec
+UPDATE flights SET version = version + 1 WHERE id = ?;
+
+-- name: DeleteFlight :exec
+DELETE FROM flights WHERE id = ?;

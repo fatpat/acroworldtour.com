@@ -110,11 +110,21 @@ templ flightPanel(v flightView) {
 			action={ templ.SafeURL(v.Href() + "/save") }
 			hx-post={ v.Href() + "/simulate" }
 			hx-trigger="input changed delay:300ms, change"
-			hx-sync="this:replace"
+			hx-sync="this:queue last"
 			hx-target="#provisional"
 			hx-swap="outerHTML"
 		>
+			// Request ordering (spec 05 §6.4 race conditions): every request of
+			// this form shares the form's sync queue. The live simulate queues
+			// behind whatever is in flight and only the newest waits ("queue
+			// last"), so answers come back in order and a simulate never aborts
+			// a save. Save, edit and delete use "replace", which aborts a
+			// pending simulate instead (a second click cannot abort a save: the
+			// action buttons are disabled while it runs); judging.js drops any
+			// late answer for a form that was replaced meanwhile. Every button
+			// sets hx-sync itself: it would otherwise inherit the form's.
 			@csrf()
+			<input type="hidden" name="version" value={ v.Version }/>
 			// The first submit button is the form's default button: disabled, so
 			// Enter in a field never submits (only explicit buttons save).
 			<button type="submit" disabled hidden aria-hidden="true" tabindex="-1">Enter does nothing</button>
@@ -223,7 +233,7 @@ templ flightPanel(v flightView) {
 					</div>
 				}
 			</fieldset>
-			<p class="actions">
+			<p class="actions" id="flight-actions">
 				<button
 					class="btn btn--ghost"
 					type="submit"
@@ -231,10 +241,29 @@ templ flightPanel(v flightView) {
 					hx-post={ v.Href() + "/simulate" }
 					hx-target="#provisional"
 					hx-swap="outerHTML"
+					hx-sync="closest form:queue last"
 				>Recalculate</button>
 				@saveButton(v, "0", "Save")
 				@saveButton(v, "1", "Save & publish")
+				if v.Saved && !v.ConfirmDel {
+					@deleteButton(v, "", "Delete flight", "btn btn--ghost")
+				}
 			</p>
+			if v.ConfirmDel {
+				<div class="alert" role="alert">
+					<p>Delete the saved flight of { v.P.Name }? The scores of this participant's later runs and the rankings are recomputed.</p>
+					<p class="actions">
+						@deleteButton(v, "1", "Confirm delete", "btn btn--danger")
+						<a
+							class="btn btn--ghost"
+							href={ templ.SafeURL(v.Href()) }
+							hx-get={ v.Href() }
+							hx-target="#flight"
+							hx-swap="outerHTML"
+						>Cancel</a>
+					</p>
+				</div>
+			}
 		</form>
 		@provisional(v)
 	</section>
@@ -249,6 +278,25 @@ templ saveButton(v flightView, publish, label string) {
 		hx-post={ v.Href() + "/save" }
 		hx-target="#flight"
 		hx-swap="outerHTML"
+		hx-sync="closest form:replace"
+		hx-disabled-elt="#flight-actions button"
+	>{ label }</button>
+}
+
+// deleteButton asks for (confirm "") or confirms (confirm "1") the deletion
+// of the stored flight.
+templ deleteButton(v flightView, confirm, label, class string) {
+	<button
+		class={ class }
+		type="submit"
+		name="confirm"
+		value={ confirm }
+		formaction={ templ.SafeURL(v.Href() + "/delete") }
+		hx-post={ v.Href() + "/delete" }
+		hx-target="#flight"
+		hx-swap="outerHTML"
+		hx-sync="closest form:replace"
+		hx-disabled-elt="#flight-actions button"
 	>{ label }</button>
 }
 
@@ -267,6 +315,7 @@ templ opButton(v flightView, op, label, title string, enabled, skipTab bool) {
 		hx-post={ v.Href() + "/edit" }
 		hx-target="#flight"
 		hx-swap="outerHTML"
+		hx-sync="closest form:replace"
 		if skipTab {
 			tabindex="-1"
 		}

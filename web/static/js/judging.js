@@ -4,9 +4,12 @@
 {
   const root = document.querySelector(".judging");
   if (root) {
-    // 422 (invalid values) and 409 (refused save) answer with a fragment to
-    // show. An answer for a form that was replaced meanwhile (save, edit,
-    // other participant) is stale and dropped.
+    // Request ordering is declared in judging.templ (hx-sync on the form
+    // and its buttons: the live simulate queues, save/edit/delete abort a
+    // pending simulate). Here: 422 (invalid values) and 409 (refused save)
+    // answer with a fragment to show, and an answer for a form that was
+    // replaced meanwhile (save, edit, other participant) is stale and
+    // dropped.
     document.body.addEventListener("htmx:beforeSwap", (e) => {
       const s = e.detail.xhr.status;
       if (s === 422 || s === 409) {

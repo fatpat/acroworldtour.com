@@ -64,8 +64,8 @@ func TestMigrateIsIdempotent(t *testing.T) {
 	if err := db.Read.QueryRowContext(ctx, `SELECT count(*) FROM rulesets`).Scan(&rulesets); err != nil {
 		t.Fatal(err)
 	}
-	if versions != 2 || rulesets != 5 {
-		t.Fatalf("versions=%d rulesets=%d, want 2 and 5", versions, rulesets)
+	if versions != 3 || rulesets != 5 { // one row per migration file
+		t.Fatalf("versions=%d rulesets=%d, want 3 and 5", versions, rulesets)
 	}
 }
 

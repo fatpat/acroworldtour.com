@@ -33,6 +33,7 @@ func (h *handlers) registerJudging(r *web.Router) {
 	post("/{participant}/simulate", h.judgingSimulate)
 	post("/{participant}/edit", h.judgingEdit)
 	post("/{participant}/save", h.judgingSave)
+	post("/{participant}/delete", h.judgingDelete)
 }
 
 // judgingCtx is what every judging request loads.
@@ -133,8 +134,10 @@ type flightView struct {
 	Errs       map[string]string // by input id
 	Summary    string            // refusal or engine message
 	Final      *scoring.FinalMark
-	Saved      bool // a flight is stored
-	Published  bool // the stored flight is published
+	Saved      bool   // a flight is stored
+	Published  bool   // the stored flight is published
+	Version    string // of the stored flight the form was loaded from ("" new)
+	ConfirmDel bool   // ask to confirm the deletion of the stored flight
 	StoredType scoring.MarkType
 	Flash      string
 	FocusTrick int // index of a trick input to focus, -1 none
@@ -310,6 +313,13 @@ func (f flightForm) input(mt scoring.MarkType, synchro bool) (service.FlightInpu
 		if t != "" {
 			in.Tricks = append(in.Tricks, t)
 			kept = append(kept, k)
+			continue
+		}
+		// A mark under a blank trick row would be silently dropped.
+		for j, row := range f.Rows {
+			if perTrick && strings.TrimSpace(row.PerTrick[k]) != "" {
+				errs[markID(j, "t"+itoa(k))] = "No trick in this row"
+			}
 		}
 	}
 	parse := func(id, raw string) *float64 {
@@ -406,18 +416,17 @@ func (h *handlers) judgingShow(w http.ResponseWriter, r *http.Request, jc judgin
 	v.F = emptyForm(jc)
 	if saved {
 		v.F, v.Saved, v.Published, v.StoredType = storedForm(jc, stored.Input), true, stored.Published, stored.Final.MarkType
-		v.Final = &stored.Final
+		v.Final, v.Version = &stored.Final, stored.Version
 	}
 	v.Flash, v.SwapList, v.FocusTrick = flashMsg, v.Fragment, 0
 	h.judgingRender(w, r, http.StatusOK, v)
 }
 
-func judgingFlash(r *http.Request) string {
-	if r.URL.Query().Get("ok") == "published" {
-		return "Published."
-	}
-	return flash(r)
-}
+// judgingFlashes are the messages after a redirect (?ok=key) or an htmx
+// save or delete.
+var judgingFlashes = map[string]string{"saved": "Saved.", "published": "Published.", "deleted": "Flight deleted."}
+
+func judgingFlash(r *http.Request) string { return judgingFlashes[r.URL.Query().Get("ok")] }
 
 func (h *handlers) judgingParticipantCtx(w http.ResponseWriter, r *http.Request) (judgingCtx, orderRow, bool) {
 	jc, ok := h.judgingLoad(w, r)
@@ -457,6 +466,7 @@ func (h *handlers) judgingPosted(w http.ResponseWriter, r *http.Request) (flight
 		v.Saved, v.Published = true, st.Published
 	}
 	v.F = postedForm(r, jc)
+	v.Version = r.PostFormValue("version")
 	return v, true
 }
 
@@ -483,19 +493,20 @@ func (h *handlers) simulate(w http.ResponseWriter, r *http.Request, v *flightVie
 // flightError puts a refused flight's messages on the view; other errors
 // are answered (ok false).
 func (h *handlers) flightError(w http.ResponseWriter, r *http.Request, v *flightView, err error) (int, bool) {
+	var unknown *service.UnknownTricksError
 	var sve scoring.ValidationError
 	var ve *service.ValidationError
 	switch {
-	case errors.As(err, &sve):
-		v.Summary = sve.Msg
-		if rest, found := strings.CutPrefix(sve.Msg, "Unknown trick(s): "); found {
-			unknown := strings.Split(rest, ", ")
-			for k, t := range v.F.Tricks {
-				if t != "" && slices.Contains(unknown, t) {
-					v.Errs[trickID(k)] = "Not in the " + itoa(v.JC.C.Year()) + " catalog"
-				}
+	case errors.As(err, &unknown):
+		v.Summary = unknown.Error()
+		for k, t := range v.F.Tricks {
+			if t != "" && slices.Contains(unknown.Tricks, t) {
+				v.Errs[trickID(k)] = "Not in the " + itoa(v.JC.C.Year()) + " catalog"
 			}
 		}
+		return http.StatusUnprocessableEntity, true
+	case errors.As(err, &sve):
+		v.Summary = sve.Msg
 		return http.StatusUnprocessableEntity, true
 	case errors.As(err, &ve):
 		fe := validationErrors(ve.Fields)
@@ -568,16 +579,16 @@ func (h *handlers) judgingSave(w http.ResponseWriter, r *http.Request) {
 		h.judgingRender(w, r, http.StatusUnprocessableEntity, v)
 		return
 	}
-	if _, err := h.svc.SaveFlight(r.Context(), v.JC.C.ID, v.JC.Run.Index, v.P.ID, in, publish); err != nil {
+	if _, err := h.svc.SaveFlight(r.Context(), v.JC.C.ID, v.JC.Run.Index, v.P.ID, in, publish, v.Version); err != nil {
 		status, ok := h.flightError(w, r, &v, err)
 		if ok {
 			h.judgingRender(w, r, status, v)
 		}
 		return
 	}
-	key, msg := "saved", flashMessages["saved"]
+	key := "saved"
 	if publish {
-		key, msg = "published", "Published."
+		key = "published"
 	}
 	next := v.P
 	if i := v.JC.index(v.P.ID); i+1 < len(v.JC.Order) {
@@ -593,7 +604,38 @@ func (h *handlers) judgingSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("HX-Push-Url", href)
-	h.judgingShow(w, r, jc, next, msg)
+	h.judgingShow(w, r, jc, next, judgingFlashes[key])
+}
+
+// judgingDelete deletes the stored flight after an in-page confirmation
+// (the first post asks, the second, with confirm=1, deletes), then shows
+// the participant again, not flown.
+func (h *handlers) judgingDelete(w http.ResponseWriter, r *http.Request) {
+	v, ok := h.judgingPosted(w, r)
+	if !ok {
+		return
+	}
+	if r.PostFormValue("confirm") != "1" {
+		v.ConfirmDel = true
+		h.judgingRender(w, r, http.StatusOK, v)
+		return
+	}
+	if err := h.svc.DeleteFlight(r.Context(), v.JC.C.ID, v.JC.Run.Index, v.P.ID, v.Version); err != nil {
+		if status, ok := h.flightError(w, r, &v, err); ok {
+			h.judgingRender(w, r, status, v)
+		}
+		return
+	}
+	href := v.JC.Base() + "/" + url.PathEscape(v.P.ID)
+	if !v.Fragment {
+		redirect(w, r, href, "deleted")
+		return
+	}
+	jc, ok := h.judgingLoad(w, r) // fresh statuses
+	if !ok {
+		return
+	}
+	h.judgingShow(w, r, jc, v.P, judgingFlashes["deleted"])
 }
 
 // judgingRender answers with the flight panel (htmx) or the whole page.
@@ -639,14 +681,12 @@ var (
 	warningPresets2 = []string{"dangerous flying", "not using the rescue", "unsportmanship behavior"}
 )
 
+// statusLabel names a navigator status ("none", "saved", "published").
 func statusLabel(s string) string {
-	switch s {
-	case "saved":
-		return "saved"
-	case "published":
-		return "published"
+	if s == "none" {
+		return "not flown"
 	}
-	return "not flown"
+	return s
 }
 
 func markTypeName(mt scoring.MarkType) string {

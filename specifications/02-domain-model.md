@@ -668,6 +668,11 @@ Implicit flight states: *absent* -> *saved unpublished* -> *saved published* (an
 
 Since each save recomputes only the saved flight, **scores of later runs are not recomputed** when an earlier flight changes (repetition malus, previous warnings and DSQ depend on earlier runs). Operators must re-save later flights manually.
 
+**Rewrite** (controller rulings, Task 21 judging screen):
+* A flight is saved or deleted only in an open run of a non-frozen competition; both rescore the participant's later flights and rebuild the stored rankings in the same transaction.
+* Optimistic concurrency: a flight has a `version` (1 at creation, +1 on every save of its input; rescoring does not change it). A save or delete quotes the version the form was loaded from (none for a new flight, which must not exist yet) and is refused with a conflict ("This flight was changed by someone else — reload to see it") when it no longer matches.
+* Stored judge marks are the marks **as entered**: a blank per-trick technical mark stays `null` in `technical_per_trick`. The engine fills it in (spec 03 §5.0 step 4) at every scoring; the filled values live only in the final mark and in the flight tricks' `technical_marks`. Flights imported from legacy keep the marks as legacy stored them.
+
 ### 5.4 Other entities
 
 | Entity | Lifecycle |

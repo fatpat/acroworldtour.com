@@ -116,6 +116,7 @@ type Flight struct {
 	FinalMark     sql.NullString  `json:"final_mark"`
 	Score         sql.NullFloat64 `json:"score"`
 	UpdatedAt     sql.NullString  `json:"updated_at"`
+	Version       int64           `json:"version"`
 }
 
 type FlightMark struct {

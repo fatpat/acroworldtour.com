@@ -10,8 +10,26 @@ import (
 	"database/sql"
 )
 
+const bumpFlightVersion = `-- name: BumpFlightVersion :exec
+UPDATE flights SET version = version + 1 WHERE id = ?
+`
+
+func (q *Queries) BumpFlightVersion(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, bumpFlightVersion, id)
+	return err
+}
+
+const deleteFlight = `-- name: DeleteFlight :exec
+DELETE FROM flights WHERE id = ?
+`
+
+func (q *Queries) DeleteFlight(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteFlight, id)
+	return err
+}
+
 const getPilotFlight = `-- name: GetPilotFlight :one
-SELECT id, competition_id, run_idx, civlid, team_id, did_not_start, tip_touches, published, mark_type, save_seq, final_mark, score, updated_at FROM flights WHERE competition_id = ? AND run_idx = ? AND civlid = ?
+SELECT id, competition_id, run_idx, civlid, team_id, did_not_start, tip_touches, published, mark_type, save_seq, final_mark, score, updated_at, version FROM flights WHERE competition_id = ? AND run_idx = ? AND civlid = ?
 `
 
 type GetPilotFlightParams struct {
@@ -37,12 +55,13 @@ func (q *Queries) GetPilotFlight(ctx context.Context, arg GetPilotFlightParams) 
 		&i.FinalMark,
 		&i.Score,
 		&i.UpdatedAt,
+		&i.Version,
 	)
 	return i, err
 }
 
 const getTeamFlight = `-- name: GetTeamFlight :one
-SELECT id, competition_id, run_idx, civlid, team_id, did_not_start, tip_touches, published, mark_type, save_seq, final_mark, score, updated_at FROM flights WHERE competition_id = ? AND run_idx = ? AND team_id = ?
+SELECT id, competition_id, run_idx, civlid, team_id, did_not_start, tip_touches, published, mark_type, save_seq, final_mark, score, updated_at, version FROM flights WHERE competition_id = ? AND run_idx = ? AND team_id = ?
 `
 
 type GetTeamFlightParams struct {
@@ -68,6 +87,7 @@ func (q *Queries) GetTeamFlight(ctx context.Context, arg GetTeamFlightParams) (F
 		&i.FinalMark,
 		&i.Score,
 		&i.UpdatedAt,
+		&i.Version,
 	)
 	return i, err
 }

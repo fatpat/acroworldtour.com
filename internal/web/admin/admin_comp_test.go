@@ -342,7 +342,7 @@ func TestExports(t *testing.T) {
 			in.Marks = append(in.Marks, service.MarkInput{Judge: j, Technical: ptr(7), Choreography: ptr(6), Landing: ptr(6),
 				TechnicalPerTrick: []*float64{ptr(7), ptr(7)}})
 		}
-		_, err := e.svc.SaveFlight(ctx, c.ID, 0, p, in, true)
+		_, err := e.svc.SaveFlight(ctx, c.ID, 0, p, in, true, "")
 		e.mustOK(err)
 	}
 	e.mustOK(e.svc.CloseRun(ctx, c.ID, 0))
@@ -372,7 +372,7 @@ func TestExports(t *testing.T) {
 
 	// Unpublished flights stay out of the run exports.
 	e.mustOK(e.svc.ReopenRun(ctx, c.ID, 0))
-	_, err = e.svc.SaveFlight(ctx, c.ID, 0, "102", service.FlightInput{DidNotStart: true}, false)
+	_, err = e.svc.SaveFlight(ctx, c.ID, 0, "102", service.FlightInput{DidNotStart: true}, false, "1")
 	e.mustOK(err)
 	out := e.get(base + "/runs/1/export/results.html")
 	e.wantStatus(out, 200, "Pilot 101")

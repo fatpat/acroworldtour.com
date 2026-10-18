@@ -67,7 +67,7 @@ func (q *Queries) DeleteRankingScope(ctx context.Context, arg DeleteRankingScope
 }
 
 const getFlight = `-- name: GetFlight :one
-SELECT id, competition_id, run_idx, civlid, team_id, did_not_start, tip_touches, published, mark_type, save_seq, final_mark, score, updated_at FROM flights WHERE id = ?
+SELECT id, competition_id, run_idx, civlid, team_id, did_not_start, tip_touches, published, mark_type, save_seq, final_mark, score, updated_at, version FROM flights WHERE id = ?
 `
 
 func (q *Queries) GetFlight(ctx context.Context, id int64) (Flight, error) {
@@ -87,6 +87,7 @@ func (q *Queries) GetFlight(ctx context.Context, id int64) (Flight, error) {
 		&i.FinalMark,
 		&i.Score,
 		&i.UpdatedAt,
+		&i.Version,
 	)
 	return i, err
 }
@@ -372,7 +373,7 @@ func (q *Queries) ListFlightWarnings(ctx context.Context, flightID int64) ([]Fli
 }
 
 const listFlightsOfRun = `-- name: ListFlightsOfRun :many
-SELECT id, competition_id, run_idx, civlid, team_id, did_not_start, tip_touches, published, mark_type, save_seq, final_mark, score, updated_at FROM flights WHERE competition_id = ? AND run_idx = ? ORDER BY id
+SELECT id, competition_id, run_idx, civlid, team_id, did_not_start, tip_touches, published, mark_type, save_seq, final_mark, score, updated_at, version FROM flights WHERE competition_id = ? AND run_idx = ? ORDER BY id
 `
 
 type ListFlightsOfRunParams struct {
@@ -403,6 +404,7 @@ func (q *Queries) ListFlightsOfRun(ctx context.Context, arg ListFlightsOfRunPara
 			&i.FinalMark,
 			&i.Score,
 			&i.UpdatedAt,
+			&i.Version,
 		); err != nil {
 			return nil, err
 		}
