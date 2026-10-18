@@ -30,5 +30,6 @@ func (Module) Register(r *web.Router) {
 	h.registerTricks(r)
 	h.registerSeasons(r)
 	h.registerFiles(r)
+	h.registerCompetitions(r)
 	h.registerUsers(r)
 }

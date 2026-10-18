@@ -337,3 +337,10 @@ form.inline input, form.inline select {
 .stats strong { display: block; font-size: 2rem; color: var(--c-primary); }
 ul.plain { list-style: none; padding: 0; }
 .copy-url { font: inherit; padding: 6px 8px; border: 1px solid var(--c-line); border-radius: var(--radius-sm); background: var(--c-bg); color: var(--c-text); }
+
+/* ---------- Competition and run states (admin) ---------- */
+.badge--init { background: var(--c-surface-2); color: var(--c-text); border: 1px solid var(--c-line); }
+.badge--open { background: var(--c-primary); color: var(--c-on-primary); }
+.badge--closed { background: var(--c-ok); color: #fff; }
+.badge--frozen { background: var(--c-text); color: var(--c-surface-2); }
+.badge--unpublished { background: var(--c-surface-2); color: var(--c-muted); border: 1px dashed var(--c-line); }

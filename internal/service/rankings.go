@@ -59,6 +59,12 @@ func (p *people) get(ctx context.Context, civlid sql.NullInt64, team sql.NullStr
 // competitionRanking computes a competition's ranking from its stored
 // flight scores (spec 03 §7-8).
 func competitionRanking(ctx context.Context, q *gen.Queries, ppl *people, c Competition) (ranking.CompetitionResult, error) {
+	return competitionRankingUpTo(ctx, q, ppl, c, -1)
+}
+
+// competitionRankingUpTo is competitionRanking over the runs up to index
+// limit included (-1: every run), for "results after run N" exports.
+func competitionRankingUpTo(ctx context.Context, q *gen.Queries, ppl *people, c Competition, limit int) (ranking.CompetitionResult, error) {
 	runs, err := q.ListRuns(ctx, c.ID)
 	if err != nil {
 		return ranking.CompetitionResult{}, fmt.Errorf("list runs of %s: %w", c.ID, err)
@@ -83,7 +89,7 @@ func competitionRanking(ctx context.Context, q *gen.Queries, ppl *people, c Comp
 		}
 		inputs = append(inputs, in)
 	}
-	return ranking.Competition(string(c.State), inputs, -1), nil
+	return ranking.Competition(string(c.State), inputs, limit), nil
 }
 
 // RebuildRankings recomputes a competition's run and competition rankings

@@ -1,0 +1,490 @@
+package admin
+
+import (
+	"awt/internal/domain"
+	"awt/internal/service"
+	"awt/internal/web/layout"
+)
+
+templ stateBadge(state string) {
+	<span class={ "badge badge--" + state }>{ state }</span>
+}
+
+templ compBadges(c service.Competition) {
+	@stateBadge(string(c.State))
+	if c.Frozen {
+		<span class="badge badge--frozen" title="Imported results, read-only">frozen</span>
+	}
+	if !c.Published {
+		<span class="badge badge--unpublished">unpublished</span>
+	}
+}
+
+// compTabs is the navigation of a competition's setup pages.
+templ compTabs(c service.Competition, active string, admin bool) {
+	<nav class="tabs" aria-label="Competition">
+		<a class="tabs__link" href={ templ.SafeURL(compHref(c)) } aria-current={ tabCurrent(active == "") }>Overview</a>
+		if admin {
+			<a class="tabs__link" href={ templ.SafeURL(compHref(c) + "/edit") } aria-current={ tabCurrent(active == "edit") }>Details</a>
+			<a class="tabs__link" href={ templ.SafeURL(compHref(c) + "/participants") } aria-current={ tabCurrent(active == "participants") }>
+				if c.Type == domain.TypeSolo {
+					Pilots
+				} else {
+					Teams
+				}
+			</a>
+			<a class="tabs__link" href={ templ.SafeURL(compHref(c) + "/judges") } aria-current={ tabCurrent(active == "judges") }>Judges</a>
+			<a class="tabs__link" href={ templ.SafeURL(compHref(c) + "/tricks") } aria-current={ tabCurrent(active == "tricks") }>Repeatable tricks</a>
+			<a class="tabs__link" href={ templ.SafeURL(compHref(c) + "/config") } aria-current={ tabCurrent(active == "config") }>Settings</a>
+		}
+	</nav>
+}
+
+func tabCurrent(on bool) string {
+	if on {
+		return "page"
+	}
+	return "false"
+}
+
+templ frozenNotice() {
+	<p class="alert" role="status">This competition is frozen: its results were imported and are official. Every page is read-only.</p>
+}
+
+templ frozenPage(c service.Competition) {
+	@layout.Admin(layout.Meta{Title: c.Name, Heading: c.Name}, "competitions") {
+		@frozenNotice()
+		<p><a class="btn btn--ghost" href={ templ.SafeURL(compHref(c)) }>Back to the competition</a></p>
+	}
+}
+
+templ compListPage(v compListView) {
+	@layout.Admin(layout.Meta{Title: "Competitions", Heading: "Competitions"}, "competitions") {
+		@notice(v.Flash)
+		<p><a class="btn" href="/admin/competitions/new">New competition</a></p>
+		if len(v.Years) > 0 {
+			<nav class="tabs" aria-label="Year">
+				for _, y := range v.Years {
+					<a class="tabs__link" href={ templ.SafeURL("/admin/competitions?year=" + itoa(y)) } aria-current={ tabCurrent(y == v.Year) }>{ itoa(y) }</a>
+				}
+			</nav>
+		}
+		<div class="table-wrap">
+			<table class="table">
+				<thead><tr><th>Name</th><th>Code</th><th>Type</th><th>Seasons</th><th>State</th><th>Start</th><th>Location</th><th>Runs</th></tr></thead>
+				<tbody>
+					for _, row := range v.Rows {
+						<tr>
+							<td><a href={ templ.SafeURL(compHref(row.C)) }>{ row.C.Name }</a></td>
+							<td>{ row.C.Code }</td>
+							<td>{ string(row.C.Type) }</td>
+							<td>{ joinStrings(row.C.Seasons) }</td>
+							<td>@compBadges(row.C)</td>
+							<td>{ row.C.StartDate.Format("2006-01-02") }</td>
+							<td>{ row.C.Location }</td>
+							<td class="num">{ itoa(row.Runs) }</td>
+						</tr>
+					}
+					if len(v.Rows) == 0 {
+						<tr><td colspan="8">No competition yet.</td></tr>
+					}
+				</tbody>
+			</table>
+		</div>
+	}
+}
+
+templ compFormPageT(v compFormView) {
+	@layout.Admin(layout.Meta{Title: "Competition", Heading: compHeading(v.Form)}, "competitions") {
+		@errorSummary(v.Errors)
+		if v.Form.Locked {
+			<p class="notice">The competition is { v.Form.State }: name, code and type can no longer change.</p>
+		}
+		<form class="card form" method="post" action={ templ.SafeURL(compAction(v.Form)) }>
+			@csrf()
+			if v.Form.Locked {
+				<p><strong>{ v.Form.Name }</strong> ({ v.Form.NewCode }, { v.Form.Type })</p>
+			} else {
+				@textField("name", "Name", "text", v.Form.Name, v.Errors, templ.Attributes{"required": true, "maxlength": "150"})
+				@textField("code", "Code (optional, lowercase letters, digits and dashes; derived from the name when empty)", "text", v.Form.NewCode, v.Errors, templ.Attributes{"pattern": "[a-z][a-z0-9-]*[a-z0-9]", "autocapitalize": "off"})
+				@selectField("type", "Type", v.Form.Type, []option{{"solo", "solo"}, {"synchro", "synchro"}}, v.Errors)
+			}
+			@textField("start_date", "Start date", "date", v.Form.StartDate, v.Errors, templ.Attributes{"required": true})
+			@textField("end_date", "End date", "date", v.Form.EndDate, v.Errors, templ.Attributes{"required": true})
+			@textField("location", "Location", "text", v.Form.Location, v.Errors, templ.Attributes{"maxlength": "150"})
+			@textField("website", "Website (optional, http or https)", "url", v.Form.Website, v.Errors, nil)
+			<div class="field">
+				<label for="seasons">Seasons</label>
+				<select id="seasons" name="seasons" multiple size="6">
+					for _, s := range v.Seasons {
+						<option value={ s.Code } selected?={ hasString(v.Form.Seasons, s.Code) }>{ s.Name } ({ s.Code })</option>
+					}
+				</select>
+				<p class="field__hint">Seasons set the result categories and the AWT/AWQ logic. Hold Ctrl or Cmd to pick several.</p>
+				@fieldError(v.Errors, "seasons")
+			</div>
+			@imageSelect("image", "Image", v.Form.Image, v.Images, v.Errors)
+			@imageSelect("logo", "Logo", v.Form.Logo, v.Images, v.Errors)
+			@checkField("published", "Published (visible on the public site; not required)", v.Form.Published)
+			<p class="actions">
+				<button class="btn" type="submit">Save</button>
+				<a class="btn btn--ghost" href={ templ.SafeURL(compCancel(v.Form)) }>Cancel</a>
+			</p>
+		</form>
+	}
+}
+
+templ imageSelect(name, label, value string, files []service.File, fe formErrors) {
+	<div class="field">
+		<label for={ name }>{ label }</label>
+		<select id={ name } name={ name }>
+			<option value="">None</option>
+			for _, f := range files {
+				<option value={ f.ID } selected?={ f.ID == value }>{ f.Filename }</option>
+			}
+		</select>
+		<p class="field__hint">Upload images on the <a href="/admin/files">Files</a> page first.</p>
+		@fieldError(fe, name)
+	</div>
+}
+
+func hasString(list []string, s string) bool {
+	for _, x := range list {
+		if x == s {
+			return true
+		}
+	}
+	return false
+}
+
+func compHeading(f compForm) string {
+	if f.Code == "" {
+		return "New competition"
+	}
+	return "Edit competition"
+}
+
+func compAction(f compForm) string {
+	if f.Code == "" {
+		return "/admin/competitions"
+	}
+	return "/admin/competitions/" + f.Code + "/edit"
+}
+
+func compCancel(f compForm) string {
+	if f.Code == "" {
+		return "/admin/competitions"
+	}
+	return "/admin/competitions/" + f.Code
+}
+
+templ compShowPage(v compShowView) {
+	@layout.Admin(layout.Meta{Title: v.C.Name, Heading: v.C.Name}, "competitions") {
+		@notice(v.Flash)
+		<p>@compBadges(v.C)</p>
+		if v.C.Frozen {
+			@frozenNotice()
+		}
+		@compTabs(v.C, "", v.Admin)
+		<dl class="kv">
+			<dt>Code</dt><dd>{ v.C.Code }</dd>
+			<dt>Type</dt><dd>{ string(v.C.Type) }</dd>
+			<dt>Dates</dt><dd>{ v.C.StartDate.Format("2006-01-02") } to { v.C.EndDate.Format("2006-01-02") }</dd>
+			<dt>Location</dt><dd>{ v.C.Location }</dd>
+			if v.C.Website != "" {
+				<dt>Website</dt><dd>{ v.C.Website }</dd>
+			}
+			<dt>Seasons</dt><dd>{ joinStrings(v.C.Seasons) }</dd>
+			<dt>Participants</dt>
+			<dd>
+				if v.C.Type == domain.TypeSolo {
+					{ itoa(len(v.C.Pilots)) } pilots
+				} else {
+					{ itoa(len(v.C.Teams)) } teams
+				}
+			</dd>
+			<dt>Judges</dt><dd>{ itoa(len(v.C.Judges)) }</dd>
+		</dl>
+		if v.Admin && !v.C.Frozen {
+			<p class="actions">
+				switch v.C.State {
+					case domain.CompetitionInit:
+						<a class="btn" href={ templ.SafeURL(compHref(v.C) + "/state/open") }>Open</a>
+					case domain.CompetitionOpen:
+						<a class="btn" href={ templ.SafeURL(compHref(v.C) + "/state/close") }>Close</a>
+					case domain.CompetitionClosed:
+						<a class="btn" href={ templ.SafeURL(compHref(v.C) + "/state/reopen") }>Reopen</a>
+				}
+				<a class="btn btn--danger" href={ templ.SafeURL(compHref(v.C) + "/delete") }>Delete</a>
+			</p>
+		}
+		<h2>Runs</h2>
+		if v.Admin && !v.C.Frozen && v.C.State == domain.CompetitionOpen {
+			<p><a class="btn" href={ templ.SafeURL(compHref(v.C) + "/runs/new") }>New run</a></p>
+		}
+		<div class="table-wrap">
+			<table class="table">
+				<thead><tr><th>Run</th><th>State</th><th>Participants</th><th>Reset policy</th></tr></thead>
+				<tbody>
+					for _, r := range v.Runs {
+						<tr>
+							<td><a href={ templ.SafeURL(runHref(v.C, r.Index)) }>Run { itoa(r.Index + 1) }</a></td>
+							<td>@stateBadge(string(r.State))</td>
+							<td class="num">{ itoa(len(r.Pilots) + len(r.Teams)) }</td>
+							<td>{ resetLabel(int(r.ResetPolicy)) }</td>
+						</tr>
+					}
+					if len(v.Runs) == 0 {
+						<tr><td colspan="4">No run yet.</td></tr>
+					}
+				</tbody>
+			</table>
+		</div>
+		<h2>Results exports</h2>
+		<p class="actions">
+			<a class="btn btn--ghost" href={ templ.SafeURL(compHref(v.C) + "/export/results.html") }>Results (print)</a>
+			<a class="btn btn--ghost" href={ templ.SafeURL(compHref(v.C) + "/export/results.xlsx") }>CIVL xlsx</a>
+		</p>
+		if len(v.Runs) > 1 {
+			<p class="muted">Results after a given run:</p>
+			<ul class="plain">
+				for _, r := range v.Runs {
+					<li>
+						After run { itoa(r.Index + 1) }:
+						<a href={ templ.SafeURL(compHref(v.C) + "/export/results.html?limit_run=" + itoa(r.Index+1)) }>print</a>,
+						<a href={ templ.SafeURL(compHref(v.C) + "/export/results.xlsx?limit_run=" + itoa(r.Index+1)) }>xlsx</a>
+					</li>
+				}
+			</ul>
+		}
+	}
+}
+
+func resetLabel(p int) string {
+	switch p {
+	case 1:
+		return "AWT"
+	case 2:
+		return "AWQ"
+	case 3:
+		return "all"
+	}
+	return "none"
+}
+
+templ stateConfirmPage(v stateView) {
+	@layout.Admin(layout.Meta{Title: v.Action.Verb, Heading: v.Action.Verb + " " + v.Subject}, "competitions") {
+		@errorSummary(v.Errors)
+		<form class="card" method="post" action={ templ.SafeURL(v.Post) }>
+			@csrf()
+			<p>{ v.Action.Explain }</p>
+			<p>{ v.Action.Verb } <strong>{ v.Subject }</strong>?</p>
+			<p class="actions">
+				<button class="btn" type="submit">Confirm { v.Action.Key }</button>
+				<a class="btn btn--ghost" href={ templ.SafeURL(v.Back) }>Cancel</a>
+			</p>
+		</form>
+	}
+}
+
+templ participantsPage(v participantsView) {
+	@layout.Admin(layout.Meta{Title: "Participants", Heading: v.C.Name}, "competitions") {
+		@notice(v.Flash)
+		<p>@compBadges(v.C)</p>
+		@compTabs(v.C, "participants", true)
+		@errorSummary(v.Errors)
+		if v.C.State == domain.CompetitionClosed {
+			<p class="notice">The competition is closed: reopen it to change participants.</p>
+		}
+		<h2>
+			if v.Solo {
+				Registered pilots ({ itoa(len(v.Current)) })
+			} else {
+				Registered teams ({ itoa(len(v.Current)) })
+			}
+		</h2>
+		<div class="table-wrap">
+			<table class="table">
+				<tbody>
+					for _, p := range v.Current {
+						<tr>
+							<td>{ p.Name }@awtStar(p.AWT)</td>
+							<td>{ p.Detail }</td>
+							<td class="actions">
+								<form method="post" action={ templ.SafeURL(compHref(v.C) + "/participants") }>
+									@csrf()
+									<input type="hidden" name="op" value="remove"/>
+									<input type="hidden" name="id" value={ p.ID }/>
+									<input type="hidden" name="q" value={ v.Query }/>
+									<button class="btn btn--ghost" type="submit">Remove</button>
+								</form>
+							</td>
+						</tr>
+					}
+					if len(v.Current) == 0 {
+						<tr><td>None yet.</td></tr>
+					}
+				</tbody>
+			</table>
+		</div>
+		<h2>Add</h2>
+		<form class="form" method="get" action={ templ.SafeURL(compHref(v.C) + "/participants") }>
+			<div class="field">
+				<label for="q">Search by name or CIVL id</label>
+				<input id="q" name="q" type="search" value={ v.Query }/>
+			</div>
+			<p class="actions"><button class="btn btn--ghost" type="submit">Search</button></p>
+		</form>
+		<div class="table-wrap">
+			<table class="table">
+				<tbody>
+					for _, p := range v.Candidates {
+						<tr>
+							<td>{ p.Name }@awtStar(p.AWT)</td>
+							<td>{ p.Detail }</td>
+							<td class="actions">
+								<form method="post" action={ templ.SafeURL(compHref(v.C) + "/participants") }>
+									@csrf()
+									<input type="hidden" name="op" value="add"/>
+									<input type="hidden" name="id" value={ p.ID }/>
+									<input type="hidden" name="q" value={ v.Query }/>
+									<button class="btn" type="submit">Add</button>
+								</form>
+							</td>
+						</tr>
+					}
+					if len(v.Candidates) == 0 {
+						<tr><td>Nobody to add for this search.</td></tr>
+					}
+				</tbody>
+			</table>
+		</div>
+		if v.Truncated {
+			<p class="muted">Only the first matches are shown: refine the search.</p>
+		}
+	}
+}
+
+templ awtStar(on bool) {
+	if on {
+		<span title="AWT pilot of the competition year" aria-label="AWT"> &#9733;</span>
+	}
+}
+
+templ judgesPickPage(v judgesPickView) {
+	@layout.Admin(layout.Meta{Title: "Judges", Heading: v.C.Name}, "competitions") {
+		@notice(v.Flash)
+		<p>@compBadges(v.C)</p>
+		@compTabs(v.C, "judges", true)
+		@errorSummary(v.Errors)
+		if v.C.State == domain.CompetitionClosed {
+			<p class="notice">The competition is closed: reopen it to change judges.</p>
+		}
+		<form class="card form" method="post" action={ templ.SafeURL(compHref(v.C) + "/judges") }>
+			@csrf()
+			<p class="field__hint">At least 2 judges are needed to open the competition. New runs copy this list.</p>
+			for _, j := range v.Judges {
+				<div class="field field--check">
+					<label>
+						<input type="checkbox" name="judge" value={ j.ID } checked?={ v.Checked[j.ID] }/>
+						{ j.Name } ({ j.Country }, { string(j.Level) })
+					</label>
+				</div>
+			}
+			if len(v.Judges) == 0 {
+				<p>No judge exists yet: create judges first.</p>
+			}
+			<p class="actions"><button class="btn" type="submit">Save judges</button></p>
+		</form>
+	}
+}
+
+templ repeatablePage(v repeatableView) {
+	@layout.Admin(layout.Meta{Title: "Repeatable tricks", Heading: v.C.Name}, "competitions") {
+		@notice(v.Flash)
+		<p>@compBadges(v.C)</p>
+		@compTabs(v.C, "tricks", true)
+		@errorSummary(v.Errors)
+		if v.C.State == domain.CompetitionClosed {
+			<p class="notice">The competition is closed: reopen it to change the tricks.</p>
+		}
+		<form class="card form" method="post" action={ templ.SafeURL(compHref(v.C) + "/tricks") }>
+			@csrf()
+			<p class="field__hint">Repeatable tricks are exempt from the repetition malus. They come from the { itoa(v.C.Year()) } trick catalog.</p>
+			for _, t := range v.Tricks {
+				<div class="field field--check">
+					<label>
+						<input type="checkbox" name="trick" value={ t.Name } checked?={ v.Checked[t.Name] }/>
+						{ t.Name } ({ t.Acronym })
+					</label>
+				</div>
+			}
+			if len(v.Tricks) == 0 {
+				<p>The { itoa(v.C.Year()) } catalog has no trick.</p>
+			}
+			<p class="actions"><button class="btn" type="submit">Save repeatable tricks</button></p>
+		</form>
+	}
+}
+
+templ configForm(v configView, canEdit bool) {
+	@errorSummary(v.Errors)
+	<form class="card form" method="post" action={ templ.SafeURL(v.Action) }>
+		@csrf()
+		for _, g := range cfgGroups {
+			<fieldset>
+				<legend>{ g.Title }</legend>
+				<p class="field__hint">{ g.Hint }</p>
+				for _, f := range g.Fields {
+					<div class="field">
+						<label for={ cfgID(v, f.Name) }>{ f.Label } <span class="muted">({ f.Unit })</span></label>
+						<input
+							id={ cfgID(v, f.Name) }
+							name={ f.Name }
+							type="number"
+							step={ cfgStep(f) }
+							min="0"
+							required
+							value={ v.Values[f.Name] }
+							disabled?={ !canEdit }
+							if v.Errors.Msg(f.Name) != "" {
+								aria-invalid="true"
+							}
+						/>
+						@fieldError(v.Errors, f.Name)
+					</div>
+				}
+			</fieldset>
+		}
+		if canEdit {
+			<p class="actions"><button class="btn" type="submit">Save settings</button></p>
+		}
+	</form>
+}
+
+func cfgStep(f cfgField) string {
+	if f.Int {
+		return "1"
+	}
+	return "any"
+}
+
+func cfgID(v configView, name string) string {
+	if v.Run {
+		return "run-" + name
+	}
+	return name
+}
+
+templ compConfigPage(v configView) {
+	@layout.Admin(layout.Meta{Title: "Settings", Heading: v.C.Name}, "competitions") {
+		@notice(v.Flash)
+		<p>@compBadges(v.C)</p>
+		@compTabs(v.C, "config", true)
+		if v.C.State == domain.CompetitionClosed {
+			<p class="notice">The competition is closed: reopen it to change the settings.</p>
+		}
+		<p class="field__hint">These settings are copied into each new run. Changing them does not change existing runs.</p>
+		@configForm(v, true)
+	}
+}

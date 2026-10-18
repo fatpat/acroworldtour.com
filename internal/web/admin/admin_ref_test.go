@@ -672,7 +672,10 @@ func TestEveryAdminRouteIsGuarded(t *testing.T) {
 			t.Errorf("%s answered %d without a session", rt.Pattern, rec.Code)
 		}
 		// Reference data and users are admin-only; only the dashboard is user-level.
-		if rt.Pattern != "GET /admin" && rt.Pattern != "POST /admin/logout" && rt.Guard != web.GuardAdmin {
+		// Competition pages and exports are also open to the assigned scorers
+		// (read-only GETs; the scorer guard admits admins as well).
+		scorerRoute := rt.Guard == web.GuardScorer && strings.HasPrefix(rt.Pattern, "GET /admin/competitions/{code}")
+		if rt.Pattern != "GET /admin" && rt.Pattern != "POST /admin/logout" && rt.Guard != web.GuardAdmin && !scorerRoute {
 			t.Errorf("%s has guard %s, want admin", rt.Pattern, rt.Guard)
 		}
 	}

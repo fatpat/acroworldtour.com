@@ -75,6 +75,9 @@ var flashMessages = map[string]string{
 	"password": "Password changed; the user's sessions were closed.",
 	"disabled": "Account disabled.",
 	"enabled":  "Account enabled.",
+	"opened":   "Opened.",
+	"closed":   "Closed.",
+	"reopened": "Reopened.",
 }
 
 func flash(r *http.Request) string { return flashMessages[r.URL.Query().Get("ok")] }
@@ -119,10 +122,20 @@ func (h *handlers) fail(w http.ResponseWriter, r *http.Request, err error, redo 
 		h.notFound(w, r)
 	case errors.Is(err, service.ErrConflict), errors.Is(err, service.ErrFrozen), errors.Is(err, service.ErrRescore):
 		h.redoOrPage(w, r, http.StatusConflict, messageError(capitalize(err.Error())), redo)
+	case errors.Is(err, domain.ErrInvalidTransition):
+		h.redoOrPage(w, r, http.StatusConflict, messageError(refusalMessage(err)), redo)
 	default:
 		slog.Error("admin", "method", r.Method, "path", r.URL.Path, "err", err)
 		render(w, r, http.StatusInternalServerError, errorPage("Something went wrong", "An unexpected error occurred. Please try again."))
 	}
+}
+
+// refusalMessage is the explanation of a refused state change without the
+// "invalid state transition" wrapper text.
+func refusalMessage(err error) string {
+	msg := strings.ReplaceAll(err.Error(), domain.ErrInvalidTransition.Error()+": ", "")
+	msg = strings.ReplaceAll(msg, ": "+domain.ErrInvalidTransition.Error(), "")
+	return capitalize(msg)
 }
 
 func (h *handlers) redoOrPage(w http.ResponseWriter, r *http.Request, status int, fe formErrors, redo func(int, formErrors)) {
