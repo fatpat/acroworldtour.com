@@ -62,10 +62,8 @@ func Run(ctx context.Context, db *store.DB, blobs blob.Store, src string, opts .
 		}
 		return importReference(ctx, q, blobs, s, o, &rep)
 	})
-	if err != nil {
-		return Report{Counts: map[string]int{}}, err
-	}
-	return rep, nil
+	// On error the transaction is rolled back; the partial report says how far it got.
+	return rep, err
 }
 
 // prepare enforces the empty-database rule, or clears the imported tables.

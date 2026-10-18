@@ -259,22 +259,26 @@ func importSeasons(ctx context.Context, q *gen.Queries, s *source, fileIDs map[s
 	if err != nil {
 		return err
 	}
-	active := map[string]string{} // code -> id of the kept active row
+	// kept[code]: the active row (first one), else the most recently deleted.
+	kept := map[string]seasonRow{}
 	for _, r := range rows {
-		if r.Deleted == "" {
-			if _, ok := active[r.Code]; !ok {
-				active[r.Code] = string(r.ID)
-			}
+		k, ok := kept[r.Code]
+		switch {
+		case !ok, k.Deleted != "" && (r.Deleted == "" || r.Deleted > k.Deleted):
+			kept[r.Code] = r
 		}
 	}
 	for _, r := range rows {
-		if kept, collides := active[r.Code]; collides && kept != string(r.ID) {
+		if k := kept[r.Code]; k.ID != r.ID {
 			state := "active"
 			if r.Deleted != "" {
 				state = "soft-deleted"
 			}
-			rep.warnf("season %s (%s): %s duplicate of code %q kept as %s, skipped", r.ID, r.Name, state, r.Code, kept)
+			rep.warnf("season %s (%s): %s duplicate of code %q kept as %s, skipped", r.ID, r.Name, state, r.Code, k.ID)
 			continue
+		}
+		if !r.Year.Valid {
+			return fmt.Errorf("season %s (%s): missing year", r.ID, r.Code)
 		}
 		image := sql.NullString{}
 		if r.Image != nil && *r.Image != "" {

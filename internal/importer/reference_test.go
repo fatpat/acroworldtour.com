@@ -284,3 +284,62 @@ func TestImportTarGz(t *testing.T) {
 		t.Errorf("counts = %v", rep.Counts)
 	}
 }
+
+func TestImportMissingCollection(t *testing.T) {
+	ctx := context.Background()
+	db, blobs := setup(t)
+	dir := copyMini(t)
+	if err := os.Remove(filepath.Join(dir, "pilots.json")); err != nil {
+		t.Fatal(err)
+	}
+	_, err := importer.Run(ctx, db, blobs, dir, importer.WithCatalogDir(catalogDir))
+	if err == nil || !strings.Contains(err.Error(), "pilots.json") {
+		t.Fatalf("err = %v, want missing pilots.json", err)
+	}
+}
+
+func TestImportDeletedDuplicateSeasonsAndSkips(t *testing.T) {
+	ctx := context.Background()
+	db, blobs := setup(t)
+	dir := copyMini(t)
+	write := func(name, content string) {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("seasons.json", `{"_id":"d1","name":"A","year":2023,"deleted":"2023-01-01T00:00:00","code":"che-2023","index":1}
+{"_id":"d2","name":"B","year":2023,"deleted":"2023-08-01T00:00:00","code":"che-2023","index":2}
+`)
+	write("teams.json", `{"_id":"t1","name":"Ghosts","pilots":[1001,9999],"deleted":null}
+{"_id":"t2","name":"Solo","pilots":[1001],"deleted":null}
+`)
+	write("judges.json", `{"_id":"j1","name":"Odd","country":"fra","level":"expert","deleted":null}
+`)
+	rep, err := importer.Run(ctx, db, blobs, dir, importer.WithCatalogDir(catalogDir))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n := count(t, db, `SELECT count(*) FROM seasons WHERE id = 'd2'`); n != 1 || count(t, db, `SELECT count(*) FROM seasons`) != 1 {
+		t.Errorf("most recent deleted season not the only one kept")
+	}
+	if rep.Counts["teams"] != 0 || rep.Counts["judges"] != 0 {
+		t.Errorf("counts = %v", rep.Counts)
+	}
+	for _, w := range []string{"d1", "t1", "t2", "j1"} {
+		if !hasWarning(rep, w) {
+			t.Errorf("no warning mentioning %s: %v", w, rep.Warnings)
+		}
+	}
+
+	// A season without year is an error, and the partial report is returned.
+	db2, blobs2 := setup(t)
+	write("seasons.json", `{"_id":"n1","name":"N","year":null,"deleted":null,"code":"che-2030"}
+`)
+	rep, err = importer.Run(ctx, db2, blobs2, dir, importer.WithCatalogDir(catalogDir))
+	if err == nil || !strings.Contains(err.Error(), "missing year") {
+		t.Fatalf("err = %v, want missing year", err)
+	}
+	if rep.Counts["pilots"] != 2 {
+		t.Errorf("partial report lost counts: %v", rep.Counts)
+	}
+}

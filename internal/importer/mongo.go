@@ -46,7 +46,7 @@ func openSource(src string) (*source, error) {
 			}
 			s.files[c] = b
 		}
-		return s, nil
+		return s, s.requireAll()
 	}
 	f, err := os.Open(src)
 	if err != nil {
@@ -80,7 +80,22 @@ func openSource(src string) (*source, error) {
 		}
 		s.files[name] = b
 	}
-	return s, nil
+	return s, s.requireAll()
+}
+
+// requireAll fails when a collection file is absent: an absent file would
+// otherwise silently import nothing.
+func (s *source) requireAll() error {
+	var missing []string
+	for _, c := range collections {
+		if _, ok := s.files[c]; !ok {
+			missing = append(missing, c+".json")
+		}
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("export is missing %s", strings.Join(missing, ", "))
+	}
+	return nil
 }
 
 func isCollection(name string) bool {
