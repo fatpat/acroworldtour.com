@@ -35,7 +35,9 @@ if [ "${1:-}" = sync ] && [ "$#" -eq 1 ]; then
   head -c 1048576 > "$tmp"
   [ "$(tar -tf "$tmp" | sort | tr '\n' ' ')" = "Caddyfile compose.yaml " ] || die "sync: archive must contain exactly compose.yaml and Caddyfile"
   tar -tvf "$tmp" | cut -c1 | grep -qv '^-' && die "sync: only regular files allowed"
-  tar -xf "$tmp" --no-same-owner --no-same-permissions -C . compose.yaml Caddyfile
+  mkdir -p caddy
+  tar -xf "$tmp" --no-same-owner --no-same-permissions -C . compose.yaml
+  tar -xf "$tmp" --no-same-owner --no-same-permissions -C caddy Caddyfile
   echo "sync: compose.yaml and Caddyfile installed"
   exit 0
 fi
@@ -85,9 +87,9 @@ wait_healthy() {
 # container); the public sites keep the strict Cloudflare-only abort rule.
 caddy_up() {
   docker compose up -d --no-deps caddy || return 1
-  docker compose exec -T caddy caddy validate --config /etc/caddy/Caddyfile >/dev/null 2>&1 \
-    || { echo "deploy: Caddyfile validation failed" >&2; docker compose exec -T caddy caddy validate --config /etc/caddy/Caddyfile >&2 || true; return 1; }
-  docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile >/dev/null \
+  docker compose exec -T caddy caddy validate --config /etc/caddy/site/Caddyfile >/dev/null 2>&1 \
+    || { echo "deploy: Caddyfile validation failed" >&2; docker compose exec -T caddy caddy validate --config /etc/caddy/site/Caddyfile >&2 || true; return 1; }
+  docker compose exec -T caddy caddy reload --config /etc/caddy/site/Caddyfile >/dev/null \
     || { echo "deploy: caddy reload failed" >&2; return 1; }
   n=0
   while [ "$n" -lt 10 ]; do

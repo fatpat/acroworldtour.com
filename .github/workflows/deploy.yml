@@ -89,11 +89,11 @@ jobs:
         run: tar -cf - compose.yaml Caddyfile | ssh vps sync
       - name: Deploy training (health checked, rolls back on failure)
         env:
-          REGISTRY_USER: ${{ github.actor }}
+          REGISTRY_USER: ${{ github.repository_owner }}
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: printf '%s %s\n' "$REGISTRY_USER" "$REGISTRY_TOKEN" | ssh vps "training ${TAG}"
       - name: Deploy prod (health checked, rolls back on failure)
         env:
-          REGISTRY_USER: ${{ github.actor }}
+          REGISTRY_USER: ${{ github.repository_owner }}
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: printf '%s %s\n' "$REGISTRY_USER" "$REGISTRY_TOKEN" | ssh vps "prod ${TAG}"
