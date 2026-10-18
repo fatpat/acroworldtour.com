@@ -170,6 +170,7 @@ func (s *Service) RefreshRankings(ctx context.Context) error {
 // ToggleGender switches man and woman; none stays none (spec 02 §2.1).
 func (s *Service) ToggleGender(ctx context.Context, civlid int) (domain.Gender, error) {
 	var g domain.Gender
+	var topics []string
 	err := s.db.Tx(ctx, func(q *gen.Queries) error {
 		p, err := q.GetPilot(ctx, int64(civlid))
 		if err != nil {
@@ -183,9 +184,22 @@ func (s *Service) ToggleGender(ctx context.Context, civlid int) (domain.Gender, 
 		default:
 			return nil
 		}
-		return q.UpdatePilotGender(ctx, gen.UpdatePilotGenderParams{Gender: string(g), Civlid: p.Civlid})
+		if err := q.UpdatePilotGender(ctx, gen.UpdatePilotGenderParams{Gender: string(g), Civlid: p.Civlid}); err != nil {
+			return fmt.Errorf("update gender of pilot %d: %w", civlid, err)
+		}
+		// the women lists change (spec 03 §7.1)
+		ids, err := pilotCompetitions(ctx, q, civlid, 0)
+		if err != nil {
+			return err
+		}
+		topics, err = refreshCompetitions(ctx, q, ids)
+		return err
 	})
-	return g, err
+	if err != nil {
+		return g, err
+	}
+	s.publish(KindCompetition, topics...)
+	return g, nil
 }
 
 // SetAWTYear makes the pilot an AWT pilot for year (awt true) or an AWQ
@@ -194,13 +208,32 @@ func (s *Service) SetAWTYear(ctx context.Context, civlid, year int, awt bool) er
 	if year < 1990 || year > 2100 {
 		return invalid(domain.FieldError{Field: "year", Msg: "must be between 1990 and 2100"})
 	}
-	return s.db.Tx(ctx, func(q *gen.Queries) error {
+	var topics []string
+	err := s.db.Tx(ctx, func(q *gen.Queries) error {
 		if _, err := q.GetPilot(ctx, int64(civlid)); err != nil {
 			return notFound(err, fmt.Sprintf("pilot %d", civlid))
 		}
+		var err error
 		if awt {
-			return q.AddPilotAwtYear(ctx, gen.AddPilotAwtYearParams{Civlid: int64(civlid), Year: int64(year)})
+			err = q.AddPilotAwtYear(ctx, gen.AddPilotAwtYearParams{Civlid: int64(civlid), Year: int64(year)})
+		} else {
+			err = q.RemovePilotAwtYear(ctx, gen.RemovePilotAwtYearParams{Civlid: int64(civlid), Year: int64(year)})
 		}
-		return q.RemovePilotAwtYear(ctx, gen.RemovePilotAwtYearParams{Civlid: int64(civlid), Year: int64(year)})
+		if err != nil {
+			return fmt.Errorf("set AWT year %d of pilot %d: %w", year, civlid, err)
+		}
+		// the mark type and the awt/awq lists of that year's competitions
+		// follow the AWT status (decision 0006)
+		ids, err := pilotCompetitions(ctx, q, civlid, year)
+		if err != nil {
+			return err
+		}
+		topics, err = refreshCompetitions(ctx, q, ids)
+		return err
 	})
+	if err != nil {
+		return err
+	}
+	s.publish(KindCompetition, topics...)
+	return nil
 }

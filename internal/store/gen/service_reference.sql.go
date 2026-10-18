@@ -103,6 +103,77 @@ func (q *Queries) ListCompetitionRankingEntries(ctx context.Context, scopeKey st
 	return items, nil
 }
 
+const listRescorableCompetitionsOfJudge = `-- name: ListRescorableCompetitionsOfJudge :many
+SELECT DISTINCT c.id FROM competitions c
+JOIN flights f ON f.competition_id = c.id
+JOIN flight_marks fm ON fm.flight_id = f.id
+WHERE fm.judge_id = ? AND c.deleted_at IS NULL AND c.frozen = 0
+ORDER BY c.id
+`
+
+// Active, non-frozen competitions with marks of a judge: a change of the
+// judge's level changes the mark weights.
+func (q *Queries) ListRescorableCompetitionsOfJudge(ctx context.Context, judgeID string) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listRescorableCompetitionsOfJudge, judgeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRescorableCompetitionsOfPilot = `-- name: ListRescorableCompetitionsOfPilot :many
+SELECT c.id, c.start_date FROM competitions c
+WHERE c.deleted_at IS NULL AND c.frozen = 0
+  AND (EXISTS (SELECT 1 FROM competition_pilots cp WHERE cp.competition_id = c.id AND cp.civlid = ?1)
+    OR EXISTS (SELECT 1 FROM flights f WHERE f.competition_id = c.id AND f.civlid = ?1))
+ORDER BY c.start_date, c.id
+`
+
+type ListRescorableCompetitionsOfPilotRow struct {
+	ID        string `json:"id"`
+	StartDate string `json:"start_date"`
+}
+
+// Active, non-frozen competitions a pilot takes part in or flew in: a change
+// of the pilot's AWT status or gender changes their scores or lists.
+func (q *Queries) ListRescorableCompetitionsOfPilot(ctx context.Context, civlid int64) ([]ListRescorableCompetitionsOfPilotRow, error) {
+	rows, err := q.db.QueryContext(ctx, listRescorableCompetitionsOfPilot, civlid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListRescorableCompetitionsOfPilotRow
+	for rows.Next() {
+		var i ListRescorableCompetitionsOfPilotRow
+		if err := rows.Scan(&i.ID, &i.StartDate); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listUniqueTricksByTrick = `-- name: ListUniqueTricksByTrick :many
 SELECT trick_id, year, acronym, name, base_trick, technical_coefficient, bonus, bonus_types, uniqueness, bonuses, solo, solo_awt, synchro, types FROM unique_tricks WHERE trick_id = ? ORDER BY rowid
 `

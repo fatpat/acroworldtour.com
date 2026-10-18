@@ -30,3 +30,21 @@ SELECT * FROM ranking_entries WHERE scope = 'competition' AND scope_key = ? ORDE
 
 -- name: GetSeason :one
 SELECT * FROM seasons WHERE id = ?;
+
+-- name: ListRescorableCompetitionsOfPilot :many
+-- Active, non-frozen competitions a pilot takes part in or flew in: a change
+-- of the pilot's AWT status or gender changes their scores or lists.
+SELECT c.id, c.start_date FROM competitions c
+WHERE c.deleted_at IS NULL AND c.frozen = 0
+  AND (EXISTS (SELECT 1 FROM competition_pilots cp WHERE cp.competition_id = c.id AND cp.civlid = sqlc.arg(civlid))
+    OR EXISTS (SELECT 1 FROM flights f WHERE f.competition_id = c.id AND f.civlid = sqlc.arg(civlid)))
+ORDER BY c.start_date, c.id;
+
+-- name: ListRescorableCompetitionsOfJudge :many
+-- Active, non-frozen competitions with marks of a judge: a change of the
+-- judge's level changes the mark weights.
+SELECT DISTINCT c.id FROM competitions c
+JOIN flights f ON f.competition_id = c.id
+JOIN flight_marks fm ON fm.flight_id = f.id
+WHERE fm.judge_id = ? AND c.deleted_at IS NULL AND c.frozen = 0
+ORDER BY c.id;

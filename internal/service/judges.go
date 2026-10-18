@@ -65,9 +65,12 @@ func (s *Service) ListJudges(ctx context.Context) ([]Judge, error) {
 func (s *Service) saveJudge(ctx context.Context, id string, in JudgeInput, mustExist bool) (Judge, error) {
 	in.Country = strings.ToLower(in.Country)
 	var out gen.Judge
+	var topics []string
 	err := s.db.Tx(ctx, func(q *gen.Queries) error {
+		var cur gen.Judge
 		if mustExist {
-			if _, err := loadJudge(ctx, q, id, false); err != nil {
+			var err error
+			if cur, err = loadJudge(ctx, q, id, false); err != nil {
 				return err
 			}
 		}
@@ -82,9 +85,25 @@ func (s *Service) saveJudge(ctx context.Context, id string, in JudgeInput, mustE
 			return err
 		}
 		out = gen.Judge{ID: id, Name: in.Name, Country: in.Country, Level: string(in.Level), Civlid: civlid}
-		return upsertJudge(ctx, q, out)
+		if err := upsertJudge(ctx, q, out); err != nil {
+			return err
+		}
+		if !mustExist || cur.Level == out.Level {
+			return nil
+		}
+		// the level weights the judge's marks (spec 03 §5.2)
+		ids, err := q.ListRescorableCompetitionsOfJudge(ctx, id)
+		if err != nil {
+			return fmt.Errorf("list competitions of judge %s: %w", id, err)
+		}
+		topics, err = refreshCompetitions(ctx, q, ids)
+		return err
 	})
-	return judgeFromRow(out), err
+	if err != nil {
+		return judgeFromRow(out), err
+	}
+	s.publish(KindCompetition, topics...)
+	return judgeFromRow(out), nil
 }
 
 func upsertJudge(ctx context.Context, q *gen.Queries, j gen.Judge) error {

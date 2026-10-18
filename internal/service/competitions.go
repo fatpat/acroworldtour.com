@@ -530,7 +530,9 @@ func setRepeatable(ctx context.Context, q *gen.Queries, id string, names []strin
 }
 
 // SetRepeatableTricks replaces the base tricks exempt from the repetition
-// malus; they must be active tricks of the competition year's catalog.
+// malus; they must be active tricks of the competition year's catalog. The
+// stored flights are rescored and the rankings rebuilt in the same
+// transaction (spec 03 §5.3: the malus depends on them).
 func (s *Service) SetRepeatableTricks(ctx context.Context, id string, names []string) error {
 	return s.update(ctx, id, func(q *gen.Queries, c *Competition) (func() error, error) {
 		var errs []domain.FieldError
@@ -548,7 +550,14 @@ func (s *Service) SetRepeatableTricks(ctx context.Context, id string, names []st
 		if err := invalid(errs...); err != nil {
 			return nil, err
 		}
-		return func() error { return setRepeatable(ctx, q, id, names) }, nil
+		return func() error {
+			if err := setRepeatable(ctx, q, id, names); err != nil {
+				return err
+			}
+			// update refuses closed competitions, so the seasons cannot change
+			_, err := refreshCompetitions(ctx, q, []string{id})
+			return err
+		}, nil
 	})
 }
 
