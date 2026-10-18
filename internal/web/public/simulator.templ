@@ -40,7 +40,7 @@ templ SimulatorPage(v *simView) {
 				</fieldset>
 			}
 			<div class="field">
-				<label for="reset">Reset repetitions every k runs (empty for never)</label>
+				<label for="reset">Reset repetitions every k runs (0 or empty for never)</label>
 				<input id="reset" name="reset" type="text" inputmode="numeric" value={ v.Reset }/>
 			</div>
 			<button class="btn" type="submit">Compute scores</button>
@@ -89,9 +89,11 @@ templ SimulatorResults(v *simView) {
 							}
 						}
 					</tbody>
+					if !v.Failed {
 					<tfoot>
 						<tr><th>Total</th><th colspan="6">{ num(v.Total) }</th></tr>
 					</tfoot>
+					}
 				</table>
 			</div>
 			for _, run := range v.Runs {

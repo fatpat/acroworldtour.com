@@ -30,7 +30,9 @@ func TestMain(m *testing.M) {
 
 // newApp builds the app handler on a migrated temp DB with a catalog of two
 // solo tricks (LM, RM) and one synchro-only trick (SY) for the current year.
-func newApp(t *testing.T) http.Handler {
+func newApp(t *testing.T) http.Handler { return newAppWith(t, true) }
+
+func newAppWith(t *testing.T, withCatalog bool) http.Handler {
 	t.Helper()
 	db, err := store.Open(filepath.Join(t.TempDir(), "awt.db"))
 	if err != nil {
@@ -47,6 +49,9 @@ func newApp(t *testing.T) http.Handler {
 		id, name, acr string
 		solo          bool
 	}{{"t1", "left Misty Flip", "LM", true}, {"t2", "right Misty Flip", "RM", true}, {"t3", "Synchro Thing", "SY", false}} {
+		if !withCatalog {
+			break
+		}
 		if err := q.UpsertTrick(ctx, gen.UpsertTrickParams{ID: tr.id, Year: year, Name: tr.name, Acronym: tr.acr,
 			Solo: tr.solo, SoloAwt: true, Synchro: !tr.solo, Directions: "[]", TechnicalCoefficient: 1.65,
 			Bonuses: "[]", BonusConstraints: "[]", Types: "[]"}); err != nil {
@@ -153,5 +158,58 @@ func TestPageAndTricksJSON(t *testing.T) {
 	}
 	if !strings.Contains(rec.Header().Get("Cache-Control"), "max-age") {
 		t.Errorf("not cacheable: %q", rec.Header().Get("Cache-Control"))
+	}
+}
+
+func TestOversizedBodyIs413(t *testing.T) {
+	rec := post(newApp(t), url.Values{"tricks1": {strings.Repeat("LM ", 20000)}}, false)
+	if rec.Code != http.StatusRequestEntityTooLarge || !strings.Contains(rec.Body.String(), "too large") {
+		t.Errorf("status %d", rec.Code)
+	}
+}
+
+func TestTooManyTricksIsPerRunErrorWithoutScoring(t *testing.T) {
+	rec := post(newApp(t), twoRuns(url.Values{"tricks1": {strings.Repeat("LM ", 31)}}), false)
+	body := rec.Body.String()
+	if rec.Code != 200 || !strings.Contains(body, "Too many tricks") || strings.Contains(body, "<table") {
+		t.Errorf("status %d:\n%s", rec.Code, body)
+	}
+}
+
+func TestUnknownEchoIsCapped(t *testing.T) {
+	body := post(newApp(t), twoRuns(url.Values{"tricks1": {"A1 A2 A3 A4 A5 A6 A7 " + strings.Repeat("Z", 40)}}), false).Body.String()
+	_, body, _ = strings.Cut(body, `id="results"`)
+	if !strings.Contains(body, "and 3 more") || strings.Contains(body, "A6") || strings.Contains(body, strings.Repeat("Z", 17)) {
+		t.Errorf("echo not capped:\n%s", body)
+	}
+}
+
+func TestResetZeroMeansNoResetAndRejectsNegative(t *testing.T) {
+	h := newApp(t)
+	if body := post(h, twoRuns(url.Values{"reset": {"0"}}), false).Body.String(); !strings.Contains(body, "<td>13</td>") {
+		t.Errorf("reset 0 should not reset:\n%s", body)
+	}
+	if body := post(h, twoRuns(url.Values{"reset": {"-1"}}), false).Body.String(); !strings.Contains(body, "0 or empty meaning no reset") {
+		t.Errorf("negative reset accepted:\n%s", body)
+	}
+}
+
+func TestNoTotalWhenARunHasAnError(t *testing.T) {
+	body := post(newApp(t), twoRuns(url.Values{"tricks2": {"NOPE"}}), false).Body.String()
+	if strings.Contains(body, "Total") {
+		t.Errorf("total shown:\n%s", body)
+	}
+}
+
+func TestNoCatalogDoesNotFail(t *testing.T) {
+	h := newAppWith(t, false)
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/simulator", nil))
+	if rec.Code != 200 {
+		t.Fatalf("page: %d", rec.Code)
+	}
+	rec = post(h, twoRuns(nil), false)
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "Unknown trick(s): LM") {
+		t.Errorf("status %d:\n%s", rec.Code, rec.Body.String())
 	}
 }

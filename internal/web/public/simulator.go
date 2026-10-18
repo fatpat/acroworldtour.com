@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"awt/internal/catalog"
@@ -28,6 +29,16 @@ const maxSimRuns = 5
 // (spec 03 §13).
 const simulatorJudge = "simulator"
 
+// Input limits: the endpoint is public and unauthenticated.
+const (
+	maxBodyBytes     = 32 << 10
+	maxTricksPerRun  = 30
+	maxFieldLen      = 512
+	maxUnknownShown  = 5
+	maxUnknownTokLen = 16
+	catalogTTL       = 5 * time.Minute
+)
+
 func registerSimulator(r *web.Router) {
 	s := &simulator{q: gen.New(r.Deps().DB.Read), now: time.Now}
 	r.Public("GET /simulator", http.HandlerFunc(s.page))
@@ -38,6 +49,11 @@ func registerSimulator(r *web.Router) {
 type simulator struct {
 	q   *gen.Queries
 	now func() time.Time
+
+	mu       sync.Mutex
+	cached   *catalogData
+	cachedAt time.Time
+	cachedY  int
 }
 
 // simRun is one run of the form and, once computed, its result.
@@ -63,6 +79,7 @@ type simView struct {
 	Reset   string
 	Total   float64
 	Scored  bool
+	Failed  bool   // some run has an error: no total is shown
 	Message string // a page-level error
 	Year    int
 }
@@ -95,7 +112,15 @@ func newView() *simView {
 }
 
 func (s *simulator) submit(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, maxBodyBytes)
 	if err := r.ParseForm(); err != nil {
+		var tooBig *http.MaxBytesError
+		if errors.As(err, &tooBig) {
+			v := newView()
+			v.Message = "The submitted form is too large."
+			s.render(w, r, http.StatusRequestEntityTooLarge, v)
+			return
+		}
 		http.Error(w, "bad request", http.StatusBadRequest)
 		return
 	}
@@ -156,10 +181,25 @@ func (s *simulator) tricksJSON(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(out)
 }
 
-// load builds the simulator's ruleset and catalog: the current year's, or the
-// latest earlier one that exists.
+// load returns the catalog data, cached for catalogTTL per calendar year.
 func (s *simulator) load(ctx context.Context) (*catalogData, error) {
 	cur := s.now().Year()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.cached != nil && s.cachedY == cur && s.now().Sub(s.cachedAt) < catalogTTL {
+		return s.cached, nil
+	}
+	d, err := s.loadFromDB(ctx, cur)
+	if err != nil {
+		return nil, err
+	}
+	s.cached, s.cachedAt, s.cachedY = d, s.now(), cur
+	return d, nil
+}
+
+// loadFromDB builds the simulator's ruleset and catalog: the current year's,
+// or the latest earlier one that exists.
+func (s *simulator) loadFromDB(ctx context.Context, cur int) (*catalogData, error) {
 	rulesets, err := s.q.ListRulesets(ctx)
 	if err != nil {
 		return nil, err
@@ -264,7 +304,7 @@ func (d *catalogData) parseTricks(text string) (found []catalog.UniqueTrick, unk
 func (v *simView) compute(d *catalogData) {
 	k, err := strconv.Atoi(v.Reset)
 	if v.Reset != "" && (err != nil || k < 0) {
-		v.Message = "The reset frequency must be a positive whole number."
+		v.Message = "The reset frequency must be a whole number, 0 or empty meaning no reset."
 	}
 
 	type parsed struct {
@@ -280,10 +320,19 @@ func (v *simView) compute(d *catalogData) {
 			continue
 		}
 		p := parsed{src: run, mark: scoring.JudgeMark{Judge: simulatorJudge}}
+		if len(run.Tricks) > maxFieldLen || len(run.Technical) > maxFieldLen ||
+			len(run.Choreography) > maxFieldLen || len(run.Landing) > maxFieldLen {
+			run.Errors = append(run.Errors, fmt.Sprintf("A field is too long (%d characters at most).", maxFieldLen))
+			valid = false
+			runs = append(runs, p)
+			continue
+		}
 		var unknown []string
 		p.tricks, unknown = d.parseTricks(run.Tricks)
-		if len(unknown) > 0 {
-			run.Errors = append(run.Errors, "Unknown trick(s): "+strings.Join(unknown, ", "))
+		if len(p.tricks)+len(unknown) > maxTricksPerRun {
+			run.Errors = append(run.Errors, fmt.Sprintf("Too many tricks (%d at most per run).", maxTricksPerRun))
+		} else if len(unknown) > 0 {
+			run.Errors = append(run.Errors, "Unknown trick(s): "+unknownList(unknown))
 		}
 		for _, m := range []struct {
 			label, raw string
@@ -306,6 +355,7 @@ func (v *simView) compute(d *catalogData) {
 		return
 	}
 	if !valid {
+		v.Failed = true
 		return
 	}
 
@@ -336,6 +386,7 @@ func (v *simView) compute(d *catalogData) {
 		res, err := scoring.Score(in)
 		prev := scoring.PreviousFlight{RunIndex: i, Tricks: flown}
 		if err != nil {
+			v.Failed = true
 			var ve scoring.ValidationError
 			if errors.As(err, &ve) {
 				p.src.Errors = append(p.src.Errors, ve.Msg)
@@ -361,3 +412,19 @@ func (v *simView) compute(d *catalogData) {
 }
 
 func num(f float64) string { return strconv.FormatFloat(f, 'f', -1, 64) }
+
+// unknownList echoes at most maxUnknownShown unknown tokens, truncated.
+func unknownList(unknown []string) string {
+	var out []string
+	for i, u := range unknown {
+		if i == maxUnknownShown {
+			out = append(out, fmt.Sprintf("and %d more", len(unknown)-maxUnknownShown))
+			break
+		}
+		if r := []rune(u); len(r) > maxUnknownTokLen {
+			u = string(r[:maxUnknownTokLen]) + "..."
+		}
+		out = append(out, u)
+	}
+	return strings.Join(out, ", ")
+}
