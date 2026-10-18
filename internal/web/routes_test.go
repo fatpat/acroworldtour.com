@@ -20,6 +20,7 @@ import (
 	"awt/internal/config"
 	"awt/internal/store"
 	"awt/internal/web"
+	"awt/internal/web/layout"
 	"awt/web/static"
 )
 
@@ -202,6 +203,8 @@ func TestRedirectTable(t *testing.T) {
 		{"/news/acromax.html", "/news/acromax", 1},
 		{"/old/temp", "https://example.org/x", 0},
 		{"/evil", "javascript:alert(1)", 1},
+		{"/proto", "//evil.com", 1},
+		{"/back", "/\\evil.com", 1},
 	} {
 		if _, err := deps.DB.Write.Exec(`INSERT INTO redirects (from_path, to_url, permanent) VALUES (?, ?, ?)`, r.from, r.to, r.perm); err != nil {
 			t.Fatal(err)
@@ -219,6 +222,11 @@ func TestRedirectTable(t *testing.T) {
 	}
 	if code := get(h, "/evil").Code; code != 404 {
 		t.Fatalf("unsafe target must 404, got %d", code)
+	}
+	for _, p := range []string{"/proto", "/back"} {
+		if code := get(h, p).Code; code != 404 {
+			t.Fatalf("%s: protocol-relative target must 404, got %d", p, code)
+		}
 	}
 	if code := get(h, "/unknown").Code; code != 404 {
 		t.Fatalf("unknown path %d", code)
@@ -337,5 +345,29 @@ func TestLoginAdminAndLogoutFlow(t *testing.T) {
 	}
 	if rec = get(h, "/admin", cookies[0]); rec.Code != 303 {
 		t.Fatalf("session still valid after logout: %d", rec.Code)
+	}
+}
+
+func TestPublicNavVisibleWithoutScriptAndToggleAccessible(t *testing.T) {
+	body := get(web.Routes(newDeps(t)), "/nope").Body.String()
+	if strings.Contains(body, "<details") {
+		t.Error("nav must not rely on <details>")
+	}
+	list := strings.Index(body, `id="nav-list"`)
+	if list < 0 || !strings.Contains(body[:list], `aria-controls="nav-list"`) || !strings.Contains(body, `aria-expanded="false"`) {
+		t.Error("toggle button needs aria-controls=nav-list and aria-expanded")
+	}
+	if !strings.Contains(body[list:], ">Home<") {
+		t.Error("nav list missing")
+	}
+}
+
+func TestAdminLayoutWithoutSessionDoesNotPanic(t *testing.T) {
+	var buf bytes.Buffer
+	if err := layout.AdminHome().Render(context.Background(), &buf); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(buf.String(), "/admin/logout") {
+		t.Error("no session: no user menu expected")
 	}
 }

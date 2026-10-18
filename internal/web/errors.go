@@ -68,9 +68,8 @@ func (d Deps) lookupRedirect(r *http.Request) (to string, permanent, ok bool) {
 			slog.Error("redirect lookup", "path", p, "err", err)
 			return "", false, false
 		}
-		// Only local paths and http(s) URLs: the table is admin-edited but a
-		// javascript: target must never be emitted.
-		if !strings.HasPrefix(row.ToUrl, "/") && !strings.HasPrefix(row.ToUrl, "https://") && !strings.HasPrefix(row.ToUrl, "http://") {
+		// The table is admin-edited, but an unsafe target must never be emitted.
+		if !safeRedirectTarget(row.ToUrl) {
 			slog.Warn("redirect with unsafe target ignored", "from", cand)
 			continue
 		}
@@ -141,4 +140,22 @@ func (d Deps) logout(w http.ResponseWriter, r *http.Request) {
 		slog.Error("logout", "err", err)
 	}
 	http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
+}
+
+// safeRedirectTarget accepts a local absolute path or an http(s) URL. It
+// refuses protocol-relative ("//host", "/\\host") targets and control
+// characters, which browsers normalise into another origin.
+func safeRedirectTarget(to string) bool {
+	for _, c := range to {
+		if c < 0x20 || c == 0x7f || c == '\\' {
+			return false
+		}
+	}
+	switch {
+	case strings.HasPrefix(to, "//"):
+		return false
+	case strings.HasPrefix(to, "/"):
+		return true
+	}
+	return strings.HasPrefix(to, "https://") || strings.HasPrefix(to, "http://")
 }

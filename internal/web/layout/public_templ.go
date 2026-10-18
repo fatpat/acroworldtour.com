@@ -99,7 +99,7 @@ func Public(m Meta, active string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" alt=\"Acro World Tour\" width=\"129\" height=\"57\"></a> <details class=\"nav__toggle\"><summary>Menu</summary><ul class=\"nav__list\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" alt=\"Acro World Tour\" width=\"129\" height=\"57\"></a> <button class=\"nav__toggle\" type=\"button\" aria-expanded=\"false\" aria-controls=\"nav-list\">Menu</button><div class=\"nav__menu\"><ul class=\"nav__list\" id=\"nav-list\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -225,7 +225,7 @@ func Public(m Meta, active string) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "</ul></details></div></nav>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "</ul></div></div></nav>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

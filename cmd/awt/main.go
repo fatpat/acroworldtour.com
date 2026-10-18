@@ -73,6 +73,9 @@ func serve() error {
 	if cfg.CloudflareZoneID != "" && cfg.CloudflareToken != "" {
 		purger = cache.NewCloudflarePurger(cfg.CloudflareZoneID, cfg.CloudflareToken)
 	}
+	if (cfg.CloudflareZoneID == "") != (cfg.CloudflareToken == "") {
+		slog.Warn("cloudflare purge disabled: set both AWT_CLOUDFLARE_ZONE_ID and AWT_CLOUDFLARE_TOKEN")
+	}
 	srv := web.NewServer(web.Deps{Cfg: cfg, Auth: auth.New(db, cfg), DB: db, Purger: purger})
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

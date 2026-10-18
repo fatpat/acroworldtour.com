@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"awt/internal/auth"
+
+	"github.com/a-h/templ"
 )
 
 // Meta is the per-page <head> data. Every public page sets at least Title and
@@ -44,20 +46,21 @@ func (m Meta) ogType() string {
 	return m.OGType
 }
 
-// htmxHeaders is the hx-headers value that makes every htmx request carry the
-// session CSRF token (auth.CSRF reads X-CSRF-Token). Empty without session.
-func htmxHeaders(ctx context.Context) string {
+// htmxAttrs gives <body> the hx-headers attribute that makes every htmx
+// request carry the session CSRF token (auth.CSRF reads X-CSRF-Token). It is
+// empty without a session.
+func htmxAttrs(ctx context.Context) templ.Attributes {
 	tok := auth.CSRFToken(ctx)
 	if tok == "" {
-		return ""
+		return nil
 	}
 	b, _ := json.Marshal(map[string]string{"X-CSRF-Token": tok})
-	return string(b)
+	return templ.Attributes{"hx-headers": string(b)}
 }
 
 func csrfToken(ctx context.Context) string { return auth.CSRFToken(ctx) }
 
-// currentYear is the footer copyright year, rendered server side (the legacy
+// copyright is the footer line; the year is rendered server side (the legacy
 // site did it with JavaScript).
 func copyright() string {
 	return "© Copyright " + strconv.Itoa(time.Now().Year()) + " Acro World Tour. All Rights Reserved."

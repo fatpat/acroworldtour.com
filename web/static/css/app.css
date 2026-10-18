@@ -120,13 +120,17 @@ h2 { font-size: 1.35rem; }
 .nav { background: var(--c-nav); color: var(--c-nav-text); position: sticky; top: 0; z-index: 50; }
 .nav__bar { display: flex; align-items: center; justify-content: space-between; min-height: var(--nav-h); }
 .nav__logo img { display: block; height: 44px; width: auto; }
-.nav__toggle { margin: 0; }
-.nav__toggle > summary {
-  list-style: none; cursor: pointer; color: var(--c-nav-text);
+.nav__toggle {
+  display: none; cursor: pointer; font: inherit; color: var(--c-nav-text); background: transparent;
   font-size: 12px; font-weight: 600; text-transform: uppercase;
   padding: 10px 14px; border: 1px solid #555; border-radius: var(--radius-sm);
 }
-.nav__toggle > summary::-webkit-details-marker { display: none; }
+/* The toggle only exists when JavaScript can drive it; without JS the list
+   is always visible. */
+.js .nav__toggle { display: block; }
+.js .nav__bar { flex-wrap: wrap; }
+.js .nav__menu { display: none; flex-basis: 100%; }
+.js .nav__menu--open { display: block; }
 .nav__list { list-style: none; margin: 0; padding: 8px 0 16px; }
 .nav__link {
   display: block; padding: 10px 4px; color: var(--c-nav-text); text-decoration: none;
@@ -137,8 +141,8 @@ h2 { font-size: 1.35rem; }
 .nav__sub .nav__link { font-weight: 500; }
 
 @media (min-width: 800px) {
-  .nav__toggle { display: contents; }
-  .nav__toggle > summary { display: none; }
+  .js .nav__toggle { display: none; }
+  .js .nav__menu { display: block; flex-basis: auto; }
   .nav__bar { max-width: 1400px; margin: 0 auto; }
   .nav__list { display: flex; align-items: center; gap: 4px; padding: 0; }
   .nav__item { position: relative; }

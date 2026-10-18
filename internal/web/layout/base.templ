@@ -42,16 +42,9 @@ templ Base(m Meta) {
 			<script src={ static.URL("vendor/htmx-ext-sse-2.2.2.js") } defer></script>
 			<script src={ static.URL("js/app.js") } defer></script>
 		</head>
-		if h := htmxHeaders(ctx); h != "" {
-			<body hx-headers={ h }>
-				<a class="skip-link" href="#main">Skip to content</a>
-				{ children... }
-			</body>
-		} else {
-			<body>
-				<a class="skip-link" href="#main">Skip to content</a>
-				{ children... }
-			</body>
-		}
+		<body { htmxAttrs(ctx)... }>
+			<a class="skip-link" href="#main">Skip to content</a>
+			{ children... }
+		</body>
 	</html>
 }
