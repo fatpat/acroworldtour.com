@@ -119,8 +119,10 @@ templ flightPanel(v flightView) {
 			// behind whatever is in flight and only the newest waits ("queue
 			// last"), so answers come back in order and a simulate never aborts
 			// a save. Save, edit and delete use "replace", which aborts a
-			// pending simulate instead (a second click cannot abort a save: the
-			// action buttons are disabled while it runs); judging.js drops any
+			// pending simulate instead; each disables every enabled button of
+			// the form while it runs (selector evaluated at request time, so
+			// buttons disabled by the view stay disabled), so no other click or
+			// shortcut can abort an in-flight save or delete; judging.js drops any
 			// late answer for a form that was replaced meanwhile. Every button
 			// sets hx-sync itself: it would otherwise inherit the form's.
 			@csrf()
@@ -279,7 +281,7 @@ templ saveButton(v flightView, publish, label string) {
 		hx-target="#flight"
 		hx-swap="outerHTML"
 		hx-sync="closest form:replace"
-		hx-disabled-elt="#flight-actions button"
+		hx-disabled-elt="#flight-form button:not([disabled])"
 	>{ label }</button>
 }
 
@@ -296,7 +298,7 @@ templ deleteButton(v flightView, confirm, label, class string) {
 		hx-target="#flight"
 		hx-swap="outerHTML"
 		hx-sync="closest form:replace"
-		hx-disabled-elt="#flight-actions button"
+		hx-disabled-elt="#flight-form button:not([disabled])"
 	>{ label }</button>
 }
 
@@ -316,6 +318,7 @@ templ opButton(v flightView, op, label, title string, enabled, skipTab bool) {
 		hx-target="#flight"
 		hx-swap="outerHTML"
 		hx-sync="closest form:replace"
+		hx-disabled-elt="#flight-form button:not([disabled])"
 		if skipTab {
 			tabindex="-1"
 		}

@@ -710,3 +710,25 @@ func TestSynchroTipTouches(t *testing.T) {
 		t.Error("pilot id accepted in a synchro run")
 	}
 }
+
+// Deleting an earlier flight rescores the participant's later runs (the
+// repetition malus depends on them) and rebuilds the rankings.
+func TestDeleteEarlierRunRescoresLaterRuns(t *testing.T) {
+	e := newFlightEnv(t, []int{201, 202}, nil, nil)
+	ctx := context.Background()
+	e.save(t, 0, 201, e.input(7, "LM", "RMC", "LS"), true)
+	must(e.svc.NewRun(ctx, e.comp.ID, 0, scoring.ResetNone))(t)
+	ok(t, e.svc.OpenRun(ctx, e.comp.ID, 1))
+	if r2 := e.save(t, 1, 201, e.input(7, "LM", "RM", "RS"), true); r2.Final.Malus != 13 {
+		t.Fatalf("run 2 malus %v, want 13 (LM repeated)", r2.Final.Malus)
+	}
+	before, _ := e.storedFlight(t, 1, 201)
+	ok(t, e.svc.DeleteFlight(ctx, e.comp.ID, 0, "201", e.version(t, 0, 201)))
+	after, fm := e.storedFlight(t, 1, 201)
+	if fm.Malus != 0 || after.Score.Float64 <= before.Score.Float64 {
+		t.Errorf("run 2 after deleting run 1: malus %v score %v (before %v)", fm.Malus, after.Score.Float64, before.Score.Float64)
+	}
+	if got := e.ranking(t, store.ScopeCompetition, e.comp.ID, "overall"); !sameLines(got, rankLine{201, after.Score.Float64}) {
+		t.Errorf("competition total %v, want %v", got, after.Score.Float64)
+	}
+}

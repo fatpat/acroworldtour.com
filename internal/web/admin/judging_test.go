@@ -427,8 +427,21 @@ func TestJudgingRequestSync(t *testing.T) {
 			t.Errorf("no %s", re)
 		}
 	}
-	if !strings.Contains(body, `hx-disabled-elt="#flight-actions button"`) {
-		t.Error("save buttons are not disabled while saving")
+	// Every "replace" request disables every enabled button of the form
+	// while it runs, so no other button (a trick op, a shortcut) can abort
+	// an in-flight save or delete.
+	replace := 0
+	for _, b := range regexp.MustCompile(`<button[^>]*>`).FindAllString(body, -1) {
+		if !strings.Contains(b, `hx-sync="closest form:replace"`) {
+			continue
+		}
+		replace++
+		if !strings.Contains(b, `hx-disabled-elt="#flight-form button:not([disabled])"`) {
+			t.Errorf("button does not disable the form's buttons while it runs: %s", b)
+		}
+	}
+	if replace < 5 {
+		t.Errorf("only %d replace buttons found", replace)
 	}
 }
 
