@@ -1,0 +1,169 @@
+package public
+
+import "strconv"
+
+func currentAttr(on bool) templ.Attributes {
+	if on {
+		return templ.Attributes{"aria-current": "page"}
+	}
+	return nil
+}
+
+// tabBar is a server-side tab bar: plain links, works without JavaScript.
+templ tabBar(tabs []tab, label string) {
+	if len(tabs) > 0 {
+		<nav class="tabs" aria-label={ label }>
+			for _, t := range tabs {
+				<a class="tabs__link" href={ templ.SafeURL(t.Href) } { currentAttr(t.Current)... }>{ t.Label }</a>
+			}
+		</nav>
+	}
+}
+
+templ finalBadge(final bool) {
+	if final {
+		<span class="badge badge--final">Final</span>
+	} else {
+		<span class="badge badge--provisional">Provisional</span>
+	}
+}
+
+templ countryTag(c string) {
+	if c != "" {
+		<abbr class="country" title="Country">{ country(c) }</abbr>
+	}
+}
+
+// participantCell is a pilot (name, country) or a team (name and pilots).
+templ participantCell(p participant, rank int64) {
+	<a href={ templ.SafeURL(p.Href()) }>{ p.Name }</a>
+	if m := medal(rank); m != "" {
+		<span class="medal" aria-hidden="true">{ m }</span>
+	}
+	if p.TeamID == "" {
+		@countryTag(p.Country)
+	} else if len(p.Members) > 0 {
+		<span class="team-members">
+			for i, m := range p.Members {
+				if i > 0 {
+					{ " & " }
+				}
+				<a href={ templ.SafeURL(pilotHref(m.CivlID, m.Name)) }>{ m.Name }</a>
+			}
+		</span>
+	}
+}
+
+templ compCardView(c compCard) {
+	<a class={ "result-card", templ.KV("result-card--closed", c.State == "closed") } href={ templ.SafeURL(c.Href()) }>
+		if c.Image != "" {
+			<img class="result-card__img" src={ c.Image } alt="" loading="lazy"/>
+		}
+		<span class="result-card__body">
+			<strong class="result-card__title">{ c.Name }</strong>
+			if c.Location != "" {
+				<span>{ c.Location }</span>
+			}
+			<span>{ dateRange(c.Start, c.End) }</span>
+			<span class="result-card__meta">
+				{ c.Count() }
+				if c.State == "open" {
+					<span class="badge badge--live">Live</span>
+				}
+			</span>
+		</span>
+	</a>
+}
+
+templ photo(src, alt string, size int) {
+	if src != "" {
+		<img class="photo" src={ src } alt={ alt } width={ strconv.Itoa(size) } height={ strconv.Itoa(size) } loading="lazy"/>
+	} else {
+		<span class="photo photo--empty" aria-hidden="true"></span>
+	}
+}
+
+templ pilotCard(civlid int64, name, ctry, photoURL string, rank int64) {
+	<a class="person-card" href={ templ.SafeURL(pilotHref(civlid, name)) }>
+		@photo(photoURL, "", 96)
+		<span class="person-card__name">
+			{ name }
+			if rank <= 3 {
+				<span class="medal" aria-hidden="true">{ medal(rank) }</span>
+			}
+		</span>
+		<span class="person-card__meta">
+			@countryTag(ctry)
+			if rank < 9999 {
+				{ " FAI rank #" + strconv.FormatInt(rank, 10) }
+			}
+		</span>
+	</a>
+}
+
+// historyTables is a pilot's or team's competition and season results.
+templ historyTables(comps []compResult, seasons []seasonResult) {
+	<section class="section">
+		<h2>Competition results</h2>
+		if len(comps) == 0 {
+			<p class="empty">No competition results yet.</p>
+		} else {
+			<div class="table-wrap">
+				<table class="table">
+					<thead><tr><th scope="col">Competition</th><th scope="col">Date</th><th scope="col" class="num">Rank</th><th scope="col" class="num">Score</th><th scope="col">Other rankings</th></tr></thead>
+					<tbody>
+						for _, c := range comps {
+							<tr>
+								<td>
+									<a href={ templ.SafeURL("/competitions/" + c.Code) }>{ c.Name }</a>
+									if !c.Final {
+										{ " " }
+										@finalBadge(false)
+									}
+								</td>
+								<td>{ firstN(c.Start, 10) }</td>
+								if c.HasOverall {
+									<td class="num">{ "#" + strconv.FormatInt(c.Rank, 10) } { medal(c.Rank) }</td>
+									<td class="num">{ score(c.Score) }</td>
+								} else {
+									<td class="num">–</td>
+									<td class="num">–</td>
+								}
+								<td>
+									for i, o := range c.Others {
+										if i > 0 {
+											{ "; " }
+										}
+										{ o.Label + ": #" + strconv.FormatInt(o.Rank, 10) + " (" + score(o.Score) + ")" }
+									}
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		}
+	</section>
+	<section class="section">
+		<h2>Season standings</h2>
+		if len(seasons) == 0 {
+			<p class="empty">No season standings yet.</p>
+		} else {
+			<div class="table-wrap">
+				<table class="table">
+					<thead><tr><th scope="col">Season</th><th scope="col">Ranking</th><th scope="col" class="num">Rank</th><th scope="col" class="num">Score</th></tr></thead>
+					<tbody>
+						for _, s := range seasons {
+							<tr>
+								<td><a href={ templ.SafeURL("/seasons/" + s.Code) }>{ s.Name }</a></td>
+								<td>{ s.List }</td>
+								<td class="num">{ "#" + strconv.FormatInt(s.Rank, 10) } { medal(s.Rank) }</td>
+								<td class="num">{ score(s.Score) }</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		}
+	</section>
+}

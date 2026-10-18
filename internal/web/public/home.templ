@@ -1,0 +1,44 @@
+package public
+
+import "awt/internal/web/layout"
+
+templ HomePage(m layout.Meta, v homeView) {
+	@layout.Public(m, "results") {
+		<section class="section">
+			<p>
+				This is the official results site of the Acro World Tour. Here you can find everything you need
+				to know about competition results and your favourite pilots.
+			</p>
+			<p>To stay up to date about the Acro World Tour, follow our social media at the bottom of the page.</p>
+		</section>
+		<section class="section">
+			<h2>Live competitions</h2>
+			if len(v.Live) == 0 {
+				<p class="empty">No competition is running right now.</p>
+			} else {
+				<div class="card-grid">
+					for _, c := range v.Live {
+						@compCardView(c)
+					}
+				</div>
+			}
+		</section>
+		<section class="section">
+			<h2>Latest results</h2>
+			if len(v.Closed) == 0 {
+				<p class="empty">No results at the moment.</p>
+			} else {
+				<div class="card-grid">
+					for _, c := range v.Closed {
+						@compCardView(c)
+					}
+				</div>
+			}
+			<p><a href="/competitions">All competitions</a> · <a href="/seasons">All seasons</a></p>
+		</section>
+		<section class="section">
+			<h2>Downloads</h2>
+			<p><a href={ templ.SafeURL(sportingCodeURL) } rel="noopener">FAI Sporting Code Section 7B (aerobatics)</a></p>
+		</section>
+	}
+}

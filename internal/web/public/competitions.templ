@@ -1,0 +1,332 @@
+package public
+
+import (
+	"awt/internal/web/layout"
+	"strconv"
+)
+
+templ CompetitionsPage(m layout.Meta, v competitionsView) {
+	@layout.Public(m, "competitions") {
+		@tabBar(v.Years, "Year")
+		if len(v.Groups) == 0 {
+			<p class="empty">No competitions in { strconv.Itoa(v.Year) }.</p>
+		}
+		for _, g := range v.Groups {
+			<section class="section">
+				if g.Href != "" {
+					<h2><a href={ templ.SafeURL(g.Href) }>{ g.Name }</a></h2>
+				} else {
+					<h2>{ g.Name }</h2>
+				}
+				<div class="card-grid">
+					for _, c := range g.Comps {
+						@compCardView(c)
+					}
+				</div>
+			</section>
+		}
+	}
+}
+
+// compShell is the header shared by every tab of a competition page.
+templ compShell(m layout.Meta, h compHeader) {
+	@layout.Public(m, "competitions") {
+		<p class="comp-summary">
+			<span>{ dateRange(h.C.StartDate, h.C.EndDate) }</span>
+			if h.C.Location != "" {
+				<span>{ h.C.Location }</span>
+			}
+			if h.C.State == "open" {
+				<span class="badge badge--live">Live</span>
+			}
+			for _, s := range h.Seasons {
+				if s.SeasonName != "" {
+					<a href={ templ.SafeURL("/seasons/" + s.SeasonCode) }>{ s.SeasonName }</a>
+				}
+			}
+		</p>
+		@tabBar(h.Tabs, "Competition sections")
+		{ children... }
+	}
+}
+
+templ CompetitionOverallPage(m layout.Meta, v overallView) {
+	@compShell(m, v.compHeader) {
+		<section class="section" id="overall">
+			<h2>
+				Overall results
+				if len(v.Rows) > 0 {
+					@finalBadge(v.C.ResultsFinal)
+				}
+			</h2>
+			@tabBar(v.Lists, "Ranking")
+			if len(v.Rows) == 0 {
+				<p class="empty">No results at the moment.</p>
+			} else {
+				<div class="table-wrap">
+					<table class="table results">
+						<thead>
+							<tr>
+								<th scope="col" class="num">Rank</th>
+								<th scope="col">
+									if v.Synchro() {
+										Team
+									} else {
+										Pilot
+									}
+								</th>
+								for i := range v.Runs {
+									<th scope="col" class="num"><a href={ templ.SafeURL(v.Href() + "/runs/" + strconv.Itoa(i+1)) }>{ "Run " + strconv.Itoa(i+1) }</a></th>
+								}
+								<th scope="col" class="num">Score</th>
+							</tr>
+						</thead>
+						<tbody>
+							for _, r := range v.Rows {
+								<tr>
+									<td class="num">{ strconv.FormatInt(r.Rank, 10) }</td>
+									<td>
+										@participantCell(r.P, r.Rank)
+									</td>
+									for i := range v.Runs {
+										if c, ok := r.PerRun[i]; ok {
+											<td class="num">{ score(c.Score) } <small class="muted">{ "#" + strconv.FormatInt(c.Rank, 10) }</small></td>
+										} else {
+											<td class="num muted">–</td>
+										}
+									}
+									<td class="num"><strong>{ score(r.Score) }</strong></td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			}
+		</section>
+	}
+}
+
+templ CompetitionRunPage(m layout.Meta, v runView) {
+	@compShell(m, v.compHeader) {
+		<section class="section" id="run">
+			<h2>
+				{ "Run " + strconv.Itoa(v.N) + " " }
+				@finalBadge(v.Run.ResultsFinal)
+			</h2>
+			@tabBar(v.Lists, "Ranking")
+			if len(v.Rows) == 0 {
+				<p class="empty">No published flight in this run yet.</p>
+			} else {
+				<div class="table-wrap">
+					<table class="table results">
+						<thead>
+							<tr>
+								<th scope="col" class="num">Rank</th>
+								<th scope="col">
+									if v.Synchro() {
+										Team
+									} else {
+										Pilot
+									}
+								</th>
+								<th scope="col" class="num">Score</th>
+							</tr>
+						</thead>
+						for _, f := range v.Rows {
+							<tbody id={ f.Anchor() }>
+								<tr>
+									<td class="num">{ strconv.FormatInt(f.Rank, 10) }</td>
+									<td>
+										@participantCell(f.P, f.Rank)
+									</td>
+									<td class="num">
+										if f.DNS {
+											<abbr title="Did not start">DNS</abbr>
+										} else if f.Scored {
+											<strong>{ score(f.Score) }</strong>
+										} else {
+											<span class="muted">No score</span>
+										}
+										if f.Mark != nil && f.Mark.Malus > 0 {
+											<span title="Malus" aria-label="Malus">🔻</span>
+										}
+										if f.Mark != nil && len(f.Mark.Warnings1)+len(f.Mark.Warnings2) > 0 {
+											<span title="Warnings" aria-label="Warnings">⚠️</span>
+										}
+									</td>
+								</tr>
+								<tr class="flight-row">
+									<td colspan="3">
+										<details class="flight">
+											<summary>Flight details</summary>
+											@flightDetail(f, v.Synchro())
+										</details>
+									</td>
+								</tr>
+							</tbody>
+						}
+					</table>
+				</div>
+			}
+		</section>
+	}
+}
+
+// flightDetail is the content of a flight (spec 06 §4.5 flight detail,
+// spec 03 FinalMark), plus the per-judge marks (spec 06 §10.3).
+templ flightDetail(f flightRow, synchro bool) {
+	<div class="flight__grid">
+		if f.Mark != nil {
+			<div>
+				<h3>Judges' marks</h3>
+				<dl class="kv">
+					<dt>Technical</dt><dd>{ markPtr(f.Mark.JudgesMark.Technical) }</dd>
+					<dt>Choreography</dt><dd>{ markPtr(f.Mark.JudgesMark.Choreography) }</dd>
+					<dt>Landing</dt><dd>{ markPtr(f.Mark.JudgesMark.Landing) }</dd>
+					if synchro {
+						<dt>Synchro</dt><dd>{ markPtr(f.Mark.JudgesMark.Synchro) }</dd>
+					}
+				</dl>
+			</div>
+			<div>
+				<h3>Final marks</h3>
+				<dl class="kv">
+					<dt>Technicity</dt><dd>{ score(f.Mark.Technicity) }</dd>
+					<dt>Technical</dt><dd>{ score(f.Mark.Technical) }</dd>
+					<dt>Choreography</dt><dd>{ score(f.Mark.Choreography) }</dd>
+					<dt>Landing</dt><dd>{ score(f.Mark.Landing) }</dd>
+					if synchro {
+						<dt>Synchro</dt><dd>{ score(f.Mark.Synchro) }</dd>
+					}
+					<dt>Bonus</dt><dd>{ score(f.Mark.Bonus) } <small class="muted">({ pct(f.Mark.BonusPercentage) })</small></dd>
+					<dt>Malus</dt><dd>{ pct(f.Mark.Malus) }</dd>
+					<dt>Score</dt><dd><strong>{ score(f.Mark.Score) }</strong></dd>
+				</dl>
+			</div>
+		}
+		<div>
+			<h3>Tricks</h3>
+			if len(f.Tricks) == 0 {
+				<p class="muted">No tricks.</p>
+			} else {
+				<ol class="tricks">
+					for _, t := range f.Tricks {
+						<li>{ t.Name } <small class="muted">{ t.Acronym }</small></li>
+					}
+				</ol>
+			}
+		</div>
+	</div>
+	if len(f.Marks) > 0 {
+		<div class="table-wrap">
+			<table class="table table--compact">
+				<caption>Marks per judge</caption>
+				<thead>
+					<tr>
+						<th scope="col">Judge</th>
+						<th scope="col" class="num">Technical</th>
+						<th scope="col" class="num">Choreography</th>
+						<th scope="col" class="num">Landing</th>
+						if synchro {
+							<th scope="col" class="num">Synchro</th>
+						}
+					</tr>
+				</thead>
+				<tbody>
+					for _, jm := range f.Marks {
+						<tr>
+							<td>{ jm.JudgeName }</td>
+							<td class="num">{ markNull(jm.Technical) }</td>
+							<td class="num">{ markNull(jm.Choreography) }</td>
+							<td class="num">{ markNull(jm.Landing) }</td>
+							if synchro {
+								<td class="num">{ markNull(jm.Synchro) }</td>
+							}
+						</tr>
+					}
+				</tbody>
+			</table>
+		</div>
+	}
+	if f.Mark != nil && len(f.Mark.Warnings1)+len(f.Mark.Warnings2) > 0 {
+		<h3>Warnings</h3>
+		<ul class="notes">
+			for _, w := range f.Mark.Warnings2 {
+				<li>⚠️ { w + " (1 pt)" }</li>
+			}
+			for _, w := range f.Mark.Warnings1 {
+				<li>⚠️ { w + " (0.5 pt)" }</li>
+			}
+		</ul>
+	}
+	if f.Mark != nil && len(f.Mark.Notes) > 0 {
+		<h3>Notes</h3>
+		<ul class="notes">
+			for _, n := range f.Mark.Notes {
+				<li>📝 { n }</li>
+			}
+		</ul>
+	}
+}
+
+templ CompetitionDetailsPage(m layout.Meta, v detailsView) {
+	@compShell(m, v.compHeader) {
+		<section class="section comp-details">
+			if img := fileURL(v.C.ImageFile); img != "" {
+				<img class="comp-details__img" src={ img } alt={ v.C.Name } loading="lazy"/>
+			}
+			<dl class="kv">
+				<dt>Dates</dt><dd>{ dateRange(v.C.StartDate, v.C.EndDate) }</dd>
+				if v.C.Location != "" {
+					<dt>Location</dt><dd>{ v.C.Location }</dd>
+				}
+				<dt>Type</dt>
+				<dd>
+					if v.Synchro() {
+						Synchro
+					} else {
+						Solo
+					}
+				</dd>
+				<dt>Runs</dt><dd>{ strconv.Itoa(len(v.Runs)) }</dd>
+				if v.C.Website.Valid && v.C.Website.String != "" {
+					<dt>Website</dt><dd><a href={ templ.URL(v.C.Website.String) } rel="noopener" target="_blank">{ v.C.Website.String }</a></dd>
+				}
+			</dl>
+		</section>
+		if len(v.Pilots) > 0 {
+			<section class="section" id="pilots">
+				<h2>{ "Pilots (" + strconv.Itoa(len(v.Pilots)) + ")" }</h2>
+				<div class="person-grid">
+					for _, pl := range v.Pilots {
+						@pilotCard(pl.Civlid, pl.Name, pl.Country, pl.PhotoUrl, pl.Rank)
+					}
+				</div>
+			</section>
+		}
+		if len(v.Teams) > 0 {
+			<section class="section" id="teams">
+				<h2>{ "Teams (" + strconv.Itoa(len(v.Teams)) + ")" }</h2>
+				<ul class="plain-list">
+					for _, t := range v.Teams {
+						<li>
+							@participantCell(t, 0)
+						</li>
+					}
+				</ul>
+			</section>
+		}
+		<section class="section" id="judges">
+			<h2>Judges</h2>
+			if len(v.Judges) == 0 {
+				<p class="empty">No judges listed.</p>
+			} else {
+				<div class="person-grid">
+					for _, j := range v.Judges {
+						@judgeCard(j.Name, j.Country, j.Level, j.Civlid.Int64, j.Civlid.Valid, j.PilotName, j.PhotoUrl)
+					}
+				</div>
+			}
+		</section>
+	}
+}

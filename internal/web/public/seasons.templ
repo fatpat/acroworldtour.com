@@ -1,0 +1,133 @@
+package public
+
+import (
+	"awt/internal/web/layout"
+	"strconv"
+)
+
+templ SeasonsPage(m layout.Meta, v seasonsView) {
+	@layout.Public(m, "seasons") {
+		@tabBar(v.Years, "Year")
+		if len(v.Seasons) == 0 {
+			<p class="empty">No seasons in { strconv.Itoa(v.Year) }.</p>
+		} else {
+			<div class="card-grid">
+				for _, s := range v.Seasons {
+					<a class="result-card" href={ templ.SafeURL(s.Href()) }>
+						if img := fileURL(s.ImageFile); img != "" {
+							<img class="result-card__img" src={ img } alt="" loading="lazy"/>
+						}
+						<span class="result-card__body">
+							<strong class="result-card__title">{ s.Name }</strong>
+							<span>
+								if s.Synchro() {
+									Synchro
+								} else {
+									Solo
+								}
+							</span>
+							if s.Competitions > 0 {
+								<span>{ countLabel(s.Competitions, "competition") }</span>
+							}
+							<span class="result-card__meta">{ s.Count() }</span>
+						</span>
+					</a>
+				}
+			</div>
+		}
+	}
+}
+
+templ SeasonPage(m layout.Meta, v seasonView) {
+	@layout.Public(m, "seasons") {
+		<div class="season">
+			<section class="section season__summary">
+				if img := fileURL(v.S.ImageFile); img != "" {
+					<img class="comp-details__img" src={ img } alt={ v.S.Name } loading="lazy"/>
+				}
+				<dl class="kv">
+					<dt>Year</dt><dd>{ strconv.FormatInt(v.S.Year, 10) }</dd>
+					if v.S.Country.Valid && v.S.Country.String != "" {
+						<dt>Country</dt><dd>{ country(v.S.Country.String) }</dd>
+					}
+					if !v.Synchro {
+						<dt>Pilots</dt><dd>{ strconv.Itoa(len(v.Pilots)) }</dd>
+					}
+				</dl>
+				<h2>{ countLabel(int64(len(v.Comps)), "competition") }</h2>
+				<ul class="plain-list">
+					for _, c := range v.Comps {
+						<li>
+							<a href={ templ.SafeURL(c.Href()) }>{ c.Name }</a>
+							<small class="muted">{ dateRange(c.Start, c.End) }</small>
+							if c.State == "open" {
+								<span class="badge badge--live">Live</span>
+							}
+						</li>
+					}
+				</ul>
+			</section>
+			<section class="section season__results">
+				<h2>Standings</h2>
+				@tabBar(v.Lists, "Ranking")
+				if len(v.Rows) == 0 {
+					<p class="empty">No results at the moment.</p>
+				} else {
+					<div class="table-wrap">
+						<table class="table results">
+							<thead>
+								<tr>
+									<th scope="col" class="num">Rank</th>
+									<th scope="col">
+										if v.Synchro {
+											Team
+										} else {
+											Pilot
+										}
+									</th>
+									<th scope="col" class="num">Score</th>
+								</tr>
+							</thead>
+							<tbody>
+								for _, r := range v.Rows {
+									<tr>
+										<td class="num">{ strconv.FormatInt(r.Rank, 10) }</td>
+										<td>
+											@participantCell(r.P, r.Rank)
+											if len(r.Breakdown) > 0 {
+												<details class="breakdown">
+													<summary>Per competition</summary>
+													<ul class="plain-list">
+														for _, b := range r.Breakdown {
+															<li>
+																{ ordinal(b.Rank) + " at " }
+																<a href={ templ.SafeURL(b.Comp.Href()) }>{ b.Comp.Name }</a>
+																{ " " + medal(b.Rank) + " " }
+																<span class="muted">{ score(b.Score) }</span>
+															</li>
+														}
+													</ul>
+												</details>
+											}
+										</td>
+										<td class="num"><strong>{ score(r.Score) }</strong></td>
+									</tr>
+								}
+							</tbody>
+						</table>
+					</div>
+				}
+			</section>
+		</div>
+		if len(v.Pilots) > 0 {
+			<section class="section">
+				<h2>Pilots</h2>
+				<div class="person-grid">
+					for _, pl := range v.Pilots {
+						@pilotCard(pl.Civlid, pl.Name, pl.Country, pl.PhotoUrl, pl.Rank)
+					}
+				</div>
+			</section>
+		}
+	}
+}

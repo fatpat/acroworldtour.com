@@ -1,0 +1,158 @@
+package public
+
+import (
+	"awt/internal/web/layout"
+	"strconv"
+)
+
+templ PilotsPage(m layout.Meta, v pilotsView) {
+	@layout.Public(m, "pilots") {
+		if len(v.AWT) > 0 {
+			<section class="section">
+				<h2>{ "AWT pilots " + strconv.Itoa(v.AWTYear) }</h2>
+				<div class="person-grid">
+					for _, pl := range v.AWT {
+						@pilotCard(pl.Civlid, pl.Name, pl.Country, pl.PhotoUrl, pl.Rank)
+					}
+				</div>
+			</section>
+		}
+		<section class="section">
+			<h2>AWQ pilots</h2>
+			if len(v.Others) == 0 {
+				<p class="empty">No pilots.</p>
+			} else {
+				<div class="person-grid">
+					for _, pl := range v.Others {
+						@pilotCard(pl.Civlid, pl.Name, pl.Country, pl.PhotoUrl, pl.Rank)
+					}
+				</div>
+			}
+		</section>
+	}
+}
+
+templ PilotPage(m layout.Meta, v pilotView) {
+	@layout.Public(m, "pilots") {
+		<div class="profile">
+			<div class="profile__photo">
+				if v.Photo() != "" {
+					if v.P.CivlLink != "" {
+						<a href={ templ.URL(v.P.CivlLink) } rel="noopener"><img src={ v.Photo() } alt={ v.P.Name } width="320" height="320"/></a>
+					} else {
+						<img src={ v.Photo() } alt={ v.P.Name } width="320" height="320"/>
+					}
+				}
+			</div>
+			<div class="profile__info">
+				<p class="profile__line">
+					@countryTag(v.P.Country)
+					if v.P.Rank < 9999 {
+						{ " FAI rank #" + strconv.FormatInt(v.P.Rank, 10) + " " + medal(v.P.Rank) }
+					}
+					if v.P.CivlLink != "" {
+						{ " · " }
+						<a href={ templ.URL(v.P.CivlLink) } rel="noopener">CIVL profile</a>
+					}
+				</p>
+				if len(v.Years) > 0 {
+					<p>AWT pilot in { joinYears(v.Years) }</p>
+				}
+				if v.P.About != "" {
+					<p class="profile__about">{ v.P.About }</p>
+				}
+				if len(v.Social) > 0 {
+					<ul class="inline-list">
+						for _, s := range v.Social {
+							<li><a href={ templ.URL(s.Link) } rel="noopener">{ s.Name }</a></li>
+						}
+					</ul>
+				}
+				if len(v.Sponsors) > 0 {
+					<h2>Sponsors</h2>
+					<ul class="inline-list">
+						for _, s := range v.Sponsors {
+							<li>
+								if s.Link != "" {
+									<a href={ templ.URL(s.Link) } rel="noopener">{ s.Name }</a>
+								} else {
+									{ s.Name }
+								}
+							</li>
+						}
+					</ul>
+				}
+			</div>
+		</div>
+		@historyTables(v.Comps, v.Seasons)
+	}
+}
+
+templ TeamsPage(m layout.Meta, v teamsView) {
+	@layout.Public(m, "teams") {
+		if len(v.Teams) == 0 {
+			<p class="empty">No teams.</p>
+		} else {
+			<ul class="plain-list team-list">
+				for _, t := range v.Teams {
+					<li>
+						@participantCell(t, 0)
+					</li>
+				}
+			</ul>
+		}
+	}
+}
+
+templ TeamPage(m layout.Meta, v teamView) {
+	@layout.Public(m, "teams") {
+		<section class="section">
+			<h2>Pilots</h2>
+			<div class="person-grid">
+				for _, pl := range v.T.Members {
+					@pilotCard(pl.CivlID, pl.Name, pl.Country, pl.Photo, pl.Rank)
+				}
+			</div>
+		</section>
+		@historyTables(v.Comps, v.Seasons)
+	}
+}
+
+templ JudgesPage(m layout.Meta, groups []judgeGroup) {
+	@layout.Public(m, "judges") {
+		for _, g := range groups {
+			if len(g.Judges) > 0 {
+				<section class="section">
+					<h2>{ g.Title }</h2>
+					<div class="person-grid">
+						for _, j := range g.Judges {
+							@judgeCard(j.Name, j.Country, j.Level, j.Civlid.Int64, j.Civlid.Valid, j.PilotName, j.PhotoUrl)
+						}
+					</div>
+				</section>
+			}
+		}
+	}
+}
+
+// judgeCard links to the judge's pilot profile when the judge has one.
+templ judgeCard(name, ctry, level string, civlid int64, hasPilot bool, pilotName, photoURL string) {
+	if hasPilot && pilotName != "" {
+		<a class="person-card" href={ templ.SafeURL(pilotHref(civlid, pilotName)) }>
+			@judgeCardBody(name, ctry, level, photoURL)
+		</a>
+	} else {
+		<div class="person-card">
+			@judgeCardBody(name, ctry, level, photoURL)
+		</div>
+	}
+}
+
+templ judgeCardBody(name, ctry, level, photoURL string) {
+	@photo(photoURL, "", 96)
+	<span class="person-card__name">{ name }</span>
+	<span class="person-card__meta">
+		@countryTag(ctry)
+		{ " " + level }
+	</span>
+}

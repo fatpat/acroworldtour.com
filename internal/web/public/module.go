@@ -9,4 +9,6 @@ type Module struct{}
 // Register implements web.Module.
 func (Module) Register(r *web.Router) {
 	registerSimulator(r)
+	registerResults(r)
+	registerFiles(r)
 }

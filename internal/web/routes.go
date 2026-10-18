@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"awt/internal/auth"
+	"awt/internal/blob"
 	"awt/internal/cache"
 	"awt/internal/config"
 	"awt/internal/store"
@@ -18,6 +19,8 @@ type Deps struct {
 	Auth   *auth.Auth
 	DB     *store.DB
 	Purger cache.Purger
+	// Blobs holds uploaded files (served by GET /files/{id}).
+	Blobs blob.Store
 }
 
 // Guard is the access level a route requires.

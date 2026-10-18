@@ -1,0 +1,89 @@
+package public
+
+import (
+	"awt/internal/web/layout"
+	"strconv"
+)
+
+templ TricksPage(m layout.Meta, v tricksView) {
+	@layout.Public(m, "tricks") {
+		@tabBar(v.Years, "Year")
+		if len(v.Solo)+len(v.SynchroOnly) == 0 {
+			<p class="empty">No tricks for { strconv.Itoa(v.Year) }.</p>
+		} else {
+			@tricksTable("Solo and synchro tricks", v.Solo)
+			@tricksTable("Synchro only tricks", v.SynchroOnly)
+		}
+	}
+}
+
+templ tricksTable(title string, rows []trickRow) {
+	<section class="section">
+		<h2>{ title }</h2>
+		if len(rows) == 0 {
+			<p class="empty">No tricks.</p>
+		} else {
+			<div class="table-wrap">
+				<table class="table">
+					<thead>
+						<tr>
+							<th scope="col">Trick</th>
+							<th scope="col">Acronym</th>
+							<th scope="col">Properties</th>
+							<th scope="col">Bonuses</th>
+							<th scope="col" class="num">Technical coefficient</th>
+						</tr>
+					</thead>
+					<tbody>
+						for _, t := range rows {
+							<tr>
+								<td>
+									if t.Video() != "" {
+										<a href={ templ.URL(t.Video()) } rel="noopener">{ t.Name } <span aria-label="video">📺</span></a>
+									} else {
+										{ t.Name }
+									}
+								</td>
+								<td>{ t.Acronym }</td>
+								<td class="props">
+									if t.Left {
+										<span title="Left">⬅️</span>
+									}
+									if t.Right {
+										<span title="Right">➡️</span>
+									}
+									if t.Mirror {
+										<span title="Opposite / mirror">↔️</span>
+									}
+									if t.Repeatable {
+										<span title="Repeatable">🔁</span>
+									}
+									if t.FirstManeuver > 0 {
+										<span title="Must be performed as a first trick only">①</span>
+									}
+									if t.NoLastManeuver > 0 {
+										<span title={ "Cannot be performed as a last " + strconv.FormatInt(t.NoLastManeuver, 10) + " maneuver(s)" }>⨂</span>
+									}
+								</td>
+								<td>
+									<ul class="plain-list">
+										for _, b := range t.Bonuses {
+											<li>
+												{ b.Name + " (" + pct(b.Bonus) + ")" }
+												if b.SampleVideo != "" {
+													{ " " }
+													<a href={ templ.URL(b.SampleVideo) } rel="noopener" aria-label="video">📺</a>
+												}
+											</li>
+										}
+									</ul>
+								</td>
+								<td class="num">{ t.Coefficient() }</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		}
+	</section>
+}

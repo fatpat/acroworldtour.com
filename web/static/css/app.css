@@ -229,3 +229,68 @@ table.table { width: 100%; border-collapse: collapse; }
   .admin__nav { flex-direction: column; flex-wrap: nowrap; }
   .admin__main { padding: 32px; }
 }
+
+/* ---------- Results pages (spec 06 §4) ---------- */
+.section { margin: 0 0 32px; }
+.empty, .muted { color: var(--c-muted); }
+.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 16px; border-bottom: 1px solid var(--c-line); }
+.tabs__link {
+  padding: 8px 14px; text-decoration: none; color: var(--c-text); font-weight: 600;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+.tabs__link:hover { background: var(--c-surface-2); }
+.tabs__link[aria-current="page"] { background: var(--c-primary); color: var(--c-on-primary); }
+.badge {
+  display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 999px; vertical-align: middle;
+  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.badge--final { background: var(--c-ok); color: #fff; }
+.badge--provisional { background: var(--c-surface-2); color: var(--c-text); border: 1px solid var(--c-line); }
+.badge--live { background: var(--c-danger); color: #fff; }
+.comp-summary { display: flex; flex-wrap: wrap; gap: 4px 16px; color: var(--c-muted); }
+.country { margin-left: 6px; font-size: 12px; font-weight: 600; color: var(--c-muted); text-decoration: none; }
+.medal { margin-left: 4px; }
+.team-members { display: block; font-size: 13px; color: var(--c-muted); }
+.results td { vertical-align: top; }
+.flight-row > td { padding-top: 0; }
+.flight summary { cursor: pointer; color: var(--c-link); font-size: 14px; }
+.flight__grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin: 12px 0; }
+.flight h3 { font-size: 15px; margin: 8px 0; }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0; }
+.kv dt { font-weight: 600; }
+.kv dd { margin: 0; }
+.notes, .plain-list, .inline-list { list-style: none; padding: 0; margin: 0; }
+.inline-list { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.table--compact th, .table--compact td { padding: 4px 8px; }
+.table caption { text-align: left; font-weight: 600; padding: 4px 0; }
+.card-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.result-card {
+  display: flex; flex-direction: column; overflow: hidden; text-decoration: none; color: var(--c-text);
+  background: var(--c-surface); border-radius: var(--radius-sm); box-shadow: var(--shadow);
+}
+.result-card:hover { outline: 2px solid var(--c-primary); }
+.result-card__img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+.result-card__body { display: flex; flex-direction: column; gap: 2px; padding: 12px 16px; }
+.result-card__title { font-size: 17px; }
+.result-card__meta { color: var(--c-muted); font-size: 14px; }
+.result-card--closed .result-card__img { filter: grayscale(0.6); }
+.person-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.person-card {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px; text-align: center;
+  text-decoration: none; color: var(--c-text); background: var(--c-surface); border-radius: var(--radius-sm);
+}
+a.person-card:hover { outline: 2px solid var(--c-primary); }
+.person-card__name { font-weight: 600; }
+.person-card__meta { font-size: 13px; color: var(--c-muted); }
+.photo { border-radius: var(--radius-sm); object-fit: cover; background: var(--c-surface-2); }
+.photo--empty { display: block; width: 96px; height: 96px; }
+.comp-details__img { max-width: 100%; height: auto; border-radius: var(--radius-sm); margin-bottom: 16px; }
+.profile { display: grid; gap: 24px; margin-bottom: 32px; }
+.profile__photo img { width: 100%; max-width: 320px; height: auto; border-radius: var(--radius); }
+.profile__about { white-space: pre-line; }
+.breakdown summary { cursor: pointer; font-size: 13px; color: var(--c-link); }
+@media (min-width: 900px) {
+  .profile { grid-template-columns: 320px 1fr; }
+  .season { display: grid; gap: 32px; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
+}
