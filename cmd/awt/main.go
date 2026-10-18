@@ -21,6 +21,7 @@ import (
 	"awt/internal/store"
 	"awt/internal/web"
 	"awt/internal/web/admin"
+	"awt/internal/web/api"
 	"awt/internal/web/public"
 )
 
@@ -97,7 +98,7 @@ func serve() error {
 	bus := service.NewBus()
 	svc := service.New(db, blobs, bus, civl.New(&http.Client{Timeout: 60 * time.Second}, ""))
 	srv := web.NewServer(web.Deps{Cfg: cfg, Auth: auth.New(db, cfg), DB: db, Purger: purger, Blobs: blobs, Service: svc, Bus: bus},
-		public.Module{}, admin.Module{})
+		modules()...)
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	purged := web.StartPurger(ctx, bus, purger, db, cfg.BaseURL)
@@ -121,6 +122,12 @@ func serve() error {
 		defer cancel()
 		return srv.Shutdown(shutdownCtx)
 	}
+}
+
+// modules is the feature composition serve registers; the wiring test walks
+// the same list so a module left out of serve fails a test.
+func modules() []web.Module {
+	return []web.Module{public.Module{}, api.Module{}, admin.Module{}}
 }
 
 func migrate() error {
