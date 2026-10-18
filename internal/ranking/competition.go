@@ -5,7 +5,8 @@ import "awt/internal/scoring"
 // Competition ranks a competition from its runs (spec 03 §8). limit is the
 // index of the last run to include (-1: all runs). Every flight counts,
 // published or not (decision 0005); Final requires a closed competition
-// and every included run final.
+// and every included run final. Type and seasons are taken from the runs,
+// so a competition with no runs returns only an empty "overall" list.
 func Competition(state string, runs []RunInput, limit int) CompetitionResult {
 	if limit >= 0 && limit+1 < len(runs) {
 		runs = runs[:limit+1]

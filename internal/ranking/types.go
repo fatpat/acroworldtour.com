@@ -34,8 +34,9 @@ func (p Participant) less(o Participant) bool {
 }
 
 // FlightScore is one flight of a run: its participant, its stored score,
-// whether it is published, and its save sequence (flights are given in
-// first-save order).
+// whether it is published, and its save sequence (informational: flights
+// are ranked in the order given). A run holds at most one flight per
+// participant (guaranteed by the store); callers must not pass duplicates.
 type FlightScore struct {
 	Participant Participant
 	Score       float64

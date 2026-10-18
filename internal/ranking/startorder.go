@@ -10,27 +10,25 @@ import "sort"
 // without result after them in prev order. In a mixed solo event (exactly
 // one awt-YYYY and one awq-YYYY season) positions are taken in the AWT
 // list followed by the AWQ list, so AWQ pilots fly first. With qualify > 0
-// only the best qualify participants by that position are kept
-// (decision 0006 #1).
+// only the best qualify participants by overall competition position are
+// kept (decision 0006 #1; controller ruling for mixed events), then ordered
+// as above.
 func NextStartOrder(comp CompetitionResult, prev []Participant, seasons []string, qualify int) []Participant {
-	order := comp.Lists[listOverall]
-	if awt, awq, ok := mixedSeasons(seasons); ok && isSolo(order) {
+	overall := comp.Lists[listOverall]
+	order := overall
+	if awt, awq, ok := mixedSeasons(seasons); ok && isSolo(overall) {
 		order = append(append([]Entry{}, comp.Lists[awt]...), comp.Lists[awq]...)
 	}
-	pos := map[string]int{}
-	for i, e := range order {
-		if _, ok := pos[e.Participant.key()]; !ok {
-			pos[e.Participant.key()] = i
-		}
-	}
+	pos := firstIndex(order)
 
 	out := make([]Participant, len(prev))
 	copy(out, prev)
 	if qualify > 0 && qualify < len(out) {
-		// best first, participants without result last in prev order
+		// best overall first, participants without result last in prev order
+		rank := firstIndex(overall)
 		sort.SliceStable(out, func(i, j int) bool {
-			pi, oki := pos[out[i].key()]
-			pj, okj := pos[out[j].key()]
+			pi, oki := rank[out[i].key()]
+			pj, okj := rank[out[j].key()]
 			if oki != okj {
 				return oki
 			}
@@ -47,6 +45,17 @@ func NextStartOrder(comp CompetitionResult, prev []Participant, seasons []string
 		return oki && pi > pj
 	})
 	return out
+}
+
+// firstIndex maps each participant to its first index in the list.
+func firstIndex(list []Entry) map[string]int {
+	pos := map[string]int{}
+	for i, e := range list {
+		if _, ok := pos[e.Participant.key()]; !ok {
+			pos[e.Participant.key()] = i
+		}
+	}
+	return pos
 }
 
 // mixedSeasons returns the awt and awq season codes when there is exactly

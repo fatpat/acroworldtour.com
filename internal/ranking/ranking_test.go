@@ -334,8 +334,9 @@ func TestNextStartOrderQualifyKeepsBest(t *testing.T) {
 func TestNextStartOrderQualifyMixed(t *testing.T) {
 	runs, p1, p2, p3, p4 := workedExample()
 	comp := Competition("open", runs[:1], -1)
-	// positions in awt+awq: 1, 3, 2, 4 -> best 3 = 1, 3, 2
-	eq(t, "best 3", civlIDs(NextStartOrder(comp, []Participant{p1, p3, p4, p2}, runs[0].Seasons, 3)), []int{2, 3, 1})
+	// best 3 overall after run 1: 2 (8.507), 1 and 4 (7.893); then AWQ
+	// worst to best (4, 2), then AWT (1)
+	eq(t, "best 3", civlIDs(NextStartOrder(comp, []Participant{p1, p3, p4, p2}, runs[0].Seasons, 3)), []int{4, 2, 1})
 }
 
 // First run: no results yet, the given order is kept.

@@ -18,7 +18,9 @@ type SeasonComp struct {
 // Season ranks a season (spec 03 §10): the plain, unrounded sum of the
 // competition totals of the competition list named after the season code,
 // over published, closed and final competitions. It returns "overall" when
-// any participant scored and "women" (solo) with at least 3 women.
+// any participant scored and "women" (solo) with at least 3 women. All
+// competitions must be of the season's type: the caller must not mix solo
+// and synchro competitions (legacy refused such a season).
 func Season(in SeasonInput) Lists {
 	var totals []Entry
 	index := map[string]int{}
