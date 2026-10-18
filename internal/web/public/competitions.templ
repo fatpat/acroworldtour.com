@@ -88,11 +88,11 @@ templ CompetitionOverallPage(m layout.Meta, v overallView) {
 									<td>
 										@participantCell(r.P, r.Rank)
 									</td>
-									for i := range v.Runs {
-										if c, ok := r.PerRun[i]; ok {
+									for _, run := range v.Runs {
+										if c, ok := r.PerRun[int(run.Idx)]; ok {
 											<td class="num">{ score(c.Score) } <small class="muted">{ "#" + strconv.FormatInt(c.Rank, 10) }</small></td>
 										} else {
-											<td class="num muted">–</td>
+											<td class="num muted" title="No published flight">—</td>
 										}
 									}
 									<td class="num"><strong>{ score(r.Score) }</strong></td>

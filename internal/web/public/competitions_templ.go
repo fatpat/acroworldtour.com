@@ -419,8 +419,8 @@ func CompetitionOverallPage(m layout.Meta, v overallView) templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					for i := range v.Runs {
-						if c, ok := r.PerRun[i]; ok {
+					for _, run := range v.Runs {
+						if c, ok := r.PerRun[int(run.Idx)]; ok {
 							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "<td class=\"num\">")
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
@@ -452,7 +452,7 @@ func CompetitionOverallPage(m layout.Meta, v overallView) templ.Component {
 								return templ_7745c5c3_Err
 							}
 						} else {
-							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "<td class=\"num muted\">–</td>")
+							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "<td class=\"num muted\" title=\"No published flight\">—</td>")
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
 							}

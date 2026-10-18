@@ -52,6 +52,17 @@ LEFT JOIN teams t ON t.id = re.team_id
 WHERE f.competition_id = ? AND f.run_idx = ? AND f.published = 1
 ORDER BY re.list_key, re.position;
 
+-- name: PublicCompetitionRunPlaces :many
+-- Every run's ranking in one list, restricted to published flights: the
+-- overall tab's per-run cells re-rank these like the run tabs do.
+SELECT f.run_idx, re.position, re.civlid, re.team_id, re.score
+FROM flights f
+JOIN ranking_entries re ON re.scope = 'run'
+    AND re.scope_key = f.competition_id || '/' || f.run_idx
+    AND (re.civlid = f.civlid OR re.team_id = f.team_id)
+WHERE f.competition_id = ? AND re.list_key = ? AND f.published = 1
+ORDER BY f.run_idx, re.position;
+
 -- name: PublicRunFlightTricks :many
 SELECT ft.flight_id, ft.position, ft.name, ft.acronym
 FROM flight_tricks ft

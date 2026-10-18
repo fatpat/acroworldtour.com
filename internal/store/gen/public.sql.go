@@ -131,6 +131,60 @@ func (q *Queries) PublicCompetitionPilots(ctx context.Context, competitionID str
 	return items, nil
 }
 
+const publicCompetitionRunPlaces = `-- name: PublicCompetitionRunPlaces :many
+SELECT f.run_idx, re.position, re.civlid, re.team_id, re.score
+FROM flights f
+JOIN ranking_entries re ON re.scope = 'run'
+    AND re.scope_key = f.competition_id || '/' || f.run_idx
+    AND (re.civlid = f.civlid OR re.team_id = f.team_id)
+WHERE f.competition_id = ? AND re.list_key = ? AND f.published = 1
+ORDER BY f.run_idx, re.position
+`
+
+type PublicCompetitionRunPlacesParams struct {
+	CompetitionID string `json:"competition_id"`
+	ListKey       string `json:"list_key"`
+}
+
+type PublicCompetitionRunPlacesRow struct {
+	RunIdx   int64          `json:"run_idx"`
+	Position int64          `json:"position"`
+	Civlid   sql.NullInt64  `json:"civlid"`
+	TeamID   sql.NullString `json:"team_id"`
+	Score    float64        `json:"score"`
+}
+
+// Every run's ranking in one list, restricted to published flights: the
+// overall tab's per-run cells re-rank these like the run tabs do.
+func (q *Queries) PublicCompetitionRunPlaces(ctx context.Context, arg PublicCompetitionRunPlacesParams) ([]PublicCompetitionRunPlacesRow, error) {
+	rows, err := q.db.QueryContext(ctx, publicCompetitionRunPlaces, arg.CompetitionID, arg.ListKey)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PublicCompetitionRunPlacesRow
+	for rows.Next() {
+		var i PublicCompetitionRunPlacesRow
+		if err := rows.Scan(
+			&i.RunIdx,
+			&i.Position,
+			&i.Civlid,
+			&i.TeamID,
+			&i.Score,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const publicCompetitionSeasons = `-- name: PublicCompetitionSeasons :many
 SELECT cs.season_code, COALESCE(s.name, '') AS season_name
 FROM competition_seasons cs

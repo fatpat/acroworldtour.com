@@ -69,7 +69,11 @@ func (p *results) competitions(w http.ResponseWriter, r *http.Request) {
 	now := p.now().Year()
 	years := []int{now}
 	for _, c := range comps {
-		years = append(years, year(c.StartDate), year(c.EndDate))
+		for _, y := range []int{year(c.StartDate), year(c.EndDate)} {
+			if y > 0 { // a malformed date makes no year tab
+				years = append(years, y)
+			}
+		}
 	}
 	sel := pickYear(r, years[1:], now)
 	v := competitionsView{Year: sel, Years: yearTabs(append(years, sel), sel, "/competitions")}
@@ -220,29 +224,59 @@ func (p *results) competitionOverall(w http.ResponseWriter, r *http.Request) {
 	v := overallView{compHeader: h}
 	var sel string
 	v.Lists, sel = listTabs(visibleLists(keys, h.SeasonOrder), r.URL.Query().Get("list"), h.Href(), h.SeasonNames)
+	cells, err := p.runCells(r, h.C.ID, sel)
+	if err != nil {
+		serverError(w, r, err)
+		return
+	}
 	for _, e := range entries {
 		if e.ListKey != sel {
 			continue
 		}
 		row := rankRow{Rank: e.Rank, Score: e.Score, P: newParticipant(e.Civlid, e.TeamID, e.PilotName, e.PilotCountry, e.TeamName, members),
-			PerRun: map[int]runCell{}}
-		var d struct {
-			PerRun []struct {
-				Run   int     `json:"run"`
-				Rank  int64   `json:"rank"`
-				Score float64 `json:"score"`
-			} `json:"per_run"`
-		}
-		if err := json.Unmarshal([]byte(e.Details), &d); err != nil {
-			serverError(w, r, err)
-			return
-		}
-		for _, c := range d.PerRun {
-			row.PerRun[c.Run] = runCell{Rank: c.Rank, Score: c.Score}
-		}
+			PerRun: cells[newParticipant(e.Civlid, e.TeamID, "", "", "", nil).key()]}
 		v.Rows = append(v.Rows, row)
 	}
 	renderPage(w, r, CompetitionOverallPage(p.compMeta(h, h.C.Name, h.Href()), v))
+}
+
+// runCells is every participant's rank and score in each run of one list,
+// counting published flights only and re-ranked like the run tabs
+// (controller ruling): a run whose flight is unpublished has no cell. The
+// overall totals stay as stored (decision 0005).
+func (p *results) runCells(r *http.Request, compID, list string) (map[string]map[int]runCell, error) {
+	cells := map[string]map[int]runCell{}
+	if list == "" {
+		return cells, nil
+	}
+	places, err := p.q.PublicCompetitionRunPlaces(r.Context(), gen.PublicCompetitionRunPlacesParams{CompetitionID: compID, ListKey: list})
+	if err != nil {
+		return nil, err
+	}
+	n, prev := 0, runCell{}
+	for i, pl := range places {
+		if i == 0 || places[i-1].RunIdx != pl.RunIdx {
+			n = 0
+		}
+		c := runCell{Rank: sharedRank(n, prev, pl.Score), Score: pl.Score}
+		k := newParticipant(pl.Civlid, pl.TeamID, "", "", "", nil).key()
+		if cells[k] == nil {
+			cells[k] = map[int]runCell{}
+		}
+		// runs are keyed by their 0-based position among the competition's runs
+		cells[k][int(pl.RunIdx)] = c
+		n, prev = n+1, c
+	}
+	return cells, nil
+}
+
+// sharedRank is the rank of the n-th (0-based) entry of a list ordered by
+// score: equal Round3 scores share the previous rank (decision 0007).
+func sharedRank(n int, prev runCell, score float64) int64 {
+	if n > 0 && scoring.Round3(prev.Score) == scoring.Round3(score) {
+		return prev.Rank
+	}
+	return int64(n + 1)
 }
 
 // flightRow is a published flight in a run list, with its detail.
@@ -324,11 +358,11 @@ func (p *results) competitionRun(w http.ResponseWriter, r *http.Request) {
 		}
 		row := flightRow{Score: e.Score, Scored: e.FlightScore.Valid, DNS: e.DidNotStart,
 			P: newParticipant(e.Civlid, e.TeamID, e.PilotName, e.PilotCountry, e.TeamName, members)}
-		// shared rank for equal Round3 scores (decision 0007)
-		row.Rank = int64(len(v.Rows) + 1)
-		if last := len(v.Rows) - 1; last >= 0 && scoring.Round3(v.Rows[last].Score) == scoring.Round3(e.Score) {
-			row.Rank = v.Rows[last].Rank
+		var prev runCell
+		if last := len(v.Rows) - 1; last >= 0 {
+			prev = runCell{Rank: v.Rows[last].Rank, Score: v.Rows[last].Score}
 		}
+		row.Rank = sharedRank(len(v.Rows), prev, e.Score)
 		if e.FinalMark.Valid {
 			var fm scoring.FinalMark
 			if err := json.Unmarshal([]byte(e.FinalMark.String), &fm); err != nil {

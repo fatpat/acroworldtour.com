@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"regexp"
 	"slices"
 	"strconv"
@@ -246,7 +247,7 @@ func listTabs(keys []string, requested, base string, names map[string]string) ([
 	for i, k := range keys {
 		href := base
 		if i > 0 {
-			href += "?list=" + k
+			href += "?list=" + url.QueryEscape(k)
 		}
 		tabs[i] = tab{Label: listLabel(k, names), Href: href, Current: k == sel}
 	}
@@ -335,6 +336,7 @@ func fileURL(id sql.NullString) string {
 // yearTabs builds a year selector: the given years plus the current one,
 // descending.
 func yearTabs(years []int, selected int, base string) []tab {
+	years = slices.DeleteFunc(years, func(y int) bool { return y <= 0 })
 	slices.Sort(years)
 	years = slices.Compact(years)
 	slices.Reverse(years)

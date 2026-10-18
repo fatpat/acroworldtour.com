@@ -25,7 +25,9 @@ import (
 
 func TestMain(m *testing.M) {
 	slog.SetDefault(slog.New(slog.NewTextHandler(io.Discard, nil)))
-	os.Exit(m.Run())
+	code := m.Run()
+	closeFixture()
+	os.Exit(code)
 }
 
 // newApp builds the app handler on a migrated temp DB with a catalog of two
