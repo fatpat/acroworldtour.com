@@ -116,6 +116,17 @@ func (c *capture) Write(b []byte) (int, error) { return c.body.Write(b) }
 
 func (d Deps) loginSubmit(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
+	// Parse here so an oversized body (limitBody) is a 413, not an empty
+	// form counted as a failed attempt.
+	if err := r.ParseForm(); err != nil {
+		var tooLarge *http.MaxBytesError
+		if errors.As(err, &tooLarge) {
+			http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
+			return
+		}
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
 	c := &capture{h: http.Header{}, status: http.StatusOK}
 	d.Auth.HandleLogin(c, r)
 	if c.status >= 300 && c.status < 400 {

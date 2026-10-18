@@ -156,6 +156,9 @@ func (r *Router) ScorerMax(pattern string, max int64, compFrom func(*http.Reques
 	r.add(pattern, GuardScorer, cache.NoStore(limitBody(max, r.deps.Auth.RequireScorer(compFrom)(r.deps.Auth.CSRF(h)))))
 }
 
+// loginMax caps the anonymous login form (email, password, next).
+const loginMax = 16 << 10
+
 func isAdminPath(p string) bool { return p == "/admin" || strings.HasPrefix(p, "/admin/") }
 
 func isLoginPath(p string) bool { return p == "/admin/login" }
@@ -171,7 +174,7 @@ func newRouter(deps Deps, mods ...Module) *Router {
 	r.Public("GET /favicon.ico", http.HandlerFunc(serveFavicon))
 
 	r.Public("GET /admin/login", http.HandlerFunc(deps.loginPage))
-	r.Public("POST /admin/login", http.HandlerFunc(deps.loginSubmit))
+	r.Public("POST /admin/login", limitBody(loginMax, http.HandlerFunc(deps.loginSubmit)))
 	r.User("POST /admin/logout", http.HandlerFunc(deps.logout))
 
 	for _, m := range mods {

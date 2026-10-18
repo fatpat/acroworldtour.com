@@ -371,3 +371,25 @@ func TestAdminLayoutWithoutSessionDoesNotPanic(t *testing.T) {
 		t.Error("no session: no user menu expected")
 	}
 }
+
+// The anonymous login POST caps its body before parsing the form.
+func TestLoginBodyCapped(t *testing.T) {
+	h := web.Routes(newDeps(t))
+	big := url.Values{"email": {"a@b.c"}, "password": {strings.Repeat("x", 64<<10)}}.Encode()
+	req := httptest.NewRequest(http.MethodPost, "/admin/login", strings.NewReader(big))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("oversized login = %d, want 413", rec.Code)
+	}
+	// Chunked (no Content-Length): the reader cap applies.
+	req = httptest.NewRequest(http.MethodPost, "/admin/login", io.MultiReader(strings.NewReader(big)))
+	req.ContentLength = -1
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("oversized chunked login = %d, want 413", rec.Code)
+	}
+}
