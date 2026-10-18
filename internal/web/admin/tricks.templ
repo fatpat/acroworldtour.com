@@ -1,0 +1,194 @@
+package admin
+
+import "awt/internal/web/layout"
+import "awt/internal/service"
+
+func yes(b bool) string {
+	if b {
+		return "yes"
+	}
+	return ""
+}
+
+func trickBonuses(t service.Trick) string {
+	s := ""
+	for i, b := range t.Bonuses {
+		if i > 0 {
+			s += ", "
+		}
+		s += b.Name + " (" + ftoa(b.Bonus) + ")"
+	}
+	return s
+}
+
+templ tricksPage(v tricksView) {
+	@layout.Admin(layout.Meta{Title: "Tricks " + itoa(v.Year), Heading: "Tricks"}, "tricks") {
+		@notice(v.Flash)
+		@errorSummary(v.Errors)
+		<div class="toolbar">
+			<form class="inline" method="get" action="/admin/tricks">
+				<label for="year">Year</label>
+				<input id="year" name="year" type="number" min="1901" max="2999" value={ itoa(v.Year) }/>
+				<button class="btn btn--ghost" type="submit">Show</button>
+			</form>
+			<span class="chips">
+				for _, y := range v.Years {
+					<a class={ "chip", templ.KV("chip--on", y == v.Year) } href={ templ.SafeURL("/admin/tricks?year=" + itoa(y)) }>{ itoa(y) }</a>
+				}
+			</span>
+			<a class="btn" href={ templ.SafeURL("/admin/tricks/new?year=" + itoa(v.Year)) }>New trick</a>
+			<a class="btn btn--ghost" href={ templ.SafeURL("/admin/tricks/unique?year=" + itoa(v.Year)) }>Unique tricks</a>
+		</div>
+		<h2>Catalog { itoa(v.Year) } <span class="muted">({ itoa(len(v.Tricks)) } tricks)</span></h2>
+		<div class="table-wrap">
+			<table class="table">
+				<thead>
+					<tr><th>Name</th><th>Acronym</th><th>Directions</th><th>Coeff.</th><th>Solo</th><th>Synchro</th><th>Repeatable</th><th>Bonuses</th><th>1st / no 1st / last / no last</th><th></th></tr>
+				</thead>
+				<tbody>
+					for _, t := range v.Tricks {
+						<tr>
+							<td>{ t.Name }</td>
+							<td>{ t.Acronym }</td>
+							<td>{ joinStrings(t.Directions) }</td>
+							<td>{ ftoa(t.TechnicalCoefficient) }</td>
+							<td>{ yes(t.Solo) }</td>
+							<td>{ yes(t.Synchro) }</td>
+							<td>{ yes(t.Repeatable) }</td>
+							<td>{ trickBonuses(t) }</td>
+							<td>{ itoa(t.FirstManeuver) } / { itoa(t.NoFirstManeuver) } / { itoa(t.LastManeuver) } / { itoa(t.NoLastManeuver) }</td>
+							<td class="actions">
+								<a class="btn btn--ghost" href={ templ.SafeURL("/admin/tricks/" + t.ID + "/edit") }>Edit</a>
+								<a class="btn btn--ghost" href={ templ.SafeURL("/admin/tricks/" + t.ID + "/delete") }>Delete</a>
+							</td>
+						</tr>
+					}
+					if len(v.Tricks) == 0 {
+						<tr><td colspan="10">No trick in the { itoa(v.Year) } catalog. Import a JSON file or duplicate another year below.</td></tr>
+					}
+				</tbody>
+			</table>
+		</div>
+		<div class="grid-2">
+			<form class="card form" method="post" action="/admin/tricks/import" enctype="multipart/form-data">
+				@csrf()
+				<h2>Import a catalog into { itoa(v.Year) }</h2>
+				<input type="hidden" name="year" value={ itoa(v.Year) }/>
+				<div class="field">
+					<label for="catalog-file">JSON file</label>
+					<input id="catalog-file" name="file" type="file" accept="application/json,.json" required/>
+					<p class="field__hint">A trick already in the catalog with the same name is replaced.</p>
+				</div>
+				<button class="btn" type="submit">Import</button>
+			</form>
+			<form class="card form" method="post" action="/admin/tricks/duplicate">
+				@csrf()
+				<h2>Duplicate a year</h2>
+				@textField("from", "From year", "number", dupValue(v.DupFrom, v.Year), v.Errors, templ.Attributes{"min": "1901", "max": "2999", "required": true})
+				@textField("to", "Into year", "number", v.DupTo, v.Errors, templ.Attributes{"min": "1901", "max": "2999", "required": true})
+				<p class="field__hint">Copies every trick; tricks with the same name in the target year are replaced.</p>
+				<button class="btn" type="submit">Duplicate</button>
+			</form>
+		</div>
+	}
+}
+
+templ uniquePage(v uniqueView) {
+	@layout.Admin(layout.Meta{Title: "Unique tricks " + itoa(v.Year), Heading: "Unique tricks " + itoa(v.Year)}, "tricks") {
+		<p class="muted">Read-only: the variants generated from the catalog (trick, direction and bonuses). { itoa(len(v.Tricks)) } of { itoa(v.Total) } shown.</p>
+		<form class="inline" method="get" action="/admin/tricks/unique" role="search">
+			<label for="year">Year</label>
+			<input id="year" name="year" type="number" value={ itoa(v.Year) }/>
+			<label for="q">Search</label>
+			<input id="q" name="q" type="search" value={ v.Query }/>
+			<button class="btn btn--ghost" type="submit">Show</button>
+			<a href={ templ.SafeURL("/admin/tricks?year=" + itoa(v.Year)) }>Back to the catalog</a>
+		</form>
+		<div class="table-wrap">
+			<table class="table">
+				<thead><tr><th>Name</th><th>Acronym</th><th>Coeff.</th><th>Bonus %</th><th>Bonus types</th><th>Base trick</th></tr></thead>
+				<tbody>
+					for _, u := range v.Tricks {
+						<tr>
+							<td>{ u.Name }</td>
+							<td>{ u.Acronym }</td>
+							<td>{ ftoa(u.TechnicalCoefficient) }</td>
+							<td>{ ftoa(u.Bonus) }</td>
+							<td>{ joinStrings(u.BonusTypes) }</td>
+							<td>{ u.BaseTrick }</td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		</div>
+	}
+}
+
+templ trickFormPage(v trickFormView) {
+	@layout.Admin(layout.Meta{Title: "Trick", Heading: trickHeading(v.Form)}, "tricks") {
+		@errorSummary(v.Errors)
+		<form class="card form" method="post" action={ templ.SafeURL(trickAction(v.Form)) }>
+			@csrf()
+			<input type="hidden" name="year" value={ itoa(v.Form.Year) }/>
+			<div class="grid-2">
+				@textField("name", "Name", "text", v.Form.Name, v.Errors, templ.Attributes{"required": true})
+				@textField("acronym", "Acronym", "text", v.Form.Acronym, v.Errors, templ.Attributes{"required": true})
+				@textField("technical_coefficient", "Technical coefficient", "text", v.Form.Coefficient, v.Errors, templ.Attributes{"inputmode": "decimal", "required": true})
+				@textField("types", "Types (comma separated)", "text", v.Form.Types, v.Errors, templ.Attributes{})
+			</div>
+			<fieldset>
+				<legend>Used in</legend>
+				@checkField("solo", "Solo", v.Form.Solo)
+				@checkField("solo_awt", "Solo, AWT pilots", v.Form.SoloAWT)
+				@checkField("synchro", "Synchro", v.Form.Synchro)
+				@checkField("repeatable", "Repeatable", v.Form.Repeatable)
+			</fieldset>
+			<fieldset>
+				<legend>Directions (none, or at least two)</legend>
+				for _, d := range allDirections {
+					<div class="field field--check">
+						<label><input type="checkbox" name={ "dir_" + d } value="1" checked?={ v.Form.Directions[d] }/> { d }</label>
+					</div>
+				}
+				@fieldError(v.Errors, "directions")
+			</fieldset>
+			<fieldset>
+				<legend>Bonuses</legend>
+				for i, b := range v.Form.Bonuses {
+					<div class="bonus-row">
+						<label><input type="checkbox" name={ "bonus_on_" + itoa(i) } value="1" checked?={ b.On }/> { b.Name }</label>
+						<input type="text" inputmode="decimal" name={ "bonus_val_" + itoa(i) } value={ b.Value } aria-label={ "Bonus % for " + b.Name } placeholder="bonus %"/>
+					</div>
+				}
+				@fieldError(v.Errors, "bonuses")
+			</fieldset>
+			@textArea("bonus_constraints", "Bonus constraints", v.Form.Constraints, v.Errors, "One pair of bonus names per line, e.g. twisted, flip")
+			<div class="grid-2">
+				@textField("first_maneuver", "First maneuver (position rule)", "number", v.Form.First, v.Errors, templ.Attributes{"min": "0"})
+				@textField("no_first_maneuver", "Not first maneuver", "number", v.Form.NoFirst, v.Errors, templ.Attributes{"min": "0"})
+				@textField("last_maneuver", "Last maneuver", "number", v.Form.Last, v.Errors, templ.Attributes{"min": "0"})
+				@textField("no_last_maneuver", "Not last maneuver", "number", v.Form.NoLast, v.Errors, templ.Attributes{"min": "0"})
+			</div>
+			@fieldError(v.Errors, "maneuvers")
+			@textField("sample_video", "Sample video URL", "url", v.Form.Video, v.Errors, templ.Attributes{})
+			<p class="actions">
+				<button class="btn" type="submit">Save</button>
+				<a class="btn btn--ghost" href={ templ.SafeURL("/admin/tricks?year=" + itoa(v.Form.Year)) }>Cancel</a>
+			</p>
+		</form>
+	}
+}
+
+func trickHeading(f trickForm) string {
+	if f.ID == "" {
+		return "New trick " + itoa(f.Year)
+	}
+	return "Edit trick (" + itoa(f.Year) + ")"
+}
+
+func trickAction(f trickForm) string {
+	if f.ID == "" {
+		return "/admin/tricks"
+	}
+	return "/admin/tricks/" + f.ID
+}

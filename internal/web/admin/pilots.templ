@@ -1,0 +1,124 @@
+package admin
+
+import "awt/internal/web/layout"
+import "awt/internal/service"
+
+templ pilotsPage(v pilotsView) {
+	@layout.Admin(layout.Meta{Title: "Pilots", Heading: "Pilots"}, "pilots") {
+		@notice(v.Flash)
+		@errorSummary(v.Errors)
+		<div class="toolbar">
+			<form class="inline" method="get" action="/admin/pilots" role="search">
+				<label for="q">Search by name or CIVL id</label>
+				<input id="q" name="q" type="search" value={ v.Query }/>
+				<button class="btn btn--ghost" type="submit">Search</button>
+			</form>
+			<form class="inline" method="post" action="/admin/pilots/import">
+				@csrf()
+				<label for="civlid">CIVL id</label>
+				<input id="civlid" name="civlid" type="number" min="1" inputmode="numeric" value={ v.ImportV } required/>
+				<button class="btn" type="submit">Add or update from CIVL</button>
+			</form>
+			<form class="inline" method="post" action="/admin/pilots/rankings">
+				@csrf()
+				<button class="btn btn--ghost" type="submit">Refresh CIVL rankings</button>
+			</form>
+		</div>
+		<p class="muted">{ itoa(len(v.Pilots)) } of { itoa(v.Total) } pilots.</p>
+		<div class="table-wrap">
+			<table class="table">
+				<thead>
+					<tr><th>Name</th><th>Country</th><th>CIVL id</th><th>Rank</th><th>Gender</th><th>AWT status per year</th><th></th></tr>
+				</thead>
+				<tbody>
+					for _, p := range v.Pilots {
+						@pilotRow(p, v.Year)
+					}
+					if len(v.Pilots) == 0 {
+						<tr><td colspan="7">No pilot matches.</td></tr>
+					}
+				</tbody>
+			</table>
+		</div>
+		<h2>AWT status for another year</h2>
+		<form class="inline" method="post" action="/admin/pilots/awt">
+			@csrf()
+			<label for="awt-civlid">CIVL id</label>
+			<input id="awt-civlid" name="civlid" type="number" min="1" required/>
+			<label for="awt-year">Year</label>
+			<input id="awt-year" name="year" type="number" min="1900" max="3000" required/>
+			<label for="awt-status">Status</label>
+			<select id="awt-status" name="awt">
+				<option value="1">AWT</option>
+				<option value="0">AWQ</option>
+			</select>
+			<button class="btn btn--ghost" type="submit">Set</button>
+		</form>
+	}
+}
+
+func awtValue(on bool) string {
+	if on {
+		return "0" // the button toggles to the opposite state
+	}
+	return "1"
+}
+
+templ pilotRow(p service.Pilot, now int) {
+	<tr id={ "pilot-" + itoa(p.CivlID) }>
+		<td>
+			if p.CivlLink != "" {
+				<a href={ templ.SafeURL(p.CivlLink) } rel="noopener">{ p.Name }</a>
+			} else {
+				{ p.Name }
+			}
+		</td>
+		<td>{ p.Country }</td>
+		<td>{ itoa(p.CivlID) }</td>
+		<td>{ rankLabel(p.Rank) }</td>
+		<td>
+			<form
+				method="post"
+				action={ templ.SafeURL("/admin/pilots/" + itoa(p.CivlID) + "/gender") }
+				hx-post={ "/admin/pilots/" + itoa(p.CivlID) + "/gender" }
+				hx-target="closest tr"
+				hx-swap="outerHTML"
+			>
+				@csrf()
+				<button class="chip" type="submit" title="Toggle man or woman">{ genderLabel(p.Gender) }</button>
+			</form>
+		</td>
+		<td>
+			<div class="chips">
+				for _, y := range pilotYears(p, now) {
+					<form
+						method="post"
+						action={ templ.SafeURL("/admin/pilots/" + itoa(p.CivlID) + "/awt") }
+						hx-post={ "/admin/pilots/" + itoa(p.CivlID) + "/awt" }
+						hx-target="closest tr"
+						hx-swap="outerHTML"
+					>
+						@csrf()
+						<input type="hidden" name="year" value={ itoa(y) }/>
+						<input type="hidden" name="awt" value={ awtValue(hasYear(p, y)) }/>
+						<button class={ "chip", templ.KV("chip--on", hasYear(p, y)) } type="submit" title="Toggle AWT or AWQ">{ itoa(y) } { yearStatus(hasYear(p, y)) }</button>
+					</form>
+				}
+			</div>
+		</td>
+		<td>
+			<form method="post" action="/admin/pilots/import">
+				@csrf()
+				<input type="hidden" name="civlid" value={ itoa(p.CivlID) }/>
+				<button class="btn btn--ghost" type="submit">Update from CIVL</button>
+			</form>
+		</td>
+	</tr>
+}
+
+func yearStatus(awt bool) string {
+	if awt {
+		return "AWT"
+	}
+	return "AWQ"
+}

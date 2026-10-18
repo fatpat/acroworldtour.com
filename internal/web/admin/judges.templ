@@ -1,0 +1,67 @@
+package admin
+
+import "awt/internal/web/layout"
+
+templ judgesPage(v judgesView) {
+	@layout.Admin(layout.Meta{Title: "Judges", Heading: "Judges"}, "judges") {
+		@notice(v.Flash)
+		<p><a class="btn" href="/admin/judges/new">New judge</a></p>
+		<div class="table-wrap">
+			<table class="table">
+				<thead><tr><th>Name</th><th>Country</th><th>Level</th><th>CIVL id</th><th></th></tr></thead>
+				<tbody>
+					for _, j := range v.Judges {
+						<tr>
+							<td>{ j.Name }</td>
+							<td>{ j.Country }</td>
+							<td>{ string(j.Level) }</td>
+							<td>
+								if j.CivlID != 0 {
+									{ itoa(j.CivlID) }
+								}
+							</td>
+							<td class="actions">
+								<a class="btn btn--ghost" href={ templ.SafeURL("/admin/judges/" + j.ID + "/edit") }>Edit</a>
+								<a class="btn btn--ghost" href={ templ.SafeURL("/admin/judges/" + j.ID + "/delete") }>Delete</a>
+							</td>
+						</tr>
+					}
+					if len(v.Judges) == 0 {
+						<tr><td colspan="5">No judge yet.</td></tr>
+					}
+				</tbody>
+			</table>
+		</div>
+	}
+}
+
+templ judgeFormPage(v judgeFormView) {
+	@layout.Admin(layout.Meta{Title: "Judge", Heading: judgeHeading(v.Form)}, "judges") {
+		@errorSummary(v.Errors)
+		<form class="card form" method="post" action={ templ.SafeURL(judgeAction(v.Form)) }>
+			@csrf()
+			@textField("name", "Name", "text", v.Form.Name, v.Errors, templ.Attributes{"required": true, "maxlength": "100"})
+			@selectField("level", "Level", v.Form.Level, judgeLevels, v.Errors)
+			@textField("country", "Country (3 letters, e.g. fra)", "text", v.Form.Country, v.Errors, templ.Attributes{"required": true, "maxlength": "3", "minlength": "3", "pattern": "[A-Za-z]{3}", "autocapitalize": "off"})
+			@textField("civlid", "CIVL id (optional, must be an imported pilot)", "number", v.Form.CivlID, v.Errors, templ.Attributes{"min": "1"})
+			<p class="actions">
+				<button class="btn" type="submit">Save</button>
+				<a class="btn btn--ghost" href="/admin/judges">Cancel</a>
+			</p>
+		</form>
+	}
+}
+
+func judgeHeading(f judgeForm) string {
+	if f.ID == "" {
+		return "New judge"
+	}
+	return "Edit judge"
+}
+
+func judgeAction(f judgeForm) string {
+	if f.ID == "" {
+		return "/admin/judges"
+	}
+	return "/admin/judges/" + f.ID
+}

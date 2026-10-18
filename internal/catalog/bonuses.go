@@ -44,3 +44,12 @@ func LookupBonus(name string) (BonusDef, bool) {
 	}
 	return BonusDef{}, false
 }
+
+// BonusNames returns the configured bonus names in definition order.
+func BonusNames() []string {
+	out := make([]string, len(bonusDefs))
+	for i, d := range bonusDefs {
+		out[i] = d.Name
+	}
+	return out
+}

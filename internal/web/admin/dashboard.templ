@@ -1,0 +1,33 @@
+package admin
+
+import "awt/internal/web/layout"
+
+templ dashboardPage(v dashboardView) {
+	@layout.Admin(layout.Meta{Title: "Dashboard", Heading: "Back-office"}, "") {
+		if v.Admin {
+			<ul class="stats">
+				<li><a href="/admin/pilots"><strong>{ itoa(v.Pilots) }</strong> pilots</a></li>
+				<li><a href="/admin/teams"><strong>{ itoa(v.Teams) }</strong> teams</a></li>
+				<li><a href="/admin/judges"><strong>{ itoa(v.Judges) }</strong> judges</a></li>
+				<li><a href={ templ.SafeURL("/admin/tricks?year=" + itoa(v.Year)) }><strong>{ itoa(v.Tricks) }</strong> tricks in { itoa(v.Year) }</a></li>
+				<li><a href="/admin/seasons"><strong>{ itoa(v.Seasons) }</strong> seasons</a></li>
+				<li><a href="/admin/competitions"><strong>{ itoa(v.Competitions) }</strong> competitions</a></li>
+			</ul>
+			<p class="actions">
+				<a class="btn" href="/admin/pilots">Import a pilot</a>
+				<a class="btn btn--ghost" href="/admin/files">Upload a file</a>
+				<a class="btn btn--ghost" href="/admin/users">Manage users</a>
+			</p>
+		}
+		<h2>Open competitions</h2>
+		if len(v.Open) == 0 {
+			<p>No competition is open.</p>
+		} else {
+			<ul class="plain">
+				for _, c := range v.Open {
+					<li><a href={ templ.SafeURL("/admin/competitions/" + c.Code) }>{ c.Name }</a> <span class="muted">{ c.StartDate.Format("2006-01-02") }, { c.Location }</span></li>
+				}
+			</ul>
+		}
+	}
+}

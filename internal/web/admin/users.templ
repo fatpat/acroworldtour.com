@@ -1,0 +1,87 @@
+package admin
+
+import "awt/internal/web/layout"
+
+templ usersPage(v usersView) {
+	@layout.Admin(layout.Meta{Title: "Users", Heading: "Users"}, "users") {
+		@notice(v.Flash)
+		@errorSummary(v.Errors)
+		<div class="table-wrap">
+			<table class="table">
+				<thead><tr><th>Email</th><th>Name</th><th>Role</th><th></th></tr></thead>
+				<tbody>
+					for _, u := range v.Users {
+						<tr>
+							<td>{ u.Email }</td>
+							<td>{ u.Name }</td>
+							<td>{ roleLabel(u) }</td>
+							<td class="actions"><a class="btn btn--ghost" href={ templ.SafeURL("/admin/users/" + u.ID) }>Manage</a></td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		</div>
+		<form class="card form" method="post" action="/admin/users">
+			@csrf()
+			<h2>New user</h2>
+			@textField("email", "Email", "email", v.Form.Email, v.Errors, templ.Attributes{"required": true, "autocomplete": "off"})
+			@textField("name", "Name", "text", v.Form.Name, v.Errors, templ.Attributes{"required": true})
+			@selectField("role", "Role", v.Form.Role, roleOptions, v.Errors)
+			@textField("password", "Initial password (10 characters minimum)", "password", "", v.Errors, templ.Attributes{"required": true, "minlength": "10", "autocomplete": "new-password"})
+			<button class="btn" type="submit">Create user</button>
+		</form>
+	}
+}
+
+templ userPage(v userView) {
+	@layout.Admin(layout.Meta{Title: v.User.Email, Heading: v.User.Email}, "users") {
+		@notice(v.Flash)
+		@errorSummary(v.Errors)
+		<p>{ v.User.Name } &middot; { roleLabel(v.User) }</p>
+		<div class="grid-2">
+			<form class="card form" method="post" action={ templ.SafeURL("/admin/users/" + v.User.ID + "/competitions") }>
+				@csrf()
+				<h2>Competitions</h2>
+				if v.User.Role == "admin" {
+					<p class="muted">Admins can judge every competition.</p>
+				} else {
+					for _, c := range v.Comps {
+						<div class="field field--check">
+							<label><input type="checkbox" name="competition" value={ c.ID } checked?={ assignedTo(v.Assigned, c.ID) }/> { c.Name } ({ c.Code })</label>
+						</div>
+					}
+					if len(v.Comps) == 0 {
+						<p class="muted">No competition yet.</p>
+					}
+					<button class="btn" type="submit">Save assignments</button>
+				}
+			</form>
+			<form class="card form" method="post" action={ templ.SafeURL("/admin/users/" + v.User.ID + "/password") }>
+				@csrf()
+				<h2>Reset password</h2>
+				@textField("password", "New password (10 characters minimum)", "password", "", v.Errors, templ.Attributes{"required": true, "minlength": "10", "autocomplete": "new-password"})
+				<button class="btn" type="submit">Set password</button>
+			</form>
+		</div>
+		<form class="card" method="post" action={ templ.SafeURL(userToggleAction(v)) }>
+			@csrf()
+			if v.User.Disabled {
+				<p>This account is disabled and cannot log in.</p>
+				<button class="btn" type="submit">Enable account</button>
+			} else if v.Self {
+				<p class="muted">You cannot disable your own account.</p>
+			} else {
+				<p>Disabling closes the user's sessions and blocks new logins.</p>
+				<button class="btn btn--danger" type="submit">Disable account</button>
+			}
+		</form>
+		<p><a href="/admin/users">Back to users</a></p>
+	}
+}
+
+func userToggleAction(v userView) string {
+	if v.User.Disabled {
+		return "/admin/users/" + v.User.ID + "/enable"
+	}
+	return "/admin/users/" + v.User.ID + "/disable"
+}

@@ -1,0 +1,125 @@
+package admin
+
+import (
+	"awt/internal/auth"
+	"awt/internal/web/layout"
+)
+
+type option struct{ Value, Label string }
+
+templ csrf() {
+	<input type="hidden" name="_csrf" value={ auth.CSRFToken(ctx) }/>
+}
+
+templ notice(msg string) {
+	if msg != "" {
+		<p class="notice" role="status">{ msg }</p>
+	}
+}
+
+templ errorSummary(fe formErrors) {
+	if fe.Any() {
+		<div class="alert" role="alert">
+			<p>{ fe.Summary }</p>
+			if len(fe.Messages) > 0 {
+				<ul>
+					for _, m := range fe.Messages {
+						<li>{ m }</li>
+					}
+				</ul>
+			}
+		</div>
+	}
+}
+
+templ fieldError(fe formErrors, name string) {
+	if m := fe.Msg(name); m != "" {
+		<p class="field__error" id={ name + "-error" }>{ m }</p>
+	}
+}
+
+templ textField(name, label, typ, value string, fe formErrors, attrs templ.Attributes) {
+	<div class="field">
+		<label for={ name }>{ label }</label>
+		<input
+			id={ name }
+			name={ name }
+			type={ typ }
+			value={ value }
+			if fe.Msg(name) != "" {
+				aria-invalid="true"
+				aria-describedby={ name + "-error" }
+			}
+			{ attrs... }
+		/>
+		@fieldError(fe, name)
+	</div>
+}
+
+templ textArea(name, label, value string, fe formErrors, hint string) {
+	<div class="field">
+		<label for={ name }>{ label }</label>
+		<textarea
+			id={ name }
+			name={ name }
+			rows="3"
+			if fe.Msg(name) != "" {
+				aria-invalid="true"
+				aria-describedby={ name + "-error" }
+			}
+		>{ value }</textarea>
+		if hint != "" {
+			<p class="field__hint">{ hint }</p>
+		}
+		@fieldError(fe, name)
+	</div>
+}
+
+templ checkField(name, label string, checked bool) {
+	<div class="field field--check">
+		<label>
+			<input type="checkbox" name={ name } value="1" checked?={ checked }/>
+			{ label }
+		</label>
+	</div>
+}
+
+templ selectField(name, label, value string, opts []option, fe formErrors) {
+	<div class="field">
+		<label for={ name }>{ label }</label>
+		<select
+			id={ name }
+			name={ name }
+			if fe.Msg(name) != "" {
+				aria-invalid="true"
+				aria-describedby={ name + "-error" }
+			}
+		>
+			for _, o := range opts {
+				<option value={ o.Value } selected?={ o.Value == value }>{ o.Label }</option>
+			}
+		</select>
+		@fieldError(fe, name)
+	</div>
+}
+
+// confirmDelete is the in-page confirmation of a destructive action (no JS
+// confirm()): a page with a second, explicit button.
+templ confirmDelete(active, what, name, action, back string) {
+	@layout.Admin(layout.Meta{Title: "Delete " + what, Heading: "Delete " + what}, active) {
+		<form class="card" method="post" action={ templ.SafeURL(action) }>
+			@csrf()
+			<p>Delete <strong>{ name }</strong>? Deleted items can be restored by an administrator.</p>
+			<p class="actions">
+				<button class="btn btn--danger" type="submit">Confirm delete</button>
+				<a class="btn btn--ghost" href={ templ.SafeURL(back) }>Cancel</a>
+			</p>
+		</form>
+	}
+}
+
+templ errorPage(heading, msg string) {
+	@layout.Admin(layout.Meta{Title: heading, Heading: heading}, "") {
+		<p class="alert" role="alert">{ msg }</p>
+	}
+}

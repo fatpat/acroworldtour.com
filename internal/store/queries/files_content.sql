@@ -98,3 +98,6 @@ SELECT * FROM site_settings WHERE key = ?;
 -- name: UpsertSiteSetting :exec
 INSERT INTO site_settings (key, value) VALUES (?, ?)
 ON CONFLICT (key) DO UPDATE SET value = excluded.value;
+
+-- name: ListFiles :many
+SELECT * FROM files WHERE deleted_at IS NULL ORDER BY created_at DESC, filename;

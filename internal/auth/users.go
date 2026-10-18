@@ -51,9 +51,19 @@ func New(db *store.DB, cfg config.Config) *Auth {
 
 const minPasswordLen = 10
 
+// InputError is a rejected user input; Field names the form field.
+type InputError struct{ Field, Msg string }
+
+func (e *InputError) Error() string { return e.Msg }
+
+// ExistsError is returned when creating a user whose email is taken.
+type ExistsError struct{ Email string }
+
+func (e *ExistsError) Error() string { return fmt.Sprintf("user %s already exists", e.Email) }
+
 func checkPassword(p string) error {
 	if utf8.RuneCountInString(p) < minPasswordLen {
-		return fmt.Errorf("password must be at least %d characters", minPasswordLen)
+		return &InputError{Field: "password", Msg: fmt.Sprintf("password must be at least %d characters", minPasswordLen)}
 	}
 	return nil
 }
@@ -72,13 +82,13 @@ func newUserID() (string, error) {
 func (a *Auth) CreateUser(ctx context.Context, email, name, role, password string) (User, error) {
 	email = normEmail(email)
 	if email == "" {
-		return User{}, errors.New("email is required")
+		return User{}, &InputError{Field: "email", Msg: "email is required"}
 	}
 	if err := checkPassword(password); err != nil {
 		return User{}, err
 	}
 	if role != RoleAdmin && role != RoleScorer {
-		return User{}, fmt.Errorf("role %q: must be admin or scorer", role)
+		return User{}, &InputError{Field: "role", Msg: fmt.Sprintf("role %q: must be admin or scorer", role)}
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), a.cost)
 	if err != nil {
@@ -91,7 +101,7 @@ func (a *Auth) CreateUser(ctx context.Context, email, name, role, password strin
 	u := User{ID: id, Email: email, Name: name, PasswordHash: string(hash), Role: role}
 	err = a.db.Tx(ctx, func(q *gen.Queries) error {
 		if _, err := q.GetUserByEmail(ctx, email); err == nil {
-			return fmt.Errorf("user %s already exists", email)
+			return &ExistsError{Email: email}
 		} else if !errors.Is(err, sql.ErrNoRows) {
 			return err
 		}
@@ -137,4 +147,65 @@ func (a *Auth) AssignCompetition(ctx context.Context, email, competition string)
 		}
 		return q.AddUserCompetition(ctx, gen.AddUserCompetitionParams{UserID: u.ID, CompetitionID: id})
 	})
+}
+
+// ListUsers returns every account by email.
+func (a *Auth) ListUsers(ctx context.Context) ([]User, error) {
+	return gen.New(a.db.Read).ListUsers(ctx)
+}
+
+// GetUser returns an account by id; sql.ErrNoRows when unknown.
+func (a *Auth) GetUser(ctx context.Context, id string) (User, error) {
+	return gen.New(a.db.Read).GetUser(ctx, id)
+}
+
+// UserCompetitions returns the ids of the competitions a user is assigned to.
+func (a *Auth) UserCompetitions(ctx context.Context, userID string) ([]string, error) {
+	return gen.New(a.db.Read).ListUserCompetitions(ctx, userID)
+}
+
+// SetDisabled disables or re-enables an account. Disabling revokes the
+// user's sessions.
+func (a *Auth) SetDisabled(ctx context.Context, id string, disabled bool) error {
+	return a.db.Tx(ctx, func(q *gen.Queries) error {
+		u, err := q.GetUser(ctx, id)
+		if err != nil {
+			return fmt.Errorf("user %s: %w", id, err)
+		}
+		u.Disabled = disabled
+		if err := q.UpsertUser(ctx, gen.UpsertUserParams(u)); err != nil {
+			return err
+		}
+		if disabled {
+			return q.DeleteUserSessions(ctx, id)
+		}
+		return nil
+	})
+}
+
+// SetUserCompetitions replaces the competitions (ids) a user is assigned to.
+func (a *Auth) SetUserCompetitions(ctx context.Context, userID string, competitions []string) error {
+	return a.db.Tx(ctx, func(q *gen.Queries) error {
+		if _, err := q.GetUser(ctx, userID); err != nil {
+			return fmt.Errorf("user %s: %w", userID, err)
+		}
+		if err := q.DeleteUserCompetitions(ctx, userID); err != nil {
+			return err
+		}
+		for _, c := range competitions {
+			if err := q.AddUserCompetition(ctx, gen.AddUserCompetitionParams{UserID: userID, CompetitionID: c}); err != nil {
+				return fmt.Errorf("assign competition %s: %w", c, err)
+			}
+		}
+		return nil
+	})
+}
+
+// SetPasswordByID is SetPassword for an account given by id.
+func (a *Auth) SetPasswordByID(ctx context.Context, id, password string) error {
+	u, err := a.GetUser(ctx, id)
+	if err != nil {
+		return fmt.Errorf("user %s: %w", id, err)
+	}
+	return a.SetPassword(ctx, u.Email, password)
 }

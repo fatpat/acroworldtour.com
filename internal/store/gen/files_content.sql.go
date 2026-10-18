@@ -233,6 +233,40 @@ func (q *Queries) ListEventsByYear(ctx context.Context, seasonYear int64) ([]Eve
 	return items, nil
 }
 
+const listFiles = `-- name: ListFiles :many
+SELECT id, filename, content_type, size, created_at, deleted_at FROM files WHERE deleted_at IS NULL ORDER BY created_at DESC, filename
+`
+
+func (q *Queries) ListFiles(ctx context.Context) ([]File, error) {
+	rows, err := q.db.QueryContext(ctx, listFiles)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []File
+	for rows.Next() {
+		var i File
+		if err := rows.Scan(
+			&i.ID,
+			&i.Filename,
+			&i.ContentType,
+			&i.Size,
+			&i.CreatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listNews = `-- name: ListNews :many
 SELECT id, slug, title, excerpt, body_md, cover_file, author, published_at, deleted_at FROM news WHERE deleted_at IS NULL ORDER BY published_at DESC, id
 `

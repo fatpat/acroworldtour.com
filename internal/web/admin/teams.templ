@@ -1,0 +1,80 @@
+package admin
+
+import "awt/internal/web/layout"
+import "awt/internal/service"
+import "strings"
+
+templ teamsPage(v teamsView) {
+	@layout.Admin(layout.Meta{Title: "Teams", Heading: "Teams"}, "teams") {
+		@notice(v.Flash)
+		<p><a class="btn" href="/admin/teams/new">New team</a></p>
+		<div class="table-wrap">
+			<table class="table">
+				<thead><tr><th>Name</th><th>Pilots</th><th></th></tr></thead>
+				<tbody>
+					for _, t := range v.Teams {
+						<tr>
+							<td>{ t.Name }</td>
+							<td>{ teamPilotNames(t, v.Names) }</td>
+							<td class="actions">
+								<a class="btn btn--ghost" href={ templ.SafeURL("/admin/teams/" + t.ID + "/edit") }>Edit</a>
+								<a class="btn btn--ghost" href={ templ.SafeURL("/admin/teams/" + t.ID + "/delete") }>Delete</a>
+							</td>
+						</tr>
+					}
+					if len(v.Teams) == 0 {
+						<tr><td colspan="3">No team yet.</td></tr>
+					}
+				</tbody>
+			</table>
+		</div>
+	}
+}
+
+templ pilotDatalist(pilots []service.Pilot) {
+	<datalist id="pilot-options">
+		for _, p := range pilots {
+			<option value={ p.Name + " (" + itoa(p.CivlID) + ")" }></option>
+		}
+	</datalist>
+}
+
+templ teamFormPage(v teamFormView) {
+	@layout.Admin(layout.Meta{Title: "Team", Heading: teamHeading(v.Form)}, "teams") {
+		@errorSummary(v.Errors)
+		<form class="card form" method="post" action={ templ.SafeURL(teamAction(v.Form)) }>
+			@csrf()
+			@textField("name", "Name", "text", v.Form.Name, v.Errors, templ.Attributes{"required": true, "maxlength": "100"})
+			@textField("pilot1", "Pilot 1", "text", v.Form.Pilot1, v.Errors, templ.Attributes{"list": "pilot-options", "required": true, "autocomplete": "off"})
+			@textField("pilot2", "Pilot 2", "text", v.Form.Pilot2, v.Errors, templ.Attributes{"list": "pilot-options", "required": true, "autocomplete": "off"})
+			@pilotDatalist(v.Pilots)
+			<p class="field__hint">Start typing a name or a CIVL id, then pick the pilot. A team has exactly two different pilots.</p>
+			<p class="actions">
+				<button class="btn" type="submit">Save</button>
+				<a class="btn btn--ghost" href="/admin/teams">Cancel</a>
+			</p>
+		</form>
+	}
+}
+
+func teamHeading(f teamForm) string {
+	if f.ID == "" {
+		return "New team"
+	}
+	return "Edit team"
+}
+
+func teamAction(f teamForm) string {
+	if f.ID == "" {
+		return "/admin/teams"
+	}
+	return "/admin/teams/" + f.ID
+}
+
+func teamPilotNames(t service.Team, names map[int]string) string {
+	out := make([]string, len(t.Pilots))
+	for i, p := range t.Pilots {
+		out[i] = names[p]
+	}
+	return strings.Join(out, " & ")
+}

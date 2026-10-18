@@ -15,3 +15,13 @@ if (window.htmx) {
   htmx.config.allowEval = false;
   htmx.config.includeIndicatorStyles = false;
 }
+
+// Admin files page: copy the URL next to the button.
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-copy]");
+  if (!btn) return;
+  const input = btn.parentElement.querySelector("input");
+  if (!input) return;
+  input.select();
+  if (navigator.clipboard) navigator.clipboard.writeText(input.value).catch(() => {});
+});

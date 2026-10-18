@@ -1,0 +1,570 @@
+package admin_test
+
+import (
+	"bytes"
+	"context"
+	"encoding/base64"
+	"errors"
+	"fmt"
+	"io"
+	"log/slog"
+	"mime/multipart"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
+	"testing"
+	"time"
+
+	"awt/internal/auth"
+	"awt/internal/blob"
+	"awt/internal/cache"
+	"awt/internal/civl"
+	"awt/internal/config"
+	"awt/internal/domain"
+	"awt/internal/service"
+	"awt/internal/store"
+	"awt/internal/store/gen"
+	"awt/internal/web"
+	"awt/internal/web/admin"
+)
+
+func TestMain(m *testing.M) {
+	slog.SetDefault(slog.New(slog.NewTextHandler(io.Discard, nil)))
+	os.Exit(m.Run())
+}
+
+type fakeCIVL struct{}
+
+func (fakeCIVL) FetchPilot(_ context.Context, id int) (civl.PilotData, error) {
+	if id >= 900000 {
+		return civl.PilotData{}, &civl.StatusError{Method: "GET", URL: "x", Status: http.StatusNotFound}
+	}
+	return civl.PilotData{CivlID: id, Name: fmt.Sprintf("Pilot %d", id), Country: "fra",
+		CivlLink: fmt.Sprintf("https://civlcomps.org/pilot/%d", id)}, nil
+}
+
+func (fakeCIVL) FetchRankings(context.Context) (map[int]int, error) {
+	return map[int]int{101: 7, 102: 3}, nil
+}
+
+type env struct {
+	t      *testing.T
+	h      http.Handler
+	deps   web.Deps
+	svc    *service.Service
+	admin  auth.Session
+	scorer auth.Session
+}
+
+func newEnv(t *testing.T) *env {
+	t.Helper()
+	t.Parallel()
+	dir := t.TempDir()
+	db, err := store.Open(filepath.Join(dir, "awt.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	if err := store.Migrate(context.Background(), db); err != nil {
+		t.Fatal(err)
+	}
+	blobs, err := blob.NewFS(filepath.Join(dir, "blobs"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg := config.Config{Env: "dev", Addr: ":0"}
+	svc := service.New(db, blobs, service.NewBus(), fakeCIVL{})
+	deps := web.Deps{Cfg: cfg, Auth: auth.New(db, cfg), DB: db, Purger: cache.NoopPurger{}, Blobs: blobs, Service: svc}
+	e := &env{t: t, deps: deps, svc: svc, h: web.Routes(deps, admin.Module{})}
+	ctx := context.Background()
+	for _, u := range []struct{ email, role string }{{"admin@example.org", auth.RoleAdmin}, {"scorer@example.org", auth.RoleScorer}} {
+		if _, err := deps.Auth.CreateUser(ctx, u.email, u.role, u.role, "correct horse battery"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if e.admin, err = deps.Auth.Login(ctx, "admin@example.org", "correct horse battery"); err != nil {
+		t.Fatal(err)
+	}
+	if e.scorer, err = deps.Auth.Login(ctx, "scorer@example.org", "correct horse battery"); err != nil {
+		t.Fatal(err)
+	}
+	return e
+}
+
+func (e *env) do(req *http.Request, s *auth.Session) *httptest.ResponseRecorder {
+	if s != nil {
+		req.AddCookie(&http.Cookie{Name: auth.CookieName, Value: s.Token})
+	}
+	rec := httptest.NewRecorder()
+	e.h.ServeHTTP(rec, req)
+	return rec
+}
+
+func (e *env) get(path string) *httptest.ResponseRecorder {
+	return e.do(httptest.NewRequest(http.MethodGet, path, nil), &e.admin)
+}
+
+// post sends a form with the admin session and its CSRF token.
+func (e *env) post(path string, form url.Values) *httptest.ResponseRecorder {
+	return e.postAs(&e.admin, path, form, true)
+}
+
+func (e *env) postAs(s *auth.Session, path string, form url.Values, withCSRF bool) *httptest.ResponseRecorder {
+	if form == nil {
+		form = url.Values{}
+	}
+	if withCSRF {
+		form.Set("_csrf", s.CSRF)
+	}
+	req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	return e.do(req, s)
+}
+
+func (e *env) upload(path string, fields map[string]string, filename string, content []byte) *httptest.ResponseRecorder {
+	var buf bytes.Buffer
+	mw := multipart.NewWriter(&buf)
+	_ = mw.WriteField("_csrf", e.admin.CSRF)
+	for k, v := range fields {
+		_ = mw.WriteField(k, v)
+	}
+	if filename != "" {
+		fw, _ := mw.CreateFormFile("file", filename)
+		_, _ = fw.Write(content)
+	}
+	_ = mw.Close()
+	req := httptest.NewRequest(http.MethodPost, path, &buf)
+	req.Header.Set("Content-Type", mw.FormDataContentType())
+	return e.do(req, &e.admin)
+}
+
+func (e *env) wantStatus(rec *httptest.ResponseRecorder, code int, contains ...string) {
+	e.t.Helper()
+	if rec.Code != code {
+		e.t.Fatalf("status = %d, want %d; body: %.400s", rec.Code, code, rec.Body.String())
+	}
+	for _, c := range contains {
+		if !strings.Contains(rec.Body.String(), c) {
+			e.t.Fatalf("body lacks %q: %.600s", c, rec.Body.String())
+		}
+	}
+}
+
+func (e *env) wantRedirect(rec *httptest.ResponseRecorder, prefix string) {
+	e.t.Helper()
+	if rec.Code != http.StatusSeeOther {
+		e.t.Fatalf("status = %d, want 303; body: %.400s", rec.Code, rec.Body.String())
+	}
+	if loc := rec.Header().Get("Location"); !strings.HasPrefix(loc, prefix) {
+		e.t.Fatalf("Location = %q, want prefix %q", loc, prefix)
+	}
+}
+
+func (e *env) importPilots(ids ...int) {
+	e.t.Helper()
+	for _, id := range ids {
+		e.wantRedirect(e.post("/admin/pilots/import", url.Values{"civlid": {fmt.Sprint(id)}}), "/admin/pilots")
+	}
+}
+
+var idInHref = func(prefix string) *regexp.Regexp { return regexp.MustCompile(prefix + `([0-9a-f]{24})`) }
+
+func firstID(t *testing.T, body, prefix string) string {
+	t.Helper()
+	m := idInHref(prefix).FindStringSubmatch(body)
+	if m == nil {
+		t.Fatalf("no %s<id> in %.500s", prefix, body)
+	}
+	return m[1]
+}
+
+func TestPilots(t *testing.T) {
+	e := newEnv(t)
+	e.importPilots(101, 102)
+	list := e.get("/admin/pilots")
+	e.wantStatus(list, 200, "Pilot 101", "Pilot 102", "unranked")
+
+	// Search by CIVL id and by (accent-insensitive) name.
+	rec := e.get("/admin/pilots?q=102")
+	e.wantStatus(rec, 200, "Pilot 102")
+	if strings.Contains(rec.Body.String(), "Pilot 101") {
+		t.Fatal("search by id returned another pilot")
+	}
+	e.wantStatus(e.get("/admin/pilots?q=PILÓT+101"), 200) // no crash on accents, no regex
+	e.wantStatus(e.get("/admin/pilots?q=%5B"), 200)       // "[" is plain text, not a regex
+
+	// Unknown CIVL id: clear message, 422.
+	e.wantStatus(e.post("/admin/pilots/import", url.Values{"civlid": {"900001"}}), 422, "900001 was not found on civlcomps.org")
+	e.wantStatus(e.post("/admin/pilots/import", url.Values{"civlid": {"abc"}}), 422, "positive CIVL id")
+
+	// Rankings.
+	e.wantRedirect(e.post("/admin/pilots/rankings", nil), "/admin/pilots")
+	p, _ := e.svc.GetPilot(context.Background(), 101)
+	if p.Rank != 7 {
+		t.Fatalf("rank = %d", p.Rank)
+	}
+
+	// Gender toggle: set man first (imports leave it unset).
+	if err := e.deps.DB.Tx(context.Background(), func(q *gen.Queries) error {
+		return q.UpdatePilotGender(context.Background(), gen.UpdatePilotGenderParams{Gender: "man", Civlid: 101})
+	}); err != nil {
+		t.Fatal(err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/admin/pilots/101/gender", strings.NewReader(url.Values{"_csrf": {e.admin.CSRF}}.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("HX-Request", "true")
+	rec = e.do(req, &e.admin)
+	e.wantStatus(rec, 200, `id="pilot-101"`, "woman")
+	if strings.Contains(rec.Body.String(), "<html") {
+		t.Fatal("htmx response must be the row only")
+	}
+
+	// AWT year toggle for the current and next year, then any year.
+	year := time.Now().UTC().Year()
+	for _, y := range []int{year, year + 1} {
+		rec = e.post("/admin/pilots/101/awt", url.Values{"year": {fmt.Sprint(y)}, "awt": {"1"}})
+		e.wantRedirect(rec, "/admin/pilots")
+	}
+	e.wantRedirect(e.post("/admin/pilots/awt", url.Values{"civlid": {"101"}, "year": {"2022"}, "awt": {"1"}}), "/admin/pilots")
+	p, _ = e.svc.GetPilot(context.Background(), 101)
+	if len(p.AWTYears) != 3 {
+		t.Fatalf("AWT years = %v", p.AWTYears)
+	}
+	e.wantRedirect(e.post("/admin/pilots/101/awt", url.Values{"year": {fmt.Sprint(year)}, "awt": {"0"}}), "/admin/pilots")
+	p, _ = e.svc.GetPilot(context.Background(), 101)
+	if len(p.AWTYears) != 2 {
+		t.Fatalf("AWT years after removal = %v", p.AWTYears)
+	}
+	e.wantStatus(e.post("/admin/pilots/999/gender", nil), 404)
+}
+
+func TestTeams(t *testing.T) {
+	e := newEnv(t)
+	e.importPilots(101, 102, 103)
+	e.wantStatus(e.get("/admin/teams/new"), 200, `list="pilot-options"`, "Pilot 101 (101)")
+
+	rec := e.post("/admin/teams", url.Values{"name": {"Duo"}, "pilot1": {"Pilot 101 (101)"}, "pilot2": {"102"}})
+	e.wantRedirect(rec, "/admin/teams")
+	list := e.get("/admin/teams")
+	e.wantStatus(list, 200, "Duo", "Pilot 101 &amp; Pilot 102")
+	id := firstID(t, list.Body.String(), "/admin/teams/")
+
+	// Validation: same pilot twice, missing pilot, unknown pilot.
+	e.wantStatus(e.post("/admin/teams", url.Values{"name": {"Twin"}, "pilot1": {"101"}, "pilot2": {"101"}}), 422, "the two pilots must be different")
+	e.wantStatus(e.post("/admin/teams", url.Values{"name": {"Solo"}, "pilot1": {"101"}, "pilot2": {""}}), 422, "pick a pilot")
+	e.wantStatus(e.post("/admin/teams", url.Values{"name": {"Ghost"}, "pilot1": {"101"}, "pilot2": {"555"}}), 422, "pilot 555 is unknown")
+	e.wantStatus(e.post("/admin/teams", url.Values{"name": {""}, "pilot1": {"101"}, "pilot2": {"102"}}), 422)
+	// The typed values are shown again.
+	e.wantStatus(e.post("/admin/teams", url.Values{"name": {"Keep me"}, "pilot1": {"101"}, "pilot2": {"101"}}), 422, `value="Keep me"`)
+	e.wantStatus(e.post("/admin/teams", url.Values{"name": {"Duo"}, "pilot1": {"101"}, "pilot2": {"103"}}), 409, "already exists")
+
+	// Edit.
+	e.wantStatus(e.get("/admin/teams/"+id+"/edit"), 200, `value="Duo"`, "Pilot 102 (102)")
+	e.wantRedirect(e.post("/admin/teams/"+id, url.Values{"name": {"Trio"}, "pilot1": {"101"}, "pilot2": {"103"}}), "/admin/teams")
+	e.wantStatus(e.get("/admin/teams"), 200, "Trio")
+
+	// Delete needs the in-page confirmation page.
+	e.wantStatus(e.get("/admin/teams/"+id+"/delete"), 200, "Confirm delete", "Trio")
+	e.wantRedirect(e.post("/admin/teams/"+id+"/delete", nil), "/admin/teams")
+	e.wantStatus(e.get("/admin/teams/"+id+"/edit"), 404)
+}
+
+func TestJudges(t *testing.T) {
+	e := newEnv(t)
+	e.importPilots(101)
+	rec := e.post("/admin/judges", url.Values{"name": {"Jane Judge"}, "level": {"senior"}, "country": {"FRA"}, "civlid": {"101"}})
+	e.wantRedirect(rec, "/admin/judges")
+	list := e.get("/admin/judges")
+	e.wantStatus(list, 200, "Jane Judge", "fra", "senior")
+	id := firstID(t, list.Body.String(), "/admin/judges/")
+
+	e.wantStatus(e.post("/admin/judges", url.Values{"name": {"Bad"}, "level": {"god"}, "country": {"fr"}}), 422, "country", "level")
+	e.wantStatus(e.post("/admin/judges", url.Values{"name": {"Bad"}, "level": {"senior"}, "country": {"fra"}, "civlid": {"zz"}}), 422, "positive CIVL id")
+	e.wantStatus(e.post("/admin/judges", url.Values{"name": {"Bad"}, "level": {"senior"}, "country": {"fra"}, "civlid": {"777"}}), 422, "pilot 777 is unknown")
+	e.wantStatus(e.post("/admin/judges", url.Values{"name": {"Keep"}, "level": {"nope"}, "country": {"fra"}}), 422, `value="Keep"`)
+
+	e.wantStatus(e.get("/admin/judges/"+id+"/edit"), 200, `value="Jane Judge"`, `value="101"`)
+	e.wantRedirect(e.post("/admin/judges/"+id, url.Values{"name": {"Jane J."}, "level": {"certified"}, "country": {"che"}}), "/admin/judges")
+	e.wantStatus(e.get("/admin/judges"), 200, "Jane J.", "certified", "che")
+
+	e.wantStatus(e.get("/admin/judges/"+id+"/delete"), 200, "Confirm delete")
+	e.wantRedirect(e.post("/admin/judges/"+id+"/delete", nil), "/admin/judges")
+	e.wantStatus(e.get("/admin/judges/"+id+"/edit"), 404)
+}
+
+const catalogJSON = `[{"name":"Misty Flip","acronym":"M","solo":true,"directions":["left","right"],"technical_coefficient":1.65,"bonuses":[{"name":"twisted","bonus":2.5}]},
+{"name":"Tumbling","acronym":"T","solo":true,"synchro":true,"directions":[],"technical_coefficient":1.8,"bonuses":[],"repeatable":true}]`
+
+func TestTricks(t *testing.T) {
+	e := newEnv(t)
+	form := url.Values{"year": {"2026"}, "name": {"Helico"}, "acronym": {"H"}, "solo": {"1"}, "solo_awt": {"1"},
+		"technical_coefficient": {"1,5"}, "dir_left": {"1"}, "dir_right": {"1"}, "bonus_on_0": {"1"}, "bonus_val_0": {"2"},
+		"first_maneuver": {"1"}, "no_first_maneuver": {"0"}, "last_maneuver": {"0"}, "no_last_maneuver": {"0"}}
+	e.wantStatus(e.get("/admin/tricks/new?year=2026"), 200, "Technical coefficient", "reverse", "dir_left")
+	e.wantRedirect(e.post("/admin/tricks", form), "/admin/tricks?year=2026")
+	list := e.get("/admin/tricks?year=2026")
+	e.wantStatus(list, 200, "Helico", "reverse (2)", "left, right", "1.5")
+	id := firstID(t, list.Body.String(), "/admin/tricks/")
+
+	// Unique tricks are generated and listed read-only.
+	e.wantStatus(e.get("/admin/tricks/unique?year=2026"), 200, "Helico")
+	e.wantStatus(e.get("/admin/tricks/unique?year=2026&q=zzz"), 200)
+
+	// Validation re-render with messages.
+	bad := url.Values{"year": {"2026"}, "name": {""}, "acronym": {"X"}, "technical_coefficient": {"1"}}
+	e.wantStatus(e.post("/admin/tricks", bad), 422, "name: required")
+	bad = url.Values{"year": {"2026"}, "name": {"Z"}, "acronym": {"Z"}, "technical_coefficient": {"abc"}}
+	e.wantStatus(e.post("/admin/tricks", bad), 422, "must be a number", `value="Z"`)
+	bad = url.Values{"year": {"2026"}, "name": {"Z"}, "acronym": {"Z"}, "technical_coefficient": {"1"}, "dir_left": {"1"}}
+	e.wantStatus(e.post("/admin/tricks", bad), 422, "at least 2 distinct directions")
+	dup := url.Values{"year": {"2026"}, "name": {"Other"}, "acronym": {"H"}, "solo": {"1"}, "technical_coefficient": {"1"}}
+	if rec := e.post("/admin/tricks", dup); rec.Code != 409 && rec.Code != 303 {
+		t.Fatalf("duplicate acronym status = %d", rec.Code)
+	}
+
+	// Edit keeps the catalog year.
+	e.wantStatus(e.get("/admin/tricks/"+id+"/edit"), 200, `value="Helico"`, `value="1.5"`)
+	form.Set("name", "Helico 2")
+	form.Set("year", "1999") // ignored: a trick stays in its year
+	e.wantRedirect(e.post("/admin/tricks/"+id, form), "/admin/tricks?year=2026")
+	e.wantStatus(e.get("/admin/tricks?year=2026"), 200, "Helico 2")
+
+	// Import a JSON file into 2025, then duplicate 2025 into 2027.
+	e.wantRedirect(e.upload("/admin/tricks/import", map[string]string{"year": "2025"}, "catalog.json", []byte(catalogJSON)), "/admin/tricks?year=2025")
+	e.wantStatus(e.get("/admin/tricks?year=2025"), 200, "Misty Flip", "Tumbling")
+	e.wantStatus(e.upload("/admin/tricks/import", map[string]string{"year": "2025"}, "catalog.json", []byte("not json")), 422, "catalog")
+	e.wantStatus(e.upload("/admin/tricks/import", map[string]string{"year": "2025"}, "", nil), 422, "choose a JSON catalog file")
+	e.wantRedirect(e.post("/admin/tricks/duplicate", url.Values{"from": {"2025"}, "to": {"2027"}}), "/admin/tricks?year=2027")
+	e.wantStatus(e.get("/admin/tricks?year=2027"), 200, "Misty Flip", "Tumbling")
+	e.wantStatus(e.post("/admin/tricks/duplicate", url.Values{"from": {"2025"}, "to": {"2025"}}), 422, "must differ")
+	e.wantStatus(e.post("/admin/tricks/duplicate", url.Values{"from": {"2030"}, "to": {"2031"}}), 422, "has no tricks")
+
+	// Delete with confirmation.
+	e.wantStatus(e.get("/admin/tricks/"+id+"/delete"), 200, "Confirm delete", "Helico 2")
+	e.wantRedirect(e.post("/admin/tricks/"+id+"/delete", nil), "/admin/tricks?year=2026")
+	e.wantStatus(e.get("/admin/tricks/"+id+"/edit"), 404)
+}
+
+func TestSeasons(t *testing.T) {
+	e := newEnv(t)
+	e.wantStatus(e.get("/admin/seasons/new"), 200, `value="999"`)
+	e.wantRedirect(e.post("/admin/seasons", url.Values{"name": {"AWT 2026"}, "code": {"awt-2026"}, "year": {"2026"}, "index": {"1"}}), "/admin/seasons")
+	list := e.get("/admin/seasons")
+	e.wantStatus(list, 200, "AWT 2026", "awt-2026")
+	id := firstID(t, list.Body.String(), "/admin/seasons/")
+
+	e.wantStatus(e.post("/admin/seasons", url.Values{"name": {"X"}, "code": {"BAD"}, "year": {"2026"}, "index": {"1"}}), 422, "code")
+	e.wantStatus(e.post("/admin/seasons", url.Values{"name": {"X"}, "code": {"xxx-2026"}, "year": {"20x"}, "index": {"1"}}), 422, "must be a whole number")
+	e.wantStatus(e.post("/admin/seasons", url.Values{"name": {"Kept name"}, "code": {"BAD"}, "year": {"2026"}, "index": {"1"}}), 422, `value="Kept name"`)
+	e.wantStatus(e.post("/admin/seasons", url.Values{"name": {"Dup"}, "code": {"awt-2026"}, "year": {"2026"}, "index": {"2"}}), 409, "already exists")
+	e.wantStatus(e.post("/admin/seasons", url.Values{"name": {"Img"}, "code": {"img-2026"}, "year": {"2026"}, "index": {"2"}, "image": {"nofile"}}), 422, "unknown")
+
+	e.wantStatus(e.get("/admin/seasons/"+id+"/edit"), 200, `value="AWT 2026"`)
+	e.wantRedirect(e.post("/admin/seasons/"+id, url.Values{"name": {"AWT Tour 2026"}, "code": {"awt-2026"}, "year": {"2026"}, "index": {"3"}}), "/admin/seasons")
+	e.wantStatus(e.get("/admin/seasons"), 200, "AWT Tour 2026")
+	// The "new" form is fresh: nothing leaks from a previous season.
+	if strings.Contains(e.get("/admin/seasons/new").Body.String(), "AWT Tour") {
+		t.Fatal("new season form leaks previous values")
+	}
+
+	e.wantStatus(e.get("/admin/seasons/"+id+"/delete"), 200, "Confirm delete", "AWT Tour 2026")
+	e.wantRedirect(e.post("/admin/seasons/"+id+"/delete", nil), "/admin/seasons")
+	e.wantStatus(e.get("/admin/seasons/"+id+"/edit"), 404)
+}
+
+var pngBytes = func() []byte {
+	b, _ := base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==")
+	return b
+}()
+
+func TestFiles(t *testing.T) {
+	e := newEnv(t)
+	e.wantRedirect(e.upload("/admin/files", nil, "logo.png", pngBytes), "/admin/files")
+	list := e.get("/admin/files")
+	e.wantStatus(list, 200, "logo.png", "image/png", `value="/files/`)
+	// Rejected types: HTML is never accepted.
+	e.wantStatus(e.upload("/admin/files", nil, "evil.png", []byte("<html><script>alert(1)</script></html>")), 422, "must be a PNG")
+	e.wantStatus(e.upload("/admin/files", nil, "", nil), 422, "choose a file")
+
+	// An uploaded image can be picked as a season image.
+	id := regexp.MustCompile(`value="/files/([0-9a-f]{64})"`).FindStringSubmatch(list.Body.String())[1]
+	e.wantStatus(e.get("/admin/seasons/new"), 200, `value="`+id+`"`)
+	rec := e.post("/admin/seasons", url.Values{"name": {"Swiss 2026"}, "code": {"swi-2026"}, "year": {"2026"}, "index": {"1"}, "image": {id}, "country": {"swi"}})
+	e.wantRedirect(rec, "/admin/seasons")
+}
+
+func TestUsers(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	e.wantStatus(e.get("/admin/users"), 200, "admin@example.org", "scorer@example.org")
+
+	e.wantRedirect(e.post("/admin/users", url.Values{"email": {"new@example.org"}, "name": {"New One"}, "role": {"scorer"}, "password": {"a long enough pass"}}), "/admin/users")
+	users, _ := e.deps.Auth.ListUsers(ctx)
+	var newID string
+	for _, u := range users {
+		if u.Email == "new@example.org" {
+			newID = u.ID
+		}
+	}
+	if newID == "" {
+		t.Fatal("user not created")
+	}
+	e.wantStatus(e.post("/admin/users", url.Values{"email": {"x@example.org"}, "name": {"X"}, "role": {"scorer"}, "password": {"short"}}), 422, "at least 10 characters")
+	e.wantStatus(e.post("/admin/users", url.Values{"email": {"x@example.org"}, "name": {"X"}, "role": {"boss"}, "password": {"a long enough pass"}}), 422, "admin or scorer")
+	e.wantStatus(e.post("/admin/users", url.Values{"email": {"new@example.org"}, "name": {"X"}, "role": {"scorer"}, "password": {"a long enough pass"}}), 409, "already exists")
+
+	// Assign competitions.
+	comp, err := e.svc.CreateCompetition(ctx, service.CompetitionInput{Name: "Cup", Type: domain.TypeSolo,
+		StartDate: time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC), EndDate: time.Date(2026, 6, 2, 0, 0, 0, 0, time.UTC), Location: "Annecy"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.wantStatus(e.get("/admin/users/"+newID), 200, "Cup", "Reset password")
+	e.wantRedirect(e.post("/admin/users/"+newID+"/competitions", url.Values{"competition": {comp.ID, "bogus"}}), "/admin/users/"+newID)
+	assigned, _ := e.deps.Auth.UserCompetitions(ctx, newID)
+	if len(assigned) != 1 || assigned[0] != comp.ID {
+		t.Fatalf("assigned = %v", assigned)
+	}
+	e.wantStatus(e.get("/admin/users/"+newID), 200, `value="`+comp.ID+`" checked`)
+
+	// Reset password: the new one works, short ones are refused.
+	e.wantStatus(e.post("/admin/users/"+newID+"/password", url.Values{"password": {"short"}}), 422, "at least 10 characters")
+	e.wantRedirect(e.post("/admin/users/"+newID+"/password", url.Values{"password": {"another long password"}}), "/admin/users/"+newID)
+	if _, err := e.deps.Auth.Login(ctx, "new@example.org", "another long password"); err != nil {
+		t.Fatalf("login with the new password: %v", err)
+	}
+
+	// Disable: cannot log in; cannot disable oneself.
+	e.wantRedirect(e.post("/admin/users/"+newID+"/disable", nil), "/admin/users/"+newID)
+	if _, err := e.deps.Auth.Login(ctx, "new@example.org", "another long password"); err == nil {
+		t.Fatal("disabled user can log in")
+	}
+	e.wantRedirect(e.post("/admin/users/"+newID+"/enable", nil), "/admin/users/"+newID)
+	if _, err := e.deps.Auth.Login(ctx, "new@example.org", "another long password"); err != nil {
+		t.Fatalf("re-enabled user cannot log in: %v", err)
+	}
+	e.wantStatus(e.post("/admin/users/"+e.admin.User.ID+"/disable", nil), 409, "cannot disable your own")
+	e.wantStatus(e.get("/admin/users/nope"), 404)
+}
+
+func TestDashboard(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	e.importPilots(101, 102)
+	var judges []string
+	for _, n := range []string{"J1", "J2"} {
+		j, err := e.svc.CreateJudge(ctx, service.JudgeInput{Name: n, Country: "fra", Level: domain.JudgeSenior})
+		if err != nil {
+			t.Fatal(err)
+		}
+		judges = append(judges, j.ID)
+	}
+	comp, err := e.svc.CreateCompetition(ctx, service.CompetitionInput{Name: "Open Cup", Type: domain.TypeSolo,
+		StartDate: time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC), EndDate: time.Date(2026, 6, 2, 0, 0, 0, 0, time.UTC), Location: "Annecy"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.wantStatus(e.get("/admin"), 200, "<strong>2</strong> pilots", "<strong>2</strong> judges", "No competition is open.")
+	if err := errors.Join(e.svc.SetParticipants(ctx, comp.ID, []int{101, 102}, nil), e.svc.SetJudges(ctx, comp.ID, judges), e.svc.OpenCompetition(ctx, comp.ID)); err != nil {
+		t.Fatal(err)
+	}
+	e.wantStatus(e.get("/admin"), 200, "Open Cup", "/admin/competitions/"+comp.Code)
+	// Scorers see the dashboard, without the reference data counts.
+	rec := e.do(httptest.NewRequest(http.MethodGet, "/admin", nil), &e.scorer)
+	e.wantStatus(rec, 200, "Open Cup")
+	if strings.Contains(rec.Body.String(), "pilots</a>") {
+		t.Fatal("scorer sees the admin counts")
+	}
+}
+
+func TestScorerIsForbiddenOnReferenceData(t *testing.T) {
+	e := newEnv(t)
+	for _, p := range []string{"/admin/pilots", "/admin/teams", "/admin/teams/new", "/admin/judges", "/admin/tricks",
+		"/admin/tricks/unique", "/admin/seasons", "/admin/files", "/admin/users"} {
+		rec := e.do(httptest.NewRequest(http.MethodGet, p, nil), &e.scorer)
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("scorer GET %s = %d, want 403", p, rec.Code)
+		}
+	}
+	for _, p := range []string{"/admin/pilots/import", "/admin/teams", "/admin/judges", "/admin/tricks", "/admin/seasons", "/admin/users"} {
+		rec := e.postAs(&e.scorer, p, url.Values{"name": {"x"}}, true)
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("scorer POST %s = %d, want 403", p, rec.Code)
+		}
+	}
+	if teams, _ := e.svc.ListTeams(context.Background()); len(teams) != 0 {
+		t.Fatal("a forbidden request changed data")
+	}
+}
+
+func TestCSRFIsRequired(t *testing.T) {
+	e := newEnv(t)
+	for _, p := range []string{"/admin/pilots/import", "/admin/pilots/rankings", "/admin/teams", "/admin/judges", "/admin/tricks",
+		"/admin/seasons", "/admin/users", "/admin/tricks/duplicate"} {
+		rec := e.postAs(&e.admin, p, url.Values{"name": {"x"}, "civlid": {"101"}}, false)
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("POST %s without CSRF = %d, want 403", p, rec.Code)
+		}
+		rec = e.postAs(&e.admin, p, url.Values{"_csrf": {"wrong"}}, false)
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("POST %s with a wrong CSRF = %d, want 403", p, rec.Code)
+		}
+	}
+	if pilots, _ := e.svc.ListPilots(context.Background()); len(pilots) != 0 {
+		t.Fatal("a request without CSRF imported a pilot")
+	}
+}
+
+func TestOversizedFormIsRefused(t *testing.T) {
+	e := newEnv(t)
+	rec := e.post("/admin/teams", url.Values{"name": {strings.Repeat("a", 70<<10)}, "pilot1": {"1"}, "pilot2": {"2"}})
+	if rec.Code == http.StatusSeeOther || rec.Code == http.StatusOK {
+		t.Fatalf("a 70 KB form was accepted: %d", rec.Code)
+	}
+}
+
+func TestAnonymousIsRedirectedToLogin(t *testing.T) {
+	e := newEnv(t)
+	rec := e.do(httptest.NewRequest(http.MethodGet, "/admin/pilots", nil), nil)
+	e.wantRedirect(rec, "/admin/login?next=")
+	req := httptest.NewRequest(http.MethodPost, "/admin/pilots/gender", nil)
+	req.Header.Set("HX-Request", "true")
+	if rec := e.do(req, nil); rec.Header().Get("HX-Redirect") == "" && rec.Code == http.StatusOK {
+		t.Fatal("anonymous htmx request passed")
+	}
+}
+
+var wildcard = regexp.MustCompile(`\{[^}]*\}`)
+
+func TestEveryAdminRouteIsGuarded(t *testing.T) {
+	e := newEnv(t)
+	table := web.RouteTable(e.deps, admin.Module{})
+	n := 0
+	for _, rt := range table {
+		p := rt.Path()
+		if p != "/admin" && !strings.HasPrefix(p, "/admin/") || p == "/admin/login" {
+			continue
+		}
+		n++
+		if rt.Guard == web.GuardPublic {
+			t.Errorf("%s is public", rt.Pattern)
+			continue
+		}
+		method, _, _ := strings.Cut(rt.Pattern, " ")
+		rec := e.do(httptest.NewRequest(method, wildcard.ReplaceAllString(p, "x"), nil), nil)
+		if rec.Code == http.StatusOK || rec.Code == http.StatusNotFound {
+			t.Errorf("%s answered %d without a session", rt.Pattern, rec.Code)
+		}
+		// Reference data and users are admin-only; only the dashboard is user-level.
+		if rt.Pattern != "GET /admin" && rt.Pattern != "POST /admin/logout" && rt.Guard != web.GuardAdmin {
+			t.Errorf("%s has guard %s, want admin", rt.Pattern, rt.Guard)
+		}
+	}
+	if n < 30 {
+		t.Fatalf("only %d admin routes walked", n)
+	}
+}

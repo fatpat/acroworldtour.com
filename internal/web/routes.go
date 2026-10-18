@@ -9,6 +9,7 @@ import (
 	"awt/internal/blob"
 	"awt/internal/cache"
 	"awt/internal/config"
+	"awt/internal/service"
 	"awt/internal/store"
 	"awt/web/static"
 )
@@ -21,6 +22,8 @@ type Deps struct {
 	Purger cache.Purger
 	// Blobs holds uploaded files (served by GET /files/{id}).
 	Blobs blob.Store
+	// Service holds the back-office use cases.
+	Service *service.Service
 }
 
 // Guard is the access level a route requires.
@@ -108,6 +111,29 @@ func (r *Router) Admin(pattern string, h http.Handler) {
 	r.add(pattern, GuardAdmin, cache.NoStore(r.deps.Auth.RequireAdmin(r.deps.Auth.CSRF(h))))
 }
 
+// AdminMax is Admin with the request body capped at max bytes before any
+// parsing, CSRF check included (forms 64 KB, uploads 12 MB).
+func (r *Router) AdminMax(pattern string, max int64, h http.Handler) {
+	r.add(pattern, GuardAdmin, cache.NoStore(limitBody(max, r.deps.Auth.RequireAdmin(r.deps.Auth.CSRF(h)))))
+}
+
+func limitBody(max int64, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.Body = http.MaxBytesReader(w, r.Body, max)
+		next.ServeHTTP(w, r)
+	})
+}
+
+// has reports whether a route with exactly this pattern is registered.
+func (r *Router) has(pattern string) bool {
+	for _, rt := range r.routes {
+		if rt.Pattern == pattern {
+			return true
+		}
+	}
+	return false
+}
+
 // Scorer registers a route for admins and for scorers assigned to the
 // competition that compFrom extracts from the request (id or code).
 func (r *Router) Scorer(pattern string, compFrom func(*http.Request) string, h http.Handler) {
@@ -131,10 +157,13 @@ func newRouter(deps Deps, mods ...Module) *Router {
 	r.Public("GET /admin/login", http.HandlerFunc(deps.loginPage))
 	r.Public("POST /admin/login", http.HandlerFunc(deps.loginSubmit))
 	r.User("POST /admin/logout", http.HandlerFunc(deps.logout))
-	r.User("GET /admin", http.HandlerFunc(adminHome))
 
 	for _, m := range mods {
 		m.Register(r)
+	}
+	// The dashboard module may own GET /admin; otherwise the placeholder.
+	if !r.has("GET /admin") {
+		r.User("GET /admin", http.HandlerFunc(adminHome))
 	}
 	// Anything unmatched: redirects table first, then the 404 page.
 	r.Public("/", http.HandlerFunc(deps.notFound))

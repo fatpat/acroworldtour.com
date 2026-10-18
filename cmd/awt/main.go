@@ -15,9 +15,12 @@ import (
 
 	"awt/internal/auth"
 	"awt/internal/cache"
+	"awt/internal/civl"
 	"awt/internal/config"
+	"awt/internal/service"
 	"awt/internal/store"
 	"awt/internal/web"
+	"awt/internal/web/admin"
 	"awt/internal/web/public"
 )
 
@@ -86,7 +89,9 @@ func serve() error {
 	if err != nil {
 		return fmt.Errorf("blob store: %w", err)
 	}
-	srv := web.NewServer(web.Deps{Cfg: cfg, Auth: auth.New(db, cfg), DB: db, Purger: purger, Blobs: blobs}, public.Module{})
+	svc := service.New(db, blobs, service.NewBus(), civl.New(&http.Client{Timeout: 60 * time.Second}, ""))
+	srv := web.NewServer(web.Deps{Cfg: cfg, Auth: auth.New(db, cfg), DB: db, Purger: purger, Blobs: blobs, Service: svc},
+		public.Module{}, admin.Module{})
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 

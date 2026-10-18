@@ -1,0 +1,77 @@
+package admin
+
+import "awt/internal/web/layout"
+
+templ seasonsPage(v seasonsView) {
+	@layout.Admin(layout.Meta{Title: "Seasons", Heading: "Seasons"}, "seasons") {
+		@notice(v.Flash)
+		<p><a class="btn" href="/admin/seasons/new">New season</a></p>
+		<div class="table-wrap">
+			<table class="table">
+				<thead><tr><th>Name</th><th>Code</th><th>Year</th><th>Country</th><th>Index</th><th></th></tr></thead>
+				<tbody>
+					for _, s := range v.Seasons {
+						<tr>
+							<td>{ s.Name }</td>
+							<td>{ s.Code }</td>
+							<td>{ itoa(s.Year) }</td>
+							<td>{ s.Country }</td>
+							<td>{ itoa(s.SortIndex) }</td>
+							<td class="actions">
+								<a class="btn btn--ghost" href={ templ.SafeURL("/admin/seasons/" + s.ID + "/edit") }>Edit</a>
+								<a class="btn btn--ghost" href={ templ.SafeURL("/admin/seasons/" + s.ID + "/delete") }>Delete</a>
+							</td>
+						</tr>
+					}
+					if len(v.Seasons) == 0 {
+						<tr><td colspan="6">No season yet.</td></tr>
+					}
+				</tbody>
+			</table>
+		</div>
+	}
+}
+
+templ seasonFormPage(v seasonFormView) {
+	@layout.Admin(layout.Meta{Title: "Season", Heading: seasonHeading(v.Form)}, "seasons") {
+		@errorSummary(v.Errors)
+		<form class="card form" method="post" action={ templ.SafeURL(seasonAction(v.Form)) }>
+			@csrf()
+			@textField("name", "Name", "text", v.Form.Name, v.Errors, templ.Attributes{"required": true})
+			@textField("code", "Code (xxx-YYYY, e.g. awt-2026)", "text", v.Form.Code, v.Errors, templ.Attributes{"pattern": "[a-z]{3}-[0-9]{4}", "autocapitalize": "off"})
+			@textField("year", "Year", "number", v.Form.Year, v.Errors, templ.Attributes{"min": "1901", "max": "2999", "required": true})
+			@textField("country", "Country (3 letters, optional)", "text", v.Form.Country, v.Errors, templ.Attributes{"maxlength": "3", "pattern": "[A-Za-z]{3}"})
+			<p class="field__hint">When a country is set, the code is forced to country-year.</p>
+			@textField("index", "Display index", "number", v.Form.Index, v.Errors, templ.Attributes{"required": true})
+			<div class="field">
+				<label for="image">Image</label>
+				<select id="image" name="image">
+					<option value="">None</option>
+					for _, f := range v.Images {
+						<option value={ f.ID } selected?={ f.ID == v.Form.Image }>{ f.Filename }</option>
+					}
+				</select>
+				<p class="field__hint">Upload images on the <a href="/admin/files">Files</a> page first.</p>
+				@fieldError(v.Errors, "image")
+			</div>
+			<p class="actions">
+				<button class="btn" type="submit">Save</button>
+				<a class="btn btn--ghost" href="/admin/seasons">Cancel</a>
+			</p>
+		</form>
+	}
+}
+
+func seasonHeading(f seasonForm) string {
+	if f.ID == "" {
+		return "New season"
+	}
+	return "Edit season"
+}
+
+func seasonAction(f seasonForm) string {
+	if f.ID == "" {
+		return "/admin/seasons"
+	}
+	return "/admin/seasons/" + f.ID
+}
