@@ -1,0 +1,1 @@
+{"scope": "competition", "code": "roq-acro-2023", "input": {"type": "solo", "state": "closed", "published": true, "year": 2023, "seasons": ["fra-2023"], "participants": [], "runs": []}, "expected": {"final": true, "results": {"overall": [], "fra-2023": [], "women": []}, "internal_results": {"overall": [], "fra-2023": [], "women": []}, "runs_results": []}}

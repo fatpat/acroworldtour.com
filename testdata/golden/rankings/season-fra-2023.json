@@ -1,0 +1,1 @@
+{"scope": "season", "code": "fra-2023", "input": {"code": "fra-2023", "country": "fra", "competitions": ["roq-acro-2023"]}, "expected": {"type": "solo", "number_of_pilots": 0, "number_of_teams": 0, "results": {}, "competitions_results": {"roq-acro-2023": []}}, "error": ""}
