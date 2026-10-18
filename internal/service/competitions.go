@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"math"
 	"net/url"
 	"slices"
@@ -333,7 +334,15 @@ func (s *Service) UpdateCompetition(ctx context.Context, id string, in Competiti
 		next := cur
 		next.Name, next.Code, next.Type, next.StartDate, next.EndDate = in.Name, in.Code, in.Type, in.StartDate, in.EndDate
 		next.Seasons = in.Seasons
-		if err := invalid(append(checkInput(ctx, q, in), domain.ValidateCompetition(next.domain())...)...); err != nil {
+		errs := append(checkInput(ctx, q, in), domain.ValidateCompetition(next.domain())...)
+		if year := in.StartDate.Year(); year != cur.Year() {
+			if _, err := q.GetRuleset(ctx, int64(year)); errors.Is(err, sql.ErrNoRows) {
+				errs = append(errs, domain.FieldError{Field: "start_date", Msg: fmt.Sprintf("no ruleset for year %d", year)})
+			} else if err != nil {
+				return fmt.Errorf("get ruleset %d: %w", year, err)
+			}
+		}
+		if err := invalid(errs...); err != nil {
 			return err
 		}
 		row.Name, row.Code, row.Type = in.Name, in.Code, string(in.Type)
@@ -346,8 +355,28 @@ func (s *Service) UpdateCompetition(ctx context.Context, id string, in Competiti
 		if err := setSeasons(ctx, q, id, in.Seasons); err != nil {
 			return err
 		}
-		out, _, err = loadCompetition(ctx, q, id, false)
-		return err
+		if out, _, err = loadCompetition(ctx, q, id, false); err != nil {
+			return err
+		}
+		if slices.Equal(cur.Seasons, out.Seasons) && cur.Year() == out.Year() {
+			return nil
+		}
+		// Mark types and AWT status depend on the seasons and the year
+		// (decision 0006): rescore every flight, then rebuild the rankings
+		// and the old and new seasons.
+		if err := rescoreCompetition(ctx, q, out); err != nil {
+			return err
+		}
+		if err := rebuildRankings(ctx, q, id, false); err != nil {
+			return err
+		}
+		seasons := slices.Clone(out.Seasons)
+		for _, code := range cur.Seasons {
+			if !slices.Contains(seasons, code) {
+				seasons = append(seasons, code)
+			}
+		}
+		return rebuildSeasons(ctx, q, newPeople(q), seasons)
 	})
 	if err != nil {
 		return Competition{}, err
@@ -574,9 +603,12 @@ func checkConfig(raw json.RawMessage) []domain.FieldError {
 			add(k, "required")
 		}
 	}
-	for k, v := range map[string]float64{"warning": cfg.Warning, "warning2": cfg.Warning2, "malus_repetition": cfg.MalusRepetition} {
-		if v < 0 {
-			add(k, "must be >= 0")
+	for _, kv := range []struct {
+		k string
+		v float64
+	}{{"warning", cfg.Warning}, {"warning2", cfg.Warning2}, {"malus_repetition", cfg.MalusRepetition}} {
+		if kv.v < 0 {
+			add(kv.k, "must be >= 0")
 		}
 	}
 	if cfg.WarningsToDSQ < 1 {
@@ -593,11 +625,11 @@ func checkConfig(raw json.RawMessage) []domain.FieldError {
 			}
 			sum += v
 		}
-		for k, v := range m {
+		for _, k := range slices.Sorted(maps.Keys(m)) {
 			if exact && !slices.Contains(keys, k) {
 				add(field+"."+k, "unknown key")
 			}
-			if v < 0 {
+			if m[k] < 0 {
 				add(field+"."+k, "must be >= 0")
 			}
 		}
@@ -612,7 +644,7 @@ func checkConfig(raw json.RawMessage) []domain.FieldError {
 		scoring.Solo:    {"technical", "choreography", "landing"},
 		scoring.Synchro: {"technical", "choreography", "landing", "synchro"},
 	}
-	for typ := range cfg.MarkPercentages {
+	for _, typ := range slices.Sorted(maps.Keys(cfg.MarkPercentages)) {
 		if _, ok := components[typ]; !ok {
 			add("mark_percentages."+string(typ), "unknown competition type")
 		}

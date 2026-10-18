@@ -117,7 +117,7 @@ func (h *handlers) fail(w http.ResponseWriter, r *http.Request, err error, redo 
 		h.redoOrPage(w, r, http.StatusUnprocessableEntity, validationErrors(ve.Fields), redo)
 	case errors.Is(err, service.ErrNotFound):
 		h.notFound(w, r)
-	case errors.Is(err, service.ErrConflict), errors.Is(err, service.ErrFrozen):
+	case errors.Is(err, service.ErrConflict), errors.Is(err, service.ErrFrozen), errors.Is(err, service.ErrRescore):
 		h.redoOrPage(w, r, http.StatusConflict, messageError(capitalize(err.Error())), redo)
 	default:
 		slog.Error("admin", "method", r.Method, "path", r.URL.Path, "err", err)

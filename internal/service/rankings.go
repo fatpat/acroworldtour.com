@@ -65,18 +65,8 @@ func competitionRanking(ctx context.Context, q *gen.Queries, ppl *people, c Comp
 	}
 	inputs := make([]ranking.RunInput, 0, len(runs))
 	for _, r := range runs {
+		// ranking.Competition reads the flights only (no starting list)
 		in := ranking.RunInput{Type: string(c.Type), Seasons: c.Seasons, Year: c.Year(), State: r.State}
-		parts, err := q.ListRunParticipants(ctx, gen.ListRunParticipantsParams{CompetitionID: c.ID, RunIdx: r.Idx})
-		if err != nil {
-			return ranking.CompetitionResult{}, fmt.Errorf("list participants of run %d: %w", r.Idx+1, err)
-		}
-		for _, rp := range parts {
-			p, err := ppl.get(ctx, rp.Civlid, rp.TeamID, c.Year())
-			if err != nil {
-				return ranking.CompetitionResult{}, err
-			}
-			in.Participants = append(in.Participants, p)
-		}
 		// stored (first save) order, spec 03 §7 step 1
 		flights, err := q.ListFlightsOfRun(ctx, gen.ListFlightsOfRunParams{CompetitionID: c.ID, RunIdx: r.Idx})
 		if err != nil {
@@ -101,6 +91,12 @@ func competitionRanking(ctx context.Context, q *gen.Queries, ppl *people, c Comp
 // then rebuilds the rankings of each of its seasons. It runs inside the
 // caller's write transaction (CLAUDE.md "compute on write").
 func RebuildRankings(ctx context.Context, q *gen.Queries, compID string) error {
+	return rebuildRankings(ctx, q, compID, true)
+}
+
+// rebuildRankings is RebuildRankings; withSeasons false skips the season
+// rankings, which cannot change while the competition is not closed.
+func rebuildRankings(ctx context.Context, q *gen.Queries, compID string, withSeasons bool) error {
 	c, _, err := loadCompetition(ctx, q, compID, true)
 	if err != nil {
 		return err
@@ -124,6 +120,9 @@ func RebuildRankings(ctx context.Context, q *gen.Queries, compID string) error {
 	}
 	if err := q.SetCompetitionResultsFinal(ctx, gen.SetCompetitionResultsFinalParams{ResultsFinal: res.Final, ID: c.ID}); err != nil {
 		return fmt.Errorf("set competition %s final flag: %w", c.Code, err)
+	}
+	if !withSeasons {
+		return nil
 	}
 	return rebuildSeasons(ctx, q, ppl, c.Seasons)
 }

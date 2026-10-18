@@ -72,37 +72,6 @@ func (q *Queries) GetTeamFlight(ctx context.Context, arg GetTeamFlightParams) (F
 	return i, err
 }
 
-const getUniqueTrickByName = `-- name: GetUniqueTrickByName :one
-SELECT trick_id, year, acronym, name, base_trick, technical_coefficient, bonus, bonus_types, uniqueness, bonuses, solo, solo_awt, synchro, types FROM unique_tricks WHERE year = ? AND name = ? ORDER BY acronym LIMIT 1
-`
-
-type GetUniqueTrickByNameParams struct {
-	Year int64  `json:"year"`
-	Name string `json:"name"`
-}
-
-func (q *Queries) GetUniqueTrickByName(ctx context.Context, arg GetUniqueTrickByNameParams) (UniqueTrick, error) {
-	row := q.db.QueryRowContext(ctx, getUniqueTrickByName, arg.Year, arg.Name)
-	var i UniqueTrick
-	err := row.Scan(
-		&i.TrickID,
-		&i.Year,
-		&i.Acronym,
-		&i.Name,
-		&i.BaseTrick,
-		&i.TechnicalCoefficient,
-		&i.Bonus,
-		&i.BonusTypes,
-		&i.Uniqueness,
-		&i.Bonuses,
-		&i.Solo,
-		&i.SoloAwt,
-		&i.Synchro,
-		&i.Types,
-	)
-	return i, err
-}
-
 const listSeasonCompetitionIDs = `-- name: ListSeasonCompetitionIDs :many
 SELECT c.id FROM competitions c
 JOIN competition_seasons cs ON cs.competition_id = c.id
@@ -124,6 +93,53 @@ func (q *Queries) ListSeasonCompetitionIDs(ctx context.Context, seasonCode strin
 			return nil, err
 		}
 		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listUniqueTricksByName = `-- name: ListUniqueTricksByName :many
+SELECT trick_id, year, acronym, name, base_trick, technical_coefficient, bonus, bonus_types, uniqueness, bonuses, solo, solo_awt, synchro, types FROM unique_tricks WHERE year = ? AND name = ? ORDER BY acronym
+`
+
+type ListUniqueTricksByNameParams struct {
+	Year int64  `json:"year"`
+	Name string `json:"name"`
+}
+
+func (q *Queries) ListUniqueTricksByName(ctx context.Context, arg ListUniqueTricksByNameParams) ([]UniqueTrick, error) {
+	rows, err := q.db.QueryContext(ctx, listUniqueTricksByName, arg.Year, arg.Name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []UniqueTrick
+	for rows.Next() {
+		var i UniqueTrick
+		if err := rows.Scan(
+			&i.TrickID,
+			&i.Year,
+			&i.Acronym,
+			&i.Name,
+			&i.BaseTrick,
+			&i.TechnicalCoefficient,
+			&i.Bonus,
+			&i.BonusTypes,
+			&i.Uniqueness,
+			&i.Bonuses,
+			&i.Solo,
+			&i.SoloAwt,
+			&i.Synchro,
+			&i.Types,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

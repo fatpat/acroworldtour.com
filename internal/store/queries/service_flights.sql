@@ -7,8 +7,8 @@ SELECT * FROM flights WHERE competition_id = ? AND run_idx = ? AND team_id = ?;
 -- name: MaxFlightSaveSeq :one
 SELECT CAST(COALESCE(MAX(save_seq), 0) AS INTEGER) AS max_seq FROM flights WHERE competition_id = ? AND run_idx = ?;
 
--- name: GetUniqueTrickByName :one
-SELECT * FROM unique_tricks WHERE year = ? AND name = ? ORDER BY acronym LIMIT 1;
+-- name: ListUniqueTricksByName :many
+SELECT * FROM unique_tricks WHERE year = ? AND name = ? ORDER BY acronym;
 
 -- name: ListSeasonCompetitionIDs :many
 -- Active competitions of a season, by name (legacy season order).

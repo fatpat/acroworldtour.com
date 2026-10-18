@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -17,6 +18,15 @@ import (
 	"awt/internal/store"
 	"awt/internal/store/gen"
 )
+
+func hasString(list []string, s string) bool {
+	for _, v := range list {
+		if v == s {
+			return true
+		}
+	}
+	return false
+}
 
 // flightEnv is an open solo competition of 2025 (production 2025 catalog)
 // with run 1 open, two judges and the given pilots.
@@ -398,14 +408,223 @@ func TestSavePublishesEvent(t *testing.T) {
 		t.Fatal("event published by a failed save or a simulation")
 	}
 	e.save(t, 0, 201, e.input(7, "LM"), false)
-	for name, ch := range map[string]<-chan Event{"competition": comp, "season": season} {
-		select {
-		case ev := <-ch:
-			if ev.Kind != KindFlight {
-				t.Errorf("%s event kind %q", name, ev.Kind)
-			}
-		case <-time.After(time.Second):
-			t.Errorf("no %s event", name)
+	select {
+	case ev := <-comp:
+		if ev.Kind != KindFlight {
+			t.Errorf("competition event kind %q", ev.Kind)
 		}
+	case <-time.After(time.Second):
+		t.Error("no competition event")
+	}
+	// an open competition is not in its seasons' rankings: no season event
+	if len(season) != 0 {
+		t.Error("season event for a flight of an open competition")
+	}
+}
+
+func (e *flightEnv) update(t *testing.T, seasons ...string) error {
+	t.Helper()
+	c := e.comp
+	_, err := e.svc.UpdateCompetition(context.Background(), c.ID, CompetitionInput{
+		Name: c.Name, Code: c.Code, Type: c.Type, StartDate: c.StartDate, EndDate: c.EndDate, Location: c.Location,
+		Published: c.Published, Seasons: seasons,
+	})
+	return err
+}
+
+// A seasons change rescores every flight: mark types follow (controller
+// ruling on decision 0006).
+func TestSeasonChangeRescoresFlights(t *testing.T) {
+	e := newFlightEnv(t, []int{201, 202}, []int{201}, nil)
+	e.save(t, 0, 201, e.input(7, "LM", "RMC", "LS"), true)
+	e.save(t, 0, 202, e.input(8, "LM", "RMC", "LS"), true)
+	if row, _ := e.storedFlight(t, 0, 201); row.MarkType.Valid {
+		t.Fatalf("classic flight stored with mark type %q", row.MarkType.String)
+	}
+	ok(t, e.update(t, "awt-2025", "awq-2025"))
+	row1, fm1 := e.storedFlight(t, 0, 201)
+	row2, fm2 := e.storedFlight(t, 0, 202)
+	if row1.MarkType.String != "awt" || fm1.MarkType != scoring.MarkAWT || row2.MarkType.String != "awq" || fm2.MarkType != scoring.MarkAWQ {
+		t.Errorf("mark types after the change: %q/%q %q/%q", row1.MarkType.String, fm1.MarkType, row2.MarkType.String, fm2.MarkType)
+	}
+	if row1.Score.Float64 != 7.893 || row2.Score.Float64 != 8.507 {
+		t.Errorf("scores %v %v", row1.Score.Float64, row2.Score.Float64)
+	}
+	if got := e.ranking(t, store.ScopeCompetition, e.comp.ID, "awt-2025"); !sameLines(got, rankLine{201, 7.893}) {
+		t.Errorf("awt list %v", got)
+	}
+	if got := e.ranking(t, store.ScopeCompetition, e.comp.ID, "awq-2025"); !sameLines(got, rankLine{202, 8.507}) {
+		t.Errorf("awq list %v", got)
+	}
+}
+
+// A flight that the change makes unscorable is an ErrRescore naming it,
+// not a validation error of the caller; nothing is changed.
+func TestSeasonChangeRescoreFailure(t *testing.T) {
+	e := newFlightEnv(t, []int{201, 202}, []int{201}, nil)
+	in := e.input(7, "LM", "RMC", "LS")
+	for i := range in.Marks {
+		in.Marks[i].TechnicalPerTrick = nil // classic marking only
+	}
+	e.save(t, 0, 201, in, true)
+	err := e.update(t, "awt-2025")
+	var ve scoring.ValidationError
+	if !errors.Is(err, ErrRescore) || errors.As(err, &ve) || !strings.Contains(err.Error(), "pilot 201 in run 1") {
+		t.Fatalf("err = %v, want ErrRescore naming pilot 201 in run 1", err)
+	}
+	if c := must(e.svc.GetCompetition(context.Background(), e.comp.ID))(t); len(c.Seasons) != 0 {
+		t.Errorf("seasons changed despite the failure: %v", c.Seasons)
+	}
+}
+
+func TestAmbiguousTrickName(t *testing.T) {
+	e := newFlightEnv(t, []int{201, 202}, nil, nil)
+	_, err := e.db.Write.Exec(`INSERT INTO unique_tricks (trick_id, year, acronym, name, technical_coefficient, bonus, solo, solo_awt, synchro)
+		SELECT trick_id, year, 'ZZLM', name, technical_coefficient, bonus, solo, solo_awt, synchro FROM unique_tricks WHERE year = 2025 AND acronym = 'LM'`)
+	ok(t, err)
+	var ve scoring.ValidationError
+	_, err = e.svc.SimulateFlight(context.Background(), e.comp.ID, 0, "201", e.input(7, "left Misty Flip"))
+	if !errors.As(err, &ve) || ve.Msg != "Ambiguous trick name left Misty Flip, use the acronym" {
+		t.Errorf("ambiguous name: %v", err)
+	}
+	if _, err := e.svc.SimulateFlight(context.Background(), e.comp.ID, 0, "201", e.input(7, "LM")); err != nil {
+		t.Errorf("acronym: %v", err)
+	}
+}
+
+func TestPositionWarning(t *testing.T) {
+	e := newFlightEnv(t, []int{201, 202}, nil, nil)
+	r := e.save(t, 0, 201, e.input(7, "LM", "LT"), true)
+	if !hasString(r.Final.Warnings1, "left Tumbling can't be one of the last 2 maneuvers") || len(r.Final.Warnings1) != 1 {
+		t.Errorf("warnings %v", r.Final.Warnings1)
+	}
+	// automatic warnings are not operator warnings: not stored as such
+	row, _ := e.storedFlight(t, 0, 201)
+	if w := must(gen.New(e.db.Read).ListFlightWarnings(context.Background(), row.ID))(t); len(w) != 0 {
+		t.Errorf("stored warnings %v", w)
+	}
+}
+
+func TestRepeatableBaseTrick(t *testing.T) {
+	e := newFlightEnv(t, []int{201, 202}, nil, nil)
+	if !hasString(e.comp.RepeatableTricks, "Stall") {
+		t.Fatalf("repeatable tricks %v", e.comp.RepeatableTricks)
+	}
+	if r := e.save(t, 0, 201, e.input(7, "FS", "LM", "FS"), true); r.Final.Malus != 0 {
+		t.Errorf("repeated Stall: malus %v", r.Final.Malus)
+	}
+	if r := e.save(t, 0, 202, e.input(7, "LM", "FS", "LM"), true); r.Final.Malus != 13 {
+		t.Errorf("repeated LM: malus %v", r.Final.Malus)
+	}
+}
+
+func TestPreviousWarningsDSQ(t *testing.T) {
+	e := newFlightEnv(t, []int{201, 202}, nil, nil)
+	ctx := context.Background()
+	for i := 1; i <= 2; i++ {
+		must(e.svc.NewRun(ctx, e.comp.ID, 0, scoring.ResetNone))(t)
+		ok(t, e.svc.OpenRun(ctx, e.comp.ID, i))
+	}
+	in := e.input(7, "LM", "RMC")
+	in.Warnings1 = []string{"w", "w"}
+	if r := e.save(t, 0, 201, in, true); r.Final.Score == 0 {
+		t.Errorf("run 1 with 2 warnings: %+v", r.Final)
+	}
+	in.Warnings1 = []string{"w"}
+	r := e.save(t, 1, 201, in, true)
+	if r.Final.Score != 0 || !hasString(r.Final.Notes, "Pilot has been DSQ he/she's got 3 warnings") {
+		t.Errorf("run 2: %+v", r.Final)
+	}
+	r = e.save(t, 2, 201, e.input(7, "LM", "RMC"), true)
+	if r.Final.Score != 0 || !hasString(r.Final.Notes, "Pilot has been DSQ because he/she already had 3 warnings") {
+		t.Errorf("run 3: %+v", r.Final)
+	}
+	// removing a run-1 warning lifts both DSQs (later runs rescored)
+	in.Warnings1 = []string{"w"}
+	e.save(t, 0, 201, in, true)
+	for run := 1; run <= 2; run++ {
+		if row, fm := e.storedFlight(t, run, 201); row.Score.Float64 == 0 {
+			t.Errorf("run %d still DSQ: %v", run+1, fm.Notes)
+		}
+	}
+}
+
+func TestResetPolicyAll(t *testing.T) {
+	e := newFlightEnv(t, []int{201, 202}, nil, nil)
+	ctx := context.Background()
+	e.save(t, 0, 201, e.input(7, "LM", "RMC"), true)
+	must(e.svc.NewRun(ctx, e.comp.ID, 0, scoring.ResetAll))(t)
+	ok(t, e.svc.OpenRun(ctx, e.comp.ID, 1))
+	if r := e.save(t, 1, 201, e.input(7, "LM", "RS"), true); r.Final.Malus != 0 {
+		t.Errorf("LM after a reset-all run: malus %v", r.Final.Malus)
+	}
+}
+
+func TestThreeRunRescoreChain(t *testing.T) {
+	e := newFlightEnv(t, []int{201, 202}, nil, nil)
+	ctx := context.Background()
+	for i := 1; i <= 2; i++ {
+		must(e.svc.NewRun(ctx, e.comp.ID, 0, scoring.ResetNone))(t)
+		ok(t, e.svc.OpenRun(ctx, e.comp.ID, i))
+	}
+	e.save(t, 0, 201, e.input(7, "LM", "RMC", "LS"), true)
+	e.save(t, 1, 201, e.input(7, "RM", "LMC"), true)
+	if r := e.save(t, 2, 201, e.input(7, "LM", "RM"), true); r.Final.Malus != 26 {
+		t.Fatalf("run 3 malus %v, want 26 (LM run 1, RM run 2)", r.Final.Malus)
+	}
+	e.save(t, 0, 201, e.input(7, "RMC", "LS"), true)
+	if _, fm := e.storedFlight(t, 2, 201); fm.Malus != 13 {
+		t.Errorf("run 3 malus after run 1 re-save %v, want 13", fm.Malus)
+	}
+	e.save(t, 1, 201, e.input(7, "LMC", "RS"), true)
+	if _, fm := e.storedFlight(t, 2, 201); fm.Malus != 0 {
+		t.Errorf("run 3 malus after run 2 re-save %v, want 0", fm.Malus)
+	}
+	total := 0.0
+	for run := range 3 {
+		row, _ := e.storedFlight(t, run, 201)
+		total = scoring.Round3(total + row.Score.Float64)
+	}
+	if got := e.ranking(t, store.ScopeCompetition, e.comp.ID, "overall"); !sameLines(got, rankLine{201, total}) {
+		t.Errorf("competition total %v, want %v", got, total)
+	}
+}
+
+func TestSynchroTipTouches(t *testing.T) {
+	ctx := context.Background()
+	f := newFixture(t)
+	cat, err := os.ReadFile("../../testdata/catalog/2025.json")
+	ok(t, err)
+	must(f.svc.ImportCatalog(ctx, 2025, bytes.NewReader(cat)))(t)
+	for _, p := range []int{201, 202, 203, 204} {
+		must(f.svc.ImportPilotFromCIVL(ctx, p))(t)
+	}
+	t1 := must(f.svc.CreateTeam(ctx, TeamInput{Name: "Team A", Pilots: []int{201, 202}}))(t)
+	t2 := must(f.svc.CreateTeam(ctx, TeamInput{Name: "Team B", Pilots: []int{203, 204}}))(t)
+	j1 := must(f.svc.CreateJudge(ctx, JudgeInput{Name: "J1", Country: "fra", Level: domain.JudgeSenior}))(t)
+	j2 := must(f.svc.CreateJudge(ctx, JudgeInput{Name: "J2", Country: "fra", Level: domain.JudgeSenior}))(t)
+	c := must(f.svc.CreateCompetition(ctx, CompetitionInput{
+		Name: "Synchro Cup 2025", Type: domain.TypeSynchro, StartDate: date("2025-07-01"), EndDate: date("2025-07-02"),
+	}))(t)
+	ok(t, f.svc.SetParticipants(ctx, c.ID, nil, []string{t1.ID, t2.ID}))
+	ok(t, f.svc.SetJudges(ctx, c.ID, []string{j1.ID, j2.ID}))
+	ok(t, f.svc.OpenCompetition(ctx, c.ID))
+	must(f.svc.NewRun(ctx, c.ID, 0, scoring.ResetNone))(t)
+	ok(t, f.svc.OpenRun(ctx, c.ID, 0))
+	in := FlightInput{Tricks: []string{"LM", "RM"}, TipTouches: 2}
+	for _, j := range []string{j1.ID, j2.ID} {
+		in.Marks = append(in.Marks, MarkInput{Judge: j, Technical: ptr(7), Choreography: ptr(6), Landing: ptr(6), Synchro: ptr(8)})
+	}
+	r := must(f.svc.SaveFlight(ctx, c.ID, 0, t1.ID, in, true))(t)
+	if r.Final.MarkType != scoring.MarkClassic || r.Final.BonusPercentage != 4 || !hasString(r.Final.Notes, "4% tip-touch bonus") || r.Final.Synchro == 0 {
+		t.Errorf("synchro flight: %+v", r.Final)
+	}
+	rows, err := gen.New(f.db.Read).ListRankingEntries(ctx, gen.ListRankingEntriesParams{Scope: store.ScopeCompetition, ScopeKey: c.ID, ListKey: "overall"})
+	ok(t, err)
+	if len(rows) != 1 || rows[0].TeamID.String != t1.ID || rows[0].Score != scoring.Round3(r.Final.Score) {
+		t.Errorf("synchro ranking %+v", rows)
+	}
+	if _, err := f.svc.SaveFlight(ctx, c.ID, 0, "201", in, true); err == nil {
+		t.Error("pilot id accepted in a synchro run")
 	}
 }

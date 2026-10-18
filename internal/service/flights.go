@@ -71,14 +71,24 @@ func round3Mark(v *float64) *float64 {
 }
 
 // resolveTricks snapshots the flown tricks from the competition-year
-// catalog (decision 0008). Unknown tricks give the legacy 400 message.
+// catalog (decision 0008): by acronym (unique), else by unique-trick name.
+// Unknown tricks give the legacy 400 message; a name shared by several
+// unique tricks is refused rather than guessed.
 func resolveTricks(ctx context.Context, q *gen.Queries, year int, names []string) ([]scoring.FlownTrick, error) {
 	out := make([]scoring.FlownTrick, 0, len(names))
 	var unknown []string
 	for _, n := range names {
 		row, err := q.GetUniqueTrick(ctx, gen.GetUniqueTrickParams{Year: int64(year), Acronym: n})
 		if errors.Is(err, sql.ErrNoRows) {
-			row, err = q.GetUniqueTrickByName(ctx, gen.GetUniqueTrickByNameParams{Year: int64(year), Name: n})
+			rows, lerr := q.ListUniqueTricksByName(ctx, gen.ListUniqueTricksByNameParams{Year: int64(year), Name: n})
+			switch {
+			case lerr != nil:
+				err = lerr
+			case len(rows) > 1:
+				return nil, scoring.ValidationError{Msg: fmt.Sprintf("Ambiguous trick name %s, use the acronym", n)}
+			case len(rows) == 1:
+				row, err = rows[0], nil
+			}
 		}
 		if errors.Is(err, sql.ErrNoRows) {
 			if !slices.Contains(unknown, n) {
@@ -147,6 +157,12 @@ func flightFromInput(ctx context.Context, q *gen.Queries, c Competition, r Run, 
 	}, nil
 }
 
+// ErrRescore: saving a flight or editing a competition made another stored
+// flight unscorable (e.g. a mark type change needs per-trick marks it does
+// not have). Handlers map it to 409; the message names the run and the
+// participant of that flight.
+var ErrRescore = errors.New("cannot rescore a dependent flight")
+
 // SimulateFlight scores a flight without saving it (live provisional score
 // of the judging screen). It reads one consistent snapshot on a single read
 // connection.
@@ -161,41 +177,38 @@ func (s *Service) SimulateFlight(ctx context.Context, compID string, run int, pa
 	if err != nil {
 		return scoring.Result{}, err
 	}
-	env, _, p, flight, err := prepareFlight(ctx, q, c, run, participant, in)
+	r, _, err := loadRun(ctx, q, c.ID, run)
 	if err != nil {
 		return scoring.Result{}, err
 	}
-	input, err := env.input(ctx, q, run, p, flight)
+	env, p, flight, err := prepareFlight(ctx, q, c, r, participant, in)
 	if err != nil {
 		return scoring.Result{}, err
 	}
-	return scoring.Score(input)
+	return scoreFlight(ctx, q, env, run, p, flight)
 }
 
 // prepareFlight loads what scoring a new flight input needs and validates
 // the participant and the input.
-func prepareFlight(ctx context.Context, q *gen.Queries, c Competition, run int, participant string, in FlightInput) (*scoringEnv, Run, ranking.Participant, scoring.Flight, error) {
-	r, _, err := loadRun(ctx, q, c.ID, run)
-	if err != nil {
-		return nil, r, ranking.Participant{}, scoring.Flight{}, err
-	}
+func prepareFlight(ctx context.Context, q *gen.Queries, c Competition, r Run, participant string, in FlightInput) (*scoringEnv, ranking.Participant, scoring.Flight, error) {
 	env, err := loadScoringEnv(ctx, q, c)
 	if err != nil {
-		return nil, r, ranking.Participant{}, scoring.Flight{}, err
+		return nil, ranking.Participant{}, scoring.Flight{}, err
 	}
 	p, err := env.participant(r, participant)
 	if err != nil {
-		return nil, r, p, scoring.Flight{}, err
+		return nil, p, scoring.Flight{}, err
 	}
 	flight, err := flightFromInput(ctx, q, c, r, in)
-	return env, r, p, flight, err
+	return env, p, flight, err
 }
 
 // SaveFlight scores and stores a flight in an open run, then, in the same
 // transaction (CLAUDE.md "compute on write"): rescores the participant's
 // flights of later runs in order (decision 0006 #14) and rebuilds the
-// stored run, competition and season rankings. Live events are published
-// after commit.
+// stored run and competition rankings, and the season rankings when the
+// competition is closed (only closed competitions count in a season).
+// Live events are published after commit.
 func (s *Service) SaveFlight(ctx context.Context, compID string, run int, participant string, in FlightInput, publish bool) (scoring.Result, error) {
 	var res scoring.Result
 	var c Competition
@@ -204,66 +217,108 @@ func (s *Service) SaveFlight(ctx context.Context, compID string, run int, partic
 		if c, _, err = editable(ctx, q, compID); err != nil {
 			return err
 		}
-		env, r, p, flight, err := prepareFlight(ctx, q, c, run, participant, in)
+		r, _, err := loadRun(ctx, q, c.ID, run)
 		if err != nil {
 			return err
 		}
 		if err := domain.CanSaveFlight(r.State); err != nil {
 			return fmt.Errorf("run %d: %w", run+1, err)
 		}
-		if res, err = scoreAndStore(ctx, q, env, run, p, flight, &publish); err != nil {
+		env, p, flight, err := prepareFlight(ctx, q, c, r, participant, in)
+		if err != nil {
+			return err
+		}
+		if res, err = scoreFlight(ctx, q, env, run, p, flight); err != nil {
+			return err
+		}
+		if err := storeFlight(ctx, q, env, run, p, flight, res, &publish); err != nil {
 			return err
 		}
 		for later := run + 1; later < len(env.runs); later++ {
-			if err := rescoreFlight(ctx, q, env, later, p); err != nil {
+			f, ok, err := storedFlight(ctx, q, c.ID, later, p)
+			if err != nil {
 				return err
 			}
+			if ok {
+				if err := rescoreFlight(ctx, q, env, later, p, f); err != nil {
+					return err
+				}
+			}
 		}
-		return RebuildRankings(ctx, q, compID)
+		return rebuildRankings(ctx, q, compID, c.State == domain.CompetitionClosed)
 	})
 	if err != nil {
 		return scoring.Result{}, err
 	}
-	s.publish(KindFlight, c.topics()...)
+	if c.State == domain.CompetitionClosed {
+		s.publish(KindFlight, c.topics()...)
+	} else {
+		s.publish(KindFlight, competitionTopic(c.Code))
+	}
 	return res, nil
 }
 
-// rescoreFlight rescores the participant's stored flight of run idx, if
-// any, from its stored input; earlier runs are read from the transaction,
-// so they include the flights just saved or rescored.
-func rescoreFlight(ctx context.Context, q *gen.Queries, env *scoringEnv, idx int, p ranking.Participant) error {
-	f, ok, err := storedFlight(ctx, q, env.comp.ID, idx, p)
-	if err != nil || !ok {
-		return err
-	}
-	flight, err := flightFromStore(ctx, q, f)
+// rescoreCompetition rescores every stored flight of a competition in run
+// order (after a change of its seasons or year: mark types and AWT status
+// may change).
+func rescoreCompetition(ctx context.Context, q *gen.Queries, c Competition) error {
+	env, err := loadScoringEnv(ctx, q, c)
 	if err != nil {
 		return err
 	}
-	if _, err := scoreAndStore(ctx, q, env, idx, p, flight, nil); err != nil {
-		return fmt.Errorf("rescore flight of run %d: %w", idx+1, err)
+	for idx := range env.runs {
+		flights, err := q.ListFlightsOfRun(ctx, gen.ListFlightsOfRunParams{CompetitionID: c.ID, RunIdx: int64(idx)})
+		if err != nil {
+			return fmt.Errorf("list flights of run %d: %w", idx+1, err)
+		}
+		for _, f := range flights {
+			p := ranking.Participant{CivlID: int(f.Civlid.Int64), TeamID: f.TeamID.String}
+			if err := rescoreFlight(ctx, q, env, idx, p, f); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
 
-// scoreAndStore scores a flight and writes it with its tricks, marks and
-// warnings. publish nil keeps the stored published flag (rescoring).
-func scoreAndStore(ctx context.Context, q *gen.Queries, env *scoringEnv, idx int, p ranking.Participant, flight scoring.Flight, publish *bool) (scoring.Result, error) {
+// rescoreFlight rescores stored flight f of participant p in run idx from
+// its stored input; earlier runs are read from the transaction, so they
+// include the flights just saved or rescored. An engine refusal is reported
+// as ErrRescore, not as the caller's validation error.
+func rescoreFlight(ctx context.Context, q *gen.Queries, env *scoringEnv, idx int, p ranking.Participant, f gen.Flight) error {
+	flight, err := flightFromStore(ctx, q, f)
+	if err != nil {
+		return err
+	}
+	res, err := scoreFlight(ctx, q, env, idx, p, flight)
+	var ve scoring.ValidationError
+	if errors.As(err, &ve) {
+		return fmt.Errorf("%w: flight of %s in run %d: %s", ErrRescore, participantKey(p), idx+1, ve.Msg)
+	}
+	if err != nil {
+		return err
+	}
+	return storeFlight(ctx, q, env, idx, p, flight, res, nil)
+}
+
+func scoreFlight(ctx context.Context, q *gen.Queries, env *scoringEnv, idx int, p ranking.Participant, flight scoring.Flight) (scoring.Result, error) {
 	input, err := env.input(ctx, q, idx, p, flight)
 	if err != nil {
 		return scoring.Result{}, err
 	}
-	res, err := scoring.Score(input)
-	if err != nil {
-		return scoring.Result{}, err
-	}
+	return scoring.Score(input)
+}
+
+// storeFlight writes a scored flight with its tricks, marks and warnings.
+// publish nil keeps the stored published flag (rescoring).
+func storeFlight(ctx context.Context, q *gen.Queries, env *scoringEnv, idx int, p ranking.Participant, flight scoring.Flight, res scoring.Result, publish *bool) error {
 	final, err := json.Marshal(res.Final)
 	if err != nil {
-		return res, fmt.Errorf("encode final mark: %w", err)
+		return fmt.Errorf("encode final mark: %w", err)
 	}
 	cur, exists, err := storedFlight(ctx, q, env.comp.ID, idx, p)
 	if err != nil {
-		return res, err
+		return err
 	}
 	published := cur.Published
 	if publish != nil {
@@ -281,7 +336,7 @@ func scoreAndStore(ctx context.Context, q *gen.Queries, env *scoringEnv, idx int
 		var seq int64
 		seq, err = q.MaxFlightSaveSeq(ctx, gen.MaxFlightSaveSeqParams{CompetitionID: env.comp.ID, RunIdx: int64(idx)})
 		if err != nil {
-			return res, fmt.Errorf("next save sequence of run %d: %w", idx+1, err)
+			return fmt.Errorf("next save sequence of run %d: %w", idx+1, err)
 		}
 		id, err = q.InsertFlight(ctx, gen.InsertFlightParams{
 			CompetitionID: env.comp.ID, RunIdx: int64(idx), Civlid: sql.NullInt64{Int64: int64(p.CivlID), Valid: p.TeamID == ""},
@@ -291,9 +346,9 @@ func scoreAndStore(ctx context.Context, q *gen.Queries, env *scoringEnv, idx int
 		})
 	}
 	if err != nil {
-		return res, fmt.Errorf("save flight of run %d: %w", idx+1, err)
+		return fmt.Errorf("save flight of run %d: %w", idx+1, err)
 	}
-	return res, writeFlightChildren(ctx, q, id, res, flight)
+	return writeFlightChildren(ctx, q, id, res, flight)
 }
 
 // writeFlightChildren replaces a flight's tricks and marks (as computed by
