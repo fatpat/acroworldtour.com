@@ -1,0 +1,11 @@
+{
+  "name": "Acro World Tour",
+  "short_name": "AWT",
+  "icons": [
+    {"src": "/static/img/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "/static/img/android-chrome-256x256.png", "sizes": "256x256", "type": "image/png"}
+  ],
+  "theme_color": "#171717",
+  "background_color": "#ffffff",
+  "display": "standalone"
+}

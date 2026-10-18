@@ -13,6 +13,8 @@ import (
 	"syscall"
 	"time"
 
+	"awt/internal/auth"
+	"awt/internal/cache"
 	"awt/internal/config"
 	"awt/internal/store"
 	"awt/internal/web"
@@ -61,7 +63,17 @@ func serve() error {
 	}
 	slog.SetDefault(slog.New(handler))
 
-	srv := web.NewServer(cfg, web.Deps{})
+	db, err := openMigrated(cfg)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	var purger cache.Purger = cache.NoopPurger{}
+	if cfg.CloudflareZoneID != "" && cfg.CloudflareToken != "" {
+		purger = cache.NewCloudflarePurger(cfg.CloudflareZoneID, cfg.CloudflareToken)
+	}
+	srv := web.NewServer(web.Deps{Cfg: cfg, Auth: auth.New(db, cfg), DB: db, Purger: purger})
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -88,17 +100,29 @@ func migrate() error {
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
 	}
-	if err := os.MkdirAll(filepath.Dir(cfg.DBPath), 0o755); err != nil {
-		return fmt.Errorf("create db dir: %w", err)
-	}
-	db, err := store.Open(cfg.DBPath)
+	db, err := openMigrated(cfg)
 	if err != nil {
 		return err
 	}
 	defer db.Close()
-	if err := store.Migrate(context.Background(), db); err != nil {
-		return err
-	}
 	slog.Info("migrated", "db", cfg.DBPath)
 	return nil
+}
+
+// openMigrated creates the database directory, opens the database and
+// applies pending migrations. serve runs it at startup so a fresh or restored
+// volume always has an up-to-date schema.
+func openMigrated(cfg config.Config) (*store.DB, error) {
+	if err := os.MkdirAll(filepath.Dir(cfg.DBPath), 0o755); err != nil {
+		return nil, fmt.Errorf("create db dir: %w", err)
+	}
+	db, err := store.Open(cfg.DBPath)
+	if err != nil {
+		return nil, err
+	}
+	if err := store.Migrate(context.Background(), db); err != nil {
+		db.Close()
+		return nil, err
+	}
+	return db, nil
 }

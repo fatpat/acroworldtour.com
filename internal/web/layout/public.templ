@@ -1,0 +1,93 @@
+package layout
+
+import "awt/web/static"
+
+type navItem struct {
+	Key, Label, Href string
+	Sub              []navItem
+}
+
+// publicNav is the public site menu (brief task 15). "results" groups the
+// results site entry points.
+var publicNav = []navItem{
+	{Key: "home", Label: "Home", Href: "/"},
+	{Key: "events", Label: "Events", Href: "/events"},
+	{Key: "news", Label: "News", Href: "/news"},
+	{Key: "results", Label: "Results", Href: "/results", Sub: []navItem{
+		{Key: "seasons", Label: "Seasons", Href: "/seasons"},
+		{Key: "competitions", Label: "Competitions", Href: "/competitions"},
+	}},
+	{Key: "pilots", Label: "Pilots", Href: "/pilots"},
+	{Key: "teams", Label: "Teams", Href: "/teams"},
+	{Key: "judges", Label: "Judges", Href: "/judges"},
+	{Key: "tricks", Label: "Tricks", Href: "/tricks"},
+	{Key: "simulator", Label: "Simulator", Href: "/simulator"},
+}
+
+func isActive(it navItem, active string) bool {
+	if it.Key == active {
+		return true
+	}
+	for _, s := range it.Sub {
+		if s.Key == active {
+			return true
+		}
+	}
+	return false
+}
+
+func navClass(on bool) string {
+	if on {
+		return "nav__link nav__link--active"
+	}
+	return "nav__link"
+}
+
+// Public wraps a public page: nav, optional h1 header, main, footer. active
+// is the navItem key to highlight.
+templ Public(m Meta, active string) {
+	@Base(m) {
+		<nav class="nav" aria-label="Main">
+			<div class="wrapper nav__bar">
+				<a class="nav__logo" href="/"><img src={ static.URL("img/logo.svg") } alt="Acro World Tour" width="129" height="57"/></a>
+				<details class="nav__toggle">
+					<summary>Menu</summary>
+					<ul class="nav__list">
+						for _, it := range publicNav {
+							<li class="nav__item">
+								<a class={ navClass(isActive(it, active)) } href={ templ.SafeURL(it.Href) }>{ it.Label }</a>
+								if len(it.Sub) > 0 {
+									<ul class="nav__sub">
+										for _, s := range it.Sub {
+											<li><a class={ navClass(s.Key == active) } href={ templ.SafeURL(s.Href) }>{ s.Label }</a></li>
+										}
+									</ul>
+								}
+							</li>
+						}
+					</ul>
+				</details>
+			</div>
+		</nav>
+		if m.Heading != "" {
+			<header class="header">
+				<div class="wrapper"><h1>{ m.Heading }</h1></div>
+			</header>
+		}
+		<main id="main" class="main">
+			<div class="wrapper">
+				{ children... }
+			</div>
+		</main>
+		<footer class="footer">
+			<div class="wrapper footer__inner">
+				<p>{ copyright() }</p>
+				<ul class="footer__social">
+					<li><a href="https://instagram.com/acroworldtour/" rel="noopener" aria-label="Instagram"><img src={ static.URL("img/instagram.svg") } alt="" width="24" height="24"/></a></li>
+					<li><a href="https://www.facebook.com/groups/120757714620928" rel="noopener" aria-label="Facebook group"><img src={ static.URL("img/facebook.svg") } alt="" width="24" height="24"/></a></li>
+					<li><a href="https://www.youtube.com/@acroworldtour" rel="noopener" aria-label="YouTube"><img src={ static.URL("img/youtube.svg") } alt="" width="24" height="24"/></a></li>
+				</ul>
+			</div>
+		</footer>
+	}
+}

@@ -1,0 +1,47 @@
+package layout
+
+// ErrorPage is the public 404/500 page.
+templ ErrorPage(code int, title, message string) {
+	@Public(Meta{Title: title, NoIndex: true}, "") {
+		<div class="center-page">
+			<p class="center-page__code">{ itoa(code) }</p>
+			<h1>{ title }</h1>
+			<p>{ message }</p>
+			<p><a class="btn" href="/">Back to the home page</a></p>
+		</div>
+	}
+}
+
+// LoginPage renders the form posting to auth.HandleLogin. errMsg is shown
+// above the form when set.
+templ LoginPage(next, errMsg string) {
+	@Base(Meta{Title: "Log in", NoIndex: true}) {
+		<main id="main" class="wrapper">
+			<div class="login card">
+				<h1>Log in</h1>
+				if errMsg != "" {
+					<p class="alert" role="alert">{ errMsg }</p>
+				}
+				<form method="post" action="/admin/login">
+					<input type="hidden" name="next" value={ next }/>
+					<div class="field">
+						<label for="email">Email</label>
+						<input id="email" name="email" type="email" autocomplete="username" required autofocus/>
+					</div>
+					<div class="field">
+						<label for="password">Password</label>
+						<input id="password" name="password" type="password" autocomplete="current-password" required/>
+					</div>
+					<button class="btn" type="submit">Log in</button>
+				</form>
+			</div>
+		</main>
+	}
+}
+
+// AdminHome is the placeholder landing page of the back-office.
+templ AdminHome() {
+	@Admin(Meta{Title: "Admin", Heading: "Back-office"}, "") {
+		<p>Pick a section in the menu.</p>
+	}
+}

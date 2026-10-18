@@ -12,6 +12,7 @@ tool (
 )
 
 require (
+	github.com/a-h/templ v0.3.1070
 	github.com/minio/minio-go/v7 v7.4.1
 	github.com/xuri/excelize/v2 v2.11.0
 	golang.org/x/crypto v0.58.0
@@ -26,7 +27,6 @@ require (
 	filippo.io/edwards25519 v1.1.1 // indirect
 	github.com/BurntSushi/toml v1.6.0 // indirect
 	github.com/a-h/parse v0.0.0-20250122154542-74294addb73e // indirect
-	github.com/a-h/templ v0.3.1070 // indirect
 	github.com/andybalholm/brotli v1.2.6 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect

@@ -1,0 +1,78 @@
+package layout
+
+import (
+	"awt/internal/auth"
+	"awt/web/static"
+)
+
+type adminLink struct {
+	Key, Label, Href string
+	AdminOnly        bool
+}
+
+// adminNav is the back-office sidebar. Scorers only see Competitions; the
+// rest is admin-only (spec 05, decision 0009).
+var adminNav = []adminLink{
+	{Key: "pilots", Label: "Pilots", Href: "/admin/pilots", AdminOnly: true},
+	{Key: "teams", Label: "Teams", Href: "/admin/teams", AdminOnly: true},
+	{Key: "judges", Label: "Judges", Href: "/admin/judges", AdminOnly: true},
+	{Key: "tricks", Label: "Tricks", Href: "/admin/tricks", AdminOnly: true},
+	{Key: "seasons", Label: "Seasons", Href: "/admin/seasons", AdminOnly: true},
+	{Key: "competitions", Label: "Competitions", Href: "/admin/competitions"},
+	{Key: "files", Label: "Files", Href: "/admin/files", AdminOnly: true},
+	{Key: "users", Label: "Users", Href: "/admin/users", AdminOnly: true},
+	{Key: "content", Label: "Content", Href: "/admin/content", AdminOnly: true},
+}
+
+func visibleAdminLinks(role string) []adminLink {
+	var out []adminLink
+	for _, l := range adminNav {
+		if !l.AdminOnly || role == auth.RoleAdmin {
+			out = append(out, l)
+		}
+	}
+	return out
+}
+
+func current(on bool) string {
+	if on {
+		return "page"
+	}
+	return "false"
+}
+
+// Admin wraps a back-office page: top bar with the user menu, sidebar, main.
+// It must run behind auth.RequireUser (the session comes from the context).
+templ Admin(m Meta, active string) {
+	{{ m.NoIndex = true }}
+	{{ sess, _ := auth.SessionFromContext(ctx) }}
+	@Base(m) {
+		<div class="admin">
+			<div class="admin__top">
+				<a href="/admin"><img src={ static.URL("img/logo.svg") } alt="Acro World Tour admin" width="129" height="57"/></a>
+				<div class="admin__user">
+					<span>{ sess.User.Name } ({ sess.User.Role })</span>
+					<form method="post" action="/admin/logout">
+						<input type="hidden" name="_csrf" value={ sess.CSRF }/>
+						<button class="btn btn--ghost" type="submit">Log out</button>
+					</form>
+				</div>
+			</div>
+			<aside class="admin__sidebar">
+				<nav aria-label="Admin">
+					<ul class="admin__nav">
+						for _, l := range visibleAdminLinks(sess.User.Role) {
+							<li><a href={ templ.SafeURL(l.Href) } aria-current={ current(l.Key == active) }>{ l.Label }</a></li>
+						}
+					</ul>
+				</nav>
+			</aside>
+			<main id="main" class="admin__main">
+				if m.Heading != "" {
+					<h1>{ m.Heading }</h1>
+				}
+				{ children... }
+			</main>
+		</div>
+	}
+}

@@ -11,7 +11,7 @@ import (
 )
 
 func TestHealthz(t *testing.T) {
-	srv := web.NewServer(config.Config{Addr: ":0"}, web.Deps{})
+	srv := web.NewServer(web.Deps{Cfg: config.Config{Addr: ":0"}})
 	rec := httptest.NewRecorder()
 	srv.Handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/healthz", nil))
 
