@@ -249,6 +249,8 @@ function calculate_score(comp, flight, run_i, is_awt_pilot, mark_type):
   return mark      # NOT rounded here (see §9)
 ```
 
+> Rewrite note: numbers inside notes are formatted like Python's `str(float)` (`pyFloat` in `internal/scoring`), as the legacy engine does: `5.5%`, `2.0%`, `3.523%` (never `2%`). Golden notes depend on it.
+
 ### 5.1 Technicity (§6.3.1.1 "Technicity in Solo")
 
 `technicity = mean of the 3 highest technical_coefficient among kept tricks, the list being padded with three virtual 1.0 tricks` (`competitions.py:1466-1467`, commit `a5a0255` "ensure to use 3 tricks for technicity calculation"). Hence:
