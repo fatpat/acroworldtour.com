@@ -13,9 +13,9 @@ FROM litestream/litestream:0.3.13@sha256:027eda2a89a86015b9797d2129d4dd447e89530
 
 FROM alpine:3.22@sha256:5291449c3df73caf6ed85e649dec1b9e818b39a5d8c871e97afc13e9cd5e8fa8
 # Why alpine and not distroless: the entrypoint is a POSIX sh script (restore,
-# then replicate), and wget gives the container a health check. See
-# docs/decisions/0013-runtime-image.md.
-RUN apk add --no-cache ca-certificates tzdata \
+# then replicate), wget gives the container a health check, and sqlite3 backs
+# the weekly restore check. See docs/decisions/0013-runtime-image.md.
+RUN apk add --no-cache ca-certificates tzdata sqlite \
  && addgroup -S -g 10001 awt && adduser -S -u 10001 -G awt awt \
  && mkdir /data && chown awt:awt /data
 COPY --from=build /out/awt /usr/local/bin/awt

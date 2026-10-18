@@ -2,22 +2,32 @@
 
 One OVHcloud VPS runs Docker Compose: `caddy`, `awt-prod`, `awt-training`. Cloudflare sits in front. Each awt container runs `litestream replicate -exec "awt serve"` and replicates its SQLite database to OVHcloud Object Storage (`litestream/<env>/` in the bucket). Design: `specifications/08-rewrite-recommendations.md` section 6. Image decision: `docs/decisions/0013-runtime-image.md`.
 
+Layout on the VPS: `/opt/awt/{compose.yaml,Caddyfile,certs/,.env*}` and `/opt/awt/deploy/{deploy.sh,weekly-restore-test.sh}`.
+
 Files: `Dockerfile`, `litestream.yml`, `compose.yaml`, `Caddyfile`, `deploy/` (entrypoint, deploy and restore scripts, env examples), `.github/workflows/deploy.yml`.
 
 ## 1. Provision the VPS
 
 1. Order an OVHcloud VPS (Debian 12 or Ubuntu 24.04 LTS). Add your SSH public key at order time.
-2. Create a non-root deploy user in the `docker` group, copy the key to it, then disable password and root SSH login in `/etc/ssh/sshd_config.d/10-hardening.conf`:
+2. Create a non-root deploy user `deploy` in the `docker` group (see the note on root equivalence below), and an admin user for yourself. Harden SSH in `/etc/ssh/sshd_config.d/10-hardening.conf`, then `systemctl reload ssh`:
    ```
+   Port 2222                      # any non-default port; also set VPS_PORT in GitHub
    PasswordAuthentication no
    PermitRootLogin no
+   AllowUsers admin deploy
    ```
-   Then `systemctl reload ssh`.
-3. Install Docker Engine and the compose plugin from Docker's apt repository.
-4. Enable automatic security updates: `apt install unattended-upgrades` and `dpkg-reconfigure -plow unattended-upgrades`.
-5. Create the deploy directory: `install -d -o <deploy-user> -m 750 /opt/awt`.
-6. Firewall: allow SSH from your admin IPs, allow 80 and 443 from Cloudflare ranges only, deny everything else inbound. Docker bypasses ufw for published ports, so filter in the `DOCKER-USER` chain (or use the OVHcloud network firewall in front of the VPS). Cloudflare ranges: https://www.cloudflare.com/ips-v4 and https://www.cloudflare.com/ips-v6. Example with nftables sets or the OVH firewall: one allow rule per CIDR on tcp/80, tcp/443 (and udp/443 for HTTP/3), then a final deny. The Caddyfile also aborts any request whose peer is not a Cloudflare address (defence in depth). Refresh the CIDR list in the firewall and the `Caddyfile` when Cloudflare changes it (check quarterly).
-7. Cloudflare: proxied DNS records for the prod and training hosts, SSL mode **Full (strict)**. Caddy obtains its certificates with ACME (HTTP-01 works through Cloudflare; alternatively install a Cloudflare Origin CA certificate). Do not cache `/live/*` (add a cache rule: bypass). Cloudflare closes idle connections after about 100 s; the app sends an SSE heartbeat every 30 s and Caddy does not buffer `/live/*`.
+3. SSH is reachable from the internet (GitHub-hosted runners have no fixed addresses), so it is protected by: key-only authentication, the non-default port, `fail2ban` (`apt install fail2ban`, enable the `sshd` jail with the custom port) and the restricted deploy key below. Allow your admin IPs only if you have fixed ones; otherwise accept the exposure.
+4. **Deploy key restriction.** Membership of the `docker` group is root-equivalent: anyone who can run `docker` as `deploy` can mount the host filesystem. The CI key must therefore never get a shell. In `/home/deploy/.ssh/authorized_keys` use a forced command:
+   ```
+   restrict,command="/opt/awt/deploy/deploy.sh" ssh-ed25519 AAAA... awt-ci-deploy
+   ```
+   `restrict` disables the pty, port, agent and X11 forwarding. With `command=`, whatever the client asks for arrives in `SSH_ORIGINAL_COMMAND`, and `deploy.sh` accepts only `training <hex-tag>`, `prod <hex-tag>` (tag = lowercase hex commit id) or `sync` (a tar holding exactly `compose.yaml` and `Caddyfile`, regular files only). Any other input, including shell metacharacters, is refused before anything runs. A stolen CI key can therefore redeploy an image tag from the project's registry or replace the two config files, not run arbitrary commands. Keep `/opt/awt/deploy/` owned by root (or by an admin account, not `deploy`) and not writable by `deploy`, so the forced command cannot be rewritten through the key. Your own admin key is unrestricted.
+5. Install Docker Engine and the compose plugin from Docker's apt repository.
+6. Enable automatic security updates: `apt install unattended-upgrades` and `dpkg-reconfigure -plow unattended-upgrades`.
+7. Create the layout: `install -d -o deploy -m 750 /opt/awt /opt/awt/certs` and `install -d -o root -m 755 /opt/awt/deploy`. Copy `deploy/deploy.sh` and `deploy/weekly-restore-test.sh` to `/opt/awt/deploy/` (as the admin user, `chmod 755`, owned by root), and `compose.yaml` plus `Caddyfile` to `/opt/awt/`. Deploys update `compose.yaml` and `Caddyfile` through `sync`; the two scripts change rarely and are copied by hand again when they change in the repository.
+8. Firewall: allow SSH (your port), allow 80 and 443 from Cloudflare ranges only, deny everything else inbound. Docker bypasses ufw for published ports, so filter in the `DOCKER-USER` chain (or use the OVHcloud network firewall in front of the VPS). Cloudflare ranges: https://www.cloudflare.com/ips-v4 and https://www.cloudflare.com/ips-v6. One allow rule per CIDR on tcp/80, tcp/443 (and udp/443 for HTTP/3), then a final deny. The Caddyfile also aborts any request whose peer is not a Cloudflare address (defence in depth). Refresh the CIDR list in the firewall and in the `Caddyfile` when Cloudflare changes it (check quarterly).
+9. **TLS strategy: Cloudflare Origin CA certificate, SSL mode Full (strict).** In Cloudflare, create an Origin CA certificate covering the prod and training hosts (or `*.example.org`), validity up to 15 years. Save it as `/opt/awt/certs/origin.pem` and the private key as `/opt/awt/certs/origin.key` (`chmod 700 certs`, key `600`; if Caddy cannot read the key because Docker runs with user namespaces or rootless, use `640` with a group Caddy shares, or `644` inside the 700 directory). Paths can be changed with `AWT_TLS_CERT` and `AWT_TLS_KEY` in the Caddy environment. Caddy loads these files instead of using ACME, so no certificate is requested from Let's Encrypt, and nothing but Cloudflare can complete a trusted TLS handshake with the origin. The certificate is not trusted by browsers; the origin must never be exposed without Cloudflare. Replace it before it expires: write the new files and run `docker compose restart caddy`.
+10. Cloudflare: proxied DNS records for the prod and training hosts. Do not cache `/live/*` (add a cache rule: bypass). Cloudflare closes idle connections after about 100 s; the live stream sends a heartbeat about every 30 s (spec 6.4) and Caddy does not buffer `/live/*`.
 
 ## 2. Secrets and configuration
 
@@ -25,7 +35,7 @@ Nothing secret is committed. On the VPS, in `/opt/awt` (mode 600, owner = deploy
 
 | File | From | Holds |
 |---|---|---|
-| `.env` | `deploy/env.example` | hosts, image name, image tags (tags are rewritten by `deploy.sh`) |
+| `.env` | `deploy/env.example` | hosts, image name, image tags (tags are rewritten by `deploy.sh`; `none` = nothing deployed yet, there is no `latest` default) |
 | `.env.prod` | `deploy/env.prod.example` | `AWT_*` for prod: session secret, S3 keys, Cloudflare token, trusted proxies |
 | `.env.training` | `deploy/env.training.example` | same for training, with its own secret and bucket |
 
@@ -33,15 +43,15 @@ Generate session secrets with `openssl rand -hex 32`. Set `AWT_IMAGE` in `.env` 
 
 GitHub repository secrets for the deploy workflow:
 
-- `VPS_HOST`, `VPS_USER`: the VPS address and deploy user.
-- `VPS_SSH_KEY`: private key of a key pair used only for deploys (public half in the deploy user's `authorized_keys`).
-- `VPS_KNOWN_HOSTS`: `ssh-keyscan -t ed25519 <host>`, checked against the fingerprint shown in the OVH console.
+- `VPS_HOST`, `VPS_USER` (`deploy`), `VPS_PORT`: the VPS address, deploy user and SSH port.
+- `VPS_SSH_KEY`: private key of a key pair used only for deploys (public half in `authorized_keys` with the forced command, section 1).
+- `VPS_KNOWN_HOSTS`: `ssh-keyscan -p <port> -t ed25519 <host>`, checked against the fingerprint shown in the OVH console.
 
-The workflow logs the VPS into GHCR with the run's `GITHUB_TOKEN` (valid for the run). To pull outside a deploy (cron restore test, manual `compose up`), keep the last image already pulled, or make the package public, or run `docker login ghcr.io` once with a read-only personal access token.
+The workflow passes the run's `GITHUB_TOKEN` (valid for the run) on stdin to the forced command, which runs `docker login ghcr.io` with it. To pull outside a deploy (cron restore test, manual `compose up`), keep the last image already pulled, or make the package public, or run `docker login ghcr.io` once with a read-only personal access token.
 
 ## 3. First deploy
 
-1. Provision and configure as above. Push to `main`; after CI the deploy workflow copies `compose.yaml`, `Caddyfile` and the scripts to `/opt/awt`, deploys training, smoke tests, then deploys prod. The first run starts empty databases (migrations run at `awt serve` startup).
+1. Provision and configure as above. Push to `main`; after CI the deploy workflow syncs `compose.yaml` and `Caddyfile`, deploys training (health checked), then deploys prod. The first run starts empty databases (migrations run at `awt serve` startup).
 2. Check: `docker compose ps` shows `healthy` for `awt-prod` and `awt-training`; `docker compose logs awt-prod` shows `listening`; the public URL answers through Cloudflare; the bucket gets a `litestream/prod/` prefix within a minute.
 3. Create the first admin: `docker compose exec awt-prod awt user add --email you@example.org --name "You" --role admin` (the password is read from stdin or prompted).
 
@@ -61,9 +71,9 @@ Run it on training first and check the result in the browser. Then repeat on pro
 
 ## 5. Routine deploys and rollback
 
-Every push to `main` that passes CI deploys automatically: training, smoke test, prod. `deploy/deploy.sh <env> <tag>` waits up to 120 s for the container health check (`/healthz`). If the new container is not healthy it restarts the previous tag and exits non-zero, which fails the workflow.
+Every push to `main` that passes CI deploys automatically: training, then prod. `deploy.sh <env> <tag>` waits up to 120 s for the container health check, then requests `/healthz` inside the stack (directly on the app container, then through Caddy on its loopback-only listener `127.0.0.1:8081` in the `caddy` container, which is never published). Caddy's config is validated and reloaded on every deploy; a validation or reload failure fails the deploy (no silent success). If the new app container is not healthy it restarts the previous tag and exits non-zero, which fails the workflow. On the very first deploy there is no previous tag and nothing to roll back to.
 
-Manual rollback (for example a bad release that is healthy but wrong): `cd /opt/awt && ./deploy.sh prod <previous-sha>`. Tags are the commit SHAs in the GHCR package list. Migrations only move forward and must stay compatible with the previous release for one version; if a migration itself is the problem, restore the database (next section).
+Manual rollback (for example a bad release that is healthy but wrong): `/opt/awt/deploy/deploy.sh prod <previous-sha>` (as `deploy` or an admin user; run `docker login ghcr.io` first if the image is not already local). Tags are the commit SHAs in the GHCR package list. Migrations only move forward and must stay compatible with the previous release for one version; if a migration itself is the problem, restore the database (next section).
 
 ## 6. Backups and restore
 
@@ -90,12 +100,12 @@ To make a point in time restore live, restore to `/data/awt.db` on an emptied vo
 
 **Local drill:** `make backup-restore-test` runs the whole cycle against a local MinIO in a few seconds (writes data, deletes the volume, starts again, checks the data is back).
 
-**Weekly restore test (cron on the VPS).** `deploy/weekly-restore-test.sh` restores the latest prod replica into a throwaway container and opens it with `awt migrate`; it fails loudly on any restore or database error. Install as the deploy user (`crontab -e`):
+**Weekly restore test (cron on the VPS).** `deploy/weekly-restore-test.sh` restores the latest prod replica into a throwaway container and runs `PRAGMA integrity_check`, requires at least one row in `users`, and opens it with `awt migrate`; it fails loudly on any of these. Install as the deploy user (`crontab -e`):
 
 ```
 MAILTO=you@example.org
 RESTORE_TEST_PING_URL=https://hc-ping.com/<uuid>
-17 4 * * 1  /opt/awt/weekly-restore-test.sh >> /var/log/awt-restore-test.log 2>&1
+17 4 * * 1  /opt/awt/deploy/weekly-restore-test.sh >> /var/log/awt-restore-test.log 2>&1
 ```
 
 A failure exits non-zero (cron mails the output) and pings `$RESTORE_TEST_PING_URL/fail`; success pings the URL, so a missed run also alerts when the check is configured with a 8-day period (healthchecks.io style service). Create `/var/log/awt-restore-test.log` writable by the deploy user.

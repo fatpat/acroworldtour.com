@@ -8,6 +8,7 @@ cd "$(dirname "$0")/.."
 export COMPOSE_PROJECT_NAME=awt-restore-test
 # compose.yaml interpolates these for every service, even unused ones.
 export AWT_PROD_HOST=prod.invalid AWT_TRAINING_HOST=training.invalid
+export AWT_PROD_TAG=unused AWT_TRAINING_TAG=unused AWT_IMAGE=unused
 export AWT_TEST_IMAGE="${AWT_TEST_IMAGE:-awt:dev}"
 DC="docker compose --profile test"
 EMAIL=restore@example.org
@@ -27,15 +28,37 @@ wait_healthy() {
   fail "awt-test did not become healthy"
 }
 
+# Number of WAL segments litestream has shipped to the replica.
+wal_count() {
+  $DC exec -T awt-test litestream wal -config /etc/litestream.yml /data/awt.db 2>/dev/null | tail -n +2 | wc -l
+}
+
+# Wait until the replica stops changing (initial snapshot and migrations shipped).
+wait_replica_idle() {
+  last=-1; i=0
+  while [ "$i" -lt 30 ]; do
+    n=$(wal_count)
+    [ "$n" -ge 1 ] && [ "$n" = "$last" ] && return 0
+    last=$n; i=$((i + 1)); sleep 2
+  done
+  fail "replica never became idle"
+}
+
 cleanup
 echo "== start minio + awt (empty volume, empty replica)"
 $DC up -d minio awt-test
 wait_healthy
+wait_replica_idle
+base=$(wal_count)
 
 echo "== write data"
 printf '%s\n' "$PASS" | $DC exec -T awt-test awt user add --email "$EMAIL" --name Restore --role admin \
   || fail "user add"
-sleep 5 # litestream syncs every second; leave margin for the WAL to be shipped
+i=0
+until [ "$(wal_count)" -gt "$base" ]; do
+  i=$((i + 1)); [ "$i" -lt 30 ] || fail "write was not replicated"
+  sleep 1
+done
 
 echo "== stop, delete the volume"
 $DC stop awt-test

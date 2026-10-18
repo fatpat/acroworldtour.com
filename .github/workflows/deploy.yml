@@ -4,8 +4,9 @@ name: deploy
 # GHCR, then deploy training, smoke test it, then prod (deploy/deploy.sh rolls
 # back to the previous tag when the new container is not healthy).
 #
-# Repository secrets: VPS_HOST, VPS_USER, VPS_SSH_KEY (private key of the
-# deploy user), VPS_KNOWN_HOSTS (output of `ssh-keyscan <host>` verified once).
+# Repository secrets: VPS_HOST, VPS_USER, VPS_PORT (SSH port, non-default),
+# VPS_SSH_KEY (private key of the restricted deploy key), VPS_KNOWN_HOSTS
+# (output of `ssh-keyscan -p <port> <host>`, verified once).
 
 on:
   workflow_run:
@@ -20,8 +21,6 @@ concurrency:
   group: deploy
   cancel-in-progress: false
 
-env:
-  DEPLOY_DIR: /opt/awt
 
 jobs:
   build:
@@ -73,34 +72,28 @@ jobs:
         env:
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
           VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
         run: |
           install -m 700 -d ~/.ssh
           printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_deploy
           chmod 600 ~/.ssh/id_deploy
           printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
-          printf 'Host vps\n  HostName %s\n  User %s\n  IdentityFile ~/.ssh/id_deploy\n  StrictHostKeyChecking yes\n' \
-            "${{ secrets.VPS_HOST }}" "${{ secrets.VPS_USER }}" > ~/.ssh/config
-      - name: Copy deploy files
-        run: |
-          scp compose.yaml Caddyfile deploy/deploy.sh deploy/weekly-restore-test.sh "vps:${DEPLOY_DIR}/"
-      - name: Registry login on the VPS
+          printf 'Host vps\n  HostName %s\n  User %s\n  Port %s\n  IdentityFile ~/.ssh/id_deploy\n  IdentitiesOnly yes\n  StrictHostKeyChecking yes\n' \
+            "$VPS_HOST" "$VPS_USER" "${VPS_PORT:-22}" > ~/.ssh/config
+      # The deploy key is restricted on the VPS to /opt/awt/deploy/deploy.sh
+      # (authorized_keys: restrict,command=...). The only things it accepts:
+      # `sync` (tar of compose.yaml + Caddyfile on stdin) and `<env> <tag>`.
+      - name: Sync compose.yaml and Caddyfile
+        run: tar -cf - compose.yaml Caddyfile | ssh vps sync
+      - name: Deploy training (health checked, rolls back on failure)
         env:
-          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          printf '%s' "$GHCR_TOKEN" | ssh vps "docker login ghcr.io -u '${{ github.actor }}' --password-stdin"
-      - name: Deploy training
-        run: ssh vps "cd ${DEPLOY_DIR} && ./deploy.sh training ${TAG}"
-      - name: Smoke test training
-        run: |
-          ssh vps sh -s <<'EOF'
-          cd /opt/awt && . ./.env
-          curl -fsSk --max-time 10 --retry 5 --retry-delay 3 --resolve "$AWT_TRAINING_HOST:443:127.0.0.1" "https://$AWT_TRAINING_HOST/healthz"
-          EOF
-      - name: Deploy prod
-        run: ssh vps "cd ${DEPLOY_DIR} && ./deploy.sh prod ${TAG}"
-      - name: Smoke test prod
-        run: |
-          ssh vps sh -s <<'EOF'
-          cd /opt/awt && . ./.env
-          curl -fsSk --max-time 10 --retry 5 --retry-delay 3 --resolve "$AWT_PROD_HOST:443:127.0.0.1" "https://$AWT_PROD_HOST/healthz"
-          EOF
+          REGISTRY_USER: ${{ github.actor }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: printf '%s %s\n' "$REGISTRY_USER" "$REGISTRY_TOKEN" | ssh vps "training ${TAG}"
+      - name: Deploy prod (health checked, rolls back on failure)
+        env:
+          REGISTRY_USER: ${{ github.actor }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: printf '%s %s\n' "$REGISTRY_USER" "$REGISTRY_TOKEN" | ssh vps "prod ${TAG}"

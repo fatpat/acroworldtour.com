@@ -11,7 +11,7 @@ The container must restore the database from the Litestream replica when the vol
 
 Use `alpine:3.22` (pinned by digest) as the runtime base with a small POSIX `sh` entrypoint (`deploy/entrypoint.sh`). The Litestream 0.3.13 binary is copied from its official image (it is static, so it runs on musl). The app is built with `CGO_ENABLED=0`.
 
-Distroless would need the restore-then-replicate sequence rebuilt inside `awt` itself, duplicating Litestream's supervision. Alpine adds about 8 MB, gives a `wget` health check, and lets operators `docker exec` a shell during an incident.
+Distroless would need the restore-then-replicate sequence rebuilt inside `awt` itself, duplicating Litestream's supervision. Alpine adds about 8 MB, gives a `wget` health check, the `sqlite3` CLI for the weekly restore check, and lets operators `docker exec` a shell during an incident.
 
 ## Consequences
 

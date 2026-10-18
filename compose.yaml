@@ -27,6 +27,7 @@ services:
       AWT_TRAINING_HOST: ${AWT_TRAINING_HOST:?set AWT_TRAINING_HOST in .env}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./certs:/etc/caddy/certs:ro
       - caddy_data:/data
       - caddy_config:/config
     networks: [edge]
@@ -36,7 +37,7 @@ services:
 
   awt-prod:
     <<: *awt
-    image: ${AWT_IMAGE:-ghcr.io/OWNER/awt}:${AWT_PROD_TAG:-latest}
+    image: ${AWT_IMAGE:?set AWT_IMAGE in .env}:${AWT_PROD_TAG:?set AWT_PROD_TAG in .env}
     env_file:
       - path: .env.prod
         required: false  # missing file => awt refuses to start (no session secret)
@@ -45,7 +46,7 @@ services:
 
   awt-training:
     <<: *awt
-    image: ${AWT_IMAGE:-ghcr.io/OWNER/awt}:${AWT_TRAINING_TAG:-latest}
+    image: ${AWT_IMAGE:?set AWT_IMAGE in .env}:${AWT_TRAINING_TAG:?set AWT_TRAINING_TAG in .env}
     env_file:
       - path: .env.training
         required: false
