@@ -1,0 +1,2 @@
+{"_id":{"$oid":"bbbbbbbbbbbbbbbbbbbbbbb1"},"name":"Jane Judge","country":"hun","level":"senior","deleted":null,"civlid":1001}
+{"_id":"bbbbbbbbbbbbbbbbbbbbbbb2","name":"Joe Trainee","country":"fra","level":"trainee","deleted":{"$date":"2025-03-04T10:00:00Z"}}
