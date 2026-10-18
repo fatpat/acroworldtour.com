@@ -24,6 +24,9 @@ type Deps struct {
 	Blobs blob.Store
 	// Service holds the back-office use cases.
 	Service *service.Service
+	// Bus carries the live-update events (SSE stream, CDN purge); nil
+	// disables the live routes' event source.
+	Bus *service.Bus
 }
 
 // Guard is the access level a route requires.

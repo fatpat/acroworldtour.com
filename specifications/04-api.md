@@ -413,6 +413,8 @@ Cache key is `$proxy$request_uri`. The cache serves stale content on errors and 
 
 **Rewrite note:** a real push channel (SSE or WebSocket keyed by competition, emitted on flight save, publish and run state change) and a live overlay fed with actual scores would be new features. The legacy behaviour to preserve is "public results reflect published flights within ≈1 min".
 
+**Rewrite implementation (task 17):** `GET /live/competitions/{code}` is an SSE stream (`event: update`, `data: flight|run|competition`, `: ping` every 30 s, `X-Accel-Buffering: no`; 404 for unknown or unpublished competitions, 503 beyond 2000 concurrent streams per process). Open competitions' public pages connect with the htmx SSE extension and reload their ranking table from `GET /competitions/{code}/fragment?list=&run=` (5 s cache). `GET /live/overlay/competitions/{code}/runs/{n}.svg` and `/current.svg` render the legacy 1920x1080 lower-third for the latest published flight of the run, with run, pilot or team name, country, rank in the run and score (all text XML-escaped, `no-store`; an empty transparent canvas while the run has no published flight). A subscriber purges the CDN copies of the affected pages and `/api/v1` URLs on every event; query-string variants (`?list=`) cannot be purged on Cloudflare's free plan and rely on the 30 s max-age.
+
 ---
 
 ## 5. Caching layer

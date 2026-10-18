@@ -31,12 +31,13 @@ const subscriberBuffer = 16
 type Bus struct {
 	mu      sync.Mutex
 	subs    map[string]map[chan Event]struct{}
+	all     map[chan Event]struct{}
 	dropped atomic.Int64
 }
 
 // NewBus returns an empty bus.
 func NewBus() *Bus {
-	return &Bus{subs: map[string]map[chan Event]struct{}{}}
+	return &Bus{subs: map[string]map[chan Event]struct{}{}, all: map[chan Event]struct{}{}}
 }
 
 // Subscribe returns a channel receiving the events of topic and a function
@@ -63,10 +64,36 @@ func (b *Bus) Subscribe(topic string) (<-chan Event, func()) {
 	}
 }
 
-// Publish sends e to every subscriber of e.Topic without blocking.
+// SubscribeAll returns a channel receiving the events of every topic (the
+// CDN purge subscriber) and a function that unsubscribes and closes it.
+func (b *Bus) SubscribeAll() (<-chan Event, func()) {
+	ch := make(chan Event, subscriberBuffer)
+	b.mu.Lock()
+	b.all[ch] = struct{}{}
+	b.mu.Unlock()
+	var once sync.Once
+	return ch, func() {
+		once.Do(func() {
+			b.mu.Lock()
+			delete(b.all, ch)
+			b.mu.Unlock()
+			close(ch)
+		})
+	}
+}
+
+// Publish sends e to every subscriber of e.Topic and to the wildcard
+// subscribers without blocking.
 func (b *Bus) Publish(e Event) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
+	for ch := range b.all {
+		select {
+		case ch <- e:
+		default:
+			b.dropped.Add(1)
+		}
+	}
 	for ch := range b.subs[e.Topic] {
 		select {
 		case ch <- e:

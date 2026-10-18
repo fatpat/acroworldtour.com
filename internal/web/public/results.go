@@ -60,6 +60,7 @@ func registerResults(r *web.Router) {
 	ref("GET /teams/{id}/{slug}", p.team)
 	ref("GET /judges", p.judges)
 	ref("GET /tricks", p.tricks)
+	registerLive(r, p)
 }
 
 // meta builds the page head: title, description, canonical/og:url from the

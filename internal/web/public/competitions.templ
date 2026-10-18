@@ -46,7 +46,9 @@ templ compShell(m layout.Meta, h compHeader) {
 			}
 		</p>
 		@tabBar(h.Tabs, "Competition sections")
-		{ children... }
+		<div { h.sseAttrs()... }>
+			{ children... }
+		</div>
 	}
 }
 
@@ -60,48 +62,9 @@ templ CompetitionOverallPage(m layout.Meta, v overallView) {
 				}
 			</h2>
 			@tabBar(v.Lists, "Ranking")
-			if len(v.Rows) == 0 {
-				<p class="empty">No results at the moment.</p>
-			} else {
-				<div class="table-wrap">
-					<table class="table results">
-						<thead>
-							<tr>
-								<th scope="col" class="num">Rank</th>
-								<th scope="col">
-									if v.Synchro() {
-										Team
-									} else {
-										Pilot
-									}
-								</th>
-								for i := range v.Runs {
-									<th scope="col" class="num"><a href={ templ.SafeURL(v.Href() + "/runs/" + strconv.Itoa(i+1)) }>{ "Run " + strconv.Itoa(i+1) }</a></th>
-								}
-								<th scope="col" class="num">Score</th>
-							</tr>
-						</thead>
-						<tbody>
-							for _, r := range v.Rows {
-								<tr>
-									<td class="num">{ strconv.FormatInt(r.Rank, 10) }</td>
-									<td>
-										@participantCell(r.P, r.Rank)
-									</td>
-									for _, run := range v.Runs {
-										if c, ok := r.PerRun[int(run.Idx)]; ok {
-											<td class="num">{ score(c.Score) } <small class="muted">{ "#" + strconv.FormatInt(c.Rank, 10) }</small></td>
-										} else {
-											<td class="num muted" title="No published flight">—</td>
-										}
-									}
-									<td class="num"><strong>{ score(r.Score) }</strong></td>
-								</tr>
-							}
-						</tbody>
-					</table>
-				</div>
-			}
+			<div id="ranking" { v.liveAttrs("")... }>
+				@overallTable(v)
+			</div>
 		</section>
 	}
 }
@@ -114,60 +77,9 @@ templ CompetitionRunPage(m layout.Meta, v runView) {
 				@finalBadge(v.Run.ResultsFinal)
 			</h2>
 			@tabBar(v.Lists, "Ranking")
-			if len(v.Rows) == 0 {
-				<p class="empty">No published flight in this run yet.</p>
-			} else {
-				<div class="table-wrap">
-					<table class="table results">
-						<thead>
-							<tr>
-								<th scope="col" class="num">Rank</th>
-								<th scope="col">
-									if v.Synchro() {
-										Team
-									} else {
-										Pilot
-									}
-								</th>
-								<th scope="col" class="num">Score</th>
-							</tr>
-						</thead>
-						for _, f := range v.Rows {
-							<tbody id={ f.Anchor() }>
-								<tr>
-									<td class="num">{ strconv.FormatInt(f.Rank, 10) }</td>
-									<td>
-										@participantCell(f.P, f.Rank)
-									</td>
-									<td class="num">
-										if f.DNS {
-											<abbr title="Did not start">DNS</abbr>
-										} else if f.Scored {
-											<strong>{ score(f.Score) }</strong>
-										} else {
-											<span class="muted">No score</span>
-										}
-										if f.Mark != nil && f.Mark.Malus > 0 {
-											<span title="Malus" aria-label="Malus">🔻</span>
-										}
-										if f.Mark != nil && len(f.Mark.Warnings1)+len(f.Mark.Warnings2) > 0 {
-											<span title="Warnings" aria-label="Warnings">⚠️</span>
-										}
-									</td>
-								</tr>
-								<tr class="flight-row">
-									<td colspan="3">
-										<details class="flight">
-											<summary>Flight details</summary>
-											@flightDetail(f, v.Synchro())
-										</details>
-									</td>
-								</tr>
-							</tbody>
-						}
-					</table>
-				</div>
-			}
+			<div id="ranking" { v.liveAttrs(strconv.Itoa(v.N))... }>
+				@runTable(v)
+			</div>
 		</section>
 	}
 }
@@ -329,4 +241,110 @@ templ CompetitionDetailsPage(m layout.Meta, v detailsView) {
 			}
 		</section>
 	}
+}
+
+// overallTable is the overall ranking of the selected list; the live page
+// reloads it as a fragment.
+templ overallTable(v overallView) {
+			if len(v.Rows) == 0 {
+				<p class="empty">No results at the moment.</p>
+			} else {
+				<div class="table-wrap">
+					<table class="table results">
+						<thead>
+							<tr>
+								<th scope="col" class="num">Rank</th>
+								<th scope="col">
+									if v.Synchro() {
+										Team
+									} else {
+										Pilot
+									}
+								</th>
+								for i := range v.Runs {
+									<th scope="col" class="num"><a href={ templ.SafeURL(v.Href() + "/runs/" + strconv.Itoa(i+1)) }>{ "Run " + strconv.Itoa(i+1) }</a></th>
+								}
+								<th scope="col" class="num">Score</th>
+							</tr>
+						</thead>
+						<tbody>
+							for _, r := range v.Rows {
+								<tr>
+									<td class="num">{ strconv.FormatInt(r.Rank, 10) }</td>
+									<td>
+										@participantCell(r.P, r.Rank)
+									</td>
+									for _, run := range v.Runs {
+										if c, ok := r.PerRun[int(run.Idx)]; ok {
+											<td class="num">{ score(c.Score) } <small class="muted">{ "#" + strconv.FormatInt(c.Rank, 10) }</small></td>
+										} else {
+											<td class="num muted" title="No published flight">—</td>
+										}
+									}
+									<td class="num"><strong>{ score(r.Score) }</strong></td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			}
+}
+
+// runTable is the run ranking with each flight's detail; the live page
+// reloads it as a fragment.
+templ runTable(v runView) {
+			if len(v.Rows) == 0 {
+				<p class="empty">No published flight in this run yet.</p>
+			} else {
+				<div class="table-wrap">
+					<table class="table results">
+						<thead>
+							<tr>
+								<th scope="col" class="num">Rank</th>
+								<th scope="col">
+									if v.Synchro() {
+										Team
+									} else {
+										Pilot
+									}
+								</th>
+								<th scope="col" class="num">Score</th>
+							</tr>
+						</thead>
+						for _, f := range v.Rows {
+							<tbody id={ f.Anchor() }>
+								<tr>
+									<td class="num">{ strconv.FormatInt(f.Rank, 10) }</td>
+									<td>
+										@participantCell(f.P, f.Rank)
+									</td>
+									<td class="num">
+										if f.DNS {
+											<abbr title="Did not start">DNS</abbr>
+										} else if f.Scored {
+											<strong>{ score(f.Score) }</strong>
+										} else {
+											<span class="muted">No score</span>
+										}
+										if f.Mark != nil && f.Mark.Malus > 0 {
+											<span title="Malus" aria-label="Malus">🔻</span>
+										}
+										if f.Mark != nil && len(f.Mark.Warnings1)+len(f.Mark.Warnings2) > 0 {
+											<span title="Warnings" aria-label="Warnings">⚠️</span>
+										}
+									</td>
+								</tr>
+								<tr class="flight-row">
+									<td colspan="3">
+										<details class="flight">
+											<summary>Flight details</summary>
+											@flightDetail(f, v.Synchro())
+										</details>
+									</td>
+								</tr>
+							</tbody>
+						}
+					</table>
+				</div>
+			}
 }

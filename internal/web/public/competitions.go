@@ -194,6 +194,7 @@ type runCell struct {
 type overallView struct {
 	compHeader
 	Lists []tab
+	Sel   string // selected list key
 	Rows  []rankRow
 }
 
@@ -205,39 +206,45 @@ func (p *results) competitionOverall(w http.ResponseWriter, r *http.Request) {
 		fail(w, r, err)
 		return
 	}
-	entries, err := p.q.PublicRankingEntries(r.Context(), gen.PublicRankingEntriesParams{Scope: store.ScopeCompetition, ScopeKey: h.C.ID})
+	v, err := p.overall(r, h)
 	if err != nil {
 		serverError(w, r, err)
 		return
 	}
+	renderPage(w, r, CompetitionOverallPage(p.compMeta(h, h.C.Name, h.Href()), v))
+}
+
+// overall loads the overall ranking of the list ?list= selects.
+func (p *results) overall(r *http.Request, h compHeader) (overallView, error) {
+	v := overallView{compHeader: h}
+	entries, err := p.q.PublicRankingEntries(r.Context(), gen.PublicRankingEntriesParams{Scope: store.ScopeCompetition, ScopeKey: h.C.ID})
+	if err != nil {
+		return v, err
+	}
 	members := map[string][]member{}
 	if h.Synchro() {
 		if members, err = p.teamMembers(r); err != nil {
-			serverError(w, r, err)
-			return
+			return v, err
 		}
 	}
 	var keys []string
 	for _, e := range entries {
 		keys = append(keys, e.ListKey)
 	}
-	v := overallView{compHeader: h}
-	var sel string
-	v.Lists, sel = listTabs(visibleLists(keys, h.SeasonOrder), r.URL.Query().Get("list"), h.Href(), h.SeasonNames)
-	cells, err := p.runCells(r, h.C.ID, sel)
+	v.Lists, v.Sel = listTabs(visibleLists(keys, h.SeasonOrder), r.URL.Query().Get("list"), h.Href(), h.SeasonNames)
+	cells, err := p.runCells(r, h.C.ID, v.Sel)
 	if err != nil {
-		serverError(w, r, err)
-		return
+		return v, err
 	}
 	for _, e := range entries {
-		if e.ListKey != sel {
+		if e.ListKey != v.Sel {
 			continue
 		}
 		row := rankRow{Rank: e.Rank, Score: e.Score, P: newParticipant(e.Civlid, e.TeamID, e.PilotName, e.PilotCountry, e.TeamName, members),
 			PerRun: cells[newParticipant(e.Civlid, e.TeamID, "", "", "", nil).key()]}
 		v.Rows = append(v.Rows, row)
 	}
-	renderPage(w, r, CompetitionOverallPage(p.compMeta(h, h.C.Name, h.Href()), v))
+	return v, nil
 }
 
 // runCells is every participant's rank and score in each run of one list,
@@ -281,14 +288,15 @@ func sharedRank(n int, prev runCell, score float64) int64 {
 
 // flightRow is a published flight in a run list, with its detail.
 type flightRow struct {
-	Rank   int64
-	P      participant
-	Score  float64
-	Scored bool
-	DNS    bool
-	Mark   *scoring.FinalMark
-	Tricks []gen.PublicRunFlightTricksRow
-	Marks  []gen.PublicRunFlightMarksRow
+	FlightID int64
+	Rank     int64
+	P        participant
+	Score    float64
+	Scored   bool
+	DNS      bool
+	Mark     *scoring.FinalMark
+	Tricks   []gen.PublicRunFlightTricksRow
+	Marks    []gen.PublicRunFlightMarksRow
 }
 
 func (f flightRow) Anchor() string { return "flight-" + slugOr(f.P.key()) }
@@ -298,6 +306,7 @@ type runView struct {
 	N     int
 	Run   gen.Run
 	Lists []tab
+	Sel   string // selected list key
 	Rows  []flightRow
 }
 
@@ -319,41 +328,47 @@ func (p *results) competitionRun(w http.ResponseWriter, r *http.Request) {
 		notFound(w, r)
 		return
 	}
-	ctx := r.Context()
-	run := h.Runs[n-1]
-	arg := gen.PublicRunEntriesParams{CompetitionID: h.C.ID, RunIdx: run.Idx}
-	entries, err := p.q.PublicRunEntries(ctx, arg)
+	v, err := p.run(r, h, n)
 	if err != nil {
 		serverError(w, r, err)
 		return
+	}
+	title := h.C.Name + " – Run " + strconv.Itoa(n)
+	renderPage(w, r, CompetitionRunPage(p.compMeta(h, title, h.Href()+"/runs/"+strconv.Itoa(n)), v))
+}
+
+// run loads the published flights of run n (1-based, in range) of the list
+// ?list= selects.
+func (p *results) run(r *http.Request, h compHeader, n int) (runView, error) {
+	ctx := r.Context()
+	v := runView{compHeader: h, N: n, Run: h.Runs[n-1]}
+	arg := gen.PublicRunEntriesParams{CompetitionID: h.C.ID, RunIdx: v.Run.Idx}
+	entries, err := p.q.PublicRunEntries(ctx, arg)
+	if err != nil {
+		return v, err
 	}
 	tricks, err := p.q.PublicRunFlightTricks(ctx, gen.PublicRunFlightTricksParams(arg))
 	if err != nil {
-		serverError(w, r, err)
-		return
+		return v, err
 	}
 	marks, err := p.q.PublicRunFlightMarks(ctx, gen.PublicRunFlightMarksParams(arg))
 	if err != nil {
-		serverError(w, r, err)
-		return
+		return v, err
 	}
 	members := map[string][]member{}
 	if h.Synchro() {
 		if members, err = p.teamMembers(r); err != nil {
-			serverError(w, r, err)
-			return
+			return v, err
 		}
 	}
 	var keys []string
 	for _, e := range entries {
 		keys = append(keys, e.ListKey)
 	}
-	v := runView{compHeader: h, N: n, Run: run}
 	base := h.Href() + "/runs/" + strconv.Itoa(n)
-	var sel string
-	v.Lists, sel = listTabs(visibleLists(keys, h.SeasonOrder), r.URL.Query().Get("list"), base, h.SeasonNames)
+	v.Lists, v.Sel = listTabs(visibleLists(keys, h.SeasonOrder), r.URL.Query().Get("list"), base, h.SeasonNames)
 	for _, e := range entries {
-		if e.ListKey != sel {
+		if e.ListKey != v.Sel {
 			continue
 		}
 		row := flightRow{Score: e.Score, Scored: e.FlightScore.Valid, DNS: e.DidNotStart,
@@ -366,8 +381,7 @@ func (p *results) competitionRun(w http.ResponseWriter, r *http.Request) {
 		if e.FinalMark.Valid {
 			var fm scoring.FinalMark
 			if err := json.Unmarshal([]byte(e.FinalMark.String), &fm); err != nil {
-				serverError(w, r, err)
-				return
+				return v, err
 			}
 			row.Mark = &fm
 		}
@@ -381,10 +395,10 @@ func (p *results) competitionRun(w http.ResponseWriter, r *http.Request) {
 				row.Marks = append(row.Marks, m)
 			}
 		}
+		row.FlightID = e.FlightID
 		v.Rows = append(v.Rows, row)
 	}
-	title := h.C.Name + " – Run " + strconv.Itoa(n)
-	renderPage(w, r, CompetitionRunPage(p.compMeta(h, title, base), v))
+	return v, nil
 }
 
 type detailsView struct {

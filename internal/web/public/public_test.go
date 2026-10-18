@@ -20,6 +20,7 @@ import (
 	"awt/internal/config"
 	"awt/internal/importer"
 	"awt/internal/ranking"
+	"awt/internal/service"
 	"awt/internal/store"
 	"awt/internal/store/gen"
 	"awt/internal/web"
@@ -100,7 +101,7 @@ func buildFixture() (http.Handler, error) {
 		return nil, err
 	}
 	cfg := config.Config{Env: "dev", Addr: ":0", BaseURL: baseURL}
-	return web.Routes(web.Deps{Cfg: cfg, Auth: auth.New(db, cfg), DB: db, Purger: cache.NoopPurger{}, Blobs: blobs}, public.Module{}), nil
+	return web.Routes(web.Deps{Cfg: cfg, Auth: auth.New(db, cfg), DB: db, Purger: cache.NoopPurger{}, Blobs: blobs, Bus: service.NewBus()}, public.Module{}), nil
 }
 
 func seedExtra(ctx context.Context, q *gen.Queries, blobs blob.Store) error {
