@@ -293,3 +293,19 @@ For the 2022–2023 hand-typed ranking pages: either import them into the scorin
 - Keep URL compatibility: `/`, `/events`, `/event/<slug>`, `/news/<slug>`, `/pilots`, `/result/<year>/<slug>`, `/404`; 301 for any change.
 - Consent-aware analytics (GDPR — current GA4 loads without consent).
 - Optional i18n readiness (`lang` per locale) — today English only.
+
+## 11. Rewrite implementation notes (task 23)
+
+What the Go app implements of §10, trimmed to the tables of `0001_init.sql` (`news`, `events`, `event_competitions`, `documents`, `pages`, `redirects`, `site_settings`). Pilot profiles, circuits and `LegacyResult` collections are not tables: pilots come from the results pages, circuits are free codes on the event, and the 2022-2023 result pages are served as the frozen HTML below.
+
+| Topic | Behaviour |
+|---|---|
+| URLs | `/` (hero, upcoming events, latest 3 news, top 5 of each `featured_seasons` season read from stored `ranking_entries`, rules link), `/events` (upcoming first, then past by year, `?circuit=AWT` filter), `/event/{slug}` (latest season when a slug exists in several), `/news` (9 per page, `?page=`), `/news/{slug}`, `/documents`, `/{page-slug}` (stored pages only; literal routes always win, reserved slugs are refused in the admin), `/sitemap.xml`, `/robots.txt`, `/result/{year}/{slug}`. |
+| News visibility | A news row is public when `published_at` is set and not in the future. No date = draft; a future date = scheduled. |
+| Markdown | goldmark with raw HTML disabled: `<script>`, `<img onerror>`, `javascript:` links are never rendered (decision 0010). No embeds in Markdown. Only the home `featured_video` YouTube URL becomes an iframe (`youtube-nocookie.com`, allowed by the CSP `frame-src`). |
+| Site settings keys | `hero_pre_title`, `hero_title`, `hero_subtitle`, `hero_image` (file id), `featured_video`, `featured_seasons` (JSON array of season codes), `default_description`, `default_og_image` (file id), `contact_email`, `sporting_code_document` (document id). Each value is JSON. |
+| SEO | Per-page title, description, canonical, `og:*`; JSON-LD `NewsArticle` and `SportsEvent` marshalled with `encoding/json`. |
+| Redirects | The `redirects` table is consulted for every unknown path and every unknown slug (`/news/x.html`, `/events.html`). `import-www` seeds a 301 for each legacy `.html` path and for the self-hosted sporting code PDFs. |
+| Archive | The 14 result pages of 2022-2023 are embedded (`web/archive`) with the CSS, fonts and flags they use. The Google Analytics snippet is stripped at start-up. |
+| Importer | `awt import-www --from legacy/legacy/www` is idempotent (upsert by slug; events by season and slug). The articles carry no date: it is read from the home teasers, and articles without one are imported as drafts for an editor to date. |
+| Analytics | None for now. Consent-aware analytics is an owner decision. |

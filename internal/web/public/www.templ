@@ -1,0 +1,300 @@
+package public
+
+import "awt/internal/web/layout"
+
+templ eventCardView(c eventCard) {
+	<a class={ "event-card", templ.KV("event-card--cancelled", c.Status == "cancelled") } href={ templ.SafeURL(c.Href()) }>
+		if c.Image != "" {
+			<img class="event-card__img" src={ c.Image } alt="" loading="lazy"/>
+		}
+		<span class="event-card__body">
+			<span class="event-card__title">{ c.Name }</span>
+			<span class="event-card__meta">{ c.Dates }</span>
+			if c.Place != "" {
+				<span class="event-card__meta">{ c.Place }</span>
+			}
+			<span class="event-card__tags">
+				for _, t := range c.Circuits {
+					<span class="badge">{ t }</span>
+				}
+				if c.Status == "cancelled" {
+					<span class="badge badge--provisional">Cancelled</span>
+				}
+			</span>
+		</span>
+	</a>
+}
+
+templ newsCardView(c newsCard) {
+	<a class="news-card" href={ templ.SafeURL(c.Href()) }>
+		if c.Image != "" {
+			<img class="news-card__img" src={ c.Image } alt="" loading="lazy"/>
+		}
+		<span class="news-card__body">
+			<span class="news-card__title">{ c.Title }</span>
+			if c.Date != "" {
+				<time class="news-card__meta" datetime={ c.DateISO }>{ c.Date }</time>
+			}
+			if c.Excerpt != "" {
+				<span class="news-card__excerpt">{ c.Excerpt }</span>
+			}
+		</span>
+	</a>
+}
+
+templ WWWHomePage(m layout.Meta, v wwwHomeView) {
+	@layout.Public(m, "home") {
+		<section class={ "hero", templ.KV("hero--image", v.HeroImage != "") }>
+			if v.HeroImage != "" {
+				<img class="hero__bg" src={ v.HeroImage } alt=""/>
+			}
+			if v.S.HeroPreTitle != "" {
+				<p class="hero__pre">{ v.S.HeroPreTitle }</p>
+			}
+			<h1 class="hero__title">{ heroTitle(v.S.HeroTitle) }</h1>
+			if v.S.HeroSubtitle != "" {
+				<p class="hero__sub">{ v.S.HeroSubtitle }</p>
+			}
+		</section>
+		if v.Video != "" {
+			<section class="section">
+				<div class="video">
+					<iframe src={ v.Video } title="Featured video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+				</div>
+			</section>
+		}
+		<section class="section">
+			<h2>Upcoming events</h2>
+			if len(v.Events) == 0 {
+				<p class="empty">No upcoming event at the moment.</p>
+			} else {
+				<div class="card-grid">
+					for _, e := range v.Events {
+						@eventCardView(e)
+					}
+				</div>
+			}
+			<p><a href="/events">All events</a></p>
+		</section>
+		<section class="section">
+			<h2>Latest news</h2>
+			if len(v.News) == 0 {
+				<p class="empty">No news yet.</p>
+			} else {
+				<div class="card-grid">
+					for _, n := range v.News {
+						@newsCardView(n)
+					}
+				</div>
+			}
+			<p><a href="/news">All news</a></p>
+		</section>
+		if len(v.Standings) > 0 {
+			<section class="section">
+				<h2>Standings</h2>
+				<div class="card-grid">
+					for _, s := range v.Standings {
+						<div class="card">
+							<h3>{ s.Name }</h3>
+							<table class="table table--compact">
+								<thead><tr><th scope="col">Pos.</th><th scope="col">Pilot</th><th scope="col" class="num">Pts.</th></tr></thead>
+								<tbody>
+									for _, row := range s.Rows {
+										<tr>
+											<td>{ itoa64(row.Rank) }</td>
+											<td>@participantCell(row.P, row.Rank)</td>
+											<td class="num">{ score(row.Score) }</td>
+										</tr>
+									}
+								</tbody>
+							</table>
+							<p><a href={ templ.SafeURL("/seasons/" + s.Code) }>View all</a></p>
+						</div>
+					}
+				</div>
+			</section>
+		}
+		<section class="section">
+			<h2>Learn the rules</h2>
+			<p>
+				<a href={ templ.SafeURL(v.CodeHref) } rel={ relFor(v.CodeExternal) }>{ v.CodeTitle }</a>
+				 · <a href="/documents">All documents</a>
+			</p>
+		</section>
+	}
+}
+
+templ NewsListPage(m layout.Meta, v newsListView) {
+	@layout.Public(m, "news") {
+		<section class="section">
+			if len(v.Cards) == 0 {
+				<p class="empty">No news yet.</p>
+			} else {
+				<div class="card-grid">
+					for _, n := range v.Cards {
+						@newsCardView(n)
+					}
+				</div>
+			}
+			if v.Prev != "" || v.Next != "" {
+				<nav class="pager" aria-label="News pages">
+					if v.Prev != "" {
+						<a class="btn btn--ghost" href={ templ.SafeURL(v.Prev) } rel="prev">Newer</a>
+					}
+					if v.Next != "" {
+						<a class="btn btn--ghost" href={ templ.SafeURL(v.Next) } rel="next">Older</a>
+					}
+				</nav>
+			}
+		</section>
+	}
+}
+
+templ NewsArticlePage(m layout.Meta, v newsArticleView) {
+	@layout.Public(m, "news") {
+		<article class="article">
+			@jsonLD(v.LD)
+			<p class="article__meta">
+				if v.Card.Date != "" {
+					<time datetime={ v.Card.DateISO }>{ v.Card.Date }</time>
+				}
+				if v.Author != "" {
+					 · { v.Author }
+				}
+			</p>
+			if v.Cover != "" {
+				<img class="article__cover" src={ v.Cover } alt=""/>
+			}
+			<div class="prose">
+				@templ.Raw(v.HTML)
+			</div>
+			<p><a href="/news">All news</a></p>
+		</article>
+	}
+}
+
+templ eventGroup(title string, events []eventCard) {
+	<section class="section">
+		<h2>{ title }</h2>
+		<div class="card-grid">
+			for _, e := range events {
+				@eventCardView(e)
+			}
+		</div>
+	</section>
+}
+
+templ EventsPage(m layout.Meta, v eventsView) {
+	@layout.Public(m, "events") {
+		@tabBar(v.Circuits, "Circuit")
+		if len(v.Upcoming) == 0 && len(v.Past) == 0 {
+			<p class="empty">No event to show.</p>
+		}
+		if len(v.Upcoming) > 0 {
+			@eventGroup("Upcoming", v.Upcoming)
+		}
+		for _, y := range v.Past {
+			@eventGroup(itoa(y.Year), y.Events)
+		}
+	}
+}
+
+templ EventPage(m layout.Meta, v eventView) {
+	@layout.Public(m, "events") {
+		<article class="article">
+			@jsonLD(v.LD)
+			if v.Card.Image != "" {
+				<img class="article__cover" src={ v.Card.Image } alt=""/>
+			}
+			<dl class="facts">
+				<dt>Date</dt>
+				<dd>{ v.Card.Dates }</dd>
+				if v.Card.Place != "" {
+					<dt>Location</dt>
+					<dd>{ v.Card.Place }</dd>
+				}
+				if len(v.Card.Circuits) > 0 {
+					<dt>Circuits</dt>
+					<dd>
+						for _, c := range v.Card.Circuits {
+							<a class="badge" href={ templ.SafeURL("/events?circuit=" + c) }>{ c }</a>
+						}
+					</dd>
+				}
+				if len(v.Card.Disciplines) > 0 {
+					<dt>Disciplines</dt>
+					<dd>{ joinWords(v.Card.Disciplines) }</dd>
+				}
+				if v.Card.Status == "cancelled" {
+					<dt>Status</dt>
+					<dd>Cancelled</dd>
+				}
+			</dl>
+			<div class="prose">
+				@templ.Raw(v.HTML)
+			</div>
+			<p class="actions">
+				if v.Website != "" {
+					<a class="btn" href={ templ.SafeURL(v.Website) } rel="noopener">Official website</a>
+				}
+				if v.Registration != "" {
+					<a class="btn" href={ templ.SafeURL(v.Registration) } rel="noopener">Registration</a>
+				}
+				if v.CIVL != "" {
+					<a class="btn btn--ghost" href={ templ.SafeURL(v.CIVL) } rel="noopener">CIVL</a>
+				}
+				if v.Live != "" {
+					<a class="btn btn--ghost" href={ templ.SafeURL(v.Live) } rel="noopener">Live stream</a>
+				}
+			</p>
+			if len(v.Competitions) > 0 {
+				<h2>Results</h2>
+				<ul>
+					for _, c := range v.Competitions {
+						<li><a href={ templ.SafeURL("/competitions/" + c.Code) }>{ c.Name }</a></li>
+					}
+				</ul>
+			}
+			<p><a href="/events">All events</a></p>
+		</article>
+	}
+}
+
+templ ContentPage(m layout.Meta, v pageView) {
+	@layout.Public(m, "") {
+		<article class="article">
+			<div class="prose">
+				@templ.Raw(v.HTML)
+			</div>
+		</article>
+	}
+}
+
+templ DocumentsPage(m layout.Meta, v documentsView) {
+	@layout.Public(m, "documents") {
+		<section class="section">
+			if len(v.Docs) == 0 {
+				<p class="empty">No document yet.</p>
+			} else {
+				<div class="table-wrap">
+					<table class="table">
+						<thead><tr><th scope="col">Document</th><th scope="col">Category</th><th scope="col">Year</th></tr></thead>
+						<tbody>
+							for _, d := range v.Docs {
+								<tr>
+									<td><a href={ templ.SafeURL(d.Href) } rel={ relFor(d.External) }>{ d.Title }</a></td>
+									<td>{ d.Category }</td>
+									<td>
+										if d.Year != 0 {
+											{ itoa64(d.Year) }
+										}
+									</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			}
+		</section>
+	}
+}

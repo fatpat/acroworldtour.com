@@ -31,5 +31,6 @@ func (Module) Register(r *web.Router) {
 	h.registerSeasons(r)
 	h.registerFiles(r)
 	h.registerCompetitions(r)
+	h.registerContent(r)
 	h.registerUsers(r)
 }

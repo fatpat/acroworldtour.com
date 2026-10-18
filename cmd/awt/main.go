@@ -26,7 +26,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "usage: awt serve|migrate|import|user|golden-verify")
+		fmt.Fprintln(os.Stderr, "usage: awt serve|migrate|import|import-www|user|golden-verify")
 		os.Exit(2)
 	}
 	switch os.Args[1] {
@@ -43,6 +43,11 @@ func main() {
 	case "import":
 		if err := importCmd(os.Args[2:], os.Stdout); err != nil {
 			fmt.Fprintln(os.Stderr, "import:", err)
+			os.Exit(1)
+		}
+	case "import-www":
+		if err := importWWWCmd(os.Args[2:], os.Stdout); err != nil {
+			fmt.Fprintln(os.Stderr, "import-www:", err)
 			os.Exit(1)
 		}
 	case "golden-verify":

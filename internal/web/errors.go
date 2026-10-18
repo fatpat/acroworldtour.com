@@ -159,3 +159,8 @@ func safeRedirectTarget(to string) bool {
 	}
 	return strings.HasPrefix(to, "https://") || strings.HasPrefix(to, "http://")
 }
+
+// NotFound answers 404 after consulting the redirects table. Feature modules
+// call it for slugs they do not know, so legacy URLs that match a wildcard
+// route (/news/acromax.html) still reach their redirect.
+func (d Deps) NotFound(w http.ResponseWriter, r *http.Request) { d.notFound(w, r) }

@@ -11,4 +11,5 @@ func (Module) Register(r *web.Router) {
 	registerSimulator(r)
 	registerResults(r)
 	registerFiles(r)
+	registerWWW(r)
 }
