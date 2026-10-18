@@ -87,3 +87,6 @@ SELECT code FROM seasons WHERE deleted_at IS NULL ORDER BY year DESC, sort_index
 
 -- name: ListSitemapPilots :many
 SELECT civlid, name FROM pilots ORDER BY civlid;
+
+-- name: CountDeletedEvents :one
+SELECT COUNT(*) FROM events WHERE season_year = ? AND slug = ? AND deleted_at IS NOT NULL;

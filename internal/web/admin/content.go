@@ -454,7 +454,7 @@ type documentFormView struct {
 
 func docTarget(d service.Document) string {
 	if d.FileID != "" {
-		return "PDF " + d.FileID[:12]
+		return "PDF " + shortID(d.FileID)
 	}
 	return d.URL
 }
@@ -754,4 +754,12 @@ func (c *content) settingsSave(w http.ResponseWriter, r *http.Request) {
 	}
 	c.purge("/", "/documents")
 	redirect(w, r, "/admin/content/settings", "saved")
+}
+
+// shortID abbreviates a file id for display.
+func shortID(id string) string {
+	if len(id) > 12 {
+		return id[:12]
+	}
+	return id
 }

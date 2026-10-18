@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -36,8 +37,10 @@ const maxWWWFile = 10 << 20
 // images and the sporting code PDFs are stored as files, and a redirect is
 // seeded for every legacy path (spec 07 §8, §10). It is idempotent: rows are
 // upserted by slug (events by season and slug), so a second run changes
-// nothing. It overwrites edits made in the admin to the same slugs, so run it
-// once at migration time.
+// nothing. It overwrites admin edits to the same slugs, so run it once at
+// migration time, but it never restores news or events deleted in the admin
+// (they are skipped with a warning). Undated articles get the date of the
+// commit that added them to the legacy git repository, or stay drafts.
 func WWW(ctx context.Context, db *store.DB, blobs blob.Store, dir string) (Report, error) {
 	rep := Report{Counts: map[string]int{}}
 	for _, sub := range []string{"news", "event"} {
@@ -66,6 +69,7 @@ type wwwImport struct {
 	now   time.Time
 	dates map[string]string // news slug -> RFC 3339 date from the home teasers
 	files map[string]string // legacy asset path -> stored file id ("" when skipped)
+	err   error             // first database failure met while converting; checked by every step
 }
 
 func newHexID() (string, error) {
@@ -246,6 +250,7 @@ func (w *wwwImport) upload(ctx context.Context, src string) (string, bool) {
 	err = w.q.UpsertFile(ctx, gen.UpsertFileParams{ID: id, Filename: path.Base(rel), ContentType: ct, Size: int64(len(data)),
 		CreatedAt: w.now.Format(time.RFC3339)})
 	if err != nil {
+		w.err = fmt.Errorf("import file %q: %w", src, err)
 		return "", false
 	}
 	w.files[rel] = id
@@ -271,9 +276,17 @@ var mdEscaper = strings.NewReplacer(`\`, `\\`, "*", `\*`, "_", `\_`, "[", `\[`, 
 func escapeMD(s string) string { return mdEscaper.Replace(s) }
 
 // escapeLead stops a paragraph starting like a heading, list or quote.
+var orderedLead = regexp.MustCompile(`^\d+[.)]`)
+
 func escapeLead(s string) string {
-	if s != "" && strings.ContainsRune("#>+-", rune(s[0])) {
+	if s == "" {
+		return s
+	}
+	if strings.ContainsRune("#>+-=|", rune(s[0])) {
 		return `\` + s
+	}
+	if loc := orderedLead.FindString(s); loc != "" {
+		return s[:len(loc)-1] + `\` + s[len(loc)-1:]
 	}
 	return s
 }
@@ -492,18 +505,26 @@ func (w *wwwImport) news(ctx context.Context) error {
 		}
 		conv := &mdConv{ctx: ctx, w: w, coverFirst: true}
 		conv.walk(body)
+		if w.err != nil {
+			return w.err
+		}
 		md := conv.markdown()
 		published := articleDate(doc)
 		if published == "" {
 			published = w.dates[slug]
 		}
 		if published == "" {
-			w.rep.warnf("news %s: no publication date found, imported as a draft (set the date in the admin to publish it)", slug)
+			published = firstCommitDate(filepath.Join(w.dir, "news", name))
+		}
+		if published == "" {
+			w.rep.warnf("news %s: no publication date found (page, teasers, git history), imported as a draft (set the date in the admin to publish it)", slug)
 		}
 		id := ""
-		deleted := sql.NullString{}
 		old, err := w.q.GetNewsBySlugAny(ctx, slug)
 		switch {
+		case err == nil && old.DeletedAt.Valid:
+			w.rep.warnf("news %s: deleted in the admin, not restored", slug)
+			continue
 		case err == nil:
 			id = old.ID
 		case errors.Is(err, sql.ErrNoRows):
@@ -515,7 +536,7 @@ func (w *wwwImport) news(ctx context.Context) error {
 		}
 		err = w.q.UpsertNews(ctx, gen.UpsertNewsParams{ID: id, Slug: slug, Title: title, Excerpt: markdown.Plain(md, 200), BodyMd: md,
 			CoverFile: sql.NullString{String: conv.cover, Valid: conv.cover != ""}, Author: "",
-			PublishedAt: sql.NullString{String: published, Valid: published != ""}, DeletedAt: deleted})
+			PublishedAt: sql.NullString{String: published, Valid: published != ""}})
 		if err != nil {
 			return fmt.Errorf("import news %s: %w", slug, err)
 		}
@@ -557,6 +578,9 @@ func parseEventDates(s string) (start, end string, ok bool) {
 		if e0, ok2 = month(endMonth, m[4]); !ok2 {
 			return "", "", false
 		}
+		if e0.Before(s0) { // "December 30th - January 2nd 2025"
+			e0 = e0.AddDate(1, 0, 0)
+		}
 	}
 	return s0.Format(time.DateOnly), e0.Format(time.DateOnly), true
 }
@@ -594,6 +618,9 @@ func (w *wwwImport) events(ctx context.Context) error {
 		cover := ""
 		if img := find(doc, byClass("event__image")); img != nil {
 			cover, _ = w.upload(ctx, attr(img, "src"))
+		}
+		if w.err != nil {
+			return w.err
 		}
 		site, country := "", ""
 		if loc := find(doc, byClass("event__location")); loc != nil {
@@ -635,6 +662,14 @@ func (w *wwwImport) events(ctx context.Context) error {
 		case err == nil:
 			id = old.ID
 		case errors.Is(err, sql.ErrNoRows):
+			gone, derr := w.q.CountDeletedEvents(ctx, gen.CountDeletedEventsParams{SeasonYear: int64(year), Slug: slug})
+			if derr != nil {
+				return fmt.Errorf("get event %s: %w", slug, derr)
+			}
+			if gone > 0 {
+				w.rep.warnf("event %s (%d): deleted in the admin, not restored", slug, year)
+				continue
+			}
 			if id, err = newHexID(); err != nil {
 				return err
 			}
@@ -682,6 +717,9 @@ func (w *wwwImport) documents(ctx context.Context) error {
 		}
 		year, _ := strconv.Atoi(m[1])
 		fileID, ok := w.upload(ctx, "assets/files/"+e.Name())
+		if w.err != nil {
+			return w.err
+		}
 		if !ok {
 			continue
 		}
@@ -757,4 +795,28 @@ func (w *wwwImport) redirects(ctx context.Context) error {
 		w.rep.Counts["redirects"]++
 	}
 	return nil
+}
+
+// firstCommitDate is the author date of the commit that added the file in the
+// git repository containing it: the best available publication date of an
+// undated legacy article. It returns "" when git or the history is missing.
+func firstCommitDate(file string) string {
+	dir := filepath.Dir(file)
+	top, err := exec.Command("git", "-C", dir, "rev-parse", "--show-toplevel").Output()
+	if err != nil {
+		return ""
+	}
+	out, err := exec.Command("git", "-C", strings.TrimSpace(string(top)), "log", "--diff-filter=A", "--follow", "--format=%aI", "--", file).Output()
+	if err != nil {
+		return ""
+	}
+	lines := strings.Fields(string(out))
+	if len(lines) == 0 {
+		return ""
+	}
+	t, err := time.Parse(time.RFC3339, lines[len(lines)-1]) // oldest addition
+	if err != nil {
+		return ""
+	}
+	return t.UTC().Format(time.RFC3339)
 }

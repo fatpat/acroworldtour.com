@@ -10,6 +10,22 @@ import (
 	"database/sql"
 )
 
+const countDeletedEvents = `-- name: CountDeletedEvents :one
+SELECT COUNT(*) FROM events WHERE season_year = ? AND slug = ? AND deleted_at IS NOT NULL
+`
+
+type CountDeletedEventsParams struct {
+	SeasonYear int64  `json:"season_year"`
+	Slug       string `json:"slug"`
+}
+
+func (q *Queries) CountDeletedEvents(ctx context.Context, arg CountDeletedEventsParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countDeletedEvents, arg.SeasonYear, arg.Slug)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countPublishedNews = `-- name: CountPublishedNews :one
 SELECT COUNT(*) FROM news
 WHERE deleted_at IS NULL AND published_at IS NOT NULL AND published_at <= ?1

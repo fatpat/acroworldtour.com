@@ -71,6 +71,8 @@ func wwwApp(t *testing.T) http.Handler {
 		must(q.UpsertNews(ctx, gen.UpsertNewsParams{ID: "n-draft", Slug: "draft-news", Title: "Draft news", BodyMd: "secret"}))
 		must(q.UpsertNews(ctx, gen.UpsertNewsParams{ID: "n-future", Slug: "future-news", Title: "Future news", BodyMd: "later",
 			PublishedAt: sql.NullString{String: "2999-01-01T00:00:00Z", Valid: true}}))
+		must(q.UpsertNews(ctx, gen.UpsertNewsParams{ID: "n-ld", Slug: "ld-news", Title: "</script><script>alert(9)</script>",
+			BodyMd: "text", PublishedAt: sql.NullString{String: "2024-05-02T10:00:00Z", Valid: true}}))
 		must(q.UpsertNews(ctx, gen.UpsertNewsParams{ID: "n-xss", Slug: "xss-news", Title: "Hostile <b>title</b>", Author: "Eve",
 			BodyMd:      "Hello <script>alert(1)</script> <img src=x onerror=alert(2)>\n\n[x](javascript:alert(3))",
 			PublishedAt: sql.NullString{String: "2024-05-01T10:00:00Z", Valid: true}}))
@@ -332,4 +334,31 @@ func TestWWWArchivedResults(t *testing.T) {
 	if rec := wwwGet(t, h, "/assets/../etc/passwd"); rec.Code == http.StatusOK {
 		t.Error("asset traversal served a file")
 	}
+}
+
+func TestWWWJSONLDCannotBeClosedEarly(t *testing.T) {
+	h := wwwApp(t)
+	body := wwwGet(t, h, "/news/ld-news").Body.String()
+	if strings.Contains(body, "<script>alert(9)") || strings.Count(body, `type="application/ld+json"`) != 1 {
+		t.Fatal("a news title injected a script element")
+	}
+	if ld := jsonLD(t, body); ld["headline"] != "</script><script>alert(9)</script>" {
+		t.Errorf("headline = %v", ld["headline"])
+	}
+}
+
+func TestWWWCircuitLinksAreEscaped(t *testing.T) {
+	h := wwwApp(t)
+	body := wwwGet(t, h, "/events?circuit=A%26B%22").Body.String()
+	mustContain(t, "events", body, `circuit=A%26B%22`)
+	mustNotContain(t, "events", body, `circuit=A&B"`)
+}
+
+func TestWWWArchiveUsesAppIconsAndShipsNoMissingAssets(t *testing.T) {
+	h := wwwApp(t)
+	body := wwwGet(t, h, "/result/2023/nest-games").Body.String()
+	mustContain(t, "archive", body, `href="/static/img/favicon-32x32.png?v=`)
+	mustNotContain(t, "archive", body, `href="/favicon-32x32.png"`, "mask-icon", "safari-pinned-tab")
+	css := wwwGet(t, h, "/assets/css/style.css").Body.String()
+	mustNotContain(t, "archive css", css, "header.jpg")
 }

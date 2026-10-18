@@ -2,6 +2,10 @@ package importer_test
 
 import (
 	"context"
+	"io/fs"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -44,6 +48,8 @@ func TestWWWImportsNewsEventsDocumentsAndRedirects(t *testing.T) {
 	for _, want := range []string{
 		"**Lead paragraph** with a [link](/events) & *style*.",
 		"### A heading",
+		`2024\. A year, not a list`,
+		`\= not a setext line`,
 		`Second paragraph with a \*star\* and`,
 		"- one\n- two",
 		"![Second picture](/files/",
@@ -134,5 +140,148 @@ func TestWWWRejectsANonLegacyDirectory(t *testing.T) {
 	db, blobs := setup(t)
 	if _, err := importer.WWW(context.Background(), db, blobs, t.TempDir()); err == nil {
 		t.Fatal("want an error for a directory without news/ and event/")
+	}
+}
+
+func copyTree(t *testing.T, src, dst string) {
+	t.Helper()
+	err := filepath.WalkDir(src, func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, _ := filepath.Rel(src, p)
+		if d.IsDir() {
+			return os.MkdirAll(filepath.Join(dst, rel), 0o755)
+		}
+		b, err := os.ReadFile(p)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(filepath.Join(dst, rel), b, 0o644)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestWWWUndatedNewsTakeTheirFirstCommitDate(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not installed")
+	}
+	repo := t.TempDir()
+	www := filepath.Join(repo, "www")
+	copyTree(t, wwwDir, www)
+	if err := os.Remove(filepath.Join(www, "index.html")); err != nil { // no teaser date
+		t.Fatal(err)
+	}
+	git := func(date string, args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", append([]string{"-C", repo, "-c", "user.name=T", "-c", "user.email=t@example.org", "-c", "commit.gpgsign=false"}, args...)...)
+		cmd.Env = append(os.Environ(), "GIT_AUTHOR_DATE="+date, "GIT_COMMITTER_DATE="+date)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	git("2022-03-04T05:06:07+01:00", "init", "-q")
+	git("2022-03-04T05:06:07+01:00", "add", ".")
+	git("2022-03-04T05:06:07+01:00", "commit", "-q", "-m", "add")
+	// A later edit must not change the date: only the commit that added the file counts.
+	f := filepath.Join(www, "news", "sample-news.html")
+	b, _ := os.ReadFile(f)
+	if err := os.WriteFile(f, append(b, '\n'), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	git("2024-01-01T00:00:00+00:00", "commit", "-q", "-am", "edit")
+
+	ctx := context.Background()
+	db, blobs := setup(t)
+	if _, err := importer.WWW(ctx, db, blobs, www); err != nil {
+		t.Fatal(err)
+	}
+	n, err := gen.New(db.Read).GetNewsBySlug(ctx, "sample-news")
+	if err != nil || n.PublishedAt.String != "2022-03-04T04:06:07Z" {
+		t.Errorf("published_at = %q, err %v; want the first commit date in UTC", n.PublishedAt.String, err)
+	}
+}
+
+func TestWWWUndatedNewsWithoutHistoryStayDrafts(t *testing.T) {
+	dir := t.TempDir() // outside any git repository
+	copyTree(t, wwwDir, dir)
+	_ = os.Remove(filepath.Join(dir, "index.html"))
+	ctx := context.Background()
+	db, blobs := setup(t)
+	rep, err := importer.WWW(ctx, db, blobs, dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	n, _ := gen.New(db.Read).GetNewsBySlug(ctx, "sample-news")
+	if n.PublishedAt.Valid || !strings.Contains(strings.Join(rep.Warnings, "\n"), "imported as a draft") {
+		t.Errorf("published_at = %+v, warnings %v; want a draft with a warning", n.PublishedAt, rep.Warnings)
+	}
+}
+
+func TestWWWDoesNotResurrectDeletedContent(t *testing.T) {
+	ctx := context.Background()
+	db, blobs := setup(t)
+	if _, err := importer.WWW(ctx, db, blobs, wwwDir); err != nil {
+		t.Fatal(err)
+	}
+	for _, q := range []string{
+		`UPDATE news SET deleted_at = '2025-01-01T00:00:00Z' WHERE slug = 'sample-news'`,
+		`UPDATE events SET deleted_at = '2025-01-01T00:00:00Z' WHERE slug = 'sample-event'`,
+	} {
+		if _, err := db.Write.ExecContext(ctx, q); err != nil {
+			t.Fatal(err)
+		}
+	}
+	rep, err := importer.WWW(ctx, db, blobs, wwwDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rep.Counts["news"] != 0 || rep.Counts["events"] != 0 {
+		t.Errorf("counts = %v, want no news or events written", rep.Counts)
+	}
+	for _, tb := range []string{"news", "events"} {
+		if n := count(t, db, "SELECT COUNT(*) FROM "+tb); n != 1 {
+			t.Errorf("%s has %d rows, want the single deleted one", tb, n)
+		}
+		if n := count(t, db, "SELECT COUNT(*) FROM "+tb+" WHERE deleted_at IS NULL"); n != 0 {
+			t.Errorf("%s was restored", tb)
+		}
+	}
+	if w := strings.Join(rep.Warnings, "\n"); !strings.Contains(w, "not restored") {
+		t.Errorf("warnings %v lack the skip notice", rep.Warnings)
+	}
+}
+
+func TestParseEventDatesAcrossNewYear(t *testing.T) {
+	// exercised through a fixture to keep parseEventDates unexported
+	dir := t.TempDir()
+	copyTree(t, wwwDir, dir)
+	p := filepath.Join(dir, "event", "sample-event.html")
+	b, _ := os.ReadFile(p)
+	b = []byte(strings.Replace(string(b), "August 30th - September 2nd 2030", "December 30th - January 2nd 2030", 1))
+	if err := os.WriteFile(p, b, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	db, blobs := setup(t)
+	if _, err := importer.WWW(ctx, db, blobs, dir); err != nil {
+		t.Fatal(err)
+	}
+	e, err := gen.New(db.Read).GetEventBySlugLatest(ctx, "sample-event")
+	if err != nil || e.StartDate != "2030-12-30" || e.EndDate != "2031-01-02" {
+		t.Errorf("event dates = %q..%q, err %v", e.StartDate, e.EndDate, err)
+	}
+}
+
+func TestWWWFailsOnDatabaseErrorDuringUpload(t *testing.T) {
+	ctx := context.Background()
+	db, blobs := setup(t)
+	if _, err := db.Write.ExecContext(ctx, `DROP TABLE files`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := importer.WWW(ctx, db, blobs, wwwDir); err == nil {
+		t.Fatal("want an error when files cannot be written")
 	}
 }

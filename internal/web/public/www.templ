@@ -217,7 +217,7 @@ templ EventPage(m layout.Meta, v eventView) {
 					<dt>Circuits</dt>
 					<dd>
 						for _, c := range v.Card.Circuits {
-							<a class="badge" href={ templ.SafeURL("/events?circuit=" + c) }>{ c }</a>
+							<a class="badge" href={ templ.SafeURL(circuitHref(c)) }>{ c }</a>
 						}
 					</dd>
 				}

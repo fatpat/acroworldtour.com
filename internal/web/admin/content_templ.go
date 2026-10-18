@@ -1340,9 +1340,9 @@ func documentFormPage(v documentFormView) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var65 string
-				templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.JoinStringErrs(v.Form.FileID[:12])
+				templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.JoinStringErrs(shortID(v.Form.FileID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 234, Col: 115}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 234, Col: 119}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var65))
 				if templ_7745c5c3_Err != nil {

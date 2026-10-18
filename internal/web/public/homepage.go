@@ -112,12 +112,14 @@ func (w *www) standings(r *http.Request, code string) (standingCard, bool, error
 	}
 	sel := mainList(keys, s.Code)
 	members := map[string][]member{}
+	membersLoaded := false
 	card := standingCard{Name: s.Name, Code: s.Code}
 	for _, e := range entries {
 		if e.ListKey != sel || len(card.Rows) >= homeStanding {
 			continue
 		}
-		if e.TeamID.Valid && len(members) == 0 {
+		if e.TeamID.Valid && !membersLoaded {
+			membersLoaded = true
 			if members, err = (&results{q: w.q}).teamMembers(r); err != nil {
 				return standingCard{}, false, err
 			}

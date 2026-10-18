@@ -25,7 +25,7 @@ var slugRe = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
 // reservedPageSlugs are the top-level routes a page must not shadow.
 var reservedPageSlugs = []string{
 	"admin", "api", "assets", "competitions", "documents", "event", "events", "favicon.ico", "files", "healthz",
-	"judges", "news", "pilots", "result", "results", "robots.txt", "seasons", "simulator", "sitemap.xml",
+	"judges", "live", "news", "pilots", "result", "results", "robots.txt", "seasons", "simulator", "sitemap.xml",
 	"static", "teams", "tricks",
 }
 
@@ -798,6 +798,25 @@ func (s *Service) SaveSettings(ctx context.Context, st SiteSettings) error {
 		"default_og_image": st.DefaultOGImage, "contact_email": st.ContactEmail, "sporting_code_document": st.SportingCodeDoc,
 	}
 	return s.db.Tx(ctx, func(q *gen.Queries) error {
+		var refs []domain.FieldError
+		for _, f := range []struct{ field, id string }{{"hero_image", st.HeroImage}, {"default_og_image", st.DefaultOGImage}} {
+			if f.id == "" {
+				continue
+			}
+			if err := checkFile(ctx, q, f.id); err != nil {
+				refs = append(refs, domain.FieldError{Field: f.field, Msg: err.Error()})
+			}
+		}
+		if st.SportingCodeDoc != "" {
+			if _, err := q.GetDocument(ctx, st.SportingCodeDoc); errors.Is(err, sql.ErrNoRows) {
+				refs = append(refs, domain.FieldError{Field: "sporting_code_document", Msg: "unknown document"})
+			} else if err != nil {
+				return fmt.Errorf("get document: %w", err)
+			}
+		}
+		if err := invalid(refs...); err != nil {
+			return err
+		}
 		for _, key := range slices.Sorted(mapsKeys(values)) {
 			b, err := json.Marshal(values[key])
 			if err != nil {

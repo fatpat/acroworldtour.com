@@ -2,6 +2,7 @@ package public
 
 import (
 	"net/http"
+	"net/url"
 	"slices"
 	"strconv"
 	"strings"
@@ -96,11 +97,11 @@ func (w *www) events(rw http.ResponseWriter, r *http.Request) {
 	}
 	v.Circuits = append(v.Circuits, tab{Label: "All", Href: "/events", Current: want == ""})
 	for _, c := range circuits {
-		v.Circuits = append(v.Circuits, tab{Label: c, Href: "/events?circuit=" + c, Current: want == c})
+		v.Circuits = append(v.Circuits, tab{Label: c, Href: circuitHref(c), Current: want == c})
 	}
 	canonical := "/events"
 	if want != "" {
-		canonical += "?circuit=" + want
+		canonical += "?circuit=" + url.QueryEscape(want)
 	}
 	st := w.settings(ctx)
 	renderPage(rw, r, EventsPage(w.meta("Events", w.describe(st, "The Acro World Tour calendar: upcoming and past paragliding aerobatics events."), canonical, ""), v))
@@ -169,3 +170,6 @@ func (w *www) event(rw http.ResponseWriter, r *http.Request) {
 	m.Heading = e.Name
 	renderPage(rw, r, EventPage(m, v))
 }
+
+// circuitHref links the events list filtered on a circuit code.
+func circuitHref(code string) string { return "/events?circuit=" + url.QueryEscape(code) }

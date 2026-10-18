@@ -129,6 +129,7 @@ func TestContentDocuments(t *testing.T) {
 func TestContentPages(t *testing.T) {
 	e := newEnv(t)
 	e.wantStatus(e.post("/admin/content/pages", url.Values{"slug": {"events"}, "title": {"x"}}), 422, "reserved")
+	e.wantStatus(e.post("/admin/content/pages", url.Values{"slug": {"live"}, "title": {"x"}}), 422, "reserved")
 	e.wantStatus(e.post("/admin/content/pages", url.Values{"slug": {"Bad Slug"}, "title": {"x"}}), 422, "lowercase letters")
 	e.wantStatus(e.post("/admin/content/pages", url.Values{"slug": {"about"}, "title": {""}}), 422, "title: required")
 	e.wantRedirect(e.post("/admin/content/pages", url.Values{"slug": {"about"}, "title": {"About"}, "body_md": {"We fly."}}), "/admin/content/pages?ok=created")
@@ -174,6 +175,8 @@ func TestContentSettings(t *testing.T) {
 	e.wantStatus(e.post("/admin/content/settings", url.Values{"featured_seasons": {"AWT 2026!"}}), 422, "season codes")
 	e.wantStatus(e.post("/admin/content/settings", url.Values{"featured_video": {"javascript:x"}}), 422, "http(s) URL")
 	e.wantStatus(e.post("/admin/content/settings", url.Values{"contact_email": {"nope"}}), 422, "email")
+	e.wantStatus(e.post("/admin/content/settings", url.Values{"hero_image": {strings.Repeat("a", 64)}}), 422, "is unknown")
+	e.wantStatus(e.post("/admin/content/settings", url.Values{"sporting_code_document": {"nope"}}), 422, "unknown document")
 	e.wantRedirect(e.post("/admin/content/settings", url.Values{"hero_title": {"Fly the Tour"}, "hero_subtitle": {"Best pilots"},
 		"featured_seasons": {"awt-2026, awq-2026"}, "contact_email": {"info@example.org"}}), "/admin/content/settings?ok=saved")
 	e.wantStatus(e.get("/admin/content/settings"), 200, "Fly the Tour", "awt-2026, awq-2026", "info@example.org")

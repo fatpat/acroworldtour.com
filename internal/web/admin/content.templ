@@ -231,7 +231,7 @@ templ documentFormPage(v documentFormView) {
 				<label for="file">PDF (10 MB max)</label>
 				<input id="file" name="file" type="file" accept="application/pdf"/>
 				if v.Form.FileID != "" {
-					<p class="field__hint">Current file: <a href={ templ.SafeURL("/files/" + v.Form.FileID) }>{ v.Form.FileID[:12] }</a>. Choose another PDF to replace it.</p>
+					<p class="field__hint">Current file: <a href={ templ.SafeURL("/files/" + v.Form.FileID) }>{ shortID(v.Form.FileID) }</a>. Choose another PDF to replace it.</p>
 				}
 				@fieldError(v.Errors, "file")
 			</div>

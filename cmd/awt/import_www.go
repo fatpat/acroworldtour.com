@@ -14,7 +14,9 @@ import (
 	"awt/internal/store"
 )
 
-const importWWWUsage = "usage: awt import-www --from <legacy www dir> [--db path] [--blob-dir dir]"
+const importWWWUsage = "usage: awt import-www --from <legacy www dir> [--db path] [--blob-dir dir]\n" +
+	"re-running overwrites news and events with the same slug but never restores ones deleted in the admin;\n" +
+	"undated news take the date of the git commit that added them, else stay drafts"
 
 // importWWWCmd imports the legacy static site (news, events, sporting code
 // PDFs, redirects) into the content tables. It is idempotent.
