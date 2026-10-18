@@ -123,6 +123,9 @@ func TestFetchPilotErrors(t *testing.T) {
 		if !strings.Contains(err.Error(), srv.URL+"/pilot/42") || !strings.Contains(err.Error(), strconv.Itoa(code)) {
 			t.Errorf("error %q lacks url/status", err)
 		}
+		if errors.Is(err, ErrNotFound) != (code == 404) {
+			t.Errorf("code %d: errors.Is(ErrNotFound) = %v", code, errors.Is(err, ErrNotFound))
+		}
 	}
 }
 

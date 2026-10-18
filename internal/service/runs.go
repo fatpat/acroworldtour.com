@@ -211,7 +211,7 @@ func (s *Service) NewRun(ctx context.Context, compID string, qualify int, policy
 // reopened first (spec 05 §8: the backend enforces the run state on roster
 // edits).
 func (s *Service) SetRunOrder(ctx context.Context, compID string, idx int, pilots []int, teams []string) error {
-	return s.runOp(ctx, compID, idx, func(q *gen.Queries, c Competition, r Run) (domain.RunState, error) {
+	return s.runOp(ctx, compID, idx, false, func(q *gen.Queries, c Competition, r Run) (domain.RunState, error) {
 		if r.State == domain.RunClosed {
 			return r.State, fmt.Errorf("run %d is closed, reopen it first: %w", idx+1, domain.ErrInvalidTransition)
 		}
@@ -254,15 +254,18 @@ func participantKey(p ranking.Participant) string {
 }
 
 // runOp loads an editable competition and one of its runs, applies fn and
-// stores the run state fn returns, then publishes a run event.
-func (s *Service) runOp(ctx context.Context, compID string, idx int, fn func(q *gen.Queries, c Competition, r Run) (domain.RunState, error)) error {
-	var code string
+// stores the run state fn returns, then publishes a run event. With
+// rebuild, the stored rankings are rebuilt in the same transaction (a run
+// state change changes the results_final flags) and the event also goes to
+// the competition's seasons.
+func (s *Service) runOp(ctx context.Context, compID string, idx int, rebuild bool, fn func(q *gen.Queries, c Competition, r Run) (domain.RunState, error)) error {
+	var c Competition
 	err := s.db.Tx(ctx, func(q *gen.Queries) error {
-		c, _, err := editable(ctx, q, compID)
+		var err error
+		c, _, err = editable(ctx, q, compID)
 		if err != nil {
 			return err
 		}
-		code = c.Code
 		r, row, err := loadRun(ctx, q, compID, idx)
 		if err != nil {
 			return err
@@ -271,20 +274,28 @@ func (s *Service) runOp(ctx context.Context, compID string, idx int, fn func(q *
 		if err != nil {
 			return err
 		}
-		return q.UpsertRun(ctx, gen.UpsertRunParams{
+		err = q.UpsertRun(ctx, gen.UpsertRunParams{
 			CompetitionID: compID, Idx: row.Idx, State: string(state), Config: row.Config,
 			ResetPolicy: row.ResetPolicy, ResultsFinal: row.ResultsFinal, UpdatedAt: nullString(now()),
 		})
+		if err != nil || !rebuild {
+			return err
+		}
+		return RebuildRankings(ctx, q, compID)
 	})
 	if err != nil {
 		return err
 	}
-	s.publish(KindRun, competitionTopic(code))
+	if rebuild {
+		s.publish(KindRun, c.topics()...)
+	} else {
+		s.publish(KindRun, competitionTopic(c.Code))
+	}
 	return nil
 }
 
 func (s *Service) runTransition(ctx context.Context, compID string, idx int, from, to domain.RunState, check func(q *gen.Queries, r Run) error) error {
-	return s.runOp(ctx, compID, idx, func(q *gen.Queries, _ Competition, r Run) (domain.RunState, error) {
+	return s.runOp(ctx, compID, idx, true, func(q *gen.Queries, _ Competition, r Run) (domain.RunState, error) {
 		if r.State != from {
 			return r.State, fmt.Errorf("run %d %s -> %s needs state %s: %w", idx+1, r.State, to, from, domain.ErrInvalidTransition)
 		}

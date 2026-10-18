@@ -6,6 +6,7 @@ package civl
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -72,6 +73,9 @@ func New(httpClient *http.Client, baseURL string) *Client {
 	return &Client{http: httpClient, baseURL: strings.TrimRight(baseURL, "/")}
 }
 
+// ErrNotFound: CIVL has no pilot page for the CIVL id (HTTP 404).
+var ErrNotFound = errors.New("civl: pilot not found")
+
 // StatusError is returned when CIVL answers with a non-200 status.
 type StatusError struct {
 	Method string
@@ -114,6 +118,10 @@ func (c *Client) do(ctx context.Context, method, u string, body io.Reader, hdr m
 func (c *Client) FetchPilot(ctx context.Context, civlid int) (PilotData, error) {
 	pageURL := fmt.Sprintf("%s/pilot/%d", c.baseURL, civlid)
 	_, body, err := c.do(ctx, http.MethodGet, pageURL, nil, nil, nil)
+	var se *StatusError
+	if errors.As(err, &se) && se.Status == http.StatusNotFound {
+		return PilotData{}, fmt.Errorf("%w: %w", ErrNotFound, err)
+	}
 	if err != nil {
 		return PilotData{}, err
 	}

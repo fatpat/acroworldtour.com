@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"awt/internal/civl"
@@ -96,6 +97,9 @@ func (s *Service) ImportPilotFromCIVL(ctx context.Context, civlid int) (Pilot, e
 		return Pilot{}, invalid(domain.FieldError{Field: "civlid", Msg: "must be a positive CIVL id"})
 	}
 	d, err := s.civl.FetchPilot(ctx, civlid) // network call outside the transaction
+	if errors.Is(err, civl.ErrNotFound) {
+		return Pilot{}, fmt.Errorf("CIVL pilot %d: %w", civlid, ErrNotFound)
+	}
 	if err != nil {
 		return Pilot{}, fmt.Errorf("fetch CIVL pilot %d: %w", civlid, err)
 	}
@@ -137,6 +141,10 @@ func (s *Service) RefreshRankings(ctx context.Context) error {
 	ranks, err := s.civl.FetchRankings(ctx)
 	if err != nil {
 		return fmt.Errorf("fetch CIVL rankings: %w", err)
+	}
+	if len(ranks) == 0 {
+		// an empty export would unrank every pilot
+		return errors.New("CIVL returned no rankings")
 	}
 	return s.db.Tx(ctx, func(q *gen.Queries) error {
 		pilots, err := q.ListPilots(ctx)
@@ -181,8 +189,11 @@ func (s *Service) ToggleGender(ctx context.Context, civlid int) (domain.Gender, 
 }
 
 // SetAWTYear makes the pilot an AWT pilot for year (awt true) or an AWQ
-// pilot (awt false).
+// pilot (awt false). Years are 1990-2100.
 func (s *Service) SetAWTYear(ctx context.Context, civlid, year int, awt bool) error {
+	if year < 1990 || year > 2100 {
+		return invalid(domain.FieldError{Field: "year", Msg: "must be between 1990 and 2100"})
+	}
 	return s.db.Tx(ctx, func(q *gen.Queries) error {
 		if _, err := q.GetPilot(ctx, int64(civlid)); err != nil {
 			return notFound(err, fmt.Sprintf("pilot %d", civlid))

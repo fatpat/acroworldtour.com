@@ -25,7 +25,13 @@ type fakeCIVL struct {
 	ranks map[int]int
 }
 
+// missingCIVLID is a pilot the fake CIVL site does not know (404).
+const missingCIVLID = 404404
+
 func (f *fakeCIVL) FetchPilot(_ context.Context, civlid int) (civl.PilotData, error) {
+	if civlid == missingCIVLID {
+		return civl.PilotData{}, fmt.Errorf("fetch: %w", civl.ErrNotFound)
+	}
 	return civl.PilotData{
 		CivlID: civlid, Name: fmt.Sprintf("Pilot %d", civlid), Country: "fra",
 		CivlLink:    fmt.Sprintf("https://civlcomps.org/pilot/%d", civlid),
@@ -424,7 +430,27 @@ func TestSetConfigAndRepeatableTricks(t *testing.T) {
 	if cfg == string(c.Config) {
 		t.Fatalf("fixture: config shape changed: %s", c.Config)
 	}
+	for name, bad := range map[string]string{
+		"missing key":     strings.Replace(cfg, `"warning2":1,`, ``, 1),
+		"missing level":   strings.Replace(cfg, `"trainee":20`, `"novice":20`, 1),
+		"percent sum":     strings.Replace(cfg, `"landing":20`, `"landing":25`, 1),
+		"negative weight": strings.Replace(cfg, `"trainee":20`, `"trainee":-1`, 1),
+		"dsq 0":           strings.Replace(cfg, `"warnings_to_dsq":3`, `"warnings_to_dsq":0`, 1),
+		"no flip limit":   strings.Replace(cfg, `,"flip":2`, ``, 1),
+	} {
+		if bad == cfg {
+			t.Fatalf("%s: fixture config shape changed: %s", name, cfg)
+		}
+		if err := f.svc.SetConfig(ctx, c.ID, json.RawMessage(bad)); !errors.As(err, &ve) {
+			t.Errorf("%s accepted: %v", name, err)
+		}
+	}
+	events, unsubscribe := f.bus.Subscribe(competitionTopic(c.Code))
+	defer unsubscribe()
 	ok(t, f.svc.SetConfig(ctx, c.ID, json.RawMessage(cfg)))
+	if len(events) != 1 {
+		t.Errorf("SetConfig published %d events", len(events))
+	}
 	if got := must(f.svc.GetCompetition(ctx, c.ID))(t).Config; !strings.Contains(string(got), `"warning":0.7`) {
 		t.Errorf("config: %s", got)
 	}
@@ -522,9 +548,25 @@ func TestPilotCIVLImportKeepsManualFields(t *testing.T) {
 		t.Errorf("re-import lost manual fields: %+v", p)
 	}
 	f.civl.ranks = map[int]int{}
+	if err := f.svc.RefreshRankings(ctx); err == nil || !strings.Contains(err.Error(), "CIVL returned no rankings") {
+		t.Errorf("empty ranking accepted: %v", err)
+	}
+	if p := must(f.svc.GetPilot(ctx, 7))(t); p.Rank != 12 {
+		t.Errorf("empty ranking changed rank: %d", p.Rank)
+	}
+	f.civl.ranks = map[int]int{8: 1}
 	ok(t, f.svc.RefreshRankings(ctx))
 	if p := must(f.svc.GetPilot(ctx, 7))(t); p.Rank != 9999 {
 		t.Errorf("unranked: %d", p.Rank)
+	}
+	var ve *ValidationError
+	for _, y := range []int{1989, 2101} {
+		if err := f.svc.SetAWTYear(ctx, 7, y, true); !errors.As(err, &ve) {
+			t.Errorf("AWT year %d: %v", y, err)
+		}
+	}
+	if _, err := f.svc.ImportPilotFromCIVL(ctx, missingCIVLID); !errors.Is(err, ErrNotFound) {
+		t.Errorf("pilot unknown to CIVL: %v", err)
 	}
 	_, err := f.db.Write.ExecContext(ctx, `UPDATE pilots SET gender = 'none'`)
 	ok(t, err)
@@ -637,4 +679,24 @@ func TestBus(t *testing.T) {
 		t.Errorf("drained %d", n)
 	}
 	b.Publish(Event{Topic: "competition:x"}) // no subscriber: must not panic
+}
+
+func TestUpdateCompetitionPublishesToSeasons(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	c, _ := f.soloSetup(t)
+	must(f.svc.CreateSeason(ctx, SeasonInput{Name: "AWQ 2025", Code: "awq-2025", Year: 2025, SortIndex: 1}))(t)
+	var chans []<-chan Event
+	for _, topic := range []string{competitionTopic(c.Code), seasonTopic("awt-2025"), seasonTopic("awq-2025")} {
+		ch, unsubscribe := f.bus.Subscribe(topic)
+		defer unsubscribe()
+		chans = append(chans, ch)
+	}
+	in := CompetitionInput{Name: c.Name, Type: c.Type, StartDate: c.StartDate, EndDate: c.EndDate, Seasons: []string{"awq-2025"}}
+	must(f.svc.UpdateCompetition(ctx, c.ID, in))(t)
+	for i, ch := range chans {
+		if len(ch) != 1 {
+			t.Errorf("topic %d got %d events", i, len(ch))
+		}
+	}
 }

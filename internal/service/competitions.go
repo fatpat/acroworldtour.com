@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/url"
 	"slices"
 	"strings"
@@ -314,9 +315,11 @@ func (s *Service) CreateCompetition(ctx context.Context, in CompetitionInput) (C
 // UpdateCompetition replaces the editable fields. Name, code and type only
 // change in init; a closed competition is read-only (spec 02 §5.1).
 func (s *Service) UpdateCompetition(ctx context.Context, id string, in CompetitionInput) (Competition, error) {
-	var out Competition
+	var out, cur Competition
 	err := s.db.Tx(ctx, func(q *gen.Queries) error {
-		cur, row, err := editable(ctx, q, id)
+		var row gen.Competition
+		var err error
+		cur, row, err = editable(ctx, q, id)
 		if err != nil {
 			return err
 		}
@@ -349,7 +352,14 @@ func (s *Service) UpdateCompetition(ctx context.Context, id string, in Competiti
 	if err != nil {
 		return Competition{}, err
 	}
-	s.publish(KindCompetition, competitionTopic(out.Code))
+	// the old seasons lose the competition, the new ones gain it
+	topics := out.topics()
+	for _, t := range cur.topics() {
+		if !slices.Contains(topics, t) {
+			topics = append(topics, t)
+		}
+	}
+	s.publish(KindCompetition, topics...)
 	return out, nil
 }
 
@@ -514,19 +524,17 @@ func (s *Service) SetRepeatableTricks(ctx context.Context, id string, names []st
 }
 
 // SetConfig replaces the competition scoring config (spec 02 §2.6). It is
-// copied into each new run.
+// copied into each new run. The config must be complete (checkConfig).
 func (s *Service) SetConfig(ctx context.Context, id string, config json.RawMessage) error {
-	dec := json.NewDecoder(bytes.NewReader(config))
-	dec.DisallowUnknownFields()
-	var cfg scoring.Config
-	if err := dec.Decode(&cfg); err != nil || !bytes.HasPrefix(bytes.TrimSpace(config), []byte("{")) {
-		return invalid(domain.FieldError{Field: "config", Msg: fmt.Sprintf("invalid config: %v", err)})
+	if err := invalid(checkConfig(config)...); err != nil {
+		return err
 	}
 	var compact bytes.Buffer
 	if err := json.Compact(&compact, config); err != nil {
 		return invalid(domain.FieldError{Field: "config", Msg: err.Error()})
 	}
-	return s.db.Tx(ctx, func(q *gen.Queries) error {
+	var code string
+	err := s.db.Tx(ctx, func(q *gen.Queries) error {
 		c, row, err := editable(ctx, q, id)
 		if err != nil {
 			return err
@@ -534,15 +542,96 @@ func (s *Service) SetConfig(ctx context.Context, id string, config json.RawMessa
 		if err := domain.CanUpdateCompetition(c.State, false); err != nil {
 			return err
 		}
+		code = c.Code
 		row.Config, row.UpdatedAt = compact.String(), nullString(now())
 		return upsertCompetition(ctx, q, row)
 	})
+	if err != nil {
+		return err
+	}
+	s.publish(KindCompetition, competitionTopic(code))
+	return nil
+}
+
+// checkConfig requires a complete scoring config (spec 03 §2): every key
+// present, non-negative values, mark percentages of each competition type
+// summing to 100 and warnings_to_dsq >= 1.
+func checkConfig(raw json.RawMessage) []domain.FieldError {
+	var errs []domain.FieldError
+	add := func(f, m string) { errs = append(errs, domain.FieldError{Field: "config." + f, Msg: m}) }
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.DisallowUnknownFields()
+	var cfg scoring.Config
+	if err := dec.Decode(&cfg); err != nil || !bytes.HasPrefix(bytes.TrimSpace(raw), []byte("{")) {
+		return []domain.FieldError{{Field: "config", Msg: fmt.Sprintf("invalid config: %v", err)}}
+	}
+	var top map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &top); err != nil {
+		return []domain.FieldError{{Field: "config", Msg: err.Error()}}
+	}
+	for _, k := range []string{"warning", "warning2", "malus_repetition", "warnings_to_dsq"} {
+		if _, ok := top[k]; !ok {
+			add(k, "required")
+		}
+	}
+	for k, v := range map[string]float64{"warning": cfg.Warning, "warning2": cfg.Warning2, "malus_repetition": cfg.MalusRepetition} {
+		if v < 0 {
+			add(k, "must be >= 0")
+		}
+	}
+	if cfg.WarningsToDSQ < 1 {
+		add("warnings_to_dsq", "must be >= 1")
+	}
+	// check requires keys in m (and only them when exact) with values >= 0,
+	// and returns the sum of their values.
+	check := func(field string, m map[string]float64, exact bool, keys ...string) float64 {
+		sum := 0.0
+		for _, k := range keys {
+			v, ok := m[k]
+			if !ok {
+				add(field+"."+k, "required")
+			}
+			sum += v
+		}
+		for k, v := range m {
+			if exact && !slices.Contains(keys, k) {
+				add(field+"."+k, "unknown key")
+			}
+			if v < 0 {
+				add(field+"."+k, "must be >= 0")
+			}
+		}
+		return sum
+	}
+	levels := map[string]float64{}
+	for l, w := range cfg.JudgeWeights {
+		levels[string(l)] = w
+	}
+	check("judge_weights", levels, true, string(scoring.Senior), string(scoring.Certified), string(scoring.Trainee))
+	components := map[scoring.CompetitionType][]string{
+		scoring.Solo:    {"technical", "choreography", "landing"},
+		scoring.Synchro: {"technical", "choreography", "landing", "synchro"},
+	}
+	for typ := range cfg.MarkPercentages {
+		if _, ok := components[typ]; !ok {
+			add("mark_percentages."+string(typ), "unknown competition type")
+		}
+	}
+	for _, typ := range []scoring.CompetitionType{scoring.Solo, scoring.Synchro} {
+		field := "mark_percentages." + string(typ)
+		if sum := check(field, cfg.MarkPercentages[typ], true, components[typ]...); math.Abs(sum-100) > 1e-9 {
+			add(field, fmt.Sprintf("percentages sum to %v, want 100", sum))
+		}
+	}
+	// other bonus types may be limited too (default limit otherwise)
+	check("max_bonus_per_run", cfg.MaxBonusPerRun, false, "twist", "reverse", "flip")
+	return errs
 }
 
 // transition moves an editable competition from state from to state to
-// after check passes,
-// then publishes to the competition and its seasons (the season rankings
-// count closed competitions only).
+// after check passes and rebuilds the stored rankings (final flags and
+// seasons change: season rankings count closed competitions only), then
+// publishes to the competition and its seasons.
 func (s *Service) transition(ctx context.Context, id string, from, to domain.CompetitionState, check func(q *gen.Queries, c Competition) error) error {
 	var c Competition
 	err := s.db.Tx(ctx, func(q *gen.Queries) error {
@@ -562,7 +651,10 @@ func (s *Service) transition(ctx context.Context, id string, from, to domain.Com
 			return err
 		}
 		row.State, row.UpdatedAt = string(to), nullString(now())
-		return upsertCompetition(ctx, q, row)
+		if err := upsertCompetition(ctx, q, row); err != nil {
+			return err
+		}
+		return RebuildRankings(ctx, q, id)
 	})
 	if err != nil {
 		return err
@@ -630,7 +722,11 @@ func (s *Service) setCompetitionDeleted(ctx context.Context, id string, deleted 
 			return fmt.Errorf("competition %s: %w", id, ErrNotFound)
 		}
 		row.DeletedAt, row.UpdatedAt = deletedAt(deleted), nullString(now())
-		return upsertCompetition(ctx, q, row)
+		if err := upsertCompetition(ctx, q, row); err != nil {
+			return err
+		}
+		// a deleted competition leaves its seasons' rankings
+		return rebuildSeasons(ctx, q, newPeople(q), c.Seasons)
 	})
 	if err != nil {
 		return err
