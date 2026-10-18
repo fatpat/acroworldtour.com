@@ -474,3 +474,46 @@ func TestRoutesArePublic(t *testing.T) {
 		}
 	}
 }
+
+// TestPerRunCellsPublishedOnly: result_per_run counts published flights only
+// and re-ranks each run like the public overall tab does (shared ranks), so
+// the API never leaks an unpublished run score.
+func TestPerRunCellsPublishedOnly(t *testing.T) {
+	h, db := newApp(t)
+	ctx := context.Background()
+	// Unpublish the run-0 leader's flight.
+	var civlid int64
+	if err := db.Read.QueryRowContext(ctx, `SELECT re.civlid FROM ranking_entries re JOIN competitions c ON re.scope_key = c.id || '/0'
+		WHERE re.scope = 'run' AND re.list_key = 'overall' AND c.code = 'mini-solo-2024' AND re.position = 1`).Scan(&civlid); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Write.ExecContext(ctx, `UPDATE flights SET published = 0 WHERE run_idx = 0 AND civlid = ?
+		AND competition_id = (SELECT id FROM competitions WHERE code = 'mini-solo-2024')`, civlid); err != nil {
+		t.Fatal(err)
+	}
+	c := getJSON(t, h, "/api/v1/competitions/mini-solo-2024", 200)
+	run0 := map[float64]float64{} // civlid -> rank in run 0
+	for _, e := range c["results"].(map[string]any)["overall"].([]any) {
+		e := e.(map[string]any)
+		id := e["pilot"].(map[string]any)["civlid"].(float64)
+		for _, cell := range e["result_per_run"].([]any) {
+			cell := cell.(map[string]any)
+			if cell["run"] == 0.0 {
+				run0[id] = cell["rank"].(float64)
+			}
+		}
+	}
+	if _, ok := run0[float64(civlid)]; ok {
+		t.Errorf("unpublished flight of %d still has a run-0 cell: %v", civlid, run0)
+	}
+	if len(run0) != 2 {
+		t.Fatalf("run-0 cells = %v, want the 2 published flights", run0)
+	}
+	ranks := map[float64]bool{}
+	for _, r := range run0 {
+		ranks[r] = true
+	}
+	if !ranks[1] {
+		t.Errorf("run 0 not re-ranked over published flights: %v", run0)
+	}
+}

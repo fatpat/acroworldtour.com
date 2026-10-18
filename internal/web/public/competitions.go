@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strconv"
 
+	"awt/internal/ranking"
 	"awt/internal/scoring"
 	"awt/internal/store"
 	"awt/internal/store/gen"
@@ -260,30 +261,23 @@ func (p *results) runCells(r *http.Request, compID, list string) (map[string]map
 	if err != nil {
 		return nil, err
 	}
-	n, prev := 0, runCell{}
+	rp := make([]ranking.RunPlace, len(places))
 	for i, pl := range places {
-		if i == 0 || places[i-1].RunIdx != pl.RunIdx {
-			n = 0
-		}
-		c := runCell{Rank: sharedRank(n, prev, pl.Score), Score: pl.Score}
-		k := newParticipant(pl.Civlid, pl.TeamID, "", "", "", nil).key()
-		if cells[k] == nil {
-			cells[k] = map[int]runCell{}
-		}
+		rp[i] = ranking.RunPlace{RunIndex: int(pl.RunIdx), Key: newParticipant(pl.Civlid, pl.TeamID, "", "", "", nil).key(), Score: pl.Score}
+	}
+	for k, cs := range ranking.PublishedRunCells(rp) {
+		cells[k] = map[int]runCell{}
 		// runs are keyed by their 0-based position among the competition's runs
-		cells[k][int(pl.RunIdx)] = c
-		n, prev = n+1, c
+		for _, c := range cs {
+			cells[k][c.RunIndex] = runCell{Rank: int64(c.Rank), Score: c.Score}
+		}
 	}
 	return cells, nil
 }
 
-// sharedRank is the rank of the n-th (0-based) entry of a list ordered by
-// score: equal Round3 scores share the previous rank (decision 0007).
+// sharedRank is ranking.SharedRank on the page's int64 ranks.
 func sharedRank(n int, prev runCell, score float64) int64 {
-	if n > 0 && scoring.Round3(prev.Score) == scoring.Round3(score) {
-		return prev.Rank
-	}
-	return int64(n + 1)
+	return int64(ranking.SharedRank(n, int(prev.Rank), prev.Score, score))
 }
 
 // flightRow is a published flight in a run list, with its detail.

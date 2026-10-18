@@ -7,8 +7,11 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strconv"
 
+	"awt/internal/ranking"
 	"awt/internal/scoring"
+	"awt/internal/store"
 	"awt/internal/store/gen"
 )
 
@@ -193,23 +196,51 @@ func (rd *reader) lists(scope, key string) (map[string][]entryJSON, error) {
 		return nil, err
 	}
 	out := map[string][]entryJSON{"overall": {}}
+	perRun := map[string]map[string][]ranking.RunCell{}
 	for _, e := range rows {
 		p, t, err := rd.participant(e.Civlid, e.TeamID)
 		if err != nil {
 			return nil, err
 		}
-		var d struct {
-			PerRun []cellJSON `json:"per_run"`
+		entry := entryJSON{Rank: e.Rank, Position: e.Position, Pilot: p, Team: t, Score: scoring.Round3(e.Score)}
+		if scope == store.ScopeCompetition {
+			cells, ok := perRun[e.ListKey]
+			if !ok {
+				if cells, err = rd.publishedRunCells(key, e.ListKey); err != nil {
+					return nil, err
+				}
+				perRun[e.ListKey] = cells
+			}
+			for _, c := range cells[participantKey(e.Civlid, e.TeamID)] {
+				entry.ResultPerRun = append(entry.ResultPerRun, cellJSON{Run: c.RunIndex, Rank: c.Rank, Score: scoring.Round3(c.Score)})
+			}
 		}
-		decode("ranking details", e.Details, &d)
-		for i := range d.PerRun {
-			d.PerRun[i].Score = scoring.Round3(d.PerRun[i].Score)
-		}
-		out[e.ListKey] = append(out[e.ListKey], entryJSON{
-			Rank: e.Rank, Position: e.Position, Pilot: p, Team: t, Score: scoring.Round3(e.Score), ResultPerRun: d.PerRun,
-		})
+		out[e.ListKey] = append(out[e.ListKey], entry)
 	}
 	return out, nil
+}
+
+// publishedRunCells is every participant's rank and score in each run of
+// one competition list, counting published flights only and re-ranked like
+// the public overall tab (the stored per-run cells include unpublished
+// flights, decision 0005).
+func (rd *reader) publishedRunCells(compID, list string) (map[string][]ranking.RunCell, error) {
+	places, err := rd.q.PublicCompetitionRunPlaces(rd.ctx, gen.PublicCompetitionRunPlacesParams{CompetitionID: compID, ListKey: list})
+	if err != nil {
+		return nil, err
+	}
+	rp := make([]ranking.RunPlace, len(places))
+	for i, pl := range places {
+		rp[i] = ranking.RunPlace{RunIndex: int(pl.RunIdx), Key: participantKey(pl.Civlid, pl.TeamID), Score: pl.Score}
+	}
+	return ranking.PublishedRunCells(rp), nil
+}
+
+func participantKey(civlid sql.NullInt64, teamID sql.NullString) string {
+	if teamID.Valid {
+		return "t:" + teamID.String
+	}
+	return "p:" + strconv.FormatInt(civlid.Int64, 10)
 }
 
 // loadMeta loads the counts and season codes of every published competition

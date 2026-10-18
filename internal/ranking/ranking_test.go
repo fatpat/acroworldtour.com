@@ -429,3 +429,18 @@ func TestSeasonSynchroNoWomen(t *testing.T) {
 		t.Error("synchro women list")
 	}
 }
+
+func TestPublishedRunCells(t *testing.T) {
+	got := PublishedRunCells([]RunPlace{
+		{0, "a", 9}, {0, "b", 9.0004}, {0, "c", 7},
+		{1, "c", 8}, {1, "a", 6},
+	})
+	want := map[string][]RunCell{
+		"a": {{0, 1, 9}, {1, 2, 6}},
+		"b": {{0, 1, 9.0004}},
+		"c": {{0, 3, 7}, {1, 1, 8}},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %v, want %v", got, want)
+	}
+}
