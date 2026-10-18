@@ -44,10 +44,9 @@ func hashToken(t string) string {
 	return hex.EncodeToString(sum[:])
 }
 
-func (a *Auth) dummy() []byte {
-	a.dummyOnce.Do(func() { a.dummyHash, _ = bcrypt.GenerateFromPassword([]byte("dummy"), a.cost) })
-	return a.dummyHash
-}
+// dummyHash is a bcrypt cost 12 hash of a throwaway string, compared against
+// when the user is unknown so timing does not reveal which emails exist.
+var dummyHash = []byte("$2a$12$n0NefR8ArDHYJjtIsCy5JOtczxTeFEo6SivcaNkyJDh0.OZokgFqS")
 
 // Login checks the credentials and opens a new session (a fresh token on every
 // login).
@@ -58,7 +57,7 @@ func (a *Auth) Login(ctx context.Context, email, password string) (Session, erro
 		if !errors.Is(err, sql.ErrNoRows) {
 			return Session{}, err
 		}
-		hash = a.dummy() // keep the timing of unknown users close to real ones
+		hash = dummyHash // keep the timing of unknown users close to real ones
 	}
 	if bcrypt.CompareHashAndPassword(hash, []byte(password)) != nil || err != nil || u.Disabled {
 		return Session{}, ErrInvalidCredentials
@@ -74,7 +73,9 @@ func (a *Auth) Login(ctx context.Context, email, password string) (Session, erro
 	now := a.now().UTC()
 	s := Session{Token: token, CSRF: csrf, ExpiresAt: now.Add(sessionTTL), User: u}
 	err = a.db.Tx(ctx, func(q *gen.Queries) error {
-		_ = q.DeleteExpiredSessions(ctx, now.Format(time.RFC3339))
+		if err := q.DeleteExpiredSessions(ctx, now.Format(time.RFC3339)); err != nil {
+			return err
+		}
 		return q.InsertSession(ctx, gen.InsertSessionParams{
 			TokenHash: hashToken(token), UserID: u.ID, CsrfToken: csrf,
 			ExpiresAt: s.ExpiresAt.Format(time.RFC3339), CreatedAt: now.Format(time.RFC3339),

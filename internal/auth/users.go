@@ -10,8 +10,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"sync"
 	"time"
+	"unicode/utf8"
 
 	"golang.org/x/crypto/bcrypt"
 
@@ -42,14 +42,20 @@ type Auth struct {
 	limiter *LoginLimiter
 	now     func() time.Time
 	cost    int // bcrypt cost; lowered by tests only
-
-	dummyOnce sync.Once
-	dummyHash []byte
 }
 
 // New builds an Auth on db.
 func New(db *store.DB, cfg config.Config) *Auth {
 	return &Auth{db: db, cfg: cfg, limiter: NewLoginLimiter(5, 15*time.Minute), now: time.Now, cost: defaultBcryptCost}
+}
+
+const minPasswordLen = 10
+
+func checkPassword(p string) error {
+	if utf8.RuneCountInString(p) < minPasswordLen {
+		return fmt.Errorf("password must be at least %d characters", minPasswordLen)
+	}
+	return nil
 }
 
 func normEmail(e string) string { return strings.ToLower(strings.TrimSpace(e)) }
@@ -65,8 +71,11 @@ func newUserID() (string, error) {
 // CreateUser adds an account. The email is stored lower-cased.
 func (a *Auth) CreateUser(ctx context.Context, email, name, role, password string) (User, error) {
 	email = normEmail(email)
-	if email == "" || password == "" {
-		return User{}, errors.New("email and password are required")
+	if email == "" {
+		return User{}, errors.New("email is required")
+	}
+	if err := checkPassword(password); err != nil {
+		return User{}, err
 	}
 	if role != RoleAdmin && role != RoleScorer {
 		return User{}, fmt.Errorf("role %q: must be admin or scorer", role)
@@ -93,8 +102,8 @@ func (a *Auth) CreateUser(ctx context.Context, email, name, role, password strin
 
 // SetPassword replaces a user's password and revokes their sessions.
 func (a *Auth) SetPassword(ctx context.Context, email, password string) error {
-	if password == "" {
-		return errors.New("password is required")
+	if err := checkPassword(password); err != nil {
+		return err
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), a.cost)
 	if err != nil {
@@ -119,13 +128,13 @@ func (a *Auth) AssignCompetition(ctx context.Context, email, competition string)
 		if err != nil {
 			return fmt.Errorf("user %s: %w", email, err)
 		}
-		c, err := q.GetCompetition(ctx, competition)
-		if errors.Is(err, sql.ErrNoRows) {
-			c, err = q.GetCompetitionByCode(ctx, competition)
+		id, err := resolveCompetition(ctx, q, competition)
+		if err == nil && id == "" {
+			err = sql.ErrNoRows
 		}
 		if err != nil {
 			return fmt.Errorf("competition %s: %w", competition, err)
 		}
-		return q.AddUserCompetition(ctx, gen.AddUserCompetitionParams{UserID: u.ID, CompetitionID: c.ID})
+		return q.AddUserCompetition(ctx, gen.AddUserCompetitionParams{UserID: u.ID, CompetitionID: id})
 	})
 }

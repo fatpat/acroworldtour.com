@@ -3,12 +3,15 @@ package auth
 import (
 	"net"
 	"net/http"
+	"net/netip"
 	"strings"
 	"sync"
 	"time"
 )
 
-// LoginLimiter counts failed logins per key within a sliding window. It is
+const maxLimiterKeys = 4096 // above this, expired keys are swept on each Attempt
+
+// LoginLimiter counts login attempts per key within a sliding window. It is
 // in memory: the application runs as a single process.
 type LoginLimiter struct {
 	max    int
@@ -41,19 +44,21 @@ func (l *LoginLimiter) prune(key string) []time.Time {
 	return live
 }
 
-// Allow reports whether another attempt may be made for key.
-func (l *LoginLimiter) Allow(key string) bool {
+// Attempt atomically checks the budget of key and, when it is not exhausted,
+// reserves one attempt. Call Reset after a successful login.
+func (l *LoginLimiter) Attempt(key string) bool {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	return len(l.prune(key)) < l.max
-}
-
-// Fail records a failed attempt.
-func (l *LoginLimiter) Fail(key string) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.prune(key)
+	if len(l.failures) > maxLimiterKeys {
+		for k := range l.failures {
+			l.prune(k)
+		}
+	}
+	if len(l.prune(key)) >= l.max {
+		return false
+	}
 	l.failures[key] = append(l.failures[key], l.now())
+	return true
 }
 
 // Reset forgets the failures of key (after a successful login).
@@ -63,12 +68,35 @@ func (l *LoginLimiter) Reset(key string) {
 	delete(l.failures, key)
 }
 
-// limiterKey is the lower-cased email plus the client IP. The IP is the
-// direct peer address; trusted-proxy handling is not implemented yet.
-func limiterKey(email string, r *http.Request) string {
-	ip, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		ip = r.RemoteAddr
-	}
+func limiterKey(email, ip string) string {
 	return strings.ToLower(strings.TrimSpace(email)) + "|" + ip
+}
+
+// ClientIP returns the client address. The configured header
+// (CF-Connecting-IP, or the first X-Forwarded-For entry) is honoured only when
+// the direct peer is inside a trusted proxy CIDR; otherwise the peer address.
+func (a *Auth) ClientIP(r *http.Request) string {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		host = r.RemoteAddr
+	}
+	peer, err := netip.ParseAddr(host)
+	if err != nil {
+		return host
+	}
+	peer = peer.Unmap()
+	for _, p := range a.cfg.TrustedProxies {
+		if !p.Contains(peer) {
+			continue
+		}
+		v := r.Header.Get(a.cfg.ClientIPHeader)
+		if a.cfg.ClientIPHeader == "X-Forwarded-For" {
+			v, _, _ = strings.Cut(v, ",")
+		}
+		if ip, err := netip.ParseAddr(strings.TrimSpace(v)); err == nil {
+			return ip.Unmap().String()
+		}
+		break
+	}
+	return host
 }

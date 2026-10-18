@@ -54,3 +54,19 @@ func TestLoadS3RequiresCredentials(t *testing.T) {
 		t.Fatalf("expected error mentioning AWT_S3_ENDPOINT, got %v", err)
 	}
 }
+
+func TestLoadClientIPSettings(t *testing.T) {
+	cfg, err := config.Load(env(map[string]string{"AWT_ENV": "dev", "AWT_TRUSTED_PROXIES": "10.0.0.0/8, 2001:db8::/32"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cfg.TrustedProxies) != 2 || cfg.ClientIPHeader != "CF-Connecting-IP" {
+		t.Fatalf("%v %q", cfg.TrustedProxies, cfg.ClientIPHeader)
+	}
+	if _, err := config.Load(env(map[string]string{"AWT_ENV": "dev", "AWT_TRUSTED_PROXIES": "nope"})); err == nil {
+		t.Fatal("bad CIDR accepted")
+	}
+	if _, err := config.Load(env(map[string]string{"AWT_ENV": "dev", "AWT_CLIENT_IP_HEADER": "X-Foo"})); err == nil {
+		t.Fatal("bad header accepted")
+	}
+}

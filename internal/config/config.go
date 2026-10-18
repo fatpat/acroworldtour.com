@@ -4,6 +4,8 @@ package config
 import (
 	"errors"
 	"fmt"
+	"net/netip"
+	"strings"
 )
 
 // Config holds every runtime setting. Environment variables are AWT_ plus the
@@ -22,6 +24,11 @@ type Config struct {
 	CloudflareZoneID string
 	CloudflareToken  string
 	SessionSecret    string
+	// TrustedProxies are the peers allowed to set ClientIPHeader
+	// (AWT_TRUSTED_PROXIES, comma-separated CIDRs; empty by default).
+	TrustedProxies []netip.Prefix
+	// ClientIPHeader is CF-Connecting-IP (default) or X-Forwarded-For.
+	ClientIPHeader string
 }
 
 // Load reads the configuration through getenv and refuses to start on a
@@ -47,6 +54,22 @@ func Load(getenv func(string) string) (Config, error) {
 		CloudflareZoneID: getenv("AWT_CLOUDFLARE_ZONE_ID"),
 		CloudflareToken:  getenv("AWT_CLOUDFLARE_TOKEN"),
 		SessionSecret:    getenv("AWT_SESSION_SECRET"),
+		ClientIPHeader:   get("AWT_CLIENT_IP_HEADER", "CF-Connecting-IP"),
+	}
+	for _, c := range strings.Split(getenv("AWT_TRUSTED_PROXIES"), ",") {
+		if c = strings.TrimSpace(c); c == "" {
+			continue
+		}
+		p, err := netip.ParsePrefix(c)
+		if err != nil {
+			return Config{}, fmt.Errorf("AWT_TRUSTED_PROXIES %q: %w", c, err)
+		}
+		cfg.TrustedProxies = append(cfg.TrustedProxies, p.Masked())
+	}
+	switch cfg.ClientIPHeader {
+	case "CF-Connecting-IP", "X-Forwarded-For":
+	default:
+		return Config{}, fmt.Errorf("AWT_CLIENT_IP_HEADER %q: must be CF-Connecting-IP or X-Forwarded-For", cfg.ClientIPHeader)
 	}
 
 	switch cfg.Env {

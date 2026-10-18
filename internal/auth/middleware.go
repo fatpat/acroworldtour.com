@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"net/http"
 	"net/url"
@@ -68,11 +69,14 @@ func (a *Auth) RequireScorer(compIDFrom func(*http.Request) string) func(http.Ha
 		return a.RequireUser(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			s, _ := SessionFromContext(r.Context())
 			if s.User.Role != RoleAdmin {
-				id := compIDFrom(r)
+				ref := compIDFrom(r)
 				assigned := false
-				if s.User.Role == RoleScorer && id != "" {
-					var err error
-					assigned, err = gen.New(a.db.Read).IsUserAssigned(r.Context(), gen.IsUserAssignedParams{UserID: s.User.ID, CompetitionID: id})
+				if s.User.Role == RoleScorer && ref != "" {
+					q := gen.New(a.db.Read)
+					id, err := resolveCompetition(r.Context(), q, ref)
+					if err == nil && id != "" {
+						assigned, err = q.IsUserAssigned(r.Context(), gen.IsUserAssignedParams{UserID: s.User.ID, CompetitionID: id})
+					}
 					if err != nil {
 						http.Error(w, "internal error", http.StatusInternalServerError)
 						return
@@ -88,10 +92,36 @@ func (a *Auth) RequireScorer(compIDFrom func(*http.Request) string) func(http.Ha
 	}
 }
 
+// resolveCompetition maps a competition id or code to its id ("" when unknown).
+func resolveCompetition(ctx context.Context, q *gen.Queries, ref string) (string, error) {
+	c, err := q.GetCompetition(ctx, ref)
+	if errors.Is(err, sql.ErrNoRows) {
+		c, err = q.GetCompetitionByCode(ctx, ref)
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
+	return c.ID, err
+}
+
 // safeNext only accepts local absolute paths, to avoid open redirects.
 func safeNext(n string) string {
-	if !strings.HasPrefix(n, "/") || strings.HasPrefix(n, "//") || strings.ContainsAny(n, "\\\r\n") {
-		return "/admin"
+	const fallback = "/admin"
+	if !strings.HasPrefix(n, "/") || strings.HasPrefix(n, "//") || strings.HasPrefix(n, "/\\") {
+		return fallback
+	}
+	u, err := url.Parse(n)
+	if err != nil || u.Scheme != "" || u.Host != "" || strings.HasPrefix(u.Path, "//") {
+		return fallback
+	}
+	// Check both the raw and the decoded form for control characters and
+	// backslashes (browsers strip tabs and newlines, and treat \ as /).
+	for _, v := range []string{n, u.Path} {
+		for _, c := range v {
+			if c < 0x20 || c == 0x7f || c == '\\' {
+				return fallback
+			}
+		}
 	}
 	return n
 }
@@ -100,15 +130,14 @@ func safeNext(n string) string {
 // failure limiter answers 429 once an email+IP pair failed 5 times in 15 min.
 func (a *Auth) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	email, password := r.PostFormValue("email"), r.PostFormValue("password")
-	key := limiterKey(email, r)
-	if !a.limiter.Allow(key) {
+	key := limiterKey(email, a.ClientIP(r))
+	if !a.limiter.Attempt(key) {
 		w.Header().Set("Retry-After", "900")
 		http.Error(w, "too many failed attempts, try again later", http.StatusTooManyRequests)
 		return
 	}
 	s, err := a.Login(r.Context(), email, password)
 	if errors.Is(err, ErrInvalidCredentials) {
-		a.limiter.Fail(key)
 		http.Error(w, "invalid email or password", http.StatusUnauthorized)
 		return
 	}
