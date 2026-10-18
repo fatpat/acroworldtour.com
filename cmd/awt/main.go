@@ -89,11 +89,13 @@ func serve() error {
 	if err != nil {
 		return fmt.Errorf("blob store: %w", err)
 	}
-	svc := service.New(db, blobs, service.NewBus(), civl.New(&http.Client{Timeout: 60 * time.Second}, ""))
-	srv := web.NewServer(web.Deps{Cfg: cfg, Auth: auth.New(db, cfg), DB: db, Purger: purger, Blobs: blobs, Service: svc},
+	bus := service.NewBus()
+	svc := service.New(db, blobs, bus, civl.New(&http.Client{Timeout: 60 * time.Second}, ""))
+	srv := web.NewServer(web.Deps{Cfg: cfg, Auth: auth.New(db, cfg), DB: db, Purger: purger, Blobs: blobs, Service: svc, Bus: bus},
 		public.Module{}, admin.Module{})
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	web.StartPurger(ctx, bus, purger, db, cfg.BaseURL)
 
 	errc := make(chan error, 1)
 	go func() {
