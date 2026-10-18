@@ -20,7 +20,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "usage: awt serve|migrate")
+		fmt.Fprintln(os.Stderr, "usage: awt serve|migrate|user")
 		os.Exit(2)
 	}
 	switch os.Args[1] {
@@ -32,6 +32,11 @@ func main() {
 	case "migrate":
 		if err := migrate(); err != nil {
 			slog.Error("migrate", "err", err)
+			os.Exit(1)
+		}
+	case "user":
+		if err := userCmd(os.Args[2:], os.Stdin); err != nil {
+			fmt.Fprintln(os.Stderr, "user:", err)
 			os.Exit(1)
 		}
 	default:

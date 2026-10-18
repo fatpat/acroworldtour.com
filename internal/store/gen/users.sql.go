@@ -50,6 +50,15 @@ func (q *Queries) DeleteUserCompetitions(ctx context.Context, userID string) err
 	return err
 }
 
+const deleteUserSessions = `-- name: DeleteUserSessions :exec
+DELETE FROM sessions WHERE user_id = ?
+`
+
+func (q *Queries) DeleteUserSessions(ctx context.Context, userID string) error {
+	_, err := q.db.ExecContext(ctx, deleteUserSessions, userID)
+	return err
+}
+
 const getSession = `-- name: GetSession :one
 SELECT token_hash, user_id, csrf_token, expires_at, created_at FROM sessions WHERE token_hash = ? AND expires_at > ?
 `
@@ -131,6 +140,22 @@ func (q *Queries) InsertSession(ctx context.Context, arg InsertSessionParams) er
 	return err
 }
 
+const isUserAssigned = `-- name: IsUserAssigned :one
+SELECT EXISTS (SELECT 1 FROM user_competitions WHERE user_id = ? AND competition_id = ?)
+`
+
+type IsUserAssignedParams struct {
+	UserID        string `json:"user_id"`
+	CompetitionID string `json:"competition_id"`
+}
+
+func (q *Queries) IsUserAssigned(ctx context.Context, arg IsUserAssignedParams) (bool, error) {
+	row := q.db.QueryRowContext(ctx, isUserAssigned, arg.UserID, arg.CompetitionID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const listUserCompetitions = `-- name: ListUserCompetitions :many
 SELECT competition_id FROM user_competitions WHERE user_id = ? ORDER BY competition_id
 `
@@ -190,6 +215,20 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateUserPassword = `-- name: UpdateUserPassword :exec
+UPDATE users SET password_hash = ? WHERE id = ?
+`
+
+type UpdateUserPasswordParams struct {
+	PasswordHash string `json:"password_hash"`
+	ID           string `json:"id"`
+}
+
+func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error {
+	_, err := q.db.ExecContext(ctx, updateUserPassword, arg.PasswordHash, arg.ID)
+	return err
 }
 
 const upsertUser = `-- name: UpsertUser :exec

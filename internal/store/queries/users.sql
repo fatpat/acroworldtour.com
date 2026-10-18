@@ -36,3 +36,12 @@ DELETE FROM sessions WHERE token_hash = ?;
 
 -- name: DeleteExpiredSessions :exec
 DELETE FROM sessions WHERE expires_at <= ?;
+
+-- name: UpdateUserPassword :exec
+UPDATE users SET password_hash = ? WHERE id = ?;
+
+-- name: IsUserAssigned :one
+SELECT EXISTS (SELECT 1 FROM user_competitions WHERE user_id = ? AND competition_id = ?);
+
+-- name: DeleteUserSessions :exec
+DELETE FROM sessions WHERE user_id = ?;
