@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"awt/internal/store"
 	"awt/internal/store/gen"
@@ -82,8 +83,12 @@ func TestMigrateKeepsEditedRulesets(t *testing.T) {
 	}
 	var v float64
 	var n int
-	_ = db.Read.QueryRowContext(ctx, `SELECT default_max_bonus FROM rulesets WHERE year = 2025`).Scan(&v)
-	_ = db.Read.QueryRowContext(ctx, `SELECT count(*) FROM rulesets`).Scan(&n)
+	if err := db.Read.QueryRowContext(ctx, `SELECT default_max_bonus FROM rulesets WHERE year = 2025`).Scan(&v); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Read.QueryRowContext(ctx, `SELECT count(*) FROM rulesets`).Scan(&n); err != nil {
+		t.Fatal(err)
+	}
 	if v != 99 || n != 5 {
 		t.Fatalf("edited=%v count=%d, want 99 and 5", v, n)
 	}
@@ -225,5 +230,120 @@ func TestJSONColumnsAreValidated(t *testing.T) {
 	err := exec(t, db, `INSERT INTO site_settings (key, value) VALUES ('k', 'not json')`)
 	if !isConstraint(err) {
 		t.Fatalf("invalid JSON accepted: %v", err)
+	}
+}
+
+func TestTxPanicRollsBackAndKeepsWriterUsable(t *testing.T) {
+	db := openMigrated(t)
+	ctx := context.Background()
+	func() {
+		defer func() {
+			if recover() == nil {
+				t.Fatal("panic was swallowed")
+			}
+		}()
+		_ = db.Tx(ctx, func(q *gen.Queries) error {
+			if err := q.UpsertPage(ctx, gen.UpsertPageParams{Slug: "p", Title: "t"}); err != nil {
+				return err
+			}
+			panic("boom")
+		})
+	}()
+	tctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+	err := db.Tx(tctx, func(q *gen.Queries) error {
+		return q.UpsertPage(tctx, gen.UpsertPageParams{Slug: "q", Title: "t"})
+	})
+	if err != nil {
+		t.Fatalf("writer poisoned: %v", err)
+	}
+	if _, err := gen.New(db.Read).GetPage(ctx, "p"); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("panicked tx survived: %v", err)
+	}
+}
+
+func TestCompetitionAndSeasonCodeNameReuseAfterSoftDelete(t *testing.T) {
+	db := openMigrated(t)
+	comp := `INSERT INTO competitions (id, code, name, type, start_date, end_date, config, deleted_at) VALUES (?, ?, ?, 'solo', '2025-01-01', '2025-01-02', '{}', ?)`
+	season := `INSERT INTO seasons (id, code, name, year, deleted_at) VALUES (?, ?, ?, 2025, ?)`
+	for _, c := range []struct {
+		table, q string
+		args     func(id string, del any) []any
+	}{
+		{"competition", comp, func(id string, del any) []any { return []any{id, "cc", "Comp", del} }},
+		{"season", season, func(id string, del any) []any { return []any{id, "awt-2025", "AWT", del} }},
+	} {
+		if err := exec(t, db, c.q, c.args("a", nil)...); err != nil {
+			t.Fatal(err)
+		}
+		if err := exec(t, db, c.q, c.args("b", nil)...); !isConstraint(err) {
+			t.Fatalf("%s: duplicate active code/name accepted: %v", c.table, err)
+		}
+	}
+	// name alone and code alone are each protected
+	if err := exec(t, db, comp, "n", "other", "Comp", nil); !isConstraint(err) {
+		t.Fatalf("duplicate competition name accepted: %v", err)
+	}
+	if err := exec(t, db, season, "n", "awt-2025", "Other", nil); !isConstraint(err) {
+		t.Fatalf("duplicate season code accepted: %v", err)
+	}
+	if err := exec(t, db, season, "n", "xxx-2025", "AWT", nil); !isConstraint(err) {
+		t.Fatalf("duplicate season name accepted: %v", err)
+	}
+	for _, q := range []string{`UPDATE competitions SET deleted_at = '2025-01-01T00:00:00Z' WHERE id = 'a'`, `UPDATE seasons SET deleted_at = '2025-01-01T00:00:00Z' WHERE id = 'a'`} {
+		if err := exec(t, db, q); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := exec(t, db, comp, "b", "cc", "Comp", nil); err != nil {
+		t.Fatalf("competition recreation rejected: %v", err)
+	}
+	if err := exec(t, db, season, "b", "awt-2025", "AWT", nil); err != nil {
+		t.Fatalf("season recreation rejected: %v", err)
+	}
+	s, err := gen.New(db.Read).GetSeasonByCode(context.Background(), "awt-2025")
+	if err != nil || s.ID != "b" {
+		t.Fatalf("GetSeasonByCode = %+v, %v; want the active season b", s, err)
+	}
+}
+
+func TestTrickAcronymUniqueAmongActive(t *testing.T) {
+	db := openMigrated(t)
+	ins := `INSERT INTO tricks (id, year, name, acronym, solo, synchro, technical_coefficient) VALUES (?, 2025, ?, 'M', 1, 1, 1.65)`
+	if err := exec(t, db, ins, "a", "Misty"); err != nil {
+		t.Fatal(err)
+	}
+	if err := exec(t, db, ins, "b", "Other"); !isConstraint(err) {
+		t.Fatalf("duplicate active acronym accepted: %v", err)
+	}
+}
+
+func TestTrickRecreationAfterUniqueTricksCleanup(t *testing.T) {
+	db := openMigrated(t)
+	ctx := context.Background()
+	trick := `INSERT INTO tricks (id, year, name, acronym, solo, synchro, technical_coefficient) VALUES (?, 2025, 'Misty', 'M', 1, 1, 1.65)`
+	variant := `INSERT INTO unique_tricks (trick_id, year, acronym, name, technical_coefficient, bonus, solo, solo_awt, synchro) VALUES (?, 2025, '/LM', 'twisted left Misty', 1.65, 2.5, 1, 1, 1)`
+	if err := exec(t, db, trick, "a"); err != nil {
+		t.Fatal(err)
+	}
+	if err := exec(t, db, variant, "a"); err != nil {
+		t.Fatal(err)
+	}
+	if err := exec(t, db, trick, "b"); !isConstraint(err) {
+		t.Fatalf("duplicate trick accepted: %v", err)
+	}
+	if err := db.Tx(ctx, func(q *gen.Queries) error {
+		return q.DeleteUniqueTricksByTrick(ctx, "a")
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := exec(t, db, `UPDATE tricks SET deleted_at = '2025-01-01T00:00:00Z' WHERE id = 'a'`); err != nil {
+		t.Fatal(err)
+	}
+	if err := exec(t, db, trick, "b"); err != nil {
+		t.Fatalf("trick recreation rejected: %v", err)
+	}
+	if err := exec(t, db, variant, "b"); err != nil {
+		t.Fatalf("variant recreation rejected: %v", err)
 	}
 }

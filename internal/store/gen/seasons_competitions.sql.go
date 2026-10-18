@@ -285,7 +285,7 @@ func (q *Queries) GetRun(ctx context.Context, arg GetRunParams) (Run, error) {
 }
 
 const getSeasonByCode = `-- name: GetSeasonByCode :one
-SELECT id, code, name, year, country, image_file, sort_index, deleted_at FROM seasons WHERE code = ?
+SELECT id, code, name, year, country, image_file, sort_index, deleted_at FROM seasons WHERE code = ? AND deleted_at IS NULL
 `
 
 func (q *Queries) GetSeasonByCode(ctx context.Context, code string) (Season, error) {

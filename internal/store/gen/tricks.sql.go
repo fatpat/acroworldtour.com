@@ -10,12 +10,12 @@ import (
 	"database/sql"
 )
 
-const deleteUniqueTricksOfTrick = `-- name: DeleteUniqueTricksOfTrick :exec
+const deleteUniqueTricksByTrick = `-- name: DeleteUniqueTricksByTrick :exec
 DELETE FROM unique_tricks WHERE trick_id = ?
 `
 
-func (q *Queries) DeleteUniqueTricksOfTrick(ctx context.Context, trickID string) error {
-	_, err := q.db.ExecContext(ctx, deleteUniqueTricksOfTrick, trickID)
+func (q *Queries) DeleteUniqueTricksByTrick(ctx context.Context, trickID string) error {
+	_, err := q.db.ExecContext(ctx, deleteUniqueTricksByTrick, trickID)
 	return err
 }
 

@@ -34,7 +34,7 @@ SELECT * FROM unique_tricks WHERE year = ? ORDER BY acronym;
 -- name: GetUniqueTrick :one
 SELECT * FROM unique_tricks WHERE year = ? AND acronym = ?;
 
--- name: DeleteUniqueTricksOfTrick :exec
+-- name: DeleteUniqueTricksByTrick :exec
 DELETE FROM unique_tricks WHERE trick_id = ?;
 
 -- name: InsertUniqueTrick :exec

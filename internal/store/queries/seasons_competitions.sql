@@ -1,5 +1,5 @@
 -- name: GetSeasonByCode :one
-SELECT * FROM seasons WHERE code = ?;
+SELECT * FROM seasons WHERE code = ? AND deleted_at IS NULL;
 
 -- name: ListSeasons :many
 SELECT * FROM seasons WHERE deleted_at IS NULL ORDER BY year DESC, sort_index, code;

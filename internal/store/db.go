@@ -71,6 +71,11 @@ func (d *DB) Tx(ctx context.Context, fn func(q *gen.Queries) error) (err error) 
 		return fmt.Errorf("begin: %w", err)
 	}
 	defer func() {
+		if p := recover(); p != nil {
+			// Never hand a connection with an open transaction back to the pool.
+			_, _ = conn.ExecContext(context.WithoutCancel(ctx), "ROLLBACK")
+			panic(p)
+		}
 		if err != nil {
 			// The context may be the reason we are failing: roll back regardless.
 			_, _ = conn.ExecContext(context.WithoutCancel(ctx), "ROLLBACK")

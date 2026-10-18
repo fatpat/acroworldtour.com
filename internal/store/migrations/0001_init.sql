@@ -81,6 +81,10 @@ CREATE TABLE tricks (
 );
 CREATE UNIQUE INDEX tricks_year_name_active ON tricks (year, name) WHERE deleted_at IS NULL;
 
+CREATE UNIQUE INDEX tricks_year_acronym_active ON tricks (year, acronym) WHERE deleted_at IS NULL;
+
+-- Rule: a trick's unique_tricks rows are deleted when the trick is soft-deleted
+-- (otherwise UNIQUE(year, acronym) would block re-creating it).
 CREATE TABLE unique_tricks (
     trick_id TEXT NOT NULL REFERENCES tricks (id) ON DELETE CASCADE,
     year INTEGER NOT NULL,
@@ -111,7 +115,7 @@ CREATE TABLE files (
 
 CREATE TABLE seasons (
     id TEXT PRIMARY KEY,
-    code TEXT NOT NULL UNIQUE,
+    code TEXT NOT NULL,
     name TEXT NOT NULL,
     year INTEGER NOT NULL,
     country TEXT,
@@ -120,9 +124,12 @@ CREATE TABLE seasons (
     deleted_at TEXT
 );
 
+CREATE UNIQUE INDEX seasons_code_active ON seasons (code) WHERE deleted_at IS NULL;
+CREATE UNIQUE INDEX seasons_name_active ON seasons (name) WHERE deleted_at IS NULL;
+
 CREATE TABLE competitions (
     id TEXT PRIMARY KEY,
-    code TEXT NOT NULL UNIQUE,
+    code TEXT NOT NULL,
     name TEXT NOT NULL,
     type TEXT NOT NULL CHECK (type IN ('solo', 'synchro')),
     state TEXT NOT NULL DEFAULT 'init' CHECK (state IN ('init', 'open', 'closed')),
@@ -139,6 +146,9 @@ CREATE TABLE competitions (
     updated_at TEXT,
     deleted_at TEXT
 );
+
+CREATE UNIQUE INDEX competitions_code_active ON competitions (code) WHERE deleted_at IS NULL;
+CREATE UNIQUE INDEX competitions_name_active ON competitions (name) WHERE deleted_at IS NULL;
 
 CREATE TABLE competition_seasons (
     competition_id TEXT NOT NULL REFERENCES competitions (id) ON DELETE CASCADE,

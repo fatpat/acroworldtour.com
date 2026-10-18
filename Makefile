@@ -30,7 +30,7 @@ check: generate
 	$(MAKE) lint test golden e2e
 
 migrate:
-	@echo "no migrations yet"
+	$(GO) run ./cmd/awt migrate
 
 docker:
 	@if [ -f Dockerfile ]; then docker build -t awt:dev .; else echo "no Dockerfile yet"; fi
