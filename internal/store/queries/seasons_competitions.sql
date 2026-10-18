@@ -125,3 +125,9 @@ DELETE FROM run_judges WHERE competition_id = ? AND run_idx = ?;
 
 -- name: AddRunJudge :exec
 INSERT INTO run_judges (competition_id, run_idx, position, judge_id) VALUES (?, ?, ?, ?);
+
+-- name: SetCompetitionResultsFinal :exec
+UPDATE competitions SET results_final = ? WHERE id = ?;
+
+-- name: SetRunResultsFinal :exec
+UPDATE runs SET results_final = ? WHERE competition_id = ? AND idx = ?;

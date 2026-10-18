@@ -16,13 +16,15 @@ import (
 	"awt/internal/store"
 )
 
-const importUsage = "usage: awt import --from <export.tar.gz|dir> [--catalogs dir] [--replace]"
+const importUsage = "usage: awt import --from <export.tar.gz|dir> [--db path] [--blob-dir dir] [--catalogs dir] [--replace]"
 
 // importCmd loads the production MongoDB export into the database.
 func importCmd(args []string, out io.Writer) error {
 	fs := flag.NewFlagSet("import", flag.ContinueOnError)
 	from := fs.String("from", "", "export .tar.gz or directory of <collection>.json files")
 	catalogs := fs.String("catalogs", "testdata/catalog", "directory with the 2022-2025 trick catalogs (<year>.json)")
+	dbFlag := fs.String("db", "", "database file (default: AWT_DB_PATH)")
+	blobDir := fs.String("blob-dir", "", "directory for the file blobs (default: AWT_BLOB_DIR)")
 	replace := fs.Bool("replace", false, "delete the imported tables' rows first instead of refusing a non-empty database")
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -33,6 +35,12 @@ func importCmd(args []string, out io.Writer) error {
 	cfg, err := config.Load(os.Getenv)
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
+	}
+	if *dbFlag != "" {
+		cfg.DBPath = *dbFlag
+	}
+	if *blobDir != "" {
+		cfg.BlobDir = *blobDir
 	}
 	if err := os.MkdirAll(filepath.Dir(cfg.DBPath), 0o755); err != nil {
 		return fmt.Errorf("create db dir: %w", err)

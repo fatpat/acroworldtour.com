@@ -219,7 +219,7 @@ func TestImportRefusesNonEmptyUnlessReplace(t *testing.T) {
 	if err != nil {
 		t.Fatalf("replace: %v", err)
 	}
-	if rep.Counts["pilots"] != 2 || count(t, db, `SELECT count(*) FROM pilots`) != 2 {
+	if rep.Counts["pilots"] != 2 || count(t, db, `SELECT count(*) FROM pilots`) != 3 { // 2 + placeholder 77777
 		t.Errorf("replace left %d pilots", count(t, db, `SELECT count(*) FROM pilots`))
 	}
 }
@@ -307,6 +307,7 @@ func TestImportDeletedDuplicateSeasonsAndSkips(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	write("competitions.json", "") // competitions are covered by competitions_test.go
 	write("seasons.json", `{"_id":"d1","name":"A","year":2023,"deleted":"2023-01-01T00:00:00","code":"che-2023","index":1}
 {"_id":"d2","name":"B","year":2023,"deleted":"2023-08-01T00:00:00","code":"che-2023","index":2}
 `)
@@ -322,10 +323,18 @@ func TestImportDeletedDuplicateSeasonsAndSkips(t *testing.T) {
 	if n := count(t, db, `SELECT count(*) FROM seasons WHERE id = 'd2'`); n != 1 || count(t, db, `SELECT count(*) FROM seasons`) != 1 {
 		t.Errorf("most recent deleted season not the only one kept")
 	}
-	if rep.Counts["teams"] != 0 || rep.Counts["judges"] != 0 {
+	// t1 references the hard-deleted pilot 9999: a placeholder is created and the team imported.
+	if rep.Counts["teams"] != 1 || rep.Counts["judges"] != 0 || rep.Counts["placeholder_pilots"] != 1 {
 		t.Errorf("counts = %v", rep.Counts)
 	}
-	for _, w := range []string{"d1", "t1", "t2", "j1"} {
+	var pname, pgender string
+	if err := db.Read.QueryRow(`SELECT name, gender FROM pilots WHERE civlid = 9999 AND country = '' AND rank = 9999`).Scan(&pname, &pgender); err != nil || pname != "Pilot #9999" || pgender != "none" {
+		t.Errorf("placeholder pilot = %q %q err=%v", pname, pgender, err)
+	}
+	if n := count(t, db, `SELECT count(*) FROM teams WHERE id = 't1'`); n != 1 {
+		t.Errorf("team t1 not imported")
+	}
+	for _, w := range []string{"d1", "9999", "t2", "j1"} {
 		if !hasWarning(rep, w) {
 			t.Errorf("no warning mentioning %s: %v", w, rep.Warnings)
 		}

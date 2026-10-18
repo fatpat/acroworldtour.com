@@ -31,10 +31,19 @@ func importReference(ctx context.Context, q *gen.Queries, blobs blob.Store, s *s
 	if err != nil {
 		return err
 	}
-	if err := importTeams(ctx, q, s, pilots, rep); err != nil {
+	comps, err := decodeLines[competitionRow](s, "competitions")
+	if err != nil {
 		return err
 	}
-	if err := importJudges(ctx, q, s, pilots, rep); err != nil {
+	if err := createPlaceholderPilots(ctx, q, s, comps, pilots, rep); err != nil {
+		return err
+	}
+	teams, err := importTeams(ctx, q, s, pilots, rep)
+	if err != nil {
+		return err
+	}
+	judges, err := importJudges(ctx, q, s, pilots, rep)
+	if err != nil {
 		return err
 	}
 	fileIDs, err := importFiles(ctx, q, blobs, s, rep)
@@ -44,7 +53,10 @@ func importReference(ctx context.Context, q *gen.Queries, blobs blob.Store, s *s
 	if err := importSeasons(ctx, q, s, fileIDs, rep); err != nil {
 		return err
 	}
-	return importTricks(ctx, q, s, o.catalogDir, rep)
+	if err := importTricks(ctx, q, s, o.catalogDir, rep); err != nil {
+		return err
+	}
+	return importCompetitions(ctx, q, s, comps, refData{pilots: pilots, teams: teams, judges: judges, files: fileIDs}, rep)
 }
 
 type pilotRow struct {
@@ -122,11 +134,12 @@ type teamRow struct {
 	Deleted Date   `json:"deleted"`
 }
 
-func importTeams(ctx context.Context, q *gen.Queries, s *source, pilots map[int64]bool, rep *Report) error {
+func importTeams(ctx context.Context, q *gen.Queries, s *source, pilots map[int64]bool, rep *Report) (map[string]bool, error) {
 	rows, err := decodeLines[teamRow](s, "teams")
 	if err != nil {
-		return err
+		return nil, err
 	}
+	imported := map[string]bool{}
 	for _, t := range rows {
 		if len(t.Pilots) != 2 {
 			rep.warnf("team %s (%s): %d pilots instead of 2, skipped", t.ID, t.Name, len(t.Pilots))
@@ -137,16 +150,17 @@ func importTeams(ctx context.Context, q *gen.Queries, s *source, pilots map[int6
 			continue
 		}
 		if err := q.UpsertTeam(ctx, gen.UpsertTeamParams{ID: string(t.ID), Name: t.Name, DeletedAt: t.Deleted.null()}); err != nil {
-			return fmt.Errorf("import team %s: %w", t.ID, err)
+			return nil, fmt.Errorf("import team %s: %w", t.ID, err)
 		}
 		for pos, p := range t.Pilots { // order = position 0, 1
 			if err := q.SetTeamPilot(ctx, gen.SetTeamPilotParams{TeamID: string(t.ID), Position: int64(pos), Civlid: p.V}); err != nil {
-				return fmt.Errorf("import team %s pilot: %w", t.ID, err)
+				return nil, fmt.Errorf("import team %s pilot: %w", t.ID, err)
 			}
 		}
+		imported[string(t.ID)] = true
 		rep.Counts["teams"]++
 	}
-	return nil
+	return imported, nil
 }
 
 type judgeRow struct {
@@ -158,11 +172,12 @@ type judgeRow struct {
 	Civlid  Int    `json:"civlid"`
 }
 
-func importJudges(ctx context.Context, q *gen.Queries, s *source, pilots map[int64]bool, rep *Report) error {
+func importJudges(ctx context.Context, q *gen.Queries, s *source, pilots map[int64]bool, rep *Report) (map[string]bool, error) {
 	rows, err := decodeLines[judgeRow](s, "judges")
 	if err != nil {
-		return err
+		return nil, err
 	}
+	imported := map[string]bool{}
 	for _, j := range rows {
 		if !slices.Contains([]string{"trainee", "certified", "senior"}, j.Level) {
 			rep.warnf("judge %s (%s): unknown level %q, skipped", j.ID, j.Name, j.Level)
@@ -177,11 +192,12 @@ func importJudges(ctx context.Context, q *gen.Queries, s *source, pilots map[int
 			ID: string(j.ID), Name: j.Name, Country: j.Country, Level: j.Level, Civlid: civlid, DeletedAt: j.Deleted.null(),
 		})
 		if err != nil {
-			return fmt.Errorf("import judge %s: %w", j.ID, err)
+			return nil, fmt.Errorf("import judge %s: %w", j.ID, err)
 		}
+		imported[string(j.ID)] = true
 		rep.Counts["judges"]++
 	}
-	return nil
+	return imported, nil
 }
 
 type fileRow struct {

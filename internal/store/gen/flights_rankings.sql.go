@@ -52,6 +52,20 @@ func (q *Queries) DeleteRankingEntries(ctx context.Context, arg DeleteRankingEnt
 	return err
 }
 
+const deleteRankingScope = `-- name: DeleteRankingScope :exec
+DELETE FROM ranking_entries WHERE scope = ? AND scope_key = ?
+`
+
+type DeleteRankingScopeParams struct {
+	Scope    string `json:"scope"`
+	ScopeKey string `json:"scope_key"`
+}
+
+func (q *Queries) DeleteRankingScope(ctx context.Context, arg DeleteRankingScopeParams) error {
+	_, err := q.db.ExecContext(ctx, deleteRankingScope, arg.Scope, arg.ScopeKey)
+	return err
+}
+
 const getFlight = `-- name: GetFlight :one
 SELECT id, competition_id, run_idx, civlid, team_id, did_not_start, tip_touches, published, mark_type, save_seq, final_mark, score, updated_at FROM flights WHERE id = ?
 `
@@ -436,6 +450,38 @@ func (q *Queries) ListRankingEntries(ctx context.Context, arg ListRankingEntries
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRankingListKeys = `-- name: ListRankingListKeys :many
+SELECT DISTINCT list_key FROM ranking_entries WHERE scope = ? AND scope_key = ? ORDER BY list_key
+`
+
+type ListRankingListKeysParams struct {
+	Scope    string `json:"scope"`
+	ScopeKey string `json:"scope_key"`
+}
+
+func (q *Queries) ListRankingListKeys(ctx context.Context, arg ListRankingListKeysParams) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listRankingListKeys, arg.Scope, arg.ScopeKey)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var list_key string
+		if err := rows.Scan(&list_key); err != nil {
+			return nil, err
+		}
+		items = append(items, list_key)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

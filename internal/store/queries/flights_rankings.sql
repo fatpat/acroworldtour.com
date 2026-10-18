@@ -52,3 +52,9 @@ DELETE FROM ranking_entries WHERE scope = ? AND scope_key = ? AND list_key = ?;
 -- name: InsertRankingEntry :exec
 INSERT INTO ranking_entries (scope, scope_key, list_key, position, rank, civlid, team_id, score, details)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+-- name: DeleteRankingScope :exec
+DELETE FROM ranking_entries WHERE scope = ? AND scope_key = ?;
+
+-- name: ListRankingListKeys :many
+SELECT DISTINCT list_key FROM ranking_entries WHERE scope = ? AND scope_key = ? ORDER BY list_key;

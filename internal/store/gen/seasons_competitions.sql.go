@@ -625,6 +625,35 @@ func (q *Queries) ListSeasons(ctx context.Context) ([]Season, error) {
 	return items, nil
 }
 
+const setCompetitionResultsFinal = `-- name: SetCompetitionResultsFinal :exec
+UPDATE competitions SET results_final = ? WHERE id = ?
+`
+
+type SetCompetitionResultsFinalParams struct {
+	ResultsFinal bool   `json:"results_final"`
+	ID           string `json:"id"`
+}
+
+func (q *Queries) SetCompetitionResultsFinal(ctx context.Context, arg SetCompetitionResultsFinalParams) error {
+	_, err := q.db.ExecContext(ctx, setCompetitionResultsFinal, arg.ResultsFinal, arg.ID)
+	return err
+}
+
+const setRunResultsFinal = `-- name: SetRunResultsFinal :exec
+UPDATE runs SET results_final = ? WHERE competition_id = ? AND idx = ?
+`
+
+type SetRunResultsFinalParams struct {
+	ResultsFinal  bool   `json:"results_final"`
+	CompetitionID string `json:"competition_id"`
+	Idx           int64  `json:"idx"`
+}
+
+func (q *Queries) SetRunResultsFinal(ctx context.Context, arg SetRunResultsFinalParams) error {
+	_, err := q.db.ExecContext(ctx, setRunResultsFinal, arg.ResultsFinal, arg.CompetitionID, arg.Idx)
+	return err
+}
+
 const upsertCompetition = `-- name: UpsertCompetition :exec
 INSERT INTO competitions (id, code, name, type, state, start_date, end_date, location, published, website, image_file, logo_file,
     config, frozen, results_final, updated_at, deleted_at)
