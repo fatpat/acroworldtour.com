@@ -185,8 +185,8 @@ func TestRunDetail(t *testing.T) {
 	if mark["judge"].(map[string]any)["name"] == "" || mark["choreography"] != 5.0 {
 		t.Errorf("mark = %v", mark)
 	}
-	if res := r["results"].(map[string]any)["overall"].([]any); len(res) != 3 && len(res) != 2 {
-		t.Errorf("run results = %v", res)
+	if got := runRanking(r); got != "1:1001 2:1002 3:77777" {
+		t.Errorf("run ranking = %s", got)
 	}
 
 	// synchro: team flight, warnings2, tip touch, 3-decimal rounding already applied
@@ -197,6 +197,16 @@ func TestRunDetail(t *testing.T) {
 	if w := sf["warnings2"].([]any); len(w) != 1 || w[0] != "w cat2" {
 		t.Errorf("warnings2 = %v", w)
 	}
+}
+
+// runRanking renders the overall list of a run as "rank:civlid ...".
+func runRanking(run map[string]any) string {
+	var parts []string
+	for _, e := range run["results"].(map[string]any)["overall"].([]any) {
+		m := e.(map[string]any)
+		parts = append(parts, strconv.Itoa(int(m["rank"].(float64)))+":"+strconv.Itoa(int(m["pilot"].(map[string]any)["civlid"].(float64))))
+	}
+	return strings.Join(parts, " ")
 }
 
 func TestNotFound(t *testing.T) {
@@ -261,9 +271,59 @@ func TestUnpublishedFlightHidden(t *testing.T) {
 			t.Error("unpublished flight exposed")
 		}
 	}
+	run := getJSON(t, h, "/api/v1/competitions/mini-solo-2024/runs/0", 200)
+	if got := runRanking(run); got != "1:1002 2:77777" {
+		t.Errorf("run ranking = %s, want the unpublished pilot dropped and ranks renumbered", got)
+	}
 	runs := getJSON(t, h, "/api/v1/competitions/mini-solo-2024", 200)["runs"].([]any)
 	if runs[0].(map[string]any)["number_of_flights"] != 2.0 {
 		t.Errorf("runs = %v", runs)
+	}
+}
+
+func TestPilotResultsSkipHiddenCompetitions(t *testing.T) {
+	h, db := newApp(t)
+	count := func() int {
+		p := getJSON(t, h, "/api/v1/pilots/1001", 200)
+		return len(p["competitions_results"].([]any))
+	}
+	if count() != 1 {
+		t.Fatalf("competitions_results = %d, want 1", count())
+	}
+	if _, err := db.Write.Exec(`UPDATE competitions SET published = 0 WHERE code = 'mini-solo-2024'`); err != nil {
+		t.Fatal(err)
+	}
+	if count() != 0 {
+		t.Error("unpublished competition in competitions_results")
+	}
+	if _, err := db.Write.Exec(`UPDATE competitions SET published = 1, deleted_at = '2025-01-01T00:00:00Z' WHERE code = 'mini-solo-2024'`); err != nil {
+		t.Fatal(err)
+	}
+	if count() != 0 {
+		t.Error("deleted competition in competitions_results")
+	}
+	if _, err := db.Write.Exec(`UPDATE seasons SET deleted_at = '2025-01-01T00:00:00Z'`); err != nil {
+		t.Fatal(err)
+	}
+	if n := len(getJSON(t, h, "/api/v1/pilots/1001", 200)["seasons_results"].([]any)); n != 0 {
+		t.Errorf("deleted seasons in seasons_results: %d", n)
+	}
+}
+
+func TestSeasonDetailExposesNoPerCompetitionBreakdown(t *testing.T) {
+	h, db := newApp(t)
+	if _, err := db.Write.Exec(`UPDATE competitions SET published = 0 WHERE code = 'mini-synchro-2024'`); err != nil {
+		t.Fatal(err)
+	}
+	d := getJSON(t, h, "/api/v1/seasons/aws-2024", 200)
+	if _, ok := d["competitions_results"]; ok {
+		t.Error("season detail must not embed per-competition results")
+	}
+	if c := d["competitions"].([]any); len(c) != 0 {
+		t.Errorf("unpublished competition listed: %v", c)
+	}
+	if strings.Contains(do(h, http.MethodGet, "/api/v1/seasons/aws-2024").Body.String(), "mini-synchro-2024") {
+		t.Error("unpublished competition code leaked in season detail")
 	}
 }
 
@@ -343,9 +403,10 @@ func TestTeamsAndJudges(t *testing.T) {
 
 func TestTricks(t *testing.T) {
 	h, db := newApp(t)
-	var year int
-	if err := db.Read.QueryRow(`SELECT year FROM tricks LIMIT 1`).Scan(&year); err != nil {
-		t.Skipf("no tricks imported: %v", err)
+	year := 2031
+	if _, err := db.Write.Exec(`INSERT INTO tricks (id, year, name, acronym, solo, solo_awt, synchro, technical_coefficient)
+		VALUES ('trick-api-1', ?, 'API Test Trick', 'ATT', 1, 1, 0, 1.5)`, year); err != nil {
+		t.Fatal(err)
 	}
 	items := getList(t, h, "/api/v1/tricks?year="+strconv.Itoa(year))
 	if len(items) == 0 {

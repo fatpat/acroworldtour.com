@@ -13,11 +13,6 @@ JOIN competition_seasons cs ON cs.competition_id = c.id
 WHERE cs.season_code = ? AND c.published = 1 AND c.deleted_at IS NULL
 ORDER BY c.start_date, c.id;
 
--- name: ApiCountPublishedCompetitionsOfSeason :one
-SELECT COUNT(*) FROM competitions c
-JOIN competition_seasons cs ON cs.competition_id = c.id
-WHERE cs.season_code = ? AND c.published = 1 AND c.deleted_at IS NULL;
-
 -- name: ApiListPublishedFlightsOfRun :many
 SELECT * FROM flights WHERE competition_id = ? AND run_idx = ? AND published = 1 ORDER BY id;
 
@@ -35,12 +30,6 @@ WHERE ct.competition_id = ? ORDER BY ct.position;
 -- name: ApiListCompetitionJudgeRows :many
 SELECT j.* FROM competition_judges cj JOIN judges j ON j.id = cj.judge_id
 WHERE cj.competition_id = ? ORDER BY cj.position;
-
--- name: ApiListCompetitionSeasonCodes :many
-SELECT season_code FROM competition_seasons WHERE competition_id = ? ORDER BY position;
-
--- name: ApiCountFlightsOfRun :one
-SELECT COUNT(*) FROM flights WHERE competition_id = ? AND run_idx = ? AND published = 1;
 
 -- name: ApiListPilotCompetitionRanks :many
 SELECT c.code AS competition_code, re.rank AS final_rank, re.score AS score
@@ -62,9 +51,31 @@ ORDER BY s.year DESC, s.sort_index, s.code;
 SELECT tp.team_id, p.* FROM team_pilots tp JOIN pilots p ON p.civlid = tp.civlid
 ORDER BY tp.team_id, tp.position;
 
--- name: ApiCompetitionCounts :one
-SELECT
-    (SELECT COUNT(*) FROM competition_pilots x WHERE x.competition_id = ?1) AS pilots,
-    (SELECT COUNT(*) FROM competition_teams x WHERE x.competition_id = ?1) AS teams,
-    (SELECT COUNT(*) FROM competition_judges x WHERE x.competition_id = ?1) AS judges,
-    (SELECT COUNT(*) FROM runs x WHERE x.competition_id = ?1) AS runs;
+-- name: ApiListPublishedCompetitionCounts :many
+SELECT c.id AS competition_id,
+    (SELECT COUNT(*) FROM competition_pilots x WHERE x.competition_id = c.id) AS pilots,
+    (SELECT COUNT(*) FROM competition_teams x WHERE x.competition_id = c.id) AS teams,
+    (SELECT COUNT(*) FROM competition_judges x WHERE x.competition_id = c.id) AS judges,
+    (SELECT COUNT(*) FROM runs x WHERE x.competition_id = c.id) AS runs
+FROM competitions c WHERE c.published = 1 AND c.deleted_at IS NULL;
+
+-- name: ApiListPublishedCompetitionSeasonCodes :many
+SELECT cs.competition_id, cs.season_code FROM competition_seasons cs
+JOIN competitions c ON c.id = cs.competition_id
+WHERE c.published = 1 AND c.deleted_at IS NULL
+ORDER BY cs.competition_id, cs.position;
+
+-- name: ApiCountPublishedFlightsPerRun :many
+SELECT run_idx, COUNT(*) AS flights FROM flights WHERE competition_id = ? AND published = 1 GROUP BY run_idx;
+
+-- name: ApiListTricksOfRun :many
+SELECT ft.* FROM flight_tricks ft JOIN flights f ON f.id = ft.flight_id
+WHERE f.competition_id = ? AND f.run_idx = ? AND f.published = 1 ORDER BY ft.flight_id, ft.position;
+
+-- name: ApiListMarksOfRun :many
+SELECT fm.* FROM flight_marks fm JOIN flights f ON f.id = fm.flight_id
+WHERE f.competition_id = ? AND f.run_idx = ? AND f.published = 1 ORDER BY fm.flight_id, fm.judge_id;
+
+-- name: ApiListWarningsOfRun :many
+SELECT fw.* FROM flight_warnings fw JOIN flights f ON f.id = fw.flight_id
+WHERE f.competition_id = ? AND f.run_idx = ? AND f.published = 1 ORDER BY fw.flight_id, fw.category, fw.position;

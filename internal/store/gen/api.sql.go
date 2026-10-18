@@ -10,60 +10,36 @@ import (
 	"database/sql"
 )
 
-const apiCompetitionCounts = `-- name: ApiCompetitionCounts :one
-SELECT
-    (SELECT COUNT(*) FROM competition_pilots x WHERE x.competition_id = ?1) AS pilots,
-    (SELECT COUNT(*) FROM competition_teams x WHERE x.competition_id = ?1) AS teams,
-    (SELECT COUNT(*) FROM competition_judges x WHERE x.competition_id = ?1) AS judges,
-    (SELECT COUNT(*) FROM runs x WHERE x.competition_id = ?1) AS runs
+const apiCountPublishedFlightsPerRun = `-- name: ApiCountPublishedFlightsPerRun :many
+SELECT run_idx, COUNT(*) AS flights FROM flights WHERE competition_id = ? AND published = 1 GROUP BY run_idx
 `
 
-type ApiCompetitionCountsRow struct {
-	Pilots int64 `json:"pilots"`
-	Teams  int64 `json:"teams"`
-	Judges int64 `json:"judges"`
-	Runs   int64 `json:"runs"`
+type ApiCountPublishedFlightsPerRunRow struct {
+	RunIdx  int64 `json:"run_idx"`
+	Flights int64 `json:"flights"`
 }
 
-func (q *Queries) ApiCompetitionCounts(ctx context.Context, competitionID string) (ApiCompetitionCountsRow, error) {
-	row := q.db.QueryRowContext(ctx, apiCompetitionCounts, competitionID)
-	var i ApiCompetitionCountsRow
-	err := row.Scan(
-		&i.Pilots,
-		&i.Teams,
-		&i.Judges,
-		&i.Runs,
-	)
-	return i, err
-}
-
-const apiCountFlightsOfRun = `-- name: ApiCountFlightsOfRun :one
-SELECT COUNT(*) FROM flights WHERE competition_id = ? AND run_idx = ? AND published = 1
-`
-
-type ApiCountFlightsOfRunParams struct {
-	CompetitionID string `json:"competition_id"`
-	RunIdx        int64  `json:"run_idx"`
-}
-
-func (q *Queries) ApiCountFlightsOfRun(ctx context.Context, arg ApiCountFlightsOfRunParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, apiCountFlightsOfRun, arg.CompetitionID, arg.RunIdx)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
-const apiCountPublishedCompetitionsOfSeason = `-- name: ApiCountPublishedCompetitionsOfSeason :one
-SELECT COUNT(*) FROM competitions c
-JOIN competition_seasons cs ON cs.competition_id = c.id
-WHERE cs.season_code = ? AND c.published = 1 AND c.deleted_at IS NULL
-`
-
-func (q *Queries) ApiCountPublishedCompetitionsOfSeason(ctx context.Context, seasonCode string) (int64, error) {
-	row := q.db.QueryRowContext(ctx, apiCountPublishedCompetitionsOfSeason, seasonCode)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
+func (q *Queries) ApiCountPublishedFlightsPerRun(ctx context.Context, competitionID string) ([]ApiCountPublishedFlightsPerRunRow, error) {
+	rows, err := q.db.QueryContext(ctx, apiCountPublishedFlightsPerRun, competitionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ApiCountPublishedFlightsPerRunRow
+	for rows.Next() {
+		var i ApiCountPublishedFlightsPerRunRow
+		if err := rows.Scan(&i.RunIdx, &i.Flights); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const apiGetPublishedCompetitionByCode = `-- name: ApiGetPublishedCompetitionByCode :one
@@ -172,33 +148,6 @@ func (q *Queries) ApiListCompetitionPilotRows(ctx context.Context, competitionID
 	return items, nil
 }
 
-const apiListCompetitionSeasonCodes = `-- name: ApiListCompetitionSeasonCodes :many
-SELECT season_code FROM competition_seasons WHERE competition_id = ? ORDER BY position
-`
-
-func (q *Queries) ApiListCompetitionSeasonCodes(ctx context.Context, competitionID string) ([]string, error) {
-	rows, err := q.db.QueryContext(ctx, apiListCompetitionSeasonCodes, competitionID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []string
-	for rows.Next() {
-		var season_code string
-		if err := rows.Scan(&season_code); err != nil {
-			return nil, err
-		}
-		items = append(items, season_code)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const apiListCompetitionTeamRows = `-- name: ApiListCompetitionTeamRows :many
 SELECT t.id, t.name, t.deleted_at FROM competition_teams ct JOIN teams t ON t.id = ct.team_id
 WHERE ct.competition_id = ? ORDER BY ct.position
@@ -214,6 +163,47 @@ func (q *Queries) ApiListCompetitionTeamRows(ctx context.Context, competitionID 
 	for rows.Next() {
 		var i Team
 		if err := rows.Scan(&i.ID, &i.Name, &i.DeletedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const apiListMarksOfRun = `-- name: ApiListMarksOfRun :many
+SELECT fm.flight_id, fm.judge_id, fm.technical, fm.technical_per_trick, fm.choreography, fm.landing, fm.synchro FROM flight_marks fm JOIN flights f ON f.id = fm.flight_id
+WHERE f.competition_id = ? AND f.run_idx = ? AND f.published = 1 ORDER BY fm.flight_id, fm.judge_id
+`
+
+type ApiListMarksOfRunParams struct {
+	CompetitionID string `json:"competition_id"`
+	RunIdx        int64  `json:"run_idx"`
+}
+
+func (q *Queries) ApiListMarksOfRun(ctx context.Context, arg ApiListMarksOfRunParams) ([]FlightMark, error) {
+	rows, err := q.db.QueryContext(ctx, apiListMarksOfRun, arg.CompetitionID, arg.RunIdx)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FlightMark
+	for rows.Next() {
+		var i FlightMark
+		if err := rows.Scan(
+			&i.FlightID,
+			&i.JudgeID,
+			&i.Technical,
+			&i.TechnicalPerTrick,
+			&i.Choreography,
+			&i.Landing,
+			&i.Synchro,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -290,6 +280,87 @@ func (q *Queries) ApiListPilotSeasonRanks(ctx context.Context, civlid sql.NullIn
 	for rows.Next() {
 		var i ApiListPilotSeasonRanksRow
 		if err := rows.Scan(&i.SeasonCode, &i.FinalRank, &i.Score); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const apiListPublishedCompetitionCounts = `-- name: ApiListPublishedCompetitionCounts :many
+SELECT c.id AS competition_id,
+    (SELECT COUNT(*) FROM competition_pilots x WHERE x.competition_id = c.id) AS pilots,
+    (SELECT COUNT(*) FROM competition_teams x WHERE x.competition_id = c.id) AS teams,
+    (SELECT COUNT(*) FROM competition_judges x WHERE x.competition_id = c.id) AS judges,
+    (SELECT COUNT(*) FROM runs x WHERE x.competition_id = c.id) AS runs
+FROM competitions c WHERE c.published = 1 AND c.deleted_at IS NULL
+`
+
+type ApiListPublishedCompetitionCountsRow struct {
+	CompetitionID string `json:"competition_id"`
+	Pilots        int64  `json:"pilots"`
+	Teams         int64  `json:"teams"`
+	Judges        int64  `json:"judges"`
+	Runs          int64  `json:"runs"`
+}
+
+func (q *Queries) ApiListPublishedCompetitionCounts(ctx context.Context) ([]ApiListPublishedCompetitionCountsRow, error) {
+	rows, err := q.db.QueryContext(ctx, apiListPublishedCompetitionCounts)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ApiListPublishedCompetitionCountsRow
+	for rows.Next() {
+		var i ApiListPublishedCompetitionCountsRow
+		if err := rows.Scan(
+			&i.CompetitionID,
+			&i.Pilots,
+			&i.Teams,
+			&i.Judges,
+			&i.Runs,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const apiListPublishedCompetitionSeasonCodes = `-- name: ApiListPublishedCompetitionSeasonCodes :many
+SELECT cs.competition_id, cs.season_code FROM competition_seasons cs
+JOIN competitions c ON c.id = cs.competition_id
+WHERE c.published = 1 AND c.deleted_at IS NULL
+ORDER BY cs.competition_id, cs.position
+`
+
+type ApiListPublishedCompetitionSeasonCodesRow struct {
+	CompetitionID string `json:"competition_id"`
+	SeasonCode    string `json:"season_code"`
+}
+
+func (q *Queries) ApiListPublishedCompetitionSeasonCodes(ctx context.Context) ([]ApiListPublishedCompetitionSeasonCodesRow, error) {
+	rows, err := q.db.QueryContext(ctx, apiListPublishedCompetitionSeasonCodes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ApiListPublishedCompetitionSeasonCodesRow
+	for rows.Next() {
+		var i ApiListPublishedCompetitionSeasonCodesRow
+		if err := rows.Scan(&i.CompetitionID, &i.SeasonCode); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -533,6 +604,94 @@ func (q *Queries) ApiListTeamPilots(ctx context.Context) ([]ApiListTeamPilotsRow
 			&i.SocialLinks,
 			&i.Sponsors,
 			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const apiListTricksOfRun = `-- name: ApiListTricksOfRun :many
+SELECT ft.flight_id, ft.position, ft.name, ft.acronym, ft.base_trick, ft.technical_coefficient, ft.bonus, ft.bonus_types, ft.uniqueness, ft.bonuses, ft.solo, ft.solo_awt, ft.synchro, ft.types, ft.technical_mark, ft.technical_marks FROM flight_tricks ft JOIN flights f ON f.id = ft.flight_id
+WHERE f.competition_id = ? AND f.run_idx = ? AND f.published = 1 ORDER BY ft.flight_id, ft.position
+`
+
+type ApiListTricksOfRunParams struct {
+	CompetitionID string `json:"competition_id"`
+	RunIdx        int64  `json:"run_idx"`
+}
+
+func (q *Queries) ApiListTricksOfRun(ctx context.Context, arg ApiListTricksOfRunParams) ([]FlightTrick, error) {
+	rows, err := q.db.QueryContext(ctx, apiListTricksOfRun, arg.CompetitionID, arg.RunIdx)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FlightTrick
+	for rows.Next() {
+		var i FlightTrick
+		if err := rows.Scan(
+			&i.FlightID,
+			&i.Position,
+			&i.Name,
+			&i.Acronym,
+			&i.BaseTrick,
+			&i.TechnicalCoefficient,
+			&i.Bonus,
+			&i.BonusTypes,
+			&i.Uniqueness,
+			&i.Bonuses,
+			&i.Solo,
+			&i.SoloAwt,
+			&i.Synchro,
+			&i.Types,
+			&i.TechnicalMark,
+			&i.TechnicalMarks,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const apiListWarningsOfRun = `-- name: ApiListWarningsOfRun :many
+SELECT fw.flight_id, fw.category, fw.position, fw.text FROM flight_warnings fw JOIN flights f ON f.id = fw.flight_id
+WHERE f.competition_id = ? AND f.run_idx = ? AND f.published = 1 ORDER BY fw.flight_id, fw.category, fw.position
+`
+
+type ApiListWarningsOfRunParams struct {
+	CompetitionID string `json:"competition_id"`
+	RunIdx        int64  `json:"run_idx"`
+}
+
+func (q *Queries) ApiListWarningsOfRun(ctx context.Context, arg ApiListWarningsOfRunParams) ([]FlightWarning, error) {
+	rows, err := q.db.QueryContext(ctx, apiListWarningsOfRun, arg.CompetitionID, arg.RunIdx)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FlightWarning
+	for rows.Next() {
+		var i FlightWarning
+		if err := rows.Scan(
+			&i.FlightID,
+			&i.Category,
+			&i.Position,
+			&i.Text,
 		); err != nil {
 			return nil, err
 		}
