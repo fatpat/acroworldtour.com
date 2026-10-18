@@ -17,7 +17,7 @@ const (
 	xlsxType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 	// printCSP lets the self-contained print pages carry their inline
 	// stylesheet; nothing else is allowed (no script, no frames).
-	printCSP = "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data: https:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+	printCSP = "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
 )
 
 // registerExports wires the printable and CIVL exports (spec 05 §8). They
@@ -57,6 +57,7 @@ func writeXLSX(w http.ResponseWriter, r *http.Request, filename string, fn func(
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
+	w.Header().Set("Cache-Control", "private, no-store")
 	w.Header().Set("Content-Type", xlsxType)
 	w.Header().Set("Content-Disposition", `attachment; filename="`+filename+`"`)
 	_, _ = w.Write(buf.Bytes())
@@ -69,6 +70,7 @@ func writeHTML(w http.ResponseWriter, r *http.Request, fn func(io.Writer) error)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
+	w.Header().Set("Cache-Control", "private, no-store")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Content-Security-Policy", printCSP)
 	_, _ = w.Write(buf.Bytes())

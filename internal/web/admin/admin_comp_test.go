@@ -12,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"awt/internal/auth"
 	"awt/internal/domain"
 	"awt/internal/scoring"
 	"awt/internal/service"
@@ -205,13 +204,19 @@ func TestOpenRefusedWithFewJudges(t *testing.T) {
 
 func TestFrozenCompetitionIsReadOnly(t *testing.T) {
 	e := newEnv(t)
-	e.setupData(101, 102)
+	judges := e.setupData(101, 102)
 	c := e.soloComp("Old Cup", "2026-04-01")
+	e.mustOK(e.svc.SetParticipants(context.Background(), c.ID, []int{101, 102}, nil))
+	e.mustOK(e.svc.SetJudges(context.Background(), c.ID, judges[:2]))
+	e.mustOK(e.svc.OpenCompetition(context.Background(), c.ID))
+	_, err := e.svc.NewRun(context.Background(), c.ID, 0, scoring.ResetNone)
+	e.mustOK(err)
 	if _, err := e.deps.DB.Write.Exec(`UPDATE competitions SET frozen = 1 WHERE id = ?`, c.ID); err != nil {
 		t.Fatal(err)
 	}
 	show := e.get("/admin/competitions/old-cup")
 	e.wantStatus(show, 200, "frozen", "read-only")
+	e.wantStatus(e.get("/admin/competitions/old-cup/runs/1"), 200, "frozen")
 	for _, forbidden := range []string{"/state/open", "/delete", "/runs/new"} {
 		if strings.Contains(show.Body.String(), forbidden) {
 			t.Fatalf("frozen page offers %s", forbidden)
@@ -233,6 +238,11 @@ func TestFrozenCompetitionIsReadOnly(t *testing.T) {
 		{"/admin/competitions/old-cup/state/open", nil},
 		{"/admin/competitions/old-cup/delete", nil},
 		{"/admin/competitions/old-cup/runs", url.Values{"qualify": {"0"}, "reset_policy": {"0"}}},
+		{"/admin/competitions/old-cup/config", url.Values{}},
+		{"/admin/competitions/old-cup/runs/1/move", url.Values{"id": {"101"}, "dir": {"up"}}},
+		{"/admin/competitions/old-cup/runs/1/judges", url.Values{}},
+		{"/admin/competitions/old-cup/runs/1/config", url.Values{}},
+		{"/admin/competitions/old-cup/runs/1/state/open", nil},
 	} {
 		e.wantStatus(e.post(p.path, p.form), http.StatusConflict, "frozen")
 	}
@@ -290,7 +300,6 @@ func TestScorerAccess(t *testing.T) {
 			t.Fatalf("scorer POST %s = %d, want 403", p, rec.Code)
 		}
 	}
-	_ = auth.RoleScorer
 }
 
 func TestExports(t *testing.T) {
@@ -318,6 +327,9 @@ func TestExports(t *testing.T) {
 	}
 	if csp := html.Header().Get("Content-Security-Policy"); !strings.Contains(csp, "style-src 'unsafe-inline'") || strings.Contains(csp, "script-src") {
 		t.Fatalf("print CSP = %q", csp)
+	}
+	if cc := html.Header().Get("Cache-Control"); cc != "private, no-store" {
+		t.Fatalf("Cache-Control = %q", cc)
 	}
 	e.wantStatus(e.get(base+"/runs/1/starting-order.html"), 200, "Starting Order - run 1", "Pilot 101", "Pilot 102")
 

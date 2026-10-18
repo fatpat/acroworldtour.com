@@ -416,6 +416,9 @@ func (h *handlers) compConfigSave(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	if !h.writableAt(w, r, c, http.StatusConflict) {
+		return
+	}
 	raw, posted, errs := parseConfig(r, c.Config)
 	redo := func(status int, fe formErrors) { h.compConfigRender(w, r, c, posted, status, fe) }
 	if len(errs) > 0 {

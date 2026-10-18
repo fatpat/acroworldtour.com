@@ -227,6 +227,10 @@ func (h *handlers) runMove(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	if c.Frozen {
+		h.fail(w, r, service.ErrFrozen, nil)
+		return
+	}
 	id, dir := r.PostFormValue("id"), r.PostFormValue("dir")
 	pilots, teams := slices.Clone(run.Pilots), slices.Clone(run.Teams)
 	keys := make([]string, 0, len(pilots)+len(teams))
@@ -308,6 +312,9 @@ func (h *handlers) runJudgesSave(w http.ResponseWriter, r *http.Request) {
 func (h *handlers) runConfigSave(w http.ResponseWriter, r *http.Request) {
 	c, run, ok := h.loadRun(w, r)
 	if !ok {
+		return
+	}
+	if !h.writableAt(w, r, c, http.StatusConflict) {
 		return
 	}
 	raw, posted, errs := parseConfig(r, run.Config)

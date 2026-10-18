@@ -650,6 +650,17 @@ func TestAnonymousIsRedirectedToLogin(t *testing.T) {
 	}
 }
 
+// scorerAllowed are the exact routes open to assigned scorers (read-only).
+var scorerAllowed = map[string]bool{
+	"GET /admin/competitions/{code}":                              true,
+	"GET /admin/competitions/{code}/runs/{n}":                     true,
+	"GET /admin/competitions/{code}/export/results.xlsx":          true,
+	"GET /admin/competitions/{code}/export/results.html":          true,
+	"GET /admin/competitions/{code}/runs/{n}/export/results.xlsx": true,
+	"GET /admin/competitions/{code}/runs/{n}/export/results.html": true,
+	"GET /admin/competitions/{code}/runs/{n}/starting-order.html": true,
+}
+
 var wildcard = regexp.MustCompile(`\{[^}]*\}`)
 
 func TestEveryAdminRouteIsGuarded(t *testing.T) {
@@ -672,11 +683,17 @@ func TestEveryAdminRouteIsGuarded(t *testing.T) {
 			t.Errorf("%s answered %d without a session", rt.Pattern, rec.Code)
 		}
 		// Reference data and users are admin-only; only the dashboard is user-level.
-		// Competition pages and exports are also open to the assigned scorers
-		// (read-only GETs; the scorer guard admits admins as well).
-		scorerRoute := rt.Guard == web.GuardScorer && strings.HasPrefix(rt.Pattern, "GET /admin/competitions/{code}")
-		if rt.Pattern != "GET /admin" && rt.Pattern != "POST /admin/logout" && rt.Guard != web.GuardAdmin && !scorerRoute {
+		// Only the listed read-only GETs (and the judging routes of Task 21)
+		// may be scorer-guarded; everything else is admin-only.
+		if rt.Pattern != "GET /admin" && rt.Pattern != "POST /admin/logout" && rt.Guard != web.GuardAdmin &&
+			!scorerAllowed[rt.Pattern] && !(rt.Guard == web.GuardScorer && strings.Contains(p, "/judging")) {
 			t.Errorf("%s has guard %s, want admin", rt.Pattern, rt.Guard)
+		}
+		if method == "POST" && rt.Guard == web.GuardScorer && !strings.Contains(p, "/judging") {
+			t.Errorf("%s: only judging POSTs may be scorer-guarded", rt.Pattern)
+		}
+		if scorerAllowed[rt.Pattern] && rt.Guard != web.GuardScorer {
+			t.Errorf("%s should be scorer-guarded", rt.Pattern)
 		}
 	}
 	if n < 30 {
