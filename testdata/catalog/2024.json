@@ -1,0 +1,2141 @@
+[
+  {
+    "name": "360° Synchro Spiral to Half Pipe Combo",
+    "acronym": "S36HPC",
+    "directions": [
+      "left",
+      "right"
+    ],
+    "solo": false,
+    "solo_awt": false,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Combination of a Synchro Spiral and Half Pipe Combo",
+    "minimum": null,
+    "criterias": {
+      "normal": "after a turn – 360° – of Synchro Spiral the pilots connect to a half pipe and exit it towards each other and start another 360° turn to the other direction in Synchro Spiral, after the turn another connection to a Half Pipe"
+    },
+    "technical_coefficient": 1.85,
+    "bonuses": [],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Anti-Rythmic SAT",
+    "acronym": "A",
+    "types": [
+      "tumbling"
+    ],
+    "directions": [
+      "left",
+      "right"
+    ],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Entry by Tumbling, 180° in the first rotation for maximum points + 1 SAT rotation at the end",
+    "minimum": "135° angle for the first rotation",
+    "criterias": {
+      "normal": "rhythm and regularity of the decreasing angle of the axis, flow, exit or connection",
+      "twisted": "from Cab Slide: twist during the Infinite turns, must stay twisted until the SAT. Must stay twisted for 1 SAT rotation, can untwist for the exit. From Tumbling: twisted on the entry, must stay twisted until the SAT. Must stay twisted for 1 SAT turn, can untwist for the exit"
+    },
+    "technical_coefficient": 1.8,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 3
+      }
+    ],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 2
+  },
+  {
+    "name": "Asymetric SAT",
+    "acronym": "AS",
+    "directions": [
+      "left",
+      "right"
+    ],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "description": "entry from, say, spiral or wingover in same direction (old school)",
+    "criterias": {
+      "normal": "energy, timing, flow, trajectory (SAT rotation), angle (135° for maximum score), asymmetric dynamic exit (no collapse, no stall)",
+      "twisted": "twisted all the way from entry to exit"
+    },
+    "technical_coefficient": 1.55,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 2.5
+      }
+    ],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Asymetric Spiral",
+    "acronym": "A3",
+    "directions": [
+      "left",
+      "right"
+    ],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Series of pendulum turns in the same direction each time",
+    "criterias": {
+      "normal": "rhythm, flow, trajectory, angle (135° for maximum score\\ –\\ the higher the better)",
+      "twisted": "twisted all the way from entry to exit"
+    },
+    "technical_coefficient": 1.35,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 2.5
+      }
+    ],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Bitch Switch",
+    "acronym": "BS",
+    "directions": [
+      "left",
+      "right",
+      "opposite"
+    ],
+    "solo": false,
+    "solo_awt": false,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Rodeo SAT + connection to Rodeo SAT with pilots replacing each other",
+    "minimum": "2 spiral revolutions around the SAT at the same altitude for each pilot",
+    "criterias": {
+      "normal": "same as for SAT"
+    },
+    "technical_coefficient": 1.75,
+    "bonuses": [],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Bro Hook",
+    "acronym": "BH",
+    "directions": [],
+    "solo": false,
+    "solo_awt": false,
+    "synchro": true,
+    "repeatable": true,
+    "description": "One pilot flies straight, the other pilot approaches from behind and connects",
+    "minimum": "4 seconds connected",
+    "criterias": {},
+    "repetition_allowed": true,
+    "technical_coefficient": 1.8,
+    "bonuses": [],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Bro Hook Lateral Wings",
+    "acronym": "BHLW",
+    "directions": [],
+    "solo": false,
+    "solo_awt": false,
+    "synchro": true,
+    "repeatable": true,
+    "description": "One pilot flies straight twisted, the other approaches from behind and connects. After the connection both pilots must position their wings in lateral position – inside tip touch",
+    "minimum": "4 seconds",
+    "criterias": {},
+    "connection": "No connection to other Bro Hook manoeuvres",
+    "repetition_allowed": true,
+    "technical_coefficient": 1.85,
+    "bonuses": [],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Bro Hook Spiral",
+    "acronym": "BHS",
+    "directions": [
+      "left",
+      "right"
+    ],
+    "solo": false,
+    "solo_awt": false,
+    "synchro": true,
+    "repeatable": true,
+    "description": "Start as a Bro Hook. After the connection the pilots must dive into a spiral",
+    "minimum": "4 seconds",
+    "criterias": {
+      "twisted": "one pilot has to stay twisted from entry until exit"
+    },
+    "repetition_allowed": true,
+    "technical_coefficient": 1.9,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 2
+      }
+    ],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Bro Hook Wingovers",
+    "acronym": "BHWO",
+    "directions": [],
+    "solo": false,
+    "solo_awt": false,
+    "synchro": true,
+    "repeatable": true,
+    "description": "Wingover but in Bro Hook position. Both pilots must stay connected during the manoeuvre until the gliders stabilise. Series of pendulum turns with change of direction each time",
+    "minimum": "twice to one side, twice to the other side with 135° angle",
+    "criterias": {
+      "normal": "rhythm, flow, trajectory, angle (the higher the better)",
+      "twisted": "one pilot has to stay twisted from entry until exit"
+    },
+    "repetition_allowed": true,
+    "technical_coefficient": 1.95,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 2
+      }
+    ],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Corkscrew",
+    "acronym": "K",
+    "directions": [
+      "left",
+      "right"
+    ],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Spin during the entry over the glider into a Helicopter",
+    "minimum": "120°",
+    "criterias": {
+      "normal": "energy on entry, timing, flow. Stable entry into the Helicopter",
+      "twisted": "twisted during the entry, untwisted by the rotation of the cork",
+      "reverse": "immediate transition to a Helicopter in the opposite direction"
+    },
+    "connection": "Forbidden connection to helicopter",
+    "technical_coefficient": 1.9,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 4.5
+      },
+      {
+        "name": "reverse",
+        "bonus": 4.5
+      }
+    ],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Cowboy",
+    "acronym": "C",
+    "directions": [
+      "left",
+      "right"
+    ],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Misty Flip to dive to Helicopter",
+    "minimum": "45° climb before rotation",
+    "criterias": {
+      "normal": "misty Flip criteria + forward dive + short SAT move + transition to Helicopter + Helicopter criteria",
+      "twisted": "must be twisted during the entry, untwisted by the rotation of the Misty",
+      "reverse": "immediate transition to a Helicopter in the opposite direction"
+    },
+    "connection": "Forbidden connection to Helicopter",
+    "technical_coefficient": 1.9,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 4
+      },
+      {
+        "name": "reverse",
+        "bonus": 4.5
+      }
+    ],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Esfera",
+    "acronym": "E",
+    "types": [
+      "tumbling"
+    ],
+    "directions": [
+      "left",
+      "right"
+    ],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Rhythmic SAT pulled to the vertical and followed by an Anti-Rhythmic SAT to the other side",
+    "criterias": {
+      "normal": "same as for Rythmic SAT and as for Anti-Rythmic SAT",
+      "twisted": "twisted on the entry. Must stay twisted until going vertical, untwist when vertical and twist again on the other side for the Anti -Rhythmic. Must stay twisted for at least one SAT rotation. Can exit untwisted. The pilot must twist immediately after untwisting. Untwist during 1 rotation and twist again during the next rotation"
+    },
+    "technical_coefficient": 1.95,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 6
+      }
+    ],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 2
+  },
+  {
+    "name": "Flat Stall to Infinity Tumbling",
+    "acronym": "FSI",
+    "types": [
+      "to infinite",
+      "tumbling"
+    ],
+    "directions": [],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Full Stall directly connected into an Infinite Tumbling. The Full Stall must not necessarily be high but shall be perfectly straight. The pilot must not take any energy before the stall. It must come from a straight flying scenario, no pitch before the stall",
+    "minimum": "entry\\ + 3 rotation",
+    "criterias": {
+      "normal": "rhythm, flow, trajectory (no roll movement), tension in the lines and glider, duration, exit or connection",
+      "twisted": "twisted on the entry, untwist after the stall and proceed into the Infinity Tumbling without twist",
+      "full twisted": "twisted on the entry, stay twisted after the stall and proceed into the Infinity Tumbling twisted and untwist at exit (not during the turns)",
+      "devil twist stall": "twisted on the entry, untwist during the stall and immediately twist to the other direction and proceed into the Infinity Tumbling twisted",
+      "twisted exit": "stay twisted during the exit of the Infinity Tumbling",
+      "flip": "the pilot performs a flip just after the glider stalled, proceed into the Infinity Tumbling",
+      "cab slide": "get twisted during an infinity tumbling turn",
+      "devil twist": "from a twisted situation, change of twist direction (within one turn)"
+    },
+    "connection": "Forbidden connection to Tumbling or Anti-Rhythmic SAT",
+    "technical_coefficient": 2.05,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 2.5
+      },
+      {
+        "name": "twisted exit",
+        "bonus": 3
+      },
+      {
+        "name": "full twisted",
+        "bonus": 6.5
+      },
+      {
+        "name": "devil twist stall",
+        "bonus": 7.5
+      },
+      {
+        "name": "flip",
+        "bonus": 6.5
+      },
+      {
+        "name": "cab slide",
+        "bonus": 2
+      },
+      {
+        "name": "devil twist",
+        "bonus": 2
+      }
+    ],
+    "bonus_constraints": [
+      [
+        "twisted",
+        "full twisted"
+      ],
+      [
+        "twisted",
+        "devil twist stall"
+      ],
+      [
+        "full twisted",
+        "devil twist stall"
+      ],
+      [
+        "full twisted",
+        "cab slide"
+      ],
+      [
+        "devil twist stall",
+        "cab slide"
+      ]
+    ],
+    "first_maneuver": 1,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 2
+  },
+  {
+    "name": "Fusion",
+    "acronym": "FU",
+    "directions": [],
+    "solo": false,
+    "solo_awt": false,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Start from Bro Hook Lateral position. Both pilots spin the wings into deep stall with the leading edge facing each other",
+    "minimum": "4 seconds",
+    "criterias": {
+      "normal": "maintenance of the shape, flow, entry, duration (min\\ 4 sec.), disconnection"
+    },
+    "forbid_last_two": true,
+    "repetition_allowed": true,
+    "technical_coefficient": 2.2,
+    "bonuses": [],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Fusion Helicopter",
+    "acronym": "FH",
+    "directions": [
+      "left",
+      "right"
+    ],
+    "solo": false,
+    "solo_awt": false,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Start from Fusion position into Helicopter",
+    "minimum": "1 rotation",
+    "criterias": {
+      "normal": "maintenance of the shape, flow, entry, minimum 1 rotation, disconnection"
+    },
+    "technical_coefficient": 2.25,
+    "bonuses": [],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "HeliFly",
+    "acronym": "HF",
+    "types": [
+      "to infinite",
+      "tumbling"
+    ],
+    "directions": [],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Helicopter to Tail Slide or Deep Stall directly connected into an Infinite Tumbling. The Tail Slide/Deep  Stall must not necessarily be long but shall be entered directly from the exit a Helicopter",
+    "minimum": "entry + 3 rotation",
+    "criterias": {
+      "normal": "Rhythm, flow, trajectory (no roll movement), tension in the lines and glider, duration, exit or connection",
+      "twisted": "Twisted on the entry, untwist by the helicopter  and proceed into the Infinity Tumbling without twist",
+      "twisted exit": "stay twisted during the exit of the Infinity Tumbling",
+      "full twisted": "Twisted on the entry and stay twisted until the exit of the infinity tumbling",
+      "hardcore entry": "Same as full twisted but with change of twist direction in the entry of the mac twist",
+      "cab slide": "get twisted during an infinity tumbling turn",
+      "devil twist": "from a twisted situation, change of twist direction (within one turn)"
+    },
+    "connection": "Forbidden connection to Tumbling or Anti-Rhythmic SAT",
+    "technical_coefficient": 2.10,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 3
+      },
+      {
+        "name": "twisted exit",
+        "bonus": 3
+      },
+      {
+        "name": "full twisted",
+        "bonus": 8
+      },
+      {
+        "name": "hardcore entry",
+        "bonus": 8
+      },
+      {
+        "name": "cab slide",
+        "bonus": 2
+      },
+      {
+        "name": "devil twist",
+        "bonus": 2
+      }
+    ],
+    "bonus_constraints": [
+      [
+        "twisted",
+        "full twisted"
+      ],
+      [
+        "twisted",
+        "hardcore entry"
+      ],
+      [
+        "full twisted",
+        "cab slide"
+      ],
+      [
+        "full twisted",
+        "hardcore entry"
+      ],
+      [
+        "hardcore entry",
+        "cab slide"
+      ]
+    ],
+    "tricks_constraints": [
+      "MacFly",
+      "MistyFly",
+      "SatFly"
+    ],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 2
+  },
+  {
+    "name": "Helicopter to SAT",
+    "acronym": "HS",
+    "directions": [
+      "left",
+      "right"
+    ],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Helicopter + connection to SAT",
+    "minimum": "3 helicopter rotations, 2 SAT rotations",
+    "criterias": {
+      "normal": "no rotation on entry and exit, direction",
+      "twisted": "twist during the helicopter. Must stay twisted during the whole transition, at least 1 turn of SAT twisted. Can untwist on the exit",
+      "reverse": "immediate transition to a SAT in the opposite direction"
+    },
+    "technical_coefficient": 1.85,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 4.5
+      },
+      {
+        "name": "reverse",
+        "bonus": 4
+      }
+    ],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Helicopter",
+    "acronym": "H",
+    "directions": [
+      "left",
+      "right"
+    ],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Perfect spin with open glider and vertical axe of rotation",
+    "minimum": "3 rotations",
+    "criterias": {
+      "normal": "maintenance of the shape, stability of rotation axis (vertical), speed of rotation, low sink rate, duration, exit or connection",
+      "twisted": "twisting during the helicopter, must stay twisted for 2 turns, can untwist for the exit"
+    },
+    "technical_coefficient": 1.7,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 3
+      },
+      {
+        "name": "full twisted",
+        "bonus": 9
+      },
+      {
+        "name": "twisted exit",
+        "bonus": 3
+      }
+    ],
+    "bonus_constraints": [
+      [
+        "twisted",
+        "twisted exit"
+      ],
+      [
+        "twisted",
+        "full twisted"
+      ],
+      [
+        "twisted exit",
+        "full twisted"
+      ]
+    ],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Infinity Tumbling",
+    "acronym": "I",
+    "types": [
+      "tumbling"
+    ],
+    "directions": [
+      "left",
+      "right"
+    ],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Series of perfect Tumbling (pitch movement)",
+    "minimum": "entry plus 5 rotations",
+    "criterias": {
+      "normal": "rhythm, flow, trajectory (no roll movement), tension in the lines and glider, duration, exit or connection",
+      "twisted": "twisted on the entry, must stay twisted, untwist at exit and NOT during the turns",
+      "flip": "body flip either forward or backwards during the Infinite Tumbling. Flip must begin and end at the same point of one full rotation",
+      "devil twist": "from a twisted situation, change of twist direction (within one turn)",
+      "hardcore entry": "twisted on the speed taking, getting untwisted and twisted in the other direction while pulling the entry",
+      "cab slide": "get twisted during an infinity tumbling turn"
+    },
+    "connection": "Forbidden connection to Tumbling or Anti-Rhythmic SAT",
+    "forbid_last_two": true,
+    "technical_coefficient": 1.85,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 3.5
+      },
+      {
+        "name": "twisted exit",
+        "bonus": 4.5
+      },
+      {
+        "name": "devil twist",
+        "bonus": 2
+      },
+      {
+        "name": "flip",
+        "bonus": 5
+      },
+      {
+        "name": "hardcore entry",
+        "bonus": 5
+      },
+      {
+        "name": "cab slide",
+        "bonus": 2
+      }
+    ],
+    "bonus_constraints": [
+      [
+        "twisted",
+        "hardcore entry"
+      ],
+      [
+        "twisted",
+        "cab slide"
+      ],
+      [
+        "hardcore entry",
+        "cab slide"
+      ]
+    ],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 2
+  },
+  {
+    "name": "Joker",
+    "acronym": "J",
+    "directions": [
+      "left",
+      "right"
+    ],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Tumbling entry. 1 rotation only, stopped during the dive. Exit with high energy connected to a Helicopter to the same side + SAT to Helicopter connection",
+    "criterias": {
+      "normal": "energy on entry, timing, flow, energy on exit, angle, connection to Helicopter (fluidity, rapidity). Only 1 Tumbling rotation",
+      "twisted": "twisted on the entry, twisted on the dive, must untwist during the connection into helicopter",
+      "reverse": "immediate transition to a Helicopter in the opposite direction."
+    },
+    "connection": "Forbidden connection to Helicopter",
+    "technical_coefficient": 1.90,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 4.5
+      },
+      {
+        "name": "reverse",
+        "bonus": 4.5
+      }
+    ],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Looping",
+    "acronym": "L",
+    "directions": [
+      "left",
+      "right"
+    ],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "name_alt": "Inversion",
+    "description": "Entry from asymmetric spiral or a normal spiral. Reversal of a revolution that makes the pilot turn around the wing in a roll movement",
+    "minimum": "135° angle",
+    "criterias": {
+      "normal": "entry, energy, timing, flow, trajectory (pitch movement), angle (180° for maximum score), exit or connection",
+      "twisted": "twisted on the entry, must stay twisted until the glider stabilises"
+    },
+    "technical_coefficient": 1.5,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 3.5
+      }
+    ],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "MacFly",
+    "acronym": "MCF",
+    "types": [
+      "to infinite",
+      "tumbling"
+    ],
+    "directions": [],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Mactwist to Tail Slide or Deep Stall directly connected into an Infinite Tumbling. The Tail Slide/Deep  Stall must not necessarily be long but shall be entered directly from the exit a mactwist",
+    "minimum": "entry + 3 rotation",
+    "criterias": {
+      "normal": "Rhythm, flow, trajectory (no roll movement), tension in the lines and glider, duration, exit or connection",
+      "twisted": "Twisted on the entry, untwist by the mac twist  and proceed into the Infinity Tumbling without twist",
+      "twisted exit": "stay twisted during the exit of the Infinity Tumbling",
+      "full twisted": "Twisted on the entry and stay twisted until the exit of the infinity tumbling",
+      "hardcore entry": "Same as full twisted but with change of twist direction in the entry of the mac twist",
+      "cab slide": "get twisted during an infinity tumbling turn",
+      "devil twist": "from a twisted situation, change of twist direction (within one turn)"
+    },
+    "connection": "Forbidden connection to Tumbling or Anti-Rhythmic SAT",
+    "technical_coefficient": 2.10,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 3.5
+      },
+      {
+        "name": "twisted exit",
+        "bonus": 3
+      },
+      {
+        "name": "full twisted",
+        "bonus": 8
+      },
+      {
+        "name": "hardcore entry",
+        "bonus": 8
+      },
+      {
+        "name": "cab slide",
+        "bonus": 2
+      },
+      {
+        "name": "devil twist",
+        "bonus": 2
+      }
+    ],
+    "bonus_constraints": [
+      [
+        "twisted",
+        "full twisted"
+      ],
+      [
+        "twisted",
+        "hardcore entry"
+      ],
+      [
+        "full twisted",
+        "cab slide"
+      ],
+      [
+        "full twisted",
+        "hardcore entry"
+      ],
+      [
+        "hardcore entry",
+        "cab slide"
+      ]
+    ],
+    "tricks_constraints": [
+      "MistyFly",
+      "HeliFly",
+      "SatFly"
+    ],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 2
+  },
+  {
+    "name": "Mac Twist",
+    "acronym": "MC",
+    "directions": [
+      "left",
+      "right"
+    ],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Spin from spiral maintained until pendulum stabilised",
+    "Minimum": "90°",
+    "criterias": {
+      "normal": "energy and asymmetry on entry, speed and importance of rotation, pendulum stabilisation, fast exit or connection",
+      "twisted": "must be twisted during the entry, untwisted by the rotation of the Mac Twist Twisted"
+    },
+    "technical_coefficient": 1.7,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 3.5
+      }
+    ],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Mac Twist to Helicopter",
+    "acronym": "MCH",
+    "directions": [
+      "left",
+      "right"
+    ],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Mac Twist with the spiral maintained to Helicopter",
+    "minimum": "same as Mac Twist and Helicopter",
+    "criterias": {
+      "normal": "flow and speed of transition",
+      "twisted": "must be twisted during the entry, untwisted by the rotation of the Mac Twist",
+      "reverse": "immediate transition to a Helicopter in the opposite direction"
+    },
+    "technical_coefficient": 1.85,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 4
+      },
+      {
+        "name": "reverse",
+        "bonus": 3.5
+      }
+    ],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Mac Twist to Tumbling",
+    "acronym": "MCT",
+    "types": [
+      "to infinite",
+      "tumbling"
+    ],
+    "directions": [
+      "left",
+      "right"
+    ],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "description": "1 turn (360°) Mac Twist rotation (half a Mac Twist) followed by a high Tumbling",
+    "criterias": {
+      "normal": "energy on entry, timing, flow",
+      "twisted": "twisted on the entry, untwisted by the rotation of the glider",
+      "twisted exit": "stay twisted during the exit of the Infinity Tumbling",
+      "cab slide": "get twisted during an infinity tumbling turn",
+      "devil twist": "from a twisted situation, change of twist direction (within one turn)"
+    },
+    "connection": "Forbidden connection to Infinite Tumbling nor Anty-rhythmic",
+    "forbid_last_two": true,
+    "technical_coefficient": 1.95,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 2.5
+      },
+      {
+        "name": "cab slide",
+        "bonus": 2
+      },
+      {
+        "name": "devil twist",
+        "bonus": 2
+      },
+      {
+        "name": "twisted exit",
+        "bonus": 4.5
+      }
+    ],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 2
+  },
+  {
+    "name": "Misty Flip",
+    "acronym": "M",
+    "directions": [
+      "left",
+      "right"
+    ],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Straight entry & climb, 360° spin, straight horizontal dive, exit not more than 180° from the direction of entry",
+    "criterias": {
+      "normal": "importance of pitch on entry, 360° rotation, maintenance of shape, strong dive, no rotation on entry and exit, direction",
+      "twisted": "twisted on the entry, untwisted by the rotation of the glider",
+      "twisted exit": "the twist shall be kept for at least 3 seconds",
+      "full twisted": "keep the twist during the whole manoeuvre from beginning till exit as well as during the whole rotation. No change of direction of the twist. Twist shall be kept for at least 3 seconds or until the next trick"
+    },
+    "technical_coefficient": 1.65,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 2.5
+      },
+      {
+        "name": "twisted exit",
+        "bonus": 3.5
+      },
+      {
+        "name": "full twisted",
+        "bonus": 6
+      }
+    ],
+    "bonus_constraints": [
+      [
+        "twisted",
+        "full twisted"
+      ],
+      [
+        "twisted exit",
+        "full twisted"
+      ]
+    ],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "MistyFly",
+    "acronym": "MF",
+    "types": [
+      "to infinite",
+      "tumbling"
+    ],
+    "directions": [],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Misty to Tail Slide or Deep Stall directly connected into an Infinite Tumbling. The Tail Slide/Deep  Stall must not necessarily be long but shall be entered directly from the exit a misty",
+    "minimum": "entry + 3 rotation",
+    "criterias": {
+      "normal": "Rhythm, flow, trajectory (no roll movement), tension in the lines and glider, duration, exit or connection",
+      "twisted": "Twisted on the entry, untwist by the misty  and proceed into the Infinity Tumbling without twist",
+      "twisted exit": "stay twisted during the exit of the Infinity Tumbling",
+      "full twisted": "Twisted on the entry and stay twisted until the exit of the infinity tumbling",
+      "hardcore entry": "Same as full twisted but with change of twist direction in the entry of the misty",
+      "cab slide": "get twisted during an infinity tumbling turn",
+      "devil twist": "from a twisted situation, change of twist direction (within one turn)"
+    },
+    "connection": "Forbidden connection to Tumbling or Anti-Rhythmic SAT",
+    "technical_coefficient": 2.10,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 2.5
+      },
+      {
+        "name": "twisted exit",
+        "bonus": 3
+      },
+      {
+        "name": "full twisted",
+        "bonus": 8
+      },
+      {
+        "name": "hardcore entry",
+        "bonus": 8
+      },
+      {
+        "name": "cab slide",
+        "bonus": 2
+      },
+      {
+        "name": "devil twist",
+        "bonus": 2
+      }
+    ],
+    "bonus_constraints": [
+      [
+        "twisted",
+        "full twisted"
+      ],
+      [
+        "twisted",
+        "hardcore entry"
+      ],
+      [
+        "full twisted",
+        "cab slide"
+      ],
+      [
+        "full twisted",
+        "hardcore entry"
+      ],
+      [
+        "hardcore entry",
+        "cab slide"
+      ]
+    ],
+    "tricks_constraints": [
+      "MacFly",
+      "HeliFly",
+      "SatFly"
+    ],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 2
+  },
+  {
+    "name": "Misty to Helicopter",
+    "acronym": "MH",
+    "directions": [
+      "left",
+      "right"
+    ],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Misty Flip + transition to Helicopter",
+    "criterias": {
+      "normal": "flow and speed of transition",
+      "twisted": "must be twisted during the entry, untwisted by the rotation of the Misty",
+      "reverse": "immediate transition to a Helicopter in the opposite direction"
+    },
+    "connection": "Forbidden connection to Helicopter",
+    "technical_coefficient": 1.75,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 3
+      },
+      {
+        "name": "reverse",
+        "bonus": 3
+      }
+    ],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Misty to Misty",
+    "acronym": "MM",
+    "directions": [],
+    "solo": true,
+    "solo_awt": false,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Misty chained with another misty on the other side using the exit energy of the first one",
+    "criterias": {
+      "normal": "same criteria as of Misty Flip",
+      "twisted": "twisted on the entry, untwisted by the rotation of the glider",
+      "twist_ext": "the twist shall be kept for at least 3 seconds"
+    },
+    "technical_coefficient": 1.75,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 3.5
+      },
+      {
+        "name": "twisted exit",
+        "bonus": 4
+      }
+    ],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Misty to SAT",
+    "acronym": "MS",
+    "directions": [
+      "left",
+      "right"
+    ],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Misty + transition to SAT",
+    "minimum": "45° climb before rotation",
+    "criterias": {
+      "normal": "same criteria as for Misty Flip and SAT + flow and speed of transition",
+      "twisted": "must be twisted during the entry, untwisted by the rotation of the Misty flip",
+      "devil twist": "twisted during the entry, untwisted by the spinning of the glider and twisted to the opposite direction, then connected to a twisted SAT. (FYI for this manoeuvre the pilot then has 3/4 twists during the SAT)",
+      "full twisted": "must stay twisted during the rotation of the Misty Flip, keep the twist during the exit and stay twisted during the SAT until the exit",
+      "to_twisted_sat": "Misty to Twisted SAT: normal (not twisted) Misty Flip, twisted during the end of the rotation of the misty connected into a twisted SAT"
+    },
+    "connection": "Forbidden connection to SAT",
+    "technical_coefficient": 1.7,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 3
+      },
+      {
+        "name": "devil twist",
+        "bonus": 6
+      },
+      {
+        "name": "full twisted",
+        "bonus": 6
+      },
+      {
+        "name": "to twisted sat",
+        "bonus": 3
+      }
+    ],
+    "bonus_constraints": [
+      [
+        "twisted",
+        "full twisted"
+      ],
+      [
+        "twisted",
+        "to twisted sat"
+      ],
+      [
+        "twisted",
+        "devil twist"
+      ],
+      [
+        "full twisted",
+        "to twisted sat"
+      ],
+      [
+        "full twisted",
+        "devil twist"
+      ],
+      [
+        "to twisted sat",
+        "devil twist"
+      ]
+    ],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Misty to Tumbling",
+    "acronym": "MT",
+    "types": [
+      "to infinite",
+      "tumbling"
+    ],
+    "directions": [
+      "left",
+      "right"
+    ],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Misty Flip (360° spin rotation) followed by a high Tumbling using the dive from the Misty Flip",
+    "criterias": {
+      "normal": "energy on entry, timing, flow",
+      "twisted": "twisted on the entry, untwisted by the rotation of the glider",
+      "cab slide": "get twisted during an infinity tumbling turn",
+      "devil twist": "from a twisted situation, change of twist direction (within one turn)"
+    },
+    "connection": "Forbidden connection to Infinite Tumbling nor Anty-rhythmic",
+    "technical_coefficient": 2.15,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 6
+      },
+      {
+        "name": "cab slide",
+        "bonus": 2
+      },
+      {
+        "name": "devil twist",
+        "bonus": 2
+      },
+      {
+        "name": "twisted exit",
+        "bonus": 4.5
+      }
+    ],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 2
+  },
+  {
+    "name": "Pitch Pendulum Synchro",
+    "acronym": "PP",
+    "directions": [],
+    "solo": false,
+    "solo_awt": false,
+    "synchro": true,
+    "repeatable": true,
+    "name_alt": "Molineti",
+    "description": null,
+    "minimum": "twice, one over the other",
+    "criterias": {
+      "twisted": "both pilots must stay twisted during at least 2 revolutions"
+    },
+    "only_last_two": true,
+    "repetition_allowed": true,
+    "technical_coefficient": 1.95,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 6
+      }
+    ],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Rodeo Helicopter",
+    "acronym": "RH",
+    "directions": [
+      "left",
+      "right",
+      "opposite"
+    ],
+    "solo": false,
+    "solo_awt": false,
+    "synchro": true,
+    "repeatable": false,
+    "description": "One pilot is performing a Helicopter while the other is spiralling around",
+    "minimum": "2 spiral revolutions around the helicopter at the same altitude",
+    "criterias": {
+      "normal": "same as for Helicopter",
+      "twisted": "same as for Helicopter"
+    },
+    "technical_coefficient": 1.7,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 3
+      }
+    ],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Rodeo SAT",
+    "acronym": "RS",
+    "directions": [
+      "left",
+      "right",
+      "opposite"
+    ],
+    "solo": false,
+    "solo_awt": false,
+    "synchro": true,
+    "repeatable": false,
+    "description": "One pilot is performing a SAT while the other is spiralling around",
+    "minimum": "2 revolutions around the SAT at the same altitude",
+    "criterias": {
+      "normal": "same criteria of the SAT",
+      "twisted": "same criteria of the SAT"
+    },
+    "technical_coefficient": 1.65,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 2.5
+      }
+    ],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Rythmic SAT",
+    "acronym": "R",
+    "types": [
+      "tumbling"
+    ],
+    "directions": [
+      "left",
+      "right"
+    ],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Entry without pitch, constant progression until reaching 180° + 1 straight rotation at the end",
+    "minimum": "135° in the best rotation",
+    "criterias": {
+      "normal": "rhythm and regularity of the variation of the axis, flow, angle, exit or connection",
+      "twisted": "twisted on the entry, must stay twisted, untwist at the exit and NOT during the turns"
+    },
+    "connection": "Forbidden connection to Tumbling, Infinite and Anti Rhythmic",
+    "technical_coefficient": 1.95,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 4
+      },
+      {
+        "name": "twisted exit",
+        "bonus": 4.5
+      }
+    ],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "SAT",
+    "acronym": "S",
+    "directions": [
+      "left",
+      "right"
+    ],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Evenly balanced SAT rotation",
+    "minimum": "2 rotations",
+    "criterias": {
+      "normal": "entry, angle of wing (90° for max score), low sink rate exit or connection (no collapse penalty for tip collapse during exit)",
+      "twisted": "twisted on the entry, must stay twisted for 2 turns can be exited untwisted"
+    },
+    "connection": "Forbidden connection to combo manoeuvres",
+    "technical_coefficient": 1.25,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 2.5
+      }
+    ],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "SatFly",
+    "acronym": "SF",
+    "types": [
+      "to infinite",
+      "tumbling"
+    ],
+    "directions": [],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "description": "S.A.T to Tail Slide or Deep Stall directly connected into an Infinite Tumbling. The Tail Slide/Deep Stall must not necessarily be long but shall be entered directly from the exit a S.A.T. The S.A.T must be stalled “like” a S.A.T to Helico but instead of the Helico connected into a tail slide directly",
+    "minimum": "entry + 3 rotation",
+    "criterias": {
+      "normal": "Rhythm, flow, trajectory (no roll movement), tension in the lines and glider, duration, exit or connection",
+      "twisted": "Twisted on the entry, untwist during the transition to Tail Slide/Deep Stall  and proceed into the Infinity Tumbling without twist",
+      "twisted exit": "stay twisted during the exit of the Infinity Tumbling",
+      "full twisted": "Twisted on the entry and stay twisted until the exit of the infinity tumbling",
+      "hardcore entry": "Same as full twisted but with change of twist during the entrance of the S.A.T. Be creative :)",
+      "cab slide": "get twisted during an infinity tumbling turn",
+      "devil twist": "from a twisted situation, change of twist direction (within one turn)"
+    },
+    "connection": "Forbidden connection to Tumbling or Anti-Rhythmic SAT",
+    "technical_coefficient": 2.10,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 3.5
+      },
+      {
+        "name": "twisted exit",
+        "bonus": 3
+      },
+      {
+        "name": "full twisted",
+        "bonus": 8
+      },
+      {
+        "name": "hardcore entry",
+        "bonus": 8
+      },
+      {
+        "name": "cab slide",
+        "bonus": 2
+      },
+      {
+        "name": "devil twist",
+        "bonus": 2
+      }
+    ],
+    "bonus_constraints": [
+      [
+        "twisted",
+        "full twisted"
+      ],
+      [
+        "twisted",
+        "hardcore entry"
+      ],
+      [
+        "full twisted",
+        "cab slide"
+      ],
+      [
+        "full twisted",
+        "hardcore entry"
+      ],
+      [
+        "hardcore entry",
+        "cab slide"
+      ]
+    ],
+    "tricks_constraints": [
+      "MacFly",
+      "MistyFly",
+      "HeliFly"
+    ],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 2
+  },
+  {
+    "name": "SAT to Helicopter",
+    "acronym": "SH",
+    "directions": [
+      "left",
+      "right"
+    ],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Several SAT rotation + connection to helicopter",
+    "minimum": "2 SAT rotations, 3 helicopter rotations",
+    "criterias": {
+      "normal": "flow and speed of transition",
+      "twisted": "twisted on the entry, must be untwisted during the transition into helicopter, NOT before",
+      "reverse": "immediate transition to a Helicopter in the opposite direction"
+    },
+    "connection": "Forbidden connection to Helicopter",
+    "technical_coefficient": 1.85,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 4
+      },
+      {
+        "name": "reverse",
+        "bonus": 4
+      }
+    ],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Stall",
+    "acronym": "FS",
+    "directions": [],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": true,
+    "description": "Straight climb + stall >90° for max score",
+    "minimum": "45° backwards pitch, over 90° for max score",
+    "criterias": {
+      "normal": "energy, importance of pitch, cleanness of the stall, control of direction and exit or connection",
+      "twisted": "twisted on the entry, stay twisted when the glider stalls, untwist during the dive",
+      "twisted exit": "the twist must be kept for at least 3 seconds or until the next manoeuvre",
+      "devil twist": "twisted on the entry, untwist during the stall and immediately twist to the other direction, must exit twisted. The twist must be kept for at least 3 seconds or until the next manoeuvre",
+      "flip": "body flip either forward or backwards during the stall. Flip may begin during the climb out and must be completed before the dive",
+      "flip_double": "both flips must be chained, flow"
+    },
+    "repetition_allowed": true,
+    "technical_coefficient": 1.60,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 2.5
+      },
+      {
+        "name": "twisted exit",
+        "bonus": 4.5
+      },
+      {
+        "name": "devil twist",
+        "bonus": 7
+      },
+      {
+        "name": "flip",
+        "bonus": 4.5
+      },
+      {
+        "name": "double flip",
+        "bonus": 5.5
+      }
+    ],
+    "bonus_constraints": [
+      [
+        "twisted",
+        "devil twist"
+      ],
+      [
+        "twisted",
+        "flip"
+      ],
+      [
+        "twisted",
+        "double flip"
+      ],
+      [
+        "twisted exit",
+        "flip"
+      ],
+      [
+        "twisted exit",
+        "double flip"
+      ],
+      [
+        "devil twist",
+        "flip"
+      ],
+      [
+        "devil twist",
+        "double flip"
+      ],
+      [
+        "flip",
+        "double flip"
+      ]
+    ],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Super Stall to Infinity Tumbling",
+    "acronym": "SSI",
+    "types": [
+      "to infinite",
+      "tumbling"
+    ],
+    "directions": [],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Super Stall directly connected into an Infinite Tumbling. The Full Stall must not necessarily be high but shall be perfectly straight",
+    "minimum": "entry\\ + 3 rotations",
+    "criterias": {
+      "normal": "rhythm, flow, trajectory (no roll movement), tension in the lines and glider, duration, exit or connection",
+      "twisted": "twisted on the entry, untwist after the stall and proceed into the Infinity Tumbling without twist",
+      "full twisted": "twisted on the entry, stay twisted after the stall and proceed into the Infinity Tumbling twisted and untwist at exit (not during the turns)",
+      "devil twist stall": "twisted on the entry, untwist during the stall and immediately twist to the other direction and proceed into the Infinity Tumbling twisted",
+      "twisted exit": "stay twisted during the exit of the Infinity Tumbling",
+      "flip": "the pilot performs a flip just after the glider stalled, proceed into the Infinity Tumbling",
+      "cab slide": "get twisted during an infinity tumbling turn",
+      "devil twist": "from a twisted situation, change of twist direction (within one turn)"
+    },
+    "connection": "Forbidden connection to Tumbling or Anti-Rhythmic SAT",
+    "technical_coefficient": 2.00,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 2.5
+      },
+      {
+        "name": "twisted exit",
+        "bonus": 3
+      },
+      {
+        "name": "full twisted",
+        "bonus": 6.5
+      },
+      {
+        "name": "devil twist stall",
+        "bonus": 7.5
+      },
+      {
+        "name": "flip",
+        "bonus": 6.5
+      },
+      {
+        "name": "cab slide",
+        "bonus": 2
+      },
+      {
+        "name": "devil twist",
+        "bonus": 2
+      }
+    ],
+    "bonus_constraints": [
+      [
+        "twisted",
+        "full twisted"
+      ],
+      [
+        "twisted",
+        "devil twist stall"
+      ],
+      [
+        "full twisted",
+        "devil twist stall"
+      ],
+      [
+        "full twisted",
+        "cab slide"
+      ],
+      [
+        "devil twist stall",
+        "cab slide"
+      ]
+    ],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 2
+  },
+  {
+    "name": "Synchro Asymmetric Spiral",
+    "acronym": "SA3",
+    "directions": [
+      "left",
+      "right",
+      "opposite"
+    ],
+    "solo": false,
+    "solo_awt": false,
+    "synchro": true,
+    "repeatable": false,
+    "minimum": "Series of pendulum turns in the same time and direction during a synchro spiral, twice to the same side",
+    "criterias": {},
+    "technical_coefficient": 1.65,
+    "bonuses": [],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Synchro Half Pipe Combo",
+    "acronym": "HPC",
+    "directions": [],
+    "solo": false,
+    "solo_awt": false,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Straight entry, minimum 45° climb before rotation & 180° spin, straight horizontal dive, exit 180° from the direction of entry, in transition use the exit energy of the first Half Pipe for the next one. Direction must be changed",
+    "criterias": {
+      "normal": "importance of pitch on entry, 180° rotation, maintenance of shape, strong dive, no rotation on entry and exit",
+      "twisted": "twisted on the entry, untwisted by the rotation of the glider",
+      "full twisted": "keep the twist during the whole manoeuvre from beginning till exit as well as during the whole rotation. No change of direction of the twist. Twist shall be kept for at least 3 seconds or until the next trick"
+    },
+    "technical_coefficient": 1.75,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 3.5
+      },
+      {
+        "name": "twisted exit",
+        "bonus": 5.5
+      }
+    ],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Synchro Spiral",
+    "acronym": "S36",
+    "directions": [
+      "left",
+      "right",
+      "opposite"
+    ],
+    "solo": false,
+    "solo_awt": false,
+    "synchro": true,
+    "repeatable": false,
+    "minimum": "2 revolutions and a maximum distance of one paraglider line length between (approx. 10 metres)",
+    "criterias": {
+      "wing touch": "douhle or triple touche in one turn"
+    },
+    "technical_coefficient": 1.8,
+    "bonuses": [
+      {
+        "name": "wing touch",
+        "bonus": 2
+      }
+    ],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Tail Slide",
+    "acronym": "TS",
+    "directions": [],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": true,
+    "description": "Stabilised backward flying with open glider",
+    "minimum": "5 seconds",
+    "criterias": {
+      "normal": "maintenance of the shape, stability, perceptible backwards flight, control of direction, duration, exit or connection",
+      "twisted": "twisted all the way from entry to exit"
+    },
+    "repetition_allowed": true,
+    "technical_coefficient": 1.15,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 6
+      },
+      {
+        "name": "twisted exit",
+        "bonus": 4.5
+      }
+    ],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Tumbling",
+    "acronym": "T",
+    "types": [
+      "tumbling"
+    ],
+    "directions": [
+      "left",
+      "right"
+    ],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Asymmetric or inversion entry, perfect pitch movement",
+    "minimum": "1 rotation, 135° angle",
+    "criterias": {
+      "normal": "energy on entry, timing, flow, trajectory (pitch movement), angle (180° for maximum score), exit or connection",
+      "twisted": "twisted on the entry, must stay twisted, untwist at the exit NOT during the turns",
+      "devil twist": "from a twisted situation, change of twist direction (within one turn)",
+      "hardcore entry": "twisted on the speed taking, getting untwisted and twisted in the other direction while pulling the entry",
+      "cab slide": "get twisted during an infinity tumbling turn"
+    },
+    "connection": "Forbidden connection to Infinite and Anti-Rythmic",
+    "technical_coefficient": 1.8,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 3.5
+      },
+      {
+        "name": "twisted exit",
+        "bonus": 4.5
+      },
+      {
+        "name": "devil twist",
+        "bonus": 2
+      },
+      {
+        "name": "flip",
+        "bonus": 5
+      },
+      {
+        "name": "hardcore entry",
+        "bonus": 5
+      },
+      {
+        "name": "cab slide",
+        "bonus": 2
+      }
+    ],
+    "bonus_constraints": [
+      [
+        "twisted",
+        "hardcore entry"
+      ],
+      [
+        "twisted",
+        "cab slide"
+      ],
+      [
+        "hardcore entry",
+        "cab slide"
+      ]
+    ],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 2
+  },
+  {
+    "name": "Twister",
+    "acronym": "HH",
+    "directions": [
+      "left",
+      "right"
+    ],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "name_alt": "Helicopter to Helicopter",
+    "description": "Helicopter to one side, Heliptcopter to the other side",
+    "minimum": "3 rotations each side",
+    "criterias": {
+      "normal": "speed of transition"
+    },
+    "connection": "Forbidden connection to Helicopter",
+    "technical_coefficient": 1.8,
+    "bonuses": [],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Wingovers",
+    "acronym": "W",
+    "directions": [],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": true,
+    "description": "Series of pendulum turns with change of direction each time",
+    "minimum": "twice to one side, twice to the other side, 135° angle",
+    "criterias": {
+      "normal": "rhythm, flow, trajectory, angle (minimum 135° for maximum score\\ –\\ the higher the better)",
+      "twisted": "must be twisted during the entry, and stays twisted until the glider stabilises"
+    },
+    "repetition_allowed": true,
+    "technical_coefficient": 1.35,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 3.5
+      }
+    ],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Wingovers Cruzados",
+    "acronym": "WC",
+    "directions": [],
+    "solo": false,
+    "solo_awt": false,
+    "synchro": true,
+    "repeatable": true,
+    "description": "Same as Wingover Opposite but the pilots must cross each other during the manoeuvre",
+    "minimum": null,
+    "criterias": {
+      "normal": "same as Wingover Opposite"
+    },
+    "repetition_allowed": true,
+    "technical_coefficient": 1.85,
+    "bonuses": [],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "Wingovers Opposite",
+    "acronym": "WOO",
+    "directions": [],
+    "solo": false,
+    "solo_awt": false,
+    "synchro": true,
+    "repeatable": true,
+    "description": "Series of pendulum turns with change of direction each time",
+    "minimum": "twice to one side, twice to the other side with high angle (minimum 135°) the pilots perform the turns to the opposite direction of each other",
+    "criterias": {
+      "normal": "rhythm, flow, trajectory, angle (the higher the better)",
+      "twisted": "must be twisted during the entry and stay twisted until the glider stabilises"
+    },
+    "repetition_allowed": true,
+    "technical_coefficient": 1.6,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 3.5
+      }
+    ],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "X-Chopper",
+    "acronym": "X",
+    "directions": [
+      "left",
+      "right"
+    ],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "description": "Entry with high energy, constant & rapid climb, spin, strong dive, exit",
+    "minimums": "90° climb, 360° spin dive not more than 270° from the direction of entry",
+    "criterias": {
+      "normal": "importance of pitch on entry, minimum 360° rotation, energy, maintenance of shape, strong dive",
+      "twisted": "twisted on the entry, untwisted by the rotation of the glider"
+    },
+    "technical_coefficient": 1.7,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 3.5
+      },
+      {
+        "name": "twisted exit",
+        "bonus": 4.5
+      }
+    ],
+    "bonus_constraints": [],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 0
+  },
+  {
+    "name": "X-Chopper to Infinity Tumbling",
+    "acronym": "XI",
+    "types": [
+      "to infinite",
+      "tumbling"
+    ],
+    "directions": [
+      "left",
+      "right"
+    ],
+    "solo": true,
+    "solo_awt": true,
+    "synchro": true,
+    "repeatable": false,
+    "description": "X-Chopper (Min 360° spin rotation) followed by a high Tumbling using the dive from the X- Chopper",
+    "minimum": "3 rotations of tumbling",
+    "criterias": {
+      "normal": "energy on entry, timing, flow, tumbling minimum 3 rotations. Perfectly straight axis on the first rotation of tumbling for max score",
+      "twisted": "twisted on the entry, untwisted by the rotation of the glider",
+      "full twisted": "twisted during the whole X-Chopper, staying twisted during the shoot and until the exit of the tumbling",
+      "hardcore entry": "untwisted during the rotation of the X-Chopper immediately followed by a twist to the other direction, staying twisted during the shoot and until the exit of the tumbling",
+      "cab slide": "get twisted during an infinity tumbling turn",
+      "devil twist": "from a twisted situation, change of twist direction (within one turn)"
+    },
+    "connection": "Forbidden connection to Tumbling or Anti-Rhythmic SAT",
+    "technical_coefficient": 1.95,
+    "bonuses": [
+      {
+        "name": "twisted",
+        "bonus": 3.5
+      },
+      {
+        "name": "full twisted",
+        "bonus": 7.5
+      },
+      {
+        "name": "hardcore entry",
+        "bonus": 7.5
+      },
+      {
+        "name": "cab slide",
+        "bonus": 2
+      },
+      {
+        "name": "twisted exit",
+        "bonus": 3
+      },
+      {
+        "name": "devil twist",
+        "bonus": 2
+      }
+    ],
+    "bonus_constraints": [
+      [
+        "twisted",
+        "full twisted"
+      ],
+      [
+        "twisted",
+        "hardcore entry"
+      ],
+      [
+        "full twisted",
+        "hardcore entry"
+      ],
+      [
+        "full twisted",
+        "cab slide"
+      ],
+      [
+        "hardcore entry",
+        "cab slide"
+      ]
+    ],
+    "first_maneuver": 0,
+    "no_first_maneuver": 0,
+    "last_maneuver": 0,
+    "no_last_maneuver": 2
+  }
+]
