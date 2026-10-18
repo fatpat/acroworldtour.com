@@ -11,13 +11,24 @@ func env(m map[string]string) func(string) string {
 	return func(k string) string { return m[k] }
 }
 
-func TestLoadRequiresSessionSecretOutsideDev(t *testing.T) {
-	_, err := config.Load(env(map[string]string{"AWT_ENV": "prod"}))
-	if err == nil {
-		t.Fatal("expected an error when AWT_SESSION_SECRET is empty in prod")
+// Sessions are random tokens stored in the database: no secret is needed.
+// Outside dev, AWT_BASE_URL is required (CDN purge URLs, absolute links).
+func TestLoadRequiresBaseURLOutsideDev(t *testing.T) {
+	for _, e := range []string{"prod", "training"} {
+		_, err := config.Load(env(map[string]string{"AWT_ENV": e}))
+		if err == nil || !strings.Contains(err.Error(), "AWT_BASE_URL") {
+			t.Fatalf("%s without AWT_BASE_URL: err = %v, want one mentioning AWT_BASE_URL", e, err)
+		}
 	}
-	if !strings.Contains(err.Error(), "AWT_SESSION_SECRET") {
-		t.Fatalf("error should mention AWT_SESSION_SECRET, got %q", err)
+	cfg, err := config.Load(env(map[string]string{"AWT_ENV": "prod", "AWT_BASE_URL": "https://www.example.org"}))
+	if err != nil {
+		t.Fatalf("prod with AWT_BASE_URL and no session secret: %v", err)
+	}
+	if cfg.BaseURL != "https://www.example.org" {
+		t.Errorf("BaseURL = %q", cfg.BaseURL)
+	}
+	if _, err := config.Load(env(map[string]string{"AWT_ENV": "dev"})); err != nil {
+		t.Fatalf("dev needs no AWT_BASE_URL: %v", err)
 	}
 }
 
@@ -68,5 +79,13 @@ func TestLoadClientIPSettings(t *testing.T) {
 	}
 	if _, err := config.Load(env(map[string]string{"AWT_ENV": "dev", "AWT_CLIENT_IP_HEADER": "X-Foo"})); err == nil {
 		t.Fatal("bad header accepted")
+	}
+}
+
+func TestLoadRejectsRelativeBaseURL(t *testing.T) {
+	for _, u := range []string{"www.example.org", "/x", "ftp://example.org"} {
+		if _, err := config.Load(env(map[string]string{"AWT_ENV": "prod", "AWT_BASE_URL": u})); err == nil {
+			t.Errorf("AWT_BASE_URL %q accepted", u)
+		}
 	}
 }

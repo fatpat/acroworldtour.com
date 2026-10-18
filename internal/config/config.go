@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/netip"
+	"net/url"
 	"strings"
 )
 
@@ -23,7 +24,6 @@ type Config struct {
 	Env              string // "dev", "training" or "prod"
 	CloudflareZoneID string
 	CloudflareToken  string
-	SessionSecret    string
 	// TrustedProxies are the peers allowed to set ClientIPHeader
 	// (AWT_TRUSTED_PROXIES, comma-separated CIDRs; empty by default).
 	TrustedProxies []netip.Prefix
@@ -53,7 +53,6 @@ func Load(getenv func(string) string) (Config, error) {
 		Env:              get("AWT_ENV", "dev"),
 		CloudflareZoneID: getenv("AWT_CLOUDFLARE_ZONE_ID"),
 		CloudflareToken:  getenv("AWT_CLOUDFLARE_TOKEN"),
-		SessionSecret:    getenv("AWT_SESSION_SECRET"),
 		ClientIPHeader:   get("AWT_CLIENT_IP_HEADER", "CF-Connecting-IP"),
 	}
 	for _, c := range strings.Split(getenv("AWT_TRUSTED_PROXIES"), ",") {
@@ -77,8 +76,16 @@ func Load(getenv func(string) string) (Config, error) {
 	default:
 		return Config{}, fmt.Errorf("AWT_ENV %q: must be dev, training or prod", cfg.Env)
 	}
-	if cfg.Env != "dev" && cfg.SessionSecret == "" {
-		return Config{}, errors.New("AWT_SESSION_SECRET is required when AWT_ENV is not dev")
+	// Sessions are random tokens stored in the database, so no signing
+	// secret exists. The public base URL builds the CDN purge URLs.
+	if cfg.Env != "dev" && cfg.BaseURL == "" {
+		return Config{}, errors.New("AWT_BASE_URL is required when AWT_ENV is not dev")
+	}
+	if cfg.BaseURL != "" {
+		u, err := url.Parse(cfg.BaseURL)
+		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			return Config{}, fmt.Errorf("AWT_BASE_URL %q: must be an absolute http(s) URL", cfg.BaseURL)
+		}
 	}
 
 	switch cfg.BlobBackend {

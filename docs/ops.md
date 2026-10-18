@@ -36,10 +36,10 @@ Nothing secret is committed. On the VPS, in `/opt/awt` (mode 600, owner = deploy
 | File | From | Holds |
 |---|---|---|
 | `.env` | `deploy/env.example` | hosts, image name, image tags (tags are rewritten by `deploy.sh`; `none` = nothing deployed yet, there is no `latest` default) |
-| `.env.prod` | `deploy/env.prod.example` | `AWT_*` for prod: session secret, S3 keys, Cloudflare token, trusted proxies |
-| `.env.training` | `deploy/env.training.example` | same for training, with its own secret and bucket |
+| `.env.prod` | `deploy/env.prod.example` | `AWT_*` for prod: base URL (required), S3 keys, Cloudflare token, trusted proxies |
+| `.env.training` | `deploy/env.training.example` | same for training, with its own base URL and bucket |
 
-Generate session secrets with `openssl rand -hex 32`. Set `AWT_IMAGE` in `.env` to `ghcr.io/<lowercase-owner>/awt`. Create the Object Storage bucket(s) and an S3 user with read/write access to them. `LITESTREAM_S3_REGION` is the OVH region (for example `gra`). Leave `AWT_S3_BUCKET` empty to run without replication (not for prod).
+There is no session secret: sessions are random tokens stored in the database. `AWT_ENV` is set per service in `compose.yaml` (`prod`, `training`); the app refuses to start outside dev without `AWT_BASE_URL`. Set `AWT_IMAGE` in `.env` to `ghcr.io/<lowercase-owner>/awt`. Create the Object Storage bucket(s) and an S3 user with read/write access to them. `LITESTREAM_S3_REGION` is the OVH region (for example `gra`). Leave `AWT_S3_BUCKET` empty to run without replication (not for prod).
 
 GitHub repository secrets for the deploy workflow:
 
