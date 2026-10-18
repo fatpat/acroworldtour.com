@@ -106,7 +106,7 @@ templ compFormPageT(v compFormView) {
 				<p><strong>{ v.Form.Name }</strong> ({ v.Form.NewCode }, { v.Form.Type })</p>
 			} else {
 				@textField("name", "Name", "text", v.Form.Name, v.Errors, templ.Attributes{"required": true, "maxlength": "150"})
-				@textField("code", "Code (optional, lowercase letters, digits and dashes; derived from the name when empty)", "text", v.Form.NewCode, v.Errors, templ.Attributes{"pattern": "[a-z][a-z0-9-]*[a-z0-9]", "autocapitalize": "off"})
+				@textField("code", "Code (optional, lowercase letters, digits and dashes; derived from the name when empty)", "text", v.Form.NewCode, v.Errors, templ.Attributes{"pattern": "[a-z][a-z0-9\\-]*[a-z0-9]", "autocapitalize": "off"})
 				@selectField("type", "Type", v.Form.Type, []option{{"solo", "solo"}, {"synchro", "synchro"}}, v.Errors)
 			}
 			@textField("start_date", "Start date", "date", v.Form.StartDate, v.Errors, templ.Attributes{"required": true})

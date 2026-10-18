@@ -24,8 +24,9 @@ golden-regen:
 		"$(abspath $(LEGACY_VENV))/bin/python" -I "$(CURDIR)/tools/golden/generate.py" \
 		--backup "$(abspath $(BACKUP))" --legacy "$(CURDIR)/legacy/legacy" --out "$(CURDIR)/testdata/golden"
 
+# Needs chromium once: go run github.com/playwright-community/playwright-go/cmd/playwright@v0.5700.1 install chromium
 e2e:
-	@if [ -d e2e ]; then $(GO) test ./e2e/...; else echo "no e2e suite yet"; fi
+	AWT_E2E=1 $(GO) test ./e2e/... -count=1
 
 lint:
 	@test -z "$$(gofmt -l cmd internal)" || { gofmt -l cmd internal; echo "gofmt: files need formatting"; exit 1; }

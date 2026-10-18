@@ -790,7 +790,7 @@ func compFormPageT(v compFormView) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = textField("code", "Code (optional, lowercase letters, digits and dashes; derived from the name when empty)", "text", v.Form.NewCode, v.Errors, templ.Attributes{"pattern": "[a-z][a-z0-9-]*[a-z0-9]", "autocapitalize": "off"}).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = textField("code", "Code (optional, lowercase letters, digits and dashes; derived from the name when empty)", "text", v.Form.NewCode, v.Errors, templ.Attributes{"pattern": "[a-z][a-z0-9\\-]*[a-z0-9]", "autocapitalize": "off"}).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
