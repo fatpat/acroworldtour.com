@@ -40,17 +40,19 @@ func (s *SSE) Active() int64 { return s.active.Load() }
 // ServeHTTP implements http.Handler for GET /live/competitions/{code}.
 func (s *SSE) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	code := r.PathValue("code")
-	flusher := http.NewResponseController(w)
+	rc := http.NewResponseController(w)
 	if s.Bus == nil || s.Exists == nil {
+		w.Header().Set("Cache-Control", "no-store")
 		http.Error(w, "live updates unavailable", http.StatusServiceUnavailable)
 		return
 	}
-	max := s.MaxConns
-	if max <= 0 {
-		max = DefaultSSEMaxConns
+	limit := s.MaxConns
+	if limit <= 0 {
+		limit = DefaultSSEMaxConns
 	}
-	if s.active.Add(1) > max {
+	if s.active.Add(1) > limit {
 		s.active.Add(-1)
+		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("Retry-After", "30")
 		http.Error(w, "too many live connections", http.StatusServiceUnavailable)
 		return
@@ -69,6 +71,13 @@ func (s *SSE) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// A stream outlives any server-wide write timeout; make sure none applies
+	// (the error is ignored: not every ResponseWriter supports deadlines).
+	_ = rc.SetWriteDeadline(time.Time{})
+
+	// Events are signals to reload the current state, so one dropped by the
+	// Bus for a slow client (full buffer) is harmless: the next event, or the
+	// next page load, catches up.
 	events, unsubscribe := s.Bus.Subscribe(sseCompetitionTopicPf + code)
 	defer unsubscribe()
 
@@ -80,7 +89,7 @@ func (s *SSE) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	// Tell the client how long to wait before reconnecting, then flush the
 	// headers so the connection is established right away.
-	if _, err := fmt.Fprint(w, "retry: 3000\n\n"); err != nil || flusher.Flush() != nil {
+	if _, err := fmt.Fprint(w, "retry: 3000\n\n"); err != nil || rc.Flush() != nil {
 		return
 	}
 
@@ -106,7 +115,7 @@ func (s *SSE) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		if flusher.Flush() != nil {
+		if rc.Flush() != nil {
 			return
 		}
 	}

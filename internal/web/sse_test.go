@@ -3,6 +3,7 @@ package web_test
 import (
 	"bufio"
 	"context"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"slices"
@@ -244,5 +245,55 @@ func TestPurgeSubscriber(t *testing.T) {
 	}
 	if len(fp.calls) != 1 {
 		t.Errorf("purge calls = %d, want 1 (coalesced)", len(fp.calls))
+	}
+}
+
+func TestShutdownEndsOpenStreams(t *testing.T) {
+	deps := newDeps(t)
+	deps.Cfg.Addr = "127.0.0.1:0"
+	s := &web.SSE{Bus: service.NewBus(), Ping: time.Hour,
+		Exists: func(context.Context, string) (bool, error) { return true, nil }}
+	srv := web.NewServer(deps, web.ModuleFunc(func(r *web.Router) { r.Public("GET /live/competitions/{code}", s) }))
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	go func() { _ = srv.Serve(ln) }()
+	resp, err := http.Get("http://" + ln.Addr().String() + "/live/competitions/x")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	waitFor(t, lines(bufio.NewScanner(resp.Body)), "", time.Second)
+	start := time.Now()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		t.Fatalf("Shutdown: %v", err)
+	}
+	if d := time.Since(start); d > 2*time.Second {
+		t.Errorf("Shutdown took %s with an open stream", d)
+	}
+}
+
+func TestPurgerFlushesOnShutdown(t *testing.T) {
+	deps := newDeps(t)
+	ctx := context.Background()
+	if err := gen.New(deps.DB.Write).UpsertCompetition(ctx, gen.UpsertCompetitionParams{ID: "c1", Code: "live-cup", Name: "Live",
+		Type: "solo", State: "open", StartDate: "2026-06-01", EndDate: "2026-06-02", Published: true, Config: "{}"}); err != nil {
+		t.Fatal(err)
+	}
+	bus := service.NewBus()
+	fp := &fakePurger{}
+	pctx, stop := context.WithCancel(ctx)
+	web.StartPurger(pctx, bus, fp, deps.DB, "https://results.test")
+	bus.Publish(service.Event{Topic: "competition:live-cup", Kind: service.KindFlight})
+	stop() // before the coalescing delay elapses
+	deadline := time.Now().Add(3 * time.Second)
+	for len(fp.all()) == 0 && time.Now().Before(deadline) {
+		time.Sleep(20 * time.Millisecond)
+	}
+	if got := fp.all(); !slices.Contains(got, "https://results.test/competitions/live-cup") {
+		t.Errorf("pending purge lost at shutdown: %v", got)
 	}
 }

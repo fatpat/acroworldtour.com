@@ -22,17 +22,23 @@ const (
 	KindCompetition = "competition"
 )
 
-// subscriberBuffer is the channel size of a subscriber.
-const subscriberBuffer = 16
+// subscriberBuffer is the channel size of a topic subscriber; wildcard
+// subscribers (the CDN purger) get a larger one.
+const (
+	subscriberBuffer = 16
+	allBuffer        = 256
+)
 
 // Bus is an in-process publish/subscribe hub for live updates (SSE).
 // Publish never blocks: an event is dropped for a subscriber whose buffer is
-// full; the client reloads the fragment on its next event anyway.
+// full. For SSE clients that is harmless: every event only triggers a reload
+// of the current state, so a later event (or the next page load) catches up.
 type Bus struct {
-	mu      sync.Mutex
-	subs    map[string]map[chan Event]struct{}
-	all     map[chan Event]struct{}
-	dropped atomic.Int64
+	mu         sync.Mutex
+	subs       map[string]map[chan Event]struct{}
+	all        map[chan Event]struct{}
+	dropped    atomic.Int64
+	droppedAll atomic.Int64
 }
 
 // NewBus returns an empty bus.
@@ -67,7 +73,7 @@ func (b *Bus) Subscribe(topic string) (<-chan Event, func()) {
 // SubscribeAll returns a channel receiving the events of every topic (the
 // CDN purge subscriber) and a function that unsubscribes and closes it.
 func (b *Bus) SubscribeAll() (<-chan Event, func()) {
-	ch := make(chan Event, subscriberBuffer)
+	ch := make(chan Event, allBuffer)
 	b.mu.Lock()
 	b.all[ch] = struct{}{}
 	b.mu.Unlock()
@@ -91,7 +97,7 @@ func (b *Bus) Publish(e Event) {
 		select {
 		case ch <- e:
 		default:
-			b.dropped.Add(1)
+			b.droppedAll.Add(1)
 		}
 	}
 	for ch := range b.subs[e.Topic] {
@@ -102,6 +108,9 @@ func (b *Bus) Publish(e Event) {
 		}
 	}
 }
+
+// DroppedAll is the number of events dropped for wildcard subscribers.
+func (b *Bus) DroppedAll() int64 { return b.droppedAll.Load() }
 
 // Dropped is the number of events dropped for slow subscribers.
 func (b *Bus) Dropped() int64 { return b.dropped.Load() }
