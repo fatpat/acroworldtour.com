@@ -91,7 +91,15 @@ func run(m *testing.M) (int, error) {
 	}
 
 	db, blobs := filepath.Join(dir, "awt.db"), filepath.Join(dir, "blobs")
-	base := append(os.Environ(), "AWT_ENV=dev", "AWT_DB_PATH="+db, "AWT_BLOB_DIR="+blobs)
+	// The server sees only the settings below: an AWT_* variable of the
+	// developer's shell (S3 backend, base URL, env) must not leak into it.
+	var base []string
+	for _, kv := range os.Environ() {
+		if !strings.HasPrefix(kv, "AWT_") {
+			base = append(base, kv)
+		}
+	}
+	base = append(base, "AWT_ENV=dev", "AWT_DB_PATH="+db, "AWT_BLOB_DIR="+blobs)
 	cli := func(stdin string, args ...string) error {
 		cmd := exec.Command(bin, args...)
 		cmd.Env = base

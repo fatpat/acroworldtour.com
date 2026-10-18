@@ -28,38 +28,43 @@ document.addEventListener("htmx:afterRequest", () => { window.__awt.inflight--; 
 `
 
 // page is a browser page that records console errors, uncaught exceptions
-// and CSP violations.
+// and CSP violations, with the URL of the page that logged them.
 //
 // On the judging screen a live simulate of a half-filled form answers 422 on
-// purpose (the browser logs it as a failed resource, htmx logs the aborted
-// request), and a conflicting save answers 409: those are expected, so admin pages are lenient about them. CSP
-// violations and uncaught exceptions are never ignored.
+// purpose (the browser logs it as a failed resource), a conflicting save
+// answers 409, and a save aborts a pending simulate (htmx logs sendAbort and
+// the failed afterRequest): those exact messages are expected there and
+// nowhere else. CSP violations and uncaught exceptions are never ignored.
 type page struct {
 	playwright.Page
-	lenient bool
-	mu      sync.Mutex
-	errs    []string
+	mu   sync.Mutex
+	errs []consoleError
 }
 
-var expectedAdminNoise = regexp.MustCompile(`^console error: (Failed to load resource: the server responded with a status of (422|409)|htmx:)`)
+type consoleError struct{ url, msg string }
+
+var (
+	judgingURL   = regexp.MustCompile(`^https?://[^/]+/admin/competitions/[^/]+/runs/\d+/judging(/[^/?#]+)?([?#].*)?$`)
+	judgingNoise = regexp.MustCompile(`^console error: (Failed to load resource: the server responded with a status of (422 \(Unprocessable Entity\)|409 \(Conflict\))|htmx:(sendAbort|afterRequest))$`)
+)
 
 func (p *page) errors() []string {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	var out []string
 	for _, e := range p.errs {
-		if p.lenient && expectedAdminNoise.MatchString(e) {
+		if judgingURL.MatchString(e.url) && judgingNoise.MatchString(e.msg) {
 			continue
 		}
-		out = append(out, e)
+		out = append(out, e.msg+" (on "+e.url+")")
 	}
 	return out
 }
 
-func (p *page) record(s string) {
+func (p *page) record(url, s string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.errs = append(p.errs, s)
+	p.errs = append(p.errs, consoleError{url: url, msg: s})
 }
 
 func watch(raw playwright.Page) *page {
@@ -68,10 +73,10 @@ func watch(raw playwright.Page) *page {
 	raw.Context().SetDefaultTimeout(defaultTimeout)
 	raw.OnConsole(func(m playwright.ConsoleMessage) {
 		if m.Type() == "error" {
-			p.record("console error: " + m.Text())
+			p.record(raw.URL(), "console error: "+m.Text())
 		}
 	})
-	raw.OnPageError(func(err error) { p.record("page error: " + err.Error()) })
+	raw.OnPageError(func(err error) { p.record(raw.URL(), "page error: "+err.Error()) })
 	return p
 }
 
@@ -160,7 +165,6 @@ func doLogin(p *page) error {
 func adminPage(t *testing.T) *page {
 	t.Helper()
 	p := newPage(t, newContext(t))
-	p.lenient = true
 	if err := doLogin(p); err != nil {
 		t.Fatalf("login: %v", err)
 	}
