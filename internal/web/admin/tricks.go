@@ -77,11 +77,18 @@ func (h *handlers) registerTricks(r *web.Router) {
 	post(r, "/admin/tricks/{id}/delete", h.trickDelete)
 }
 
-func yearParam(r *http.Request, key string) int {
-	if n, err := strconv.Atoi(r.FormValue(key)); err == nil && n > 1900 && n < 3000 {
-		return n
+// yearParam reads a year form value: absent means the current year, a
+// tampered or out-of-range value is a validation error (422).
+func yearParam(r *http.Request, key string) (int, error) {
+	raw := strings.TrimSpace(r.FormValue(key))
+	if raw == "" {
+		return time.Now().UTC().Year(), nil
 	}
-	return time.Now().UTC().Year()
+	n, err := strconv.Atoi(raw)
+	if err != nil || n <= 1900 || n >= 3000 {
+		return 0, &service.ValidationError{Fields: []domain.FieldError{{Field: key, Msg: "must be a year between 1901 and 2999"}}}
+	}
+	return n, nil
 }
 
 // yearChoices lists the years offered as shortcuts, latest first: the last
@@ -108,11 +115,20 @@ func (h *handlers) tricksPage(w http.ResponseWriter, r *http.Request, status, ye
 }
 
 func (h *handlers) tricksList(w http.ResponseWriter, r *http.Request) {
-	h.tricksPage(w, r, http.StatusOK, yearParam(r, "year"), tricksView{})
+	year, err := yearParam(r, "year")
+	if err != nil {
+		h.fail(w, r, err, nil)
+		return
+	}
+	h.tricksPage(w, r, http.StatusOK, year, tricksView{})
 }
 
 func (h *handlers) uniqueList(w http.ResponseWriter, r *http.Request) {
-	year := yearParam(r, "year")
+	year, err := yearParam(r, "year")
+	if err != nil {
+		h.fail(w, r, err, nil)
+		return
+	}
 	all, err := h.svc.ListUniqueTricks(r.Context(), year)
 	if err != nil {
 		h.fail(w, r, err, nil)
@@ -133,7 +149,11 @@ func (h *handlers) uniqueList(w http.ResponseWriter, r *http.Request) {
 
 // tricksImport loads a JSON catalog file into a year (12 MB cap).
 func (h *handlers) tricksImport(w http.ResponseWriter, r *http.Request) {
-	year := yearParam(r, "year")
+	year, yerr := yearParam(r, "year")
+	if yerr != nil {
+		h.fail(w, r, yerr, nil)
+		return
+	}
 	redo := func(status int, fe formErrors) { h.tricksPage(w, r, status, year, tricksView{Errors: fe}) }
 	f, _, err := r.FormFile("file")
 	if err != nil {
@@ -152,7 +172,7 @@ func (h *handlers) tricksDuplicate(w http.ResponseWriter, r *http.Request) {
 	fromRaw, toRaw := r.PostFormValue("from"), r.PostFormValue("to")
 	from, bad1 := atoi("from", fromRaw)
 	to, bad2 := atoi("to", toRaw)
-	year := yearParam(r, "from")
+	year, _ := yearParam(r, "from") // only for the re-render; from/to are validated below
 	redo := func(status int, fe formErrors) {
 		h.tricksPage(w, r, status, year, tricksView{Errors: fe, DupFrom: fromRaw, DupTo: toRaw})
 	}
@@ -174,7 +194,12 @@ func (h *handlers) tricksDuplicate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handlers) trickNew(w http.ResponseWriter, r *http.Request) {
-	f := trickForm{Year: yearParam(r, "year"), Solo: true, SoloAWT: true, Coefficient: "1", Directions: map[string]bool{}}
+	year, err := yearParam(r, "year")
+	if err != nil {
+		h.fail(w, r, err, nil)
+		return
+	}
+	f := trickForm{Year: year, Solo: true, SoloAWT: true, Coefficient: "1", Directions: map[string]bool{}}
 	f.Bonuses = bonusRows(nil)
 	render(w, r, http.StatusOK, trickFormPage(trickFormView{Form: f}))
 }
@@ -305,7 +330,12 @@ func parseFloat(errs *[]domain.FieldError, field, raw string) (float64, bool) {
 
 func (h *handlers) trickSave(w http.ResponseWriter, r *http.Request, id string) {
 	f, t, errs := readTrickForm(r)
-	f.ID, f.Year = id, yearParam(r, "year")
+	year, yerr := yearParam(r, "year")
+	if yerr != nil && id == "" {
+		h.fail(w, r, yerr, nil)
+		return
+	}
+	f.ID, f.Year = id, year
 	redo := func(status int, fe formErrors) {
 		render(w, r, status, trickFormPage(trickFormView{Form: f, Errors: fe}))
 	}

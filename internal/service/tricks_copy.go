@@ -14,11 +14,16 @@ import (
 // the previous catalog). It returns the number of tricks copied.
 func (s *Service) DuplicateCatalog(ctx context.Context, from, to int) (int, error) {
 	var errs []domain.FieldError
+	for _, y := range []struct {
+		field string
+		year  int
+	}{{"from", from}, {"to", to}} {
+		if y.year <= 1900 || y.year >= 3000 {
+			errs = append(errs, domain.FieldError{Field: y.field, Msg: "must be a year between 1901 and 2999"})
+		}
+	}
 	if from == to {
 		errs = append(errs, domain.FieldError{Field: "to", Msg: "must differ from the source year"})
-	}
-	if to <= 1900 {
-		errs = append(errs, domain.FieldError{Field: "to", Msg: "must be after 1900"})
 	}
 	if err := invalid(errs...); err != nil {
 		return 0, err

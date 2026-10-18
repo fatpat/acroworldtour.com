@@ -68,7 +68,7 @@ templ pilotRow(p service.Pilot, now int) {
 	<tr id={ "pilot-" + itoa(p.CivlID) }>
 		<td>
 			if p.CivlLink != "" {
-				<a href={ templ.SafeURL(p.CivlLink) } rel="noopener">{ p.Name }</a>
+				<a href={ p.CivlLink } rel="noopener">{ p.Name }</a>
 			} else {
 				{ p.Name }
 			}

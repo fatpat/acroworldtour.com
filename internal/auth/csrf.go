@@ -2,7 +2,9 @@ package auth
 
 import (
 	"crypto/subtle"
+	"errors"
 	"net/http"
+	"strings"
 )
 
 // CSRF rejects non-GET/HEAD/OPTIONS requests whose `_csrf` form field or
@@ -25,6 +27,19 @@ func (a *Auth) CSRF(next http.Handler) http.Handler {
 		}
 		got := r.Header.Get("X-CSRF-Token")
 		if got == "" {
+			// Parse here to tell an oversized body (MaxBytesReader) from a
+			// missing token.
+			var err error
+			if strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {
+				err = r.ParseMultipartForm(32 << 20)
+			} else {
+				err = r.ParseForm()
+			}
+			var tooBig *http.MaxBytesError
+			if errors.As(err, &tooBig) {
+				http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
+				return
+			}
 			got = r.PostFormValue("_csrf")
 		}
 		if got == "" || subtle.ConstantTimeCompare([]byte(got), []byte(s.CSRF)) != 1 {

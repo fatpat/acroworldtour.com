@@ -43,7 +43,11 @@ func (fakeCIVL) FetchPilot(_ context.Context, id int) (civl.PilotData, error) {
 	if id >= 900000 {
 		return civl.PilotData{}, &civl.StatusError{Method: "GET", URL: "x", Status: http.StatusNotFound}
 	}
-	return civl.PilotData{CivlID: id, Name: fmt.Sprintf("Pilot %d", id), Country: "fra",
+	name := fmt.Sprintf("Pilot %d", id)
+	if id == 666 {
+		name = "<script>alert(1)</script>"
+	}
+	return civl.PilotData{CivlID: id, Name: name, Country: "fra",
 		CivlLink: fmt.Sprintf("https://civlcomps.org/pilot/%d", id)}, nil
 }
 
@@ -322,9 +326,7 @@ func TestTricks(t *testing.T) {
 	bad = url.Values{"year": {"2026"}, "name": {"Z"}, "acronym": {"Z"}, "technical_coefficient": {"1"}, "dir_left": {"1"}}
 	e.wantStatus(e.post("/admin/tricks", bad), 422, "at least 2 distinct directions")
 	dup := url.Values{"year": {"2026"}, "name": {"Other"}, "acronym": {"H"}, "solo": {"1"}, "technical_coefficient": {"1"}}
-	if rec := e.post("/admin/tricks", dup); rec.Code != 409 && rec.Code != 303 {
-		t.Fatalf("duplicate acronym status = %d", rec.Code)
-	}
+	e.wantStatus(e.post("/admin/tricks", dup), 409, "already exists")
 
 	// Edit keeps the catalog year.
 	e.wantStatus(e.get("/admin/tricks/"+id+"/edit"), 200, `value="Helico"`, `value="1.5"`)
@@ -415,6 +417,8 @@ func TestUsers(t *testing.T) {
 	}
 	e.wantStatus(e.post("/admin/users", url.Values{"email": {"x@example.org"}, "name": {"X"}, "role": {"scorer"}, "password": {"short"}}), 422, "at least 10 characters")
 	e.wantStatus(e.post("/admin/users", url.Values{"email": {"x@example.org"}, "name": {"X"}, "role": {"boss"}, "password": {"a long enough pass"}}), 422, "admin or scorer")
+	e.wantStatus(e.post("/admin/users", url.Values{"email": {"not-an-email"}, "name": {"X"}, "role": {"scorer"}, "password": {"a long enough pass"}}), 422, "name@example.org")
+	e.wantStatus(e.post("/admin/users", url.Values{"email": {"y@example.org"}, "name": {"  "}, "role": {"scorer"}, "password": {"a long enough pass"}}), 422, "name is required")
 	e.wantStatus(e.post("/admin/users", url.Values{"email": {"new@example.org"}, "name": {"X"}, "role": {"scorer"}, "password": {"a long enough pass"}}), 409, "already exists")
 
 	// Assign competitions.
@@ -475,6 +479,14 @@ func TestDashboard(t *testing.T) {
 	e.wantStatus(e.get("/admin"), 200, "Open Cup", "/admin/competitions/"+comp.Code)
 	// Scorers see the dashboard, without the reference data counts.
 	rec := e.do(httptest.NewRequest(http.MethodGet, "/admin", nil), &e.scorer)
+	e.wantStatus(rec, 200, "No competition is open.") // not assigned yet
+	if strings.Contains(rec.Body.String(), "Open Cup") {
+		t.Fatal("scorer sees a competition they are not assigned to")
+	}
+	if err := e.deps.Auth.AssignCompetition(ctx, "scorer@example.org", comp.ID); err != nil {
+		t.Fatal(err)
+	}
+	rec = e.do(httptest.NewRequest(http.MethodGet, "/admin", nil), &e.scorer)
 	e.wantStatus(rec, 200, "Open Cup")
 	if strings.Contains(rec.Body.String(), "pilots</a>") {
 		t.Fatal("scorer sees the admin counts")
@@ -519,12 +531,112 @@ func TestCSRFIsRequired(t *testing.T) {
 	}
 }
 
-func TestOversizedFormIsRefused(t *testing.T) {
+func TestOversizedBodiesAre413(t *testing.T) {
 	e := newEnv(t)
-	rec := e.post("/admin/teams", url.Values{"name": {strings.Repeat("a", 70<<10)}, "pilot1": {"1"}, "pilot2": {"2"}})
-	if rec.Code == http.StatusSeeOther || rec.Code == http.StatusOK {
-		t.Fatalf("a 70 KB form was accepted: %d", rec.Code)
+	e.importPilots(101, 102)
+	big := url.Values{"name": {strings.Repeat("a", 70<<10)}, "pilot1": {"101"}, "pilot2": {"102"}, "_csrf": {e.admin.CSRF}}.Encode()
+
+	// Declared length over the cap: refused up front.
+	req := httptest.NewRequest(http.MethodPost, "/admin/teams", strings.NewReader(big))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	e.wantStatus(e.do(req, &e.admin), http.StatusRequestEntityTooLarge)
+
+	// Unknown length (chunked): the MaxBytesReader error is mapped to 413, not 403.
+	req = httptest.NewRequest(http.MethodPost, "/admin/teams", strings.NewReader(big))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.ContentLength = -1
+	e.wantStatus(e.do(req, &e.admin), http.StatusRequestEntityTooLarge)
+	if teams, _ := e.svc.ListTeams(context.Background()); len(teams) != 0 {
+		t.Fatal("an oversized form created a team")
 	}
+
+	// An upload over a (small) cap, declared and chunked.
+	h := web.Routes(e.deps, web.ModuleFunc(func(r *web.Router) {
+		r.AdminMax("POST /admin/smallmax", 1024, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		}))
+	}))
+	var buf bytes.Buffer
+	mw := multipart.NewWriter(&buf)
+	_ = mw.WriteField("_csrf", e.admin.CSRF)
+	fw, _ := mw.CreateFormFile("file", "big.png")
+	_, _ = fw.Write(bytes.Repeat([]byte{1}, 4096))
+	_ = mw.Close()
+	for _, chunked := range []bool{false, true} {
+		req := httptest.NewRequest(http.MethodPost, "/admin/smallmax", bytes.NewReader(buf.Bytes()))
+		req.Header.Set("Content-Type", mw.FormDataContentType())
+		if chunked {
+			req.ContentLength = -1
+		}
+		req.AddCookie(&http.Cookie{Name: auth.CookieName, Value: e.admin.Token})
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		if rec.Code != http.StatusRequestEntityTooLarge {
+			t.Fatalf("upload over the cap (chunked=%v) = %d, want 413", chunked, rec.Code)
+		}
+	}
+}
+
+func TestDuplicateCatalogReplacesSameNameTricks(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	e.wantRedirect(e.upload("/admin/tricks/import", map[string]string{"year": "2025"}, "c.json", []byte(catalogJSON)), "/admin/tricks")
+	// The target year already has an older "Misty Flip" and an unrelated trick.
+	old := `[{"name":"Misty Flip","acronym":"MO","solo":true,"directions":[],"technical_coefficient":0.5,"bonuses":[]},
+{"name":"Keep Me","acronym":"K","solo":true,"directions":[],"technical_coefficient":1,"bonuses":[]}]`
+	e.wantRedirect(e.upload("/admin/tricks/import", map[string]string{"year": "2026"}, "o.json", []byte(old)), "/admin/tricks")
+	before, _ := e.svc.ListTricks(ctx, 2026)
+	var mistyID string
+	for _, tr := range before {
+		if tr.Name == "Misty Flip" {
+			mistyID = tr.ID
+		}
+	}
+	e.wantRedirect(e.post("/admin/tricks/duplicate", url.Values{"from": {"2025"}, "to": {"2026"}}), "/admin/tricks?year=2026")
+	after, err := e.svc.ListTricks(ctx, 2026)
+	if err != nil {
+		t.Fatal(err)
+	}
+	names := map[string]int{}
+	for _, tr := range after {
+		names[tr.Name]++
+		if tr.Name == "Misty Flip" {
+			if tr.ID != mistyID || tr.TechnicalCoefficient != 1.65 || tr.Acronym != "M" {
+				t.Fatalf("Misty Flip not replaced in place: %+v", tr)
+			}
+		}
+	}
+	if len(after) != 3 || names["Misty Flip"] != 1 || names["Tumbling"] != 1 || names["Keep Me"] != 1 {
+		t.Fatalf("2026 catalog = %v", names)
+	}
+	src, _ := e.svc.ListTricks(ctx, 2025)
+	if len(src) != 2 {
+		t.Fatalf("source catalog changed: %d tricks", len(src))
+	}
+	e.wantStatus(e.post("/admin/tricks/duplicate", url.Values{"from": {"2025"}, "to": {"99999"}}), 422, "between 1901 and 2999")
+}
+
+func TestTamperedYearIs422(t *testing.T) {
+	e := newEnv(t)
+	for _, p := range []string{"/admin/tricks?year=abc", "/admin/tricks?year=99999", "/admin/tricks/unique?year=-1", "/admin/tricks/new?year=x"} {
+		e.wantStatus(e.get(p), 422, "between 1901 and 2999")
+	}
+	e.wantStatus(e.upload("/admin/tricks/import", map[string]string{"year": "abc"}, "c.json", []byte(catalogJSON)), 422, "year")
+	e.wantStatus(e.post("/admin/tricks", url.Values{"year": {"abc"}, "name": {"Z"}, "acronym": {"Z"}, "technical_coefficient": {"1"}}), 422, "year")
+}
+
+func TestNamesAreEscaped(t *testing.T) {
+	e := newEnv(t)
+	e.importPilots(666, 101)
+	e.wantRedirect(e.post("/admin/teams", url.Values{"name": {"<script>alert(2)</script>"}, "pilot1": {"666"}, "pilot2": {"101"}}), "/admin/teams")
+	for _, p := range []string{"/admin/pilots", "/admin/teams", "/admin/teams/new", "/admin/judges/new"} {
+		body := e.get(p).Body.String()
+		if strings.Contains(body, "<script>alert") {
+			t.Fatalf("%s renders an unescaped script tag", p)
+		}
+	}
+	e.wantStatus(e.get("/admin/pilots"), 200, "&lt;script&gt;alert(1)&lt;/script&gt;")
+	e.wantStatus(e.get("/admin/teams"), 200, "&lt;script&gt;alert(2)&lt;/script&gt;")
 }
 
 func TestAnonymousIsRedirectedToLogin(t *testing.T) {

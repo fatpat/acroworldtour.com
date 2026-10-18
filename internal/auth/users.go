@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -51,6 +52,8 @@ func New(db *store.DB, cfg config.Config) *Auth {
 
 const minPasswordLen = 10
 
+var emailShape = regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`)
+
 // InputError is a rejected user input; Field names the form field.
 type InputError struct{ Field, Msg string }
 
@@ -83,6 +86,12 @@ func (a *Auth) CreateUser(ctx context.Context, email, name, role, password strin
 	email = normEmail(email)
 	if email == "" {
 		return User{}, &InputError{Field: "email", Msg: "email is required"}
+	}
+	if !emailShape.MatchString(email) {
+		return User{}, &InputError{Field: "email", Msg: "email must look like name@example.org"}
+	}
+	if strings.TrimSpace(name) == "" {
+		return User{}, &InputError{Field: "name", Msg: "name is required"}
 	}
 	if err := checkPassword(password); err != nil {
 		return User{}, err

@@ -2,6 +2,7 @@ package admin
 
 import (
 	"net/http"
+	"slices"
 	"time"
 
 	"awt/internal/auth"
@@ -33,8 +34,15 @@ func (h *handlers) dashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	v.Competitions = len(comps)
+	var mine []string
+	if !v.Admin { // scorers only see the competitions they are assigned to
+		if mine, err = h.auth.UserCompetitions(ctx, sess.User.ID); err != nil {
+			h.fail(w, r, err, nil)
+			return
+		}
+	}
 	for _, c := range comps {
-		if c.State == domain.CompetitionOpen {
+		if c.State == domain.CompetitionOpen && (v.Admin || slices.Contains(mine, c.ID)) {
 			v.Open = append(v.Open, c)
 		}
 	}

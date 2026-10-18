@@ -130,7 +130,7 @@ func (h *handlers) redoOrPage(w http.ResponseWriter, r *http.Request, status int
 		redo(status, fe)
 		return
 	}
-	render(w, r, status, errorPage("Not done", fe.Summary))
+	render(w, r, status, errorPage("Not done", strings.TrimSpace(fe.Summary+" "+strings.Join(fe.Messages, "; "))))
 }
 
 func (h *handlers) notFound(w http.ResponseWriter, r *http.Request) {
