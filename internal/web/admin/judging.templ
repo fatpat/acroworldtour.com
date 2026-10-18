@@ -1,0 +1,409 @@
+package admin
+
+import (
+	"awt/internal/domain"
+	"awt/internal/scoring"
+	"awt/internal/web/layout"
+	"awt/web/static"
+)
+
+// judgingPage is the whole screen; v is nil when the run has no
+// participants.
+templ judgingPage(jc judgingCtx, v *flightView) {
+	@layout.Admin(layout.Meta{Title: "Judging, run " + itoa(jc.Run.Index+1), Heading: "Judging: " + jc.C.Name + ", run " + itoa(jc.Run.Index+1)}, "competitions") {
+		<p class="toolbar">
+			@stateBadge(string(jc.Run.State))
+			<a href={ templ.SafeURL(runHref(jc.C, jc.Run.Index)) }>Back to the run</a>
+		</p>
+		if jc.Run.State != domain.RunOpen {
+			<p class="notice" role="status">This run is { string(jc.Run.State) }: the provisional score works, but flights can only be saved once the run is open.</p>
+		}
+		<div class="judging">
+			if v != nil {
+				@participantList(jc, v.P.ID, false)
+				@flightPanel(*v)
+			} else {
+				<p class="empty">This run has no participants.</p>
+			}
+		</div>
+		<datalist id="trick-list" data-src={ jc.Base() + "/tricks.json" }></datalist>
+		<datalist id="w1-presets">
+			for _, w := range warningPresets1 {
+				<option value={ w }></option>
+			}
+		</datalist>
+		<datalist id="w2-presets">
+			for _, w := range warningPresets2 {
+				<option value={ w }></option>
+			}
+		</datalist>
+		<script src={ static.URL("js/trick-input.js") } defer></script>
+		<script src={ static.URL("js/judging.js") } defer></script>
+	}
+}
+
+// participantList is the navigator in starting order; oob swaps it in
+// place after a save.
+templ participantList(jc judgingCtx, current string, oob bool) {
+	<nav
+		id="participants"
+		if oob {
+			hx-swap-oob="true"
+		}
+		class="judging__list"
+		aria-label="Participants in starting order"
+	>
+		<ol class="plain">
+			for _, p := range jc.participants(current) {
+				<li>
+					<a
+						href={ templ.SafeURL(jc.Base() + "/" + pathEscape(p.ID)) }
+						hx-get={ jc.Base() + "/" + pathEscape(p.ID) }
+						hx-target="#flight"
+						hx-swap="outerHTML"
+						hx-push-url="true"
+						if p.Current {
+							aria-current="true"
+						}
+					>
+						<span class="num">{ itoa(p.Pos) }</span>
+						<span class="judging__name">{ p.Name }@awtStar(p.AWT)</span>
+						<span class={ "chip chip--" + p.Status }>{ statusLabel(p.Status) }</span>
+						if p.DNS {
+							<span class="chip">DNS</span>
+						}
+						if p.Score != "" {
+							<span class="judging__score">{ p.Score }</span>
+						}
+					</a>
+				</li>
+			}
+		</ol>
+	</nav>
+}
+
+// flightPanel is one participant's flight form and provisional score.
+templ flightPanel(v flightView) {
+	<section id="flight" class="judging__flight" aria-labelledby="flight-heading">
+		if v.SwapList {
+			@participantList(v.JC, v.P.ID, true)
+		}
+		<h2 id="flight-heading">{ v.P.Name }@awtStar(v.P.AWT) <span class="muted">#{ itoa(v.P.Pos) }</span></h2>
+		@notice(v.Flash)
+		<p class="muted">
+			if v.Published {
+				Saved and published.
+			} else if v.Saved {
+				Saved, not published.
+			} else {
+				Not flown yet.
+			}
+			{ v.MarkTypeLabel() }.
+		</p>
+		if v.Saved && v.StoredType != v.MarkType {
+			<p class="alert" role="alert">The saved flight was scored with another mark type ({ markTypeName(v.StoredType) }); saving rescores it as { markTypeName(v.MarkType) }.</p>
+		}
+		<form
+			id="flight-form"
+			class="judging__form"
+			method="post"
+			action={ templ.SafeURL(v.Href() + "/save") }
+			hx-post={ v.Href() + "/simulate" }
+			hx-trigger="input changed delay:300ms, change"
+			hx-sync="this:replace"
+			hx-target="#provisional"
+			hx-swap="outerHTML"
+		>
+			@csrf()
+			// The first submit button is the form's default button: disabled, so
+			// Enter in a field never submits (only explicit buttons save).
+			<button type="submit" disabled hidden aria-hidden="true" tabindex="-1">Enter does nothing</button>
+			<fieldset>
+				<legend>Tricks</legend>
+				<ol class="judging__tricks">
+					for k, t := range v.F.Tricks {
+						<li>
+							<label class="visually-hidden" for={ trickID(k) }>Trick { itoa(k + 1) }</label>
+							<input
+								id={ trickID(k) }
+								name="trick"
+								type="text"
+								value={ t }
+								list="trick-list"
+								autocomplete="off"
+								spellcheck="false"
+								data-trick-input=""
+								autofocus?={ k == v.FocusTrick }
+								if v.Err(trickID(k)) != "" {
+									aria-invalid="true"
+								}
+								aria-describedby={ "err-" + trickID(k) }
+							/>
+							@opButton(v, "trick-up:"+itoa(k), "Up", "Move trick "+itoa(k+1)+" up", k > 0, true)
+							@opButton(v, "trick-down:"+itoa(k), "Down", "Move trick "+itoa(k+1)+" down", k < len(v.F.Tricks)-1, true)
+							@opButton(v, "trick-remove:"+itoa(k), "Remove", "Remove trick "+itoa(k+1)+" and its marks", true, true)
+							@errSlot(trickID(k), v.Err(trickID(k)), false)
+						</li>
+					}
+				</ol>
+				@opButton(v, "trick-add", "Add trick", "Add a trick", true, false)
+				<p class="field__hint">Enter in the last trick adds one; Alt+Up, Alt+Down and Alt+Delete move or remove a trick with its marks.</p>
+			</fieldset>
+			<fieldset>
+				<legend>Marks</legend>
+				<p class="field__hint">0 to 10, "7.5" or "7,5"; leave blank for no mark.</p>
+				<div class="table-wrap">
+					<table class="table table--compact judging__marks">
+						<thead>
+							<tr>
+								<th scope="col">Judge</th>
+								if v.PerTrick() {
+									for k, t := range v.F.Tricks {
+										<th scope="col">T{ itoa(k + 1) } <span class="muted">{ t }</span></th>
+									}
+								} else {
+									<th scope="col">Technical</th>
+								}
+								<th scope="col">Choreography</th>
+								<th scope="col">Landing</th>
+								if v.Synchro() {
+									<th scope="col">Synchro</th>
+								}
+							</tr>
+						</thead>
+						<tbody>
+							for j, row := range v.F.Rows {
+								<tr>
+									<th scope="row">{ row.Judge.Name } <span class="muted">{ string(row.Judge.Level) }</span></th>
+									if v.PerTrick() {
+										for k := range v.F.Tricks {
+											@markCell(v, j, row, "t"+itoa(k), "t."+itoa(k), row.PerTrick[k], "trick "+itoa(k+1))
+										}
+									} else {
+										@markCell(v, j, row, "technical", "technical", row.Technical, "technical")
+									}
+									@markCell(v, j, row, "choreography", "choreography", row.Choreography, "choreography")
+									@markCell(v, j, row, "landing", "landing", row.Landing, "landing")
+									if v.Synchro() {
+										@markCell(v, j, row, "synchro", "synchro", row.Synchro, "synchro")
+									}
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			</fieldset>
+			@warningList(v, "w1", "1", v.F.W1)
+			@warningList(v, "w2", "2", v.F.W2)
+			<fieldset>
+				<legend>Flight</legend>
+				<div class="field field--check">
+					<label>
+						<input type="checkbox" name="dns" value="1" checked?={ v.F.DNS }/>
+						Did not start (DNS)
+					</label>
+				</div>
+				if v.Synchro() {
+					<div class="field">
+						<label for="tip_touches">Tip touches</label>
+						<input
+							id="tip_touches"
+							name="tip_touches"
+							type="number"
+							value={ v.F.TipTouches }
+							min="0"
+							step="1"
+							inputmode="numeric"
+							if v.Err("tip_touches") != "" {
+								aria-invalid="true"
+							}
+							aria-describedby="err-tip_touches"
+						/>
+						@errSlot("tip_touches", v.Err("tip_touches"), false)
+					</div>
+				}
+			</fieldset>
+			<p class="actions">
+				<button
+					class="btn btn--ghost"
+					type="submit"
+					formaction={ templ.SafeURL(v.Href() + "/simulate") }
+					hx-post={ v.Href() + "/simulate" }
+					hx-target="#provisional"
+					hx-swap="outerHTML"
+				>Recalculate</button>
+				@saveButton(v, "0", "Save")
+				@saveButton(v, "1", "Save & publish")
+			</p>
+		</form>
+		@provisional(v)
+	</section>
+}
+
+templ saveButton(v flightView, publish, label string) {
+	<button
+		class="btn"
+		type="submit"
+		name="publish"
+		value={ publish }
+		hx-post={ v.Href() + "/save" }
+		hx-target="#flight"
+		hx-swap="outerHTML"
+	>{ label }</button>
+}
+
+// opButton is a structural edit of the form (htmx: swaps the panel; no
+// JS: re-renders the page). Per-trick buttons are out of the tab order so
+// that Tab goes from field to field; judging.js gives them shortcuts.
+templ opButton(v flightView, op, label, title string, enabled, skipTab bool) {
+	<button
+		class="btn btn--ghost"
+		type="submit"
+		name="op"
+		value={ op }
+		title={ title }
+		aria-label={ title }
+		formaction={ templ.SafeURL(v.Href() + "/edit") }
+		hx-post={ v.Href() + "/edit" }
+		hx-target="#flight"
+		hx-swap="outerHTML"
+		if skipTab {
+			tabindex="-1"
+		}
+		disabled?={ !enabled }
+	>{ label }</button>
+}
+
+templ markCell(v flightView, j int, row markRow, col, nameCol, value, what string) {
+	<td>
+		<input
+			class="judging__mark"
+			id={ markID(j, col) }
+			name={ markName(row.Judge.ID, nameCol) }
+			type="text"
+			inputmode="decimal"
+			autocomplete="off"
+			size="4"
+			value={ value }
+			aria-label={ row.Judge.Name + ", " + what }
+			if v.Err(markID(j, col)) != "" {
+				aria-invalid="true"
+			}
+			aria-describedby={ "err-" + markID(j, col) }
+		/>
+		@errSlot(markID(j, col), v.Err(markID(j, col)), false)
+	</td>
+}
+
+// errSlot is the error message next to an input; the simulate response
+// refreshes every slot out of band.
+templ errSlot(id, msg string, oob bool) {
+	<span
+		id={ "err-" + id }
+		class="field__error"
+		if oob {
+			hx-swap-oob="true"
+		}
+	>{ msg }</span>
+}
+
+templ warningList(v flightView, name, cat string, items []string) {
+	<fieldset>
+		<legend>Cat { cat } warnings</legend>
+		<ol class="judging__warnings">
+			for i, w := range items {
+				<li>
+					<label class="visually-hidden" for={ name + "-" + itoa(i) }>Cat { cat } warning { itoa(i + 1) }</label>
+					<input id={ name + "-" + itoa(i) } name={ name } type="text" value={ w } list={ name + "-presets" } autocomplete="off"/>
+					@opButton(v, name+"-remove:"+itoa(i), "Remove", "Remove cat "+cat+" warning "+itoa(i+1), true, false)
+				</li>
+			}
+		</ol>
+		@opButton(v, name+"-add", "Add warning", "Add a cat "+cat+" warning", true, false)
+	</fieldset>
+}
+
+// provisional is the score panel (spec 05 §6.2 "Live provisional score").
+templ provisional(v flightView) {
+	<section id="provisional" class="card judging__provisional" aria-live="polite" aria-labelledby="provisional-heading">
+		<h2 id="provisional-heading">Provisional score</h2>
+		if v.Summary != "" {
+			<p class="alert" role="alert">{ v.Summary }</p>
+		}
+		if v.Final != nil {
+			@finalMark(*v.Final, v.Synchro())
+		} else if v.Summary == "" {
+			<p class="muted">Enter the flight to see the provisional score.</p>
+		}
+	</section>
+}
+
+templ finalMark(f scoring.FinalMark, synchro bool) {
+	<dl class="kv">
+		<dt>Technicity</dt>
+		<dd>{ num(f.Technicity) }</dd>
+		<dt>Technical</dt>
+		<dd>{ num(f.Technical) }</dd>
+		<dt>Choreography</dt>
+		<dd>{ num(f.Choreography) }</dd>
+		<dt>Landing</dt>
+		<dd>{ num(f.Landing) }</dd>
+		if synchro {
+			<dt>Synchro</dt>
+			<dd>{ num(f.Synchro) }</dd>
+		}
+		<dt>Bonus %</dt>
+		<dd>{ num(f.BonusPercentage) }</dd>
+		<dt>Bonus</dt>
+		<dd>{ num(f.Bonus) }</dd>
+		<dt>Malus</dt>
+		<dd>{ num(f.Malus) }</dd>
+		<dt>Score</dt>
+		<dd><strong>{ num(f.Score) }</strong></dd>
+	</dl>
+	if len(f.Notes) > 0 {
+		<h3>Notes</h3>
+		<ul class="notes">
+			for _, n := range f.Notes {
+				<li>{ n }</li>
+			}
+		</ul>
+	}
+	if len(f.Warnings1) > 0 || len(f.Warnings2) > 0 {
+		<h3>Warnings</h3>
+		<ul class="notes">
+			for _, w := range f.Warnings1 {
+				<li>Cat 1: { w }</li>
+			}
+			for _, w := range f.Warnings2 {
+				<li>Cat 2: { w }</li>
+			}
+		</ul>
+	}
+}
+
+// provisionalResponse answers a live simulate: the score panel and every
+// field error slot, out of band, so that stale messages disappear.
+templ provisionalResponse(v flightView) {
+	@provisional(v)
+	for k := range v.F.Tricks {
+		@errSlot(trickID(k), v.Err(trickID(k)), true)
+	}
+	for j := range v.F.Rows {
+		if v.PerTrick() {
+			for k := range v.F.Tricks {
+				@errSlot(markID(j, "t"+itoa(k)), v.Err(markID(j, "t"+itoa(k))), true)
+			}
+		} else {
+			@errSlot(markID(j, "technical"), v.Err(markID(j, "technical")), true)
+		}
+		@errSlot(markID(j, "choreography"), v.Err(markID(j, "choreography")), true)
+		@errSlot(markID(j, "landing"), v.Err(markID(j, "landing")), true)
+		if v.Synchro() {
+			@errSlot(markID(j, "synchro"), v.Err(markID(j, "synchro")), true)
+		}
+	}
+	if v.Synchro() {
+		@errSlot("tip_touches", v.Err("tip_touches"), true)
+	}
+}

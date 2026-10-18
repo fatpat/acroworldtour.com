@@ -1,11 +1,13 @@
-// Acronym autocomplete for the simulator. The tricks of a run are typed in one
-// text field (space- or comma-separated), so the <datalist> options are the
-// catalog acronyms prefixed with what was already typed. Without JS the plain
-// text field works.
+// Acronym autocomplete for trick inputs (simulator, judging screen). The
+// <datalist id="trick-list"> names its catalog in data-src (default: the
+// simulator's). A simulator field holds several tricks (space- or
+// comma-separated), so the options are the catalog acronyms prefixed with
+// what was already typed. Inputs are found by delegation, so inputs added
+// by htmx work too. Without JS the plain text field works.
 const list = document.getElementById("trick-list");
 if (list) {
   let tricks = [];
-  fetch("/simulator/tricks.json", { headers: { Accept: "application/json" } })
+  fetch(list.dataset.src || "/simulator/tricks.json", { headers: { Accept: "application/json" } })
     .then((r) => (r.ok ? r.json() : []))
     .then((data) => {
       tricks = data;
@@ -28,7 +30,7 @@ if (list) {
       if (++shown >= 20) break;
     }
   };
-  for (const input of document.querySelectorAll("[data-trick-input]")) {
-    input.addEventListener("input", () => refresh(input));
-  }
+  document.addEventListener("input", (e) => {
+    if (e.target instanceof HTMLInputElement && e.target.matches("[data-trick-input]")) refresh(e.target);
+  });
 }

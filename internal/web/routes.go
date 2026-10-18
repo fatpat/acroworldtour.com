@@ -150,6 +150,12 @@ func (r *Router) Scorer(pattern string, compFrom func(*http.Request) string, h h
 	r.add(pattern, GuardScorer, cache.NoStore(r.deps.Auth.RequireScorer(compFrom)(r.deps.Auth.CSRF(h))))
 }
 
+// ScorerMax is Scorer with the request body capped at max bytes before any
+// parsing, CSRF check included.
+func (r *Router) ScorerMax(pattern string, max int64, compFrom func(*http.Request) string, h http.Handler) {
+	r.add(pattern, GuardScorer, cache.NoStore(limitBody(max, r.deps.Auth.RequireScorer(compFrom)(r.deps.Auth.CSRF(h)))))
+}
+
 func isAdminPath(p string) bool { return p == "/admin" || strings.HasPrefix(p, "/admin/") }
 
 func isLoginPath(p string) bool { return p == "/admin/login" }

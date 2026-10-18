@@ -173,13 +173,15 @@ func TestValidateMark(t *testing.T) {
 			t.Errorf("blank %q: %v %v", in, v, err)
 		}
 	}
-	for _, in := range []string{"75", "-1", "10.01"} {
+	for _, in := range []string{"75", "-1", "-0", "-0.0", "10.01"} {
 		if _, err := ValidateMark(in); err == nil || err.Error() != "mark must be between 0 and 10" {
 			t.Errorf("%q: %v", in, err)
 		}
 	}
-	for _, in := range []string{"abc", "NaN", "Inf"} {
-		if _, err := ValidateMark(in); err == nil {
+	// Only digits with at most one "." or "," separator: no sign, exponent,
+	// hex, digit separators or second separator.
+	for _, in := range []string{"abc", "NaN", "Inf", "+5", "1e1", "0x1p3", "1_0", "7.5.1", "7,5,1", "7.", ".5", "7 5", "- 1", "-abc"} {
+		if _, err := ValidateMark(in); err == nil || errors.Is(err, ErrMarkRange) {
 			t.Errorf("%q accepted", in)
 		}
 	}
