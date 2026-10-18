@@ -1,0 +1,109 @@
+package public
+
+import (
+	"awt/internal/web/layout"
+	"awt/web/static"
+	"strconv"
+)
+
+templ SimulatorPage(v *simView) {
+	@layout.Public(layout.Meta{
+		Title:       "Scoring simulator",
+		Description: "Enter up to five runs of tricks and marks and see the scores the official Acro World Tour engine would give.",
+		Heading:     "Scoring simulator",
+	}, "simulator") {
+		<p>
+			Type the acronym of each trick (separated by spaces or commas) and the judges' marks for up to five runs.
+			Scores follow the { strconv.Itoa(v.Year) } rules, with a single senior judge.
+		</p>
+		<form method="post" action="/simulator" hx-post="/simulator" hx-target="#results" hx-swap="outerHTML">
+			<datalist id="trick-list"></datalist>
+			for _, run := range v.Runs {
+				<fieldset class="card sim-run">
+					<legend>Run { strconv.Itoa(run.N) }</legend>
+					<div class="field">
+						<label for={ "tricks" + strconv.Itoa(run.N) }>Tricks</label>
+						<input id={ "tricks" + strconv.Itoa(run.N) } name={ "tricks" + strconv.Itoa(run.N) } type="text" value={ run.Tricks } autocomplete="off" data-trick-input="" list="trick-list"/>
+					</div>
+					<div class="field">
+						<label for={ "technical" + strconv.Itoa(run.N) }>Technical</label>
+						<input id={ "technical" + strconv.Itoa(run.N) } name={ "technical" + strconv.Itoa(run.N) } type="text" inputmode="decimal" value={ run.Technical }/>
+					</div>
+					<div class="field">
+						<label for={ "choreography" + strconv.Itoa(run.N) }>Choreography</label>
+						<input id={ "choreography" + strconv.Itoa(run.N) } name={ "choreography" + strconv.Itoa(run.N) } type="text" inputmode="decimal" value={ run.Choreography }/>
+					</div>
+					<div class="field">
+						<label for={ "landing" + strconv.Itoa(run.N) }>Landing</label>
+						<input id={ "landing" + strconv.Itoa(run.N) } name={ "landing" + strconv.Itoa(run.N) } type="text" inputmode="decimal" value={ run.Landing }/>
+					</div>
+				</fieldset>
+			}
+			<div class="field">
+				<label for="reset">Reset repetitions every k runs (empty for never)</label>
+				<input id="reset" name="reset" type="text" inputmode="numeric" value={ v.Reset }/>
+			</div>
+			<button class="btn" type="submit">Compute scores</button>
+		</form>
+		@SimulatorResults(v)
+		<script src={ static.URL("js/trick-input.js") } defer></script>
+	}
+}
+
+templ SimulatorResults(v *simView) {
+	<section id="results" aria-live="polite">
+		if v.Message != "" {
+			<p class="alert" role="alert">{ v.Message }</p>
+		}
+		for _, run := range v.Runs {
+			if len(run.Errors) > 0 {
+				<div class="alert" role="alert">
+					<strong>Run { strconv.Itoa(run.N) }</strong>
+					<ul>
+						for _, e := range run.Errors {
+							<li>{ e }</li>
+						}
+					</ul>
+				</div>
+			}
+		}
+		if v.Scored {
+			<h2>Results</h2>
+			<div class="table-wrap">
+				<table class="table">
+					<thead>
+						<tr><th>Run</th><th>Score</th><th>Technical</th><th>Choreography</th><th>Landing</th><th>Bonus</th><th>Malus</th></tr>
+					</thead>
+					<tbody>
+						for _, run := range v.Runs {
+							if run.Result != nil {
+								<tr>
+									<td>{ strconv.Itoa(run.N) }</td>
+									<td>{ num(run.Result.Score) }</td>
+									<td>{ num(run.Result.Technical) }</td>
+									<td>{ num(run.Result.Choreography) }</td>
+									<td>{ num(run.Result.Landing) }</td>
+									<td>{ num(run.Result.Bonus) }</td>
+									<td>{ num(run.Result.Malus) }</td>
+								</tr>
+							}
+						}
+					</tbody>
+					<tfoot>
+						<tr><th>Total</th><th colspan="6">{ num(v.Total) }</th></tr>
+					</tfoot>
+				</table>
+			</div>
+			for _, run := range v.Runs {
+				if run.Result != nil && len(run.Result.Notes) > 0 {
+					<h3>Run { strconv.Itoa(run.N) } notes</h3>
+					<ul>
+						for _, n := range run.Result.Notes {
+							<li>{ n }</li>
+						}
+					</ul>
+				}
+			}
+		}
+	</section>
+}
