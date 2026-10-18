@@ -1,0 +1,15 @@
+.git
+legacy
+mongo.backup.*
+.superpowers
+specifications
+docs
+e2e
+testdata
+Dockerfile
+data
+*.db
+*.db-shm
+*.db-wal
+.env
+.env.*

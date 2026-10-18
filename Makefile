@@ -1,4 +1,4 @@
-.PHONY: dev generate test golden e2e lint check migrate docker
+.PHONY: dev generate test golden golden-regen e2e lint check migrate docker backup-restore-test
 
 GO ?= go
 
@@ -13,7 +13,15 @@ test:
 	$(GO) test -race ./...
 
 golden:
-	@if [ -d testdata/golden ]; then $(GO) test ./internal/scoring/... -run Golden -count=1; else echo "no golden corpus yet"; fi
+	$(GO) test ./internal/scoring ./internal/ranking -run Golden -count=1
+
+# Regenerate testdata/golden from a production export with the legacy engine
+# (see tools/golden/README.md). Runs from a temporary directory with -I so
+# that nothing in the repository or the export is imported as code.
+golden-regen:
+	@test -n "$(LEGACY_VENV)" -a -n "$(BACKUP)" || { echo "usage: make golden-regen LEGACY_VENV=<venv dir> BACKUP=<export.tar.gz>"; exit 1; }
+	cd "$$(mktemp -d)" && "$(abspath $(LEGACY_VENV))/bin/python" -I "$(CURDIR)/tools/golden/generate.py" \
+		--backup "$(abspath $(BACKUP))" --legacy "$(CURDIR)/legacy/legacy" --out "$(CURDIR)/testdata/golden"
 
 e2e:
 	@if [ -d e2e ]; then $(GO) test ./e2e/...; else echo "no e2e suite yet"; fi
@@ -33,4 +41,9 @@ migrate:
 	$(GO) run ./cmd/awt migrate
 
 docker:
-	@if [ -f Dockerfile ]; then docker build -t awt:dev .; else echo "no Dockerfile yet"; fi
+	docker build -t awt:dev .
+
+# Restore test: MinIO + litestream replicate, write data, wipe the volume,
+# restart, check the data came back. See scripts/backup-restore-test.sh.
+backup-restore-test: docker
+	./scripts/backup-restore-test.sh

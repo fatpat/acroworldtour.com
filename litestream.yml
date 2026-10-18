@@ -1,0 +1,15 @@
+# Litestream 0.3.x configuration. Values come from the AWT_* environment
+# (litestream expands ${VAR}); deploy/entrypoint.sh exports the defaults.
+dbs:
+  - path: ${AWT_DB_PATH}
+    replicas:
+      - type: s3
+        bucket: ${AWT_S3_BUCKET}
+        path: litestream/${AWT_ENV}
+        endpoint: ${AWT_S3_ENDPOINT}
+        region: ${LITESTREAM_S3_REGION}
+        access-key-id: ${AWT_S3_ACCESS_KEY}
+        secret-access-key: ${AWT_S3_SECRET_KEY}
+        force-path-style: true
+        retention: 720h
+        snapshot-interval: 6h

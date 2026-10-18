@@ -1,0 +1,95 @@
+# Prod and training on one VPS. Interpolated values (hosts, image tags) come
+# from .env; per-app secrets from .env.prod / .env.training (all git-ignored,
+# see the *.example files).
+name: awt
+
+x-awt: &awt
+  restart: unless-stopped
+  stop_grace_period: 30s
+  networks: [edge]
+  healthcheck:
+    test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+    interval: 10s
+    timeout: 3s
+    start_period: 60s
+    retries: 3
+
+services:
+  caddy:
+    image: caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      AWT_PROD_HOST: ${AWT_PROD_HOST:?set AWT_PROD_HOST in .env}
+      AWT_TRAINING_HOST: ${AWT_TRAINING_HOST:?set AWT_TRAINING_HOST in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [edge]
+    depends_on:
+      awt-prod: {condition: service_started}
+      awt-training: {condition: service_started}
+
+  awt-prod:
+    <<: *awt
+    image: ${AWT_IMAGE:-ghcr.io/OWNER/awt}:${AWT_PROD_TAG:-latest}
+    env_file:
+      - path: .env.prod
+        required: false  # missing file => awt refuses to start (no session secret)
+    volumes:
+      - prod_data:/data
+
+  awt-training:
+    <<: *awt
+    image: ${AWT_IMAGE:-ghcr.io/OWNER/awt}:${AWT_TRAINING_TAG:-latest}
+    env_file:
+      - path: .env.training
+        required: false
+    volumes:
+      - training_data:/data
+
+  # Local restore test only: `docker compose --profile test ...` (see
+  # scripts/backup-restore-test.sh). Bucket = a directory under /data.
+  # MinIO stopped publishing images on Docker Hub; chainguard's rebuild is
+  # pinned by digest.
+  minio:
+    profiles: [test]
+    image: chainguard/minio@sha256:709099319add48dfb44aa596a7070d3ddd8dd04d7ae881765719aec29df9e510
+    entrypoint: ["sh", "-c", "mkdir -p /data/awt-test && exec minio server /data"]
+    environment:
+      MINIO_ROOT_USER: awt-test
+      MINIO_ROOT_PASSWORD: awt-test-secret
+    networks: [edge]
+
+  awt-test:
+    profiles: [test]
+    image: ${AWT_TEST_IMAGE:-awt:dev}
+    environment:
+      AWT_ENV: training
+      AWT_SESSION_SECRET: test-secret
+      AWT_S3_ENDPOINT: http://minio:9000
+      AWT_S3_BUCKET: awt-test
+      AWT_S3_ACCESS_KEY: awt-test
+      AWT_S3_SECRET_KEY: awt-test-secret
+    volumes:
+      - test_data:/data
+    networks: [edge]
+    depends_on: [minio]
+
+networks:
+  edge:
+    ipam:
+      config:
+        # Fixed subnet so AWT_TRUSTED_PROXIES can name Caddy's network.
+        - subnet: 172.30.0.0/24
+
+volumes:
+  caddy_data:
+  caddy_config:
+  prod_data:
+  training_data:
+  test_data:
