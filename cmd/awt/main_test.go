@@ -2,9 +2,14 @@ package main
 
 import (
 	"context"
+	"net"
+	"net/http"
 	"path/filepath"
+	"slices"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"awt/internal/auth"
 	"awt/internal/blob"
@@ -71,5 +76,65 @@ func TestServeModulesWiring(t *testing.T) {
 	}
 	if admin < 20 {
 		t.Errorf("only %d admin routes: admin module missing?", admin)
+	}
+}
+
+type recPurger struct {
+	mu   sync.Mutex
+	urls []string
+}
+
+func (p *recPurger) Purge(_ context.Context, urls []string) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.urls = append(p.urls, urls...)
+	return nil
+}
+
+// TestPurgerOutlivesShutdown: a request still running when the stop signal
+// arrives completes during the graceful shutdown, and the event it
+// publishes is still purged (the purger stops after Shutdown returns).
+func TestPurgerOutlivesShutdown(t *testing.T) {
+	db, err := store.Open(filepath.Join(t.TempDir(), "awt.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	if err := store.Migrate(context.Background(), db); err != nil {
+		t.Fatal(err)
+	}
+	bus := service.NewBus()
+	fp := &recPurger{}
+	started, release := make(chan struct{}), make(chan struct{})
+	mux := http.NewServeMux()
+	mux.HandleFunc("/slow", func(w http.ResponseWriter, _ *http.Request) {
+		close(started)
+		<-release
+		bus.Publish(service.Event{Topic: "season:s1", Kind: service.KindCompetition})
+	})
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv := &http.Server{Handler: mux}
+	ctx, signal := context.WithCancel(context.Background())
+	errc := make(chan error, 1)
+	go func() {
+		errc <- runServer(ctx, srv, ln, func(pctx context.Context) <-chan struct{} {
+			return web.StartPurger(pctx, bus, fp, db, "https://x.test")
+		})
+	}()
+	go func() { _, _ = http.Get("http://" + ln.Addr().String() + "/slow") }()
+	<-started
+	signal()
+	time.Sleep(100 * time.Millisecond) // the shutdown has begun
+	close(release)
+	if err := <-errc; err != nil {
+		t.Fatalf("runServer: %v", err)
+	}
+	fp.mu.Lock()
+	defer fp.mu.Unlock()
+	if !slices.Contains(fp.urls, "https://x.test/seasons/s1") {
+		t.Errorf("event of the in-flight request not purged: %v", fp.urls)
 	}
 }

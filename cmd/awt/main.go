@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -101,20 +102,35 @@ func serve() error {
 		modules()...)
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	purged := web.StartPurger(ctx, bus, purger, db, cfg.BaseURL)
-	// Deferred after db.Close: the purger's final flush reads the database,
-	// so it must finish first.
-	defer func() { stop(); <-purged }()
+	ln, err := net.Listen("tcp", cfg.Addr)
+	if err != nil {
+		return fmt.Errorf("listen: %w", err)
+	}
+	slog.Info("listening", "addr", cfg.Addr, "env", cfg.Env)
+	// Returns before the deferred db.Close: the purger's final flush reads
+	// the database.
+	return runServer(ctx, srv, ln, func(pctx context.Context) <-chan struct{} {
+		return web.StartPurger(pctx, bus, purger, db, cfg.BaseURL)
+	})
+}
+
+// runServer serves on ln until ctx is done (the stop signal), then shuts
+// the server down gracefully: in-flight requests complete. The CDN purger
+// runs on its own context and is stopped only after Shutdown returns, so
+// the events those requests publish are still purged; runServer returns
+// once its final flush is done.
+func runServer(ctx context.Context, srv *http.Server, ln net.Listener, startPurger func(context.Context) <-chan struct{}) error {
+	pctx, stopPurger := context.WithCancel(context.WithoutCancel(ctx))
+	purged := startPurger(pctx)
+	// LIFO: runs after Shutdown (below) has returned
+	defer func() { stopPurger(); <-purged }()
 
 	errc := make(chan error, 1)
-	go func() {
-		slog.Info("listening", "addr", cfg.Addr, "env", cfg.Env)
-		errc <- srv.ListenAndServe()
-	}()
+	go func() { errc <- srv.Serve(ln) }()
 	select {
 	case err := <-errc:
 		if !errors.Is(err, http.ErrServerClosed) {
-			return fmt.Errorf("listen: %w", err)
+			return fmt.Errorf("serve: %w", err)
 		}
 		return nil
 	case <-ctx.Done():
