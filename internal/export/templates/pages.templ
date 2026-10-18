@@ -1,0 +1,135 @@
+package templates
+
+import "strconv"
+
+templ ResultsPage(v ResultsView) {
+	@Layout(v.Page) {
+		for i, t := range v.Tables {
+			if i > 0 {
+				<div class="pagebreak"></div>
+			}
+			<h3>{ t.Title }</h3>
+			<table class="main">
+				<tr>
+					<th class="borderBottom" style="width:8%">Rank</th>
+					<th class="borderBottom" style="width:8%">Country</th>
+					<th class="borderBottom">@ParticipantLabel(v.Solo)</th>
+					<th class="center borderBottom" style="width:10%">Run</th>
+					<th class="center borderBottom" style="width:10%">Score</th>
+					<th class="center borderBottom" style="width:15%">Final Score</th>
+				</tr>
+				for _, r := range t.Rows {
+					<tr class={ parity(r.Rank) }>
+						<th class="borderBottom">{ strconv.Itoa(r.Rank) }</th>
+						<td class="borderBottom">@Countries(r.P)</td>
+						<td class="borderBottom">@Name(r.P)</td>
+						<td class="center borderBottom">
+							for _, c := range r.Runs {
+								<div>{ c.Label }</div>
+							}
+						</td>
+						<td class="center borderBottom">
+							for _, c := range r.Runs {
+								<div>{ c.Score }</div>
+							}
+						</td>
+						<th class="center borderBottom">{ r.Total }</th>
+					</tr>
+				}
+			</table>
+		}
+	}
+}
+
+templ RunResultsPage(v RunResultsView) {
+	@Layout(v.Page) {
+		for i, t := range v.Tables {
+			if i > 0 {
+				<div class="pagebreak"></div>
+			}
+			<h3>{ t.Title }</h3>
+			<table class="main">
+				<tr class="borderBottom">
+					<th>Rank</th>
+					<th>Country</th>
+					<th>@ParticipantLabel(v.Solo)</th>
+					<th>Warnings</th>
+					<th>Judges Marks</th>
+					<th>Technicity</th>
+					<th>Bonus</th>
+					<th>Score</th>
+				</tr>
+				for _, r := range t.Rows {
+					<tr class={ "borderBottom", parity(r.Rank) }>
+						<th>{ strconv.Itoa(r.Rank) }</th>
+						<td>@Countries(r.P)</td>
+						<td>@Name(r.P)</td>
+						<td>
+							if len(r.Warnings) > 0 {
+								<ul class="nobullet">
+									for _, w := range r.Warnings {
+										<li>{ w }</li>
+									}
+								</ul>
+							}
+							if r.Malus != "" {
+								<p>Malus: { r.Malus }</p>
+							}
+						</td>
+						<td>
+							<table class="secondary">
+								<tr><td>Technical</td><td>{ r.Technical }</td></tr>
+								<tr><td>Choreography</td><td>{ r.Choreo }</td></tr>
+								<tr><td>Landing</td><td>{ r.Landing }</td></tr>
+								if !v.Solo {
+									<tr><td>Synchro</td><td>{ r.Synchro }</td></tr>
+								}
+							</table>
+						</td>
+						<td>{ r.Technicity }</td>
+						<td>{ r.Bonus }</td>
+						<th>{ r.Score }</th>
+					</tr>
+				}
+			</table>
+		}
+	}
+}
+
+templ StartingOrderPage(v StartingOrderView) {
+	@Layout(v.Page) {
+		for i, t := range v.Tables {
+			if i > 0 {
+				<div class="pagebreak"></div>
+			}
+			<h3>{ t.Title }</h3>
+			<table class="main">
+				<tr class="borderBottom">
+					<th>Starting position</th>
+					<th>Country</th>
+					<th>@ParticipantLabel(v.Solo)</th>
+				</tr>
+				for _, r := range t.Rows {
+					<tr class={ "borderBottom", parity(r.Position) }>
+						<th>{ strconv.Itoa(r.Position) }</th>
+						<td>@Countries(r.P)</td>
+						<td>
+							if len(r.P.Members) == 0 {
+								{ r.P.Name }
+							} else {
+								@Name(r.P)
+							}
+						</td>
+					</tr>
+				}
+			</table>
+		}
+	}
+}
+
+func parity(n int) string {
+	if n%2 == 1 {
+		return "odd"
+	}
+	return "even"
+}

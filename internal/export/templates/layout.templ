@@ -1,0 +1,76 @@
+package templates
+
+const printCSS = `
+body{font-family:Exo,"Helvetica Neue",Arial,sans-serif;margin:20px;color:#222}
+h1{font-size:24px;margin:0}h2{font-size:18px;margin:4px 0 16px;font-weight:normal}
+table.main{width:100%;border-collapse:collapse;margin-bottom:20px}
+table.main th,table.main td{padding:4px 8px;text-align:left;vertical-align:top}
+tr.borderBottom th,tr.borderBottom td,th.borderBottom,td.borderBottom{border-bottom:1px solid #999}
+tr.odd{background:#f2f2f2}.center{text-align:center!important}
+table.secondary td{padding:0 6px 0 0;border:0}
+ul{margin:0;padding-left:18px}ul.nobullet{list-style:none;padding:0}
+.updated{text-align:right;margin-right:20px}
+.pagebreak{page-break-after:always}
+@media print{a{color:inherit;text-decoration:none}}
+`
+
+templ Layout(p Page) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="robots" content="noindex, nofollow"/>
+			<title>{ p.CompName } - { p.Heading }</title>
+			<style>
+				@font-face{font-family:Exo;font-weight:400;src:url(/static/fonts/exo-v20-latin-regular.woff2) format("woff2")}
+				@font-face{font-family:Exo;font-weight:700;src:url(/static/fonts/exo-v20-latin-700.woff2) format("woff2")}
+			</style>
+			@templ.Raw("<style>" + printCSS + "</style>")
+		</head>
+		<body>
+			<h1>{ p.CompName }</h1>
+			<h2>{ p.Heading }</h2>
+			if p.Updated != "" {
+				<p class="updated">Last update: { p.Updated } UTC</p>
+			}
+			{ children... }
+		</body>
+	</html>
+}
+
+templ ParticipantLabel(solo bool) {
+	if solo {
+		Pilot
+	} else {
+		Team
+	}
+}
+
+templ Countries(p Participant) {
+	if len(p.Members) == 0 {
+		{ p.Country }
+	} else {
+		<ul class="nobullet">
+			for _, m := range p.Members {
+				<li>{ m.Country }</li>
+			}
+		</ul>
+	}
+}
+
+templ Name(p Participant) {
+	if len(p.Members) == 0 {
+		if p.Href != "" {
+			<a href={ templ.SafeURL(p.Href) }>{ p.Name }</a>
+		} else {
+			{ p.Name }
+		}
+	} else {
+		{ p.Name }
+		<ul>
+			for _, m := range p.Members {
+				<li>{ m.Name }</li>
+			}
+		</ul>
+	}
+}
