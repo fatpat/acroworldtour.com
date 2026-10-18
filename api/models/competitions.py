@@ -435,6 +435,10 @@ class Competition(CompetitionNew):
         if self.state != CompetitionState.open:
             raise HTTPException(400, "Can't close a comp which is not in state 'open'")
 
+        not_closed = [str(i) for i, run in enumerate(self.runs) if run.state != RunState.closed]
+        if len(not_closed) > 0:
+            raise HTTPException(400, f"Can't close a comp while some runs are not closed (run(s) #{', #'.join(not_closed)})")
+
         self.state = CompetitionState.closed
         await self.save()
 
@@ -577,9 +581,36 @@ class Competition(CompetitionNew):
         if run.state != RunState.open:
             raise HTTPException(400, "Can't close a run which is not in state 'open'")
 
+        if self.type == CompetitionType.solo:
+            participants = run.pilots
+            flights = {flight.pilot: flight for flight in run.flights}
+        else:
+            participants = run.teams
+            flights = {flight.team: flight for flight in run.flights}
+
+        missing = [p for p in participants if p not in flights]
+        if len(missing) > 0:
+            raise HTTPException(400, f"Can't close a run while some flights are not saved ({', '.join(await self.participant_names(missing))})")
+
+        unpublished = [p for p in participants if not flights[p].published]
+        if len(unpublished) > 0:
+            raise HTTPException(400, f"Can't close a run while some flights are not published ({', '.join(await self.participant_names(unpublished))})")
+
         run.state = RunState.closed
         self.runs[i] = run
         await self.save()
+
+    async def participant_names(self, ids) -> List[str]:
+        names = []
+        for id in ids:
+            try:
+                if self.type == CompetitionType.solo:
+                    names.append((await Pilot.get(id)).name)
+                else:
+                    names.append((await Team.get(id, deleted=True)).name)
+            except HTTPException:
+                names.append(str(id))
+        return names
 
     async def run_reopen(self, i: int):
         run = await self.run_get(i)
