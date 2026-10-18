@@ -11,7 +11,7 @@ from fastapi import HTTPException
 import re
 
 from models.competitions import Competition, CompetitionPublicExport, CompetitionPublicExportWithResults, CompetitionState, CompetitionType, CompetitionExport
-from models.pilots import Pilot
+from models.pilots import Pilot, GenderEnum
 from models.teams import Team, TeamExport
 from models.results import CompetitionPilotResultsExport
 from models.cache import Cache
@@ -233,6 +233,14 @@ class Season(BaseModel):
             return f"/files/{self.image}"
         return None
 
+    @staticmethod
+    def women_results(overall: SeasonResults) -> Optional[SeasonResults]:
+        # a dedicated women ranking only exists if at least 3 women are in the (solo) overall ranking
+        women = [r for r in overall.results if r.pilot is not None and r.pilot.gender == GenderEnum.woman]
+        if len(women) < 3:
+            return None
+        return SeasonResults(type="women", results=women)
+
     async def export_public(self, cache:Cache=None) -> SeasonPublicExport:
         competitions = []
         results = {}
@@ -313,6 +321,10 @@ class Season(BaseModel):
         results = []
         if len(overall.results) > 0:
             results.append(overall)
+
+        women = Season.women_results(overall)
+        if women is not None:
+            results.append(women)
 
         return SeasonPublicExport(
             _id = str(self.id),
