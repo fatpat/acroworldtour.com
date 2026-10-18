@@ -204,6 +204,43 @@ func TestWWWUndatedNewsTakeTheirFirstCommitDate(t *testing.T) {
 	}
 }
 
+// Not parallel: it changes the working directory.
+func TestWWWUndatedNewsDateWorksWithARelativeFrom(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not installed")
+	}
+	repo := t.TempDir()
+	copyTree(t, wwwDir, filepath.Join(repo, "www"))
+	if err := os.Remove(filepath.Join(repo, "www", "index.html")); err != nil {
+		t.Fatal(err)
+	}
+	for _, args := range [][]string{{"init", "-q"}, {"add", "."}, {"commit", "-q", "-m", "add"}} {
+		cmd := exec.Command("git", append([]string{"-C", repo, "-c", "user.name=T", "-c", "user.email=t@example.org", "-c", "commit.gpgsign=false"}, args...)...)
+		cmd.Env = append(os.Environ(), "GIT_AUTHOR_DATE=2021-02-03T04:05:06+00:00", "GIT_COMMITTER_DATE=2021-02-03T04:05:06+00:00")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	// Dir -> db setup first: setup() uses absolute temp paths.
+	ctx := context.Background()
+	db, blobs := setup(t)
+	old, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(repo); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(old) })
+	if _, err := importer.WWW(ctx, db, blobs, "www"); err != nil {
+		t.Fatal(err)
+	}
+	n, err := gen.New(db.Read).GetNewsBySlug(ctx, "sample-news")
+	if err != nil || n.PublishedAt.String != "2021-02-03T04:05:06Z" {
+		t.Errorf("published_at = %q, err %v; want the commit date with a relative --from", n.PublishedAt.String, err)
+	}
+}
+
 func TestWWWUndatedNewsWithoutHistoryStayDrafts(t *testing.T) {
 	dir := t.TempDir() // outside any git repository
 	copyTree(t, wwwDir, dir)

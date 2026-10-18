@@ -514,7 +514,7 @@ func (w *wwwImport) news(ctx context.Context) error {
 			published = w.dates[slug]
 		}
 		if published == "" {
-			published = firstCommitDate(filepath.Join(w.dir, "news", name))
+			published = firstCommitDate(ctx, filepath.Join(w.dir, "news", name))
 		}
 		if published == "" {
 			w.rep.warnf("news %s: no publication date found (page, teasers, git history), imported as a draft (set the date in the admin to publish it)", slug)
@@ -800,13 +800,23 @@ func (w *wwwImport) redirects(ctx context.Context) error {
 // firstCommitDate is the author date of the commit that added the file in the
 // git repository containing it: the best available publication date of an
 // undated legacy article. It returns "" when git or the history is missing.
-func firstCommitDate(file string) string {
-	dir := filepath.Dir(file)
-	top, err := exec.Command("git", "-C", dir, "rev-parse", "--show-toplevel").Output()
+func firstCommitDate(ctx context.Context, file string) string {
+	// Absolute path: git resolves a pathspec against the repository root, not
+	// against the current directory, so a relative --from would not match.
+	abs, err := filepath.Abs(file)
 	if err != nil {
 		return ""
 	}
-	out, err := exec.Command("git", "-C", strings.TrimSpace(string(top)), "log", "--diff-filter=A", "--follow", "--format=%aI", "--", file).Output()
+	run := func(args ...string) ([]byte, error) {
+		c, cancel := context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+		return exec.CommandContext(c, "git", args...).Output()
+	}
+	top, err := run("-C", filepath.Dir(abs), "rev-parse", "--show-toplevel")
+	if err != nil {
+		return ""
+	}
+	out, err := run("-C", strings.TrimSpace(string(top)), "log", "--diff-filter=A", "--follow", "--format=%aI", "--", abs)
 	if err != nil {
 		return ""
 	}
