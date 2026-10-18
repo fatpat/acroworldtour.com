@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"awt/internal/cache"
+	"awt/internal/domain"
 	"awt/internal/service"
 	"awt/internal/store"
 	"awt/internal/store/gen"
@@ -152,7 +153,7 @@ func PurgeURLs(ctx context.Context, q *gen.Queries, baseURL string, e service.Ev
 	var paths []string
 	switch kind {
 	case "season":
-		paths = []string{"/results", "/seasons/" + code, "/api/v1/seasons/" + code}
+		paths = []string{"/results", "/seasons/" + code, "/api/v1/seasons", "/api/v1/seasons/" + code}
 	case "competition":
 		c, err := q.GetCompetitionByCode(ctx, code)
 		if errors.Is(err, sql.ErrNoRows) {
@@ -169,14 +170,25 @@ func PurgeURLs(ctx context.Context, q *gen.Queries, baseURL string, e service.Ev
 		if err != nil {
 			return nil, err
 		}
-		paths = []string{"/results", "/competitions",
+		pilots, err := q.PurgeCompetitionPilots(ctx, c.ID)
+		if err != nil {
+			return nil, err
+		}
+		paths = []string{"/results", "/competitions", "/api/v1/competitions", "/api/v1/seasons",
 			"/competitions/" + code, "/competitions/" + code + "/details", "/api/v1/competitions/" + code}
 		for i := range runs {
-			n := strconv.Itoa(i + 1)
-			paths = append(paths, "/competitions/"+code+"/runs/"+n, "/api/v1/competitions/"+code+"/runs/"+n)
+			// public run pages are 1-based, API runs 0-based (spec 04)
+			paths = append(paths, "/competitions/"+code+"/runs/"+strconv.Itoa(i+1),
+				"/api/v1/competitions/"+code+"/runs/"+strconv.Itoa(i))
 		}
 		for _, s := range seasons {
 			paths = append(paths, "/seasons/"+s.SeasonCode, "/api/v1/seasons/"+s.SeasonCode)
+		}
+		// pilot profiles list their competition and season results; the
+		// slug URL is the canonical page, the bare id redirects to it
+		for _, p := range pilots {
+			id := strconv.FormatInt(p.Civlid, 10)
+			paths = append(paths, "/pilots/"+id, "/pilots/"+id+"/"+pilotSlug(p.Name), "/api/v1/pilots/"+id)
 		}
 	default:
 		return nil, nil
@@ -186,4 +198,12 @@ func PurgeURLs(ctx context.Context, q *gen.Queries, baseURL string, e service.Ev
 		urls[i] = base + p
 	}
 	return urls, nil
+}
+
+// pilotSlug is the slug of the canonical pilot page URL (public.pilotHref).
+func pilotSlug(name string) string {
+	if s := domain.Slug(name); s != "" {
+		return s
+	}
+	return "-"
 }

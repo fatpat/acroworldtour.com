@@ -212,6 +212,15 @@ func TestPurgeSubscriber(t *testing.T) {
 	if err := q.AddCompetitionSeason(ctx, gen.AddCompetitionSeasonParams{CompetitionID: "c1", Position: 0, SeasonCode: "aw-2026"}); err != nil {
 		t.Fatal(err)
 	}
+	// a participant: their profile and API results show the competition
+	for _, stmt := range []string{
+		`INSERT INTO pilots (civlid, name, country) VALUES (42, 'Jane Doe', 'fra')`,
+		`INSERT INTO competition_pilots (competition_id, position, civlid) VALUES ('c1', 0, 42)`,
+	} {
+		if _, err := deps.DB.Write.ExecContext(ctx, stmt); err != nil {
+			t.Fatal(err)
+		}
+	}
 
 	bus := service.NewBus()
 	fp := &fakePurger{}
@@ -224,16 +233,23 @@ func TestPurgeSubscriber(t *testing.T) {
 	bus.Publish(service.Event{Topic: "competition:ghost", Kind: service.KindRun})
 	bus.Publish(service.Event{Topic: "season:aw-2026", Kind: service.KindCompetition})
 
+	// API run URLs are 0-based (/api/v1/competitions/{code}/runs/{i}),
+	// public run pages 1-based.
 	want := []string{
+		"https://results.test/api/v1/competitions",
 		"https://results.test/api/v1/competitions/live-cup",
+		"https://results.test/api/v1/competitions/live-cup/runs/0",
 		"https://results.test/api/v1/competitions/live-cup/runs/1",
-		"https://results.test/api/v1/competitions/live-cup/runs/2",
+		"https://results.test/api/v1/pilots/42",
+		"https://results.test/api/v1/seasons",
 		"https://results.test/api/v1/seasons/aw-2026",
 		"https://results.test/competitions",
 		"https://results.test/competitions/live-cup",
 		"https://results.test/competitions/live-cup/details",
 		"https://results.test/competitions/live-cup/runs/1",
 		"https://results.test/competitions/live-cup/runs/2",
+		"https://results.test/pilots/42",
+		"https://results.test/pilots/42/jane-doe",
 		"https://results.test/results",
 		"https://results.test/seasons/aw-2026",
 	}

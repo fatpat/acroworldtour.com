@@ -28,3 +28,43 @@ func (q *Queries) LiveLatestFlight(ctx context.Context, arg LiveLatestFlightPara
 	err := row.Scan(&id)
 	return id, err
 }
+
+const purgeCompetitionPilots = `-- name: PurgeCompetitionPilots :many
+SELECT p.civlid, p.name FROM pilots p
+WHERE p.civlid IN (
+    SELECT cp.civlid FROM competition_pilots cp WHERE cp.competition_id = ?1
+    UNION SELECT tp.civlid FROM competition_teams ct JOIN team_pilots tp ON tp.team_id = ct.team_id
+        WHERE ct.competition_id = ?1
+    UNION SELECT f.civlid FROM flights f WHERE f.competition_id = ?1 AND f.civlid IS NOT NULL)
+ORDER BY p.civlid
+`
+
+type PurgeCompetitionPilotsRow struct {
+	Civlid int64  `json:"civlid"`
+	Name   string `json:"name"`
+}
+
+// Pilots whose profile and API results show a competition: its solo
+// participants, its teams' members and anyone with a flight in it.
+func (q *Queries) PurgeCompetitionPilots(ctx context.Context, competitionID string) ([]PurgeCompetitionPilotsRow, error) {
+	rows, err := q.db.QueryContext(ctx, purgeCompetitionPilots, competitionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PurgeCompetitionPilotsRow
+	for rows.Next() {
+		var i PurgeCompetitionPilotsRow
+		if err := rows.Scan(&i.Civlid, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
