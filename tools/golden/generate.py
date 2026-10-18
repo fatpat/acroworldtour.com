@@ -21,6 +21,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 import sys
 import tarfile
 import tempfile
@@ -152,6 +153,108 @@ class FakeTrickCollection(FakeCollection):
         return doc
 
 
+# --------------------------------------------------------------------------
+# Pseudonymisation
+# --------------------------------------------------------------------------
+
+# Pilots get 1000001, 1000002, ... Teams and judges keep ObjectId-shaped
+# pseudonyms while legacy runs (its models validate ObjectIds); the output
+# writer turns them into "t0001" / "j0001".
+PILOT_BASE = 1000000
+_HEX_PSEUDONYM = re.compile(r"0{18}([ab])(\d{5})")
+
+
+def _hex_pseudonym(kind, n):
+    return "0" * 18 + kind + f"{n:05d}"
+
+
+def _readable_ids(text):
+    return _HEX_PSEUDONYM.sub(lambda m: ("j" if m.group(1) == "a" else "t") + f"{int(m.group(2)):04d}", text)
+
+
+def pseudonymise(data):
+    """Replace CIVL ids, team ids and judge ids everywhere in the export.
+
+    Ids are numbered in first-appearance order (competitions by code, then
+    their flights, participants and judges, then the rest of the export).
+    The mapping stays in memory. Returns the new data and the real ids,
+    for the leak guard.
+    """
+    pilots, teams, judges = {}, {}, {}
+
+    def pilot(i):
+        if i not in pilots:
+            pilots[i] = PILOT_BASE + len(pilots) + 1
+        return pilots[i]
+
+    def team(i):
+        if i not in teams:
+            teams[i] = _hex_pseudonym("b", len(teams) + 1)
+        return teams[i]
+
+    def judge(i):
+        if i not in judges:
+            judges[i] = _hex_pseudonym("a", len(judges) + 1)
+        return judges[i]
+
+    for c in sorted(data["competitions"], key=lambda c: c["code"]):
+        solo = c["type"] == "solo"
+        for run in c["runs"]:
+            for f in run["flights"]:
+                if solo:
+                    pilot(f["pilot"])
+                elif f.get("team"):
+                    team(f["team"])
+                for m in f["marks"]:
+                    judge(m["judge"])
+                for t in f["tricks"]:
+                    for i in t.get("technical_marks") or {}:
+                        judge(i)
+        for run in [c] + c["runs"]:
+            for i in run.get("pilots") or []:
+                pilot(i)
+            for i in run.get("teams") or []:
+                team(i)
+            for i in run.get("judges") or []:
+                judge(i)
+    for t in data["teams"]:
+        team(t["_id"])
+        for i in t["pilots"]:
+            pilot(i)
+    for p in data["pilots"]:
+        pilot(p["_id"])
+    for j in data["judges"]:
+        judge(j["_id"])
+
+    out = json.loads(json.dumps(data))
+    for p in out["pilots"]:
+        p["_id"] = p["civlid"] = pilots[p["_id"]]
+    for t in out["teams"]:
+        t["_id"] = teams[t["_id"]]
+        t["pilots"] = [pilots[i] for i in t["pilots"]]
+    for j in out["judges"]:
+        j["_id"] = judges[j["_id"]]
+        j["civlid"] = pilots.get(j.get("civlid"))
+    for c in out["competitions"]:
+        for run in [c] + c["runs"]:
+            run["pilots"] = [pilots[i] for i in run.get("pilots") or []]
+            run["teams"] = [teams[i] for i in run.get("teams") or []]
+            run["judges"] = [judges[i] for i in run.get("judges") or []]
+        for run in c["runs"]:
+            for f in run["flights"]:
+                f["pilot"] = pilots.get(f["pilot"], f["pilot"])
+                if f.get("team"):
+                    f["team"] = teams[f["team"]]
+                for m in f["marks"]:
+                    m["judge"] = judges[m["judge"]]
+                for t in f["tricks"]:
+                    if t.get("technical_marks"):
+                        t["technical_marks"] = {judges[i]: v for i, v in t["technical_marks"].items()}
+    real_ids = {str(i) for i in pilots} | {str(j["civlid"]) for j in data["judges"] if j.get("civlid")}
+    real_hex = set(teams) | set(judges)
+    return out, real_ids, real_hex
+
+
 def load_export(path):
     data = {}
     with tempfile.TemporaryDirectory() as tmp:
@@ -274,14 +377,18 @@ async def build_input(L, comp, run_i, flight, is_awt, mark_type):
     s = L.settings
     previous = []
     for k in range(run_i):
-        for f in comp.runs[k].flights:
-            if same_participant(comp, flight, f, L):
-                previous.append({
-                    "run_index": k,
-                    "tricks": [dump_trick(t) for t in f.tricks],
-                    "warnings1": len(f.warnings),
-                    "warnings2": len(f.warnings2),
-                })
+        # Legacy counts the first matching flight of each earlier run
+        # (competitions.py:1134 break); the export has at most one.
+        matches = [f for f in comp.runs[k].flights if same_participant(comp, flight, f, L)]
+        if len(matches) > 1:
+            raise SystemExit(f"{comp.code}: run {k} has {len(matches)} flights of one participant")
+        for f in matches[:1]:
+            previous.append({
+                "run_index": k,
+                "tricks": [dump_trick(t) for t in f.tricks],
+                "warnings1": len(f.warnings),
+                "warnings2": len(f.warnings2),
+            })
     judge_levels = {}
     for m in flight.marks:
         try:
@@ -343,7 +450,6 @@ def py_round3(x):
 
 async def flight_cases(L, raw, stats):
     anon = anonymise_competition(raw)
-    base = L.Competition.model_validate(anon)
     cases = []
     for run_i, run in enumerate(raw["runs"]):
         for j, raw_flight in enumerate(run["flights"]):
@@ -519,26 +625,32 @@ def write_json(path, head, items_key, items):
     """One item per line: readable diffs, repr-exact floats."""
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w") as f:
-        head_s = json.dumps(head, allow_nan=False)[:-1]
         if items_key is None:
-            f.write(json.dumps(head, allow_nan=False, sort_keys=False) + "\n")
+            f.write(_readable_ids(json.dumps(head, allow_nan=False)) + "\n")
             return
-        f.write(head_s + ', "' + items_key + '": [\n')
-        f.write(",\n".join(json.dumps(i, allow_nan=False) for i in items))
+        f.write(_readable_ids(json.dumps(head, allow_nan=False)[:-1]) + ', "' + items_key + '": [\n')
+        f.write(",\n".join(_readable_ids(json.dumps(i, allow_nan=False)) for i in items))
         f.write("\n]}\n")
 
 
-def check_names_absent(out_dir, data):
-    """Refuse to leave a person's name in the corpus."""
-    names = {p["name"] for p in data["pilots"]} | {j["name"] for j in data["judges"]} | \
-        {t["name"] for t in data["teams"]}
-    names = {n for n in names if len(n) >= 4}
+def check_no_personal_data(out_dir, data, real_ids, real_hex):
+    """Fail if a person's name or a real id appears in the corpus.
+
+    Names (pilots, judges) and real team/judge ids: plain substring search.
+    Real CIVL ids: as whole numbers (not inside a float or a longer id).
+    """
+    needles = {p["name"] for p in data["pilots"]} | {j["name"] for j in data["judges"]} | real_hex
+    needles = {n for n in needles if len(n) >= 3}
+    numbers = re.compile(r"(?<![\w.])(?:" + "|".join(sorted(real_ids)) + r")(?![\w.])")
     for root, _, files in os.walk(out_dir):
         for fn in files:
             text = open(os.path.join(root, fn)).read()
-            for n in names:
-                if '"' + n + '"' in text or n + " " in text:
-                    raise SystemExit(f"name leaked into {fn}: {n!r}")
+            for n in needles:
+                if n in text:
+                    raise SystemExit(f"personal data leaked into {fn}: {n!r}")
+            m = numbers.search(text)
+            if m:
+                raise SystemExit(f"real CIVL id leaked into {fn}: {m.group(0)}")
 
 
 async def main():
@@ -548,7 +660,8 @@ async def main():
     ap.add_argument("--out", required=True, help="testdata/golden directory")
     args = ap.parse_args()
 
-    data = load_export(args.backup)
+    real = load_export(args.backup)
+    data, real_ids, real_hex = pseudonymise(real)
     L = Legacy(os.path.abspath(args.legacy), data)
     stats = Counter()
 
@@ -580,7 +693,7 @@ async def main():
         if rk["error"]:
             stats["season errors"] += 1
 
-    check_names_absent(args.out, data)
+    check_no_personal_data(args.out, real, real_ids, real_hex)
     for k in sorted(stats):
         print(f"{k}: {stats[k]}")
 

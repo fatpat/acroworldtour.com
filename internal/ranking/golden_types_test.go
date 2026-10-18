@@ -19,6 +19,7 @@ func TestGoldenRankingFilesDecode(t *testing.T) {
 	if len(files) == 0 {
 		t.Fatal("no golden ranking files")
 	}
+	comps, seasons := 0, 0
 	for _, path := range files {
 		raw, err := os.ReadFile(path)
 		if err != nil {
@@ -29,6 +30,7 @@ func TestGoldenRankingFilesDecode(t *testing.T) {
 		base := filepath.Base(path)
 		switch {
 		case strings.HasPrefix(base, "competition-"):
+			comps++
 			var g GoldenCompetition
 			if err := dec.Decode(&g); err != nil {
 				t.Fatalf("%s: %v", base, err)
@@ -37,6 +39,7 @@ func TestGoldenRankingFilesDecode(t *testing.T) {
 				t.Errorf("%s: unexpected content", base)
 			}
 		case strings.HasPrefix(base, "season-"):
+			seasons++
 			var g GoldenSeason
 			if err := dec.Decode(&g); err != nil {
 				t.Fatalf("%s: %v", base, err)
@@ -47,5 +50,10 @@ func TestGoldenRankingFilesDecode(t *testing.T) {
 		default:
 			t.Errorf("unexpected file %s", base)
 		}
+	}
+	// Corpus generated from the 2026-10-18 export: 48 competitions, 20
+	// seasons; fewer means files went missing.
+	if comps < 48 || seasons < 20 {
+		t.Errorf("%d competition and %d season files, want at least 48 and 20", comps, seasons)
 	}
 }

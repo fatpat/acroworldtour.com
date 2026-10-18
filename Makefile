@@ -20,7 +20,8 @@ golden:
 # that nothing in the repository or the export is imported as code.
 golden-regen:
 	@test -n "$(LEGACY_VENV)" -a -n "$(BACKUP)" || { echo "usage: make golden-regen LEGACY_VENV=<venv dir> BACKUP=<export.tar.gz>"; exit 1; }
-	cd "$$(mktemp -d)" && "$(abspath $(LEGACY_VENV))/bin/python" -I "$(CURDIR)/tools/golden/generate.py" \
+	d="$$(mktemp -d)" && trap 'rm -rf "$$d"' EXIT && cd "$$d" && \
+		"$(abspath $(LEGACY_VENV))/bin/python" -I "$(CURDIR)/tools/golden/generate.py" \
 		--backup "$(abspath $(BACKUP))" --legacy "$(CURDIR)/legacy/legacy" --out "$(CURDIR)/testdata/golden"
 
 e2e:

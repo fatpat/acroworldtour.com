@@ -9,6 +9,7 @@ make golden-regen LEGACY_VENV=<legacy virtualenv> BACKUP=<mongo export .tar.gz>
 make golden        # TestGoldenFlights + ranking corpus decoding
 ```
 
+The target runs in a temporary directory that it removes afterwards.
 `LEGACY_VENV` is a Python 3 virtualenv with the legacy API dependencies
 (`legacy/legacy/api/requirements.txt`), kept outside the repository. The
 target runs the generator from a temporary directory with `python -I`.
@@ -40,17 +41,29 @@ The export is a tar of JSON-lines files (`competitions.json`, `pilots.json`,
 
 ## Anonymisation
 
-The corpus holds ids (CIVL ids, team, judge and competition ids and codes),
-numbers, countries, genders and trick names/acronyms only.
+The corpus holds pseudonymous ids, competition ids and codes (public
+events), numbers, countries, genders and trick names/acronyms only.
 
+- Pilot CIVL ids, team ids and judge ids are replaced by pseudonyms in the
+  export before legacy runs, so inputs, expected outputs, error messages and
+  ranking files agree: pilots `1000001`, `1000002`, ... teams `t0001`, ...
+  judges `j0001`, ..., numbered in first-appearance order (competitions by
+  code, their flights, participants and judges, then the rest of the
+  export). Gender and country stay attached to a pseudonym only. The mapping
+  is never written. While legacy runs, teams and judges carry ObjectId-shaped
+  pseudonyms (`000000000000000000b00001`, legacy validates ObjectIds); the
+  writer turns them into `t0001`/`j0001`.
 - Operator warning texts are replaced by `"w"` before scoring, so input and
   expected output agree (legacy notes only count warnings).
-- Judge names are replaced by judge ids in the in-memory judges collection:
-  the legacy error `judge '<name>' did not mark enough tricks (...)` then
-  carries the id, which is the engine's wording (controller ruling).
-- Pilot and team names are never written; the generator fails if any pilot,
-  judge or team name appears in the output. Ranking files carry a
+- Judge names are replaced by the judge's (pseudonymous) id in the
+  in-memory judges collection: the legacy error `judge '<name>' did not mark
+  enough tricks (...)` then carries the id, which is the engine's wording
+  (controller ruling).
+- Pilot and team names are never written; ranking files carry a
   `name_order` instead (see below).
+- Leak guard: generation fails if any output file contains, as a plain
+  substring, a pilot or judge name (3 characters or more) or a real team or
+  judge id, or a real CIVL id as a whole number.
 
 ## Flight cases: `testdata/golden/flights/<competition code>.json`
 
@@ -69,8 +82,10 @@ One case per line, in run then stored flight order. Floats are written by
 Python's `json` (repr, shortest round-trip), so Go parses the exact values.
 
 `input` is built from the same pydantic objects legacy scored: run config,
-`reset_policies` of runs `0..i`, `previous` = the participant's flights of
-runs `< i` (stored tricks and operator warning counts), judge levels,
+`reset_policies` of runs `0..i`, `previous` = the participant's first
+flight of each run `< i` (legacy `break`, `competitions.py:1134`; the
+generator fails if a run holds two flights of one participant) with its
+stored tricks and operator warning counts, judge levels,
 position rules by base trick, repeatable base trick names, season flags,
 `legacy_last_maneuver: true`, and the flight (marks after pydantic
 validation, i.e. explicit null marks are 0).

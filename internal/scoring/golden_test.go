@@ -32,6 +32,10 @@ type goldenCase struct {
 	Error          string       `json:"error"`
 }
 
+// goldenMinCases is the size of the corpus generated from the 2026-10-18
+// export; fewer cases means files went missing.
+const goldenMinCases = 2310
+
 // goldenTolerance bounds the raw difference between Go and Python floats;
 // values must also be equal after Round3.
 const goldenTolerance = 1e-9
@@ -56,6 +60,9 @@ func TestGoldenFlights(t *testing.T) {
 		}
 	}
 	t.Logf("%d golden cases, %d mismatches", total, failed)
+	if total < goldenMinCases {
+		t.Errorf("only %d golden cases, want at least %d", total, goldenMinCases)
+	}
 }
 
 func readGoldenFile(t *testing.T, path string) goldenFile {
