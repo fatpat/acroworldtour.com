@@ -210,8 +210,9 @@ func TestWWWUndatedNewsDateWorksWithARelativeFrom(t *testing.T) {
 		t.Skip("git not installed")
 	}
 	repo := t.TempDir()
-	copyTree(t, wwwDir, filepath.Join(repo, "www"))
-	if err := os.Remove(filepath.Join(repo, "www", "index.html")); err != nil {
+	sub := filepath.Join(repo, "sub") // cwd is not the repo root
+	copyTree(t, wwwDir, filepath.Join(sub, "www"))
+	if err := os.Remove(filepath.Join(sub, "www", "index.html")); err != nil {
 		t.Fatal(err)
 	}
 	for _, args := range [][]string{{"init", "-q"}, {"add", "."}, {"commit", "-q", "-m", "add"}} {
@@ -228,7 +229,7 @@ func TestWWWUndatedNewsDateWorksWithARelativeFrom(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Chdir(repo); err != nil {
+	if err := os.Chdir(sub); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = os.Chdir(old) })
