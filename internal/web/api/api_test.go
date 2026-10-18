@@ -25,7 +25,7 @@ import (
 
 const (
 	miniDir    = "../../importer/testdata/mini"
-	catalogDir = "../../../testdata/catalog"
+	catalogDir = "../../../internal/catalog/data"
 )
 
 func TestMain(m *testing.M) {

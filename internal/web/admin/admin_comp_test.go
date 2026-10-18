@@ -306,7 +306,7 @@ func TestExports(t *testing.T) {
 	e := newEnv(t)
 	judges := e.setupData(101, 102)
 	ctx := context.Background()
-	cat, err := os.ReadFile("../../../testdata/catalog/2025.json")
+	cat, err := os.ReadFile("../../../internal/catalog/data/2025.json")
 	e.mustOK(err)
 	_, err = e.svc.ImportCatalog(ctx, 2025, bytes.NewReader(cat))
 	e.mustOK(err)

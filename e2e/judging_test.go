@@ -76,9 +76,13 @@ func TestJudgingWorkflow(t *testing.T) {
 	click(t, role(p, "button", "Save & publish"), "Save & publish Alice")
 	expectText(t, p.Locator("#flight"), "Saved and published")
 	expectText(t, p.Locator("#participants"), alice)
-	// Not asserted on the spectator: the fragment answer is browser-cacheable
-	// for 5 s (Cache-Control max-age=5), so a second update within 5 s is
-	// served stale. Reported to the controller as a finding.
+	// Second publish within 5 s of the first: it reaches the spectator too
+	// (the fragment must not be served from the browser cache).
+	expectText(t, spectator.Locator("#ranking"), "Alice Aerial")
+	expectText(t, spectator.Locator("#ranking"), alice)
+	if v, err := spectator.Evaluate(`window.__noReload === true`); err != nil || v != true {
+		t.Fatalf("spectator page was reloaded after the second update (marker %v, err %v)", v, err)
+	}
 	if alice == bob {
 		t.Fatalf("both pilots scored %s", alice)
 	}

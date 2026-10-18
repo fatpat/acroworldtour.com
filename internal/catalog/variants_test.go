@@ -22,7 +22,7 @@ func loadFile(t *testing.T, path string) []Trick {
 }
 
 func TestGenerateMatchesProductionCatalog(t *testing.T) {
-	tricks := loadFile(t, "../../testdata/catalog/2026.json")
+	tricks := loadFile(t, "../../internal/catalog/data/2026.json")
 	if len(tricks) == 0 {
 		t.Fatal("empty catalog")
 	}
@@ -88,7 +88,7 @@ func TestLoadJSONDefaultsAndErrors(t *testing.T) {
 func TestLegacyCatalogsLoadAndGenerate(t *testing.T) {
 	for _, y := range []string{"2022", "2023", "2024", "2025"} {
 		seen := map[string]string{}
-		for _, tr := range loadFile(t, "../../testdata/catalog/"+y+".json") {
+		for _, tr := range loadFile(t, "../../internal/catalog/data/"+y+".json") {
 			vs := Generate(tr)
 			if len(vs) == 0 {
 				t.Errorf("%s %s: no variants", y, tr.Name)

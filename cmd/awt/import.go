@@ -22,7 +22,7 @@ const importUsage = "usage: awt import --from <export.tar.gz|dir> [--db path] [-
 func importCmd(args []string, out io.Writer) error {
 	fs := flag.NewFlagSet("import", flag.ContinueOnError)
 	from := fs.String("from", "", "export .tar.gz or directory of <collection>.json files")
-	catalogs := fs.String("catalogs", "testdata/catalog", "directory with the 2022-2025 trick catalogs (<year>.json)")
+	catalogs := fs.String("catalogs", "", "directory with the 2022-2025 trick catalogs (<year>.json); default: embedded")
 	dbFlag := fs.String("db", "", "database file (default: AWT_DB_PATH)")
 	blobDir := fs.String("blob-dir", "", "directory for the file blobs (default: AWT_BLOB_DIR)")
 	replace := fs.Bool("replace", false, "delete the imported tables' rows first instead of refusing a non-empty database")
@@ -58,7 +58,10 @@ func importCmd(args []string, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	opts := []importer.Option{importer.WithCatalogDir(*catalogs)}
+	opts := []importer.Option{}
+	if *catalogs != "" {
+		opts = append(opts, importer.WithCatalogDir(*catalogs))
+	}
 	if *replace {
 		opts = append(opts, importer.WithReplace())
 	}

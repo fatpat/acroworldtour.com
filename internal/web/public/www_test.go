@@ -44,7 +44,7 @@ func wwwApp(t *testing.T) http.Handler {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := importer.Run(ctx, db, blobs, "../../importer/testdata/mini", importer.WithCatalogDir("../../../testdata/catalog")); err != nil {
+	if _, err := importer.Run(ctx, db, blobs, "../../importer/testdata/mini", importer.WithCatalogDir("../../../internal/catalog/data")); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := importer.WWW(ctx, db, blobs, "../../importer/testdata/www"); err != nil {

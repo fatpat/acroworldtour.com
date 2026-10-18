@@ -19,7 +19,7 @@ import (
 
 const (
 	miniDir    = "testdata/mini"
-	catalogDir = "../../testdata/catalog"
+	catalogDir = "../../internal/catalog/data"
 	helloID    = "acc52d05cd264a4c2a73b5078129a858bb0d408112ebb8539c2fd1eab0a7a18f"
 )
 

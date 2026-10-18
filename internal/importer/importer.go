@@ -8,8 +8,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
+	"os"
 
 	"awt/internal/blob"
+	catalogdata "awt/internal/catalog/data"
 	"awt/internal/store"
 	"awt/internal/store/gen"
 )
@@ -33,11 +36,20 @@ type options struct {
 	replace    bool
 }
 
+// catalogFS is the catalog directory override, else the embedded catalogs.
+func (o options) catalogFS() fs.FS {
+	if o.catalogDir != "" {
+		return os.DirFS(o.catalogDir)
+	}
+	return catalogdata.FS
+}
+
 // Option tunes Run.
 type Option func(*options)
 
 // WithCatalogDir sets the directory holding the 2022-2025 trick catalogs
-// (<year>.json). Default "testdata/catalog".
+// (<year>.json). Default: the catalogs embedded in the binary
+// (internal/catalog/data), so the working directory does not matter.
 func WithCatalogDir(dir string) Option { return func(o *options) { o.catalogDir = dir } }
 
 // WithReplace deletes the rows of every imported table before importing,
@@ -47,7 +59,7 @@ func WithReplace() Option { return func(o *options) { o.replace = true } }
 // Run imports the export at src (a .tar.gz or a directory) in one
 // transaction. File contents go to blobs under their sha256 id.
 func Run(ctx context.Context, db *store.DB, blobs blob.Store, src string, opts ...Option) (Report, error) {
-	o := options{catalogDir: "testdata/catalog"}
+	o := options{}
 	for _, opt := range opts {
 		opt(&o)
 	}

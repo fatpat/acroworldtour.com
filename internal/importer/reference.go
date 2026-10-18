@@ -10,8 +10,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
+	"io/fs"
 	"slices"
 	"strconv"
 	"time"
@@ -53,7 +52,7 @@ func importReference(ctx context.Context, q *gen.Queries, blobs blob.Store, s *s
 	if err := importSeasons(ctx, q, s, fileIDs, rep); err != nil {
 		return err
 	}
-	if err := importTricks(ctx, q, s, o.catalogDir, rep); err != nil {
+	if err := importTricks(ctx, q, s, o.catalogFS(), rep); err != nil {
 		return err
 	}
 	return importCompetitions(ctx, q, s, comps, refData{pilots: pilots, teams: teams, judges: judges, files: fileIDs}, rep)
@@ -329,12 +328,12 @@ type trickRow struct {
 	Deleted Date `json:"deleted"`
 }
 
-// importTricks imports the 2022-2025 catalogs from <catalogDir>/<year>.json
+// importTricks imports the 2022-2025 catalogs from <year>.json in catalogs
 // (new ids) and the export's non-deleted tricks as 2026 (ids kept). Variants
 // are always regenerated with catalog.Generate.
-func importTricks(ctx context.Context, q *gen.Queries, s *source, catalogDir string, rep *Report) error {
+func importTricks(ctx context.Context, q *gen.Queries, s *source, catalogs fs.FS, rep *Report) error {
 	for _, year := range fileCatalogYears {
-		f, err := os.Open(filepath.Join(catalogDir, strconv.Itoa(year)+".json"))
+		f, err := catalogs.Open(strconv.Itoa(year) + ".json")
 		if err != nil {
 			return fmt.Errorf("open catalog %d: %w", year, err)
 		}

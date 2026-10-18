@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 
 	"awt/internal/export"
 	"awt/internal/store/gen"
@@ -17,15 +16,24 @@ import (
 	"github.com/a-h/templ"
 )
 
-// fragmentMaxAge keeps the ranking fragment fresh: the live page refetches
-// it on every event, so the CDN may only hold it for a few seconds.
-const fragmentMaxAge = 5 * time.Second
+// fragmentCacheControl: the live page refetches the ranking on every event,
+// so the browser must always revalidate (a max-age would serve a second
+// update within it from its cache); the CDN may hold it for 5 s and is
+// purged on events.
+const fragmentCacheControl = "public, max-age=0, s-maxage=5, must-revalidate"
+
+func fragmentCache(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", fragmentCacheControl)
+		next.ServeHTTP(w, r)
+	})
+}
 
 // registerLive wires the live updates: the SSE stream, the ranking fragment
 // the stream triggers, and the broadcast overlays.
 func registerLive(r *web.Router, p *results) {
 	r.Public("GET /live/competitions/{code}", &web.SSE{Bus: r.Deps().Bus, Exists: p.published, Drain: r.Deps().Draining})
-	r.PublicCached("GET /competitions/{code}/fragment", http.HandlerFunc(p.fragment), fragmentMaxAge, 0)
+	r.Public("GET /competitions/{code}/fragment", fragmentCache(http.HandlerFunc(p.fragment)))
 	r.Public("GET /live/overlay/competitions/{code}/runs/{file}", http.HandlerFunc(p.overlayRun))
 	r.Public("GET /live/overlay/competitions/{code}/current.svg", http.HandlerFunc(p.overlayCurrent))
 }

@@ -42,7 +42,7 @@ func newFlightEnv(t *testing.T, pilots, awt []int, seasons []string) *flightEnv 
 	t.Helper()
 	ctx := context.Background()
 	f := newFixture(t)
-	cat, err := os.ReadFile("../../testdata/catalog/2025.json")
+	cat, err := os.ReadFile("../../internal/catalog/data/2025.json")
 	ok(t, err)
 	must(f.svc.ImportCatalog(ctx, 2025, bytes.NewReader(cat)))(t)
 	for _, p := range pilots {
@@ -675,7 +675,7 @@ func TestThreeRunRescoreChain(t *testing.T) {
 func TestSynchroTipTouches(t *testing.T) {
 	ctx := context.Background()
 	f := newFixture(t)
-	cat, err := os.ReadFile("../../testdata/catalog/2025.json")
+	cat, err := os.ReadFile("../../internal/catalog/data/2025.json")
 	ok(t, err)
 	must(f.svc.ImportCatalog(ctx, 2025, bytes.NewReader(cat)))(t)
 	for _, p := range []int{201, 202, 203, 204} {

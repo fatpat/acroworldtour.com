@@ -58,7 +58,7 @@ func TestGoldenVerify(t *testing.T) {
 		t.Fatal(err)
 	}
 	mini := filepath.Join("..", "..", "internal", "importer", "testdata", "mini")
-	if _, err := importer.Run(ctx, db, blobs, mini, importer.WithCatalogDir(filepath.Join("..", "..", "testdata", "catalog"))); err != nil {
+	if _, err := importer.Run(ctx, db, blobs, mini, importer.WithCatalogDir(filepath.Join("..", "..", "internal", "catalog", "data"))); err != nil {
 		t.Fatal(err)
 	}
 

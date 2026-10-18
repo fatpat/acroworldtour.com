@@ -1,4 +1,4 @@
-.PHONY: dev generate test golden golden-regen e2e lint check migrate docker backup-restore-test
+.PHONY: dev generate test golden golden-regen e2e lint check migrate docker backup-restore-test e2e-deps
 
 GO ?= go
 
@@ -24,7 +24,10 @@ golden-regen:
 		"$(abspath $(LEGACY_VENV))/bin/python" -I "$(CURDIR)/tools/golden/generate.py" \
 		--backup "$(abspath $(BACKUP))" --legacy "$(CURDIR)/legacy/legacy" --out "$(CURDIR)/testdata/golden"
 
-# Needs chromium once: go run github.com/playwright-community/playwright-go/cmd/playwright@v0.5700.1 install chromium
+# Driver and chromium for e2e (once; see scripts/install-playwright.sh).
+e2e-deps:
+	./scripts/install-playwright.sh
+
 e2e:
 	AWT_E2E=1 $(GO) test ./e2e/... -count=1
 

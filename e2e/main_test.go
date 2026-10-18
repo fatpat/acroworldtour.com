@@ -95,7 +95,6 @@ func run(m *testing.M) (int, error) {
 	cli := func(stdin string, args ...string) error {
 		cmd := exec.Command(bin, args...)
 		cmd.Env = base
-		cmd.Dir = root // the importer reads testdata/catalog relative to the repository root
 		cmd.Stdin = strings.NewReader(stdin)
 		if out, err := cmd.CombinedOutput(); err != nil {
 			return fmt.Errorf("awt %s: %v\n%s", strings.Join(args, " "), err, out)

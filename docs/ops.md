@@ -115,3 +115,13 @@ A failure exits non-zero (cron mails the output) and pings `$RESTORE_TEST_PING_U
 - Uptime: point UptimeRobot or Better Stack at `https://<prod-host>/healthz`.
 - Logs: `docker compose logs -f awt-prod` (JSON in prod). Docker keeps them under `/var/lib/docker`; set `log-driver` options in `/etc/docker/daemon.json` (`max-size` 10m, `max-file` 5).
 - Before the first live competition, run the k6 load test against training with Cloudflare in front.
+
+## 8. Developer setup: browser tests
+
+`make e2e` drives the real binary with chromium (playwright-go, test-only dependency). Install the driver and the browser once:
+
+```sh
+make e2e-deps
+```
+
+`scripts/install-playwright.sh` unpacks the Playwright 1.57.0 driver from a pinned PyPI wheel (sha256 checked) into `~/.cache/ms-playwright-go/1.57.0`, because the CDN playwright-go v0.5700.1 uses is gone, then installs chromium into `~/.cache/ms-playwright` with the pinned playwright-go CLI. It needs `curl`, `python3` and network access, not root. CI runs it before `make check` and caches both directories. Failures leave traces and screenshots in `e2e/.artifacts/` (git-ignored).

@@ -35,7 +35,7 @@ func newJudging(t *testing.T, typ domain.CompetitionType, seasons []string, open
 	e := newEnv(t)
 	ctx := context.Background()
 	judges := e.setupData(101, 102, 103, 104)
-	cat, err := os.ReadFile("../../../testdata/catalog/2025.json")
+	cat, err := os.ReadFile("../../../internal/catalog/data/2025.json")
 	e.mustOK(err)
 	_, err = e.svc.ImportCatalog(ctx, 2025, bytes.NewReader(cat))
 	e.mustOK(err)

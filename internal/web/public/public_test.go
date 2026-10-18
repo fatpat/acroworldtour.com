@@ -91,7 +91,7 @@ func buildFixture() (http.Handler, error) {
 		return nil, err
 	}
 	if _, err := importer.Run(ctx, db, blobs, "../../importer/testdata/mini",
-		importer.WithCatalogDir("../../../testdata/catalog")); err != nil {
+		importer.WithCatalogDir("../../../internal/catalog/data")); err != nil {
 		return nil, err
 	}
 	if err := db.Tx(ctx, func(q *gen.Queries) error { return seedExtra(ctx, q, blobs) }); err != nil {

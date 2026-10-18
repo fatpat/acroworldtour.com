@@ -42,7 +42,7 @@ func TestFragmentReturnsOnlyTheTable(t *testing.T) {
 			t.Errorf("fragment contains %q", bad)
 		}
 	}
-	if cc := rec.Header().Get("Cache-Control"); !strings.Contains(cc, "max-age=5") {
+	if cc := rec.Header().Get("Cache-Control"); cc != "public, max-age=0, s-maxage=5, must-revalidate" {
 		t.Errorf("Cache-Control = %q", cc)
 	}
 	run := get(t, h, "/competitions/live-open-cup/fragment?run=1&list=overall").Body.String()
