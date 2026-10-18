@@ -28,6 +28,8 @@ type SSE struct {
 	Exists func(ctx context.Context, code string) (bool, error)
 	// Ping is the interval between `: ping` comments; zero means the default.
 	Ping time.Duration
+	// Drain, when closed, ends every stream (graceful shutdown); nil never fires.
+	Drain <-chan struct{}
 	// MaxConns caps concurrent streams per process; zero means the default.
 	MaxConns int64
 
@@ -102,6 +104,8 @@ func (s *SSE) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for {
 		select {
 		case <-r.Context().Done():
+			return
+		case <-s.Drain:
 			return
 		case e, open := <-events:
 			if !open {

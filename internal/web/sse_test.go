@@ -3,6 +3,7 @@ package web_test
 import (
 	"bufio"
 	"context"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -248,31 +249,84 @@ func TestPurgeSubscriber(t *testing.T) {
 	}
 }
 
-func TestShutdownEndsOpenStreams(t *testing.T) {
+func TestShutdownEndsStreamsButFinishesRequests(t *testing.T) {
 	deps := newDeps(t)
-	deps.Cfg.Addr = "127.0.0.1:0"
 	s := &web.SSE{Bus: service.NewBus(), Ping: time.Hour,
 		Exists: func(context.Context, string) (bool, error) { return true, nil }}
-	srv := web.NewServer(deps, web.ModuleFunc(func(r *web.Router) { r.Public("GET /live/competitions/{code}", s) }))
+	started, release := make(chan struct{}), make(chan struct{})
+	var srv *http.Server
+	mod := web.ModuleFunc(func(r *web.Router) {
+		s.Drain = r.Deps().Draining
+		r.Public("GET /live/competitions/{code}", s)
+		r.Public("GET /slow", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			close(started)
+			<-release
+			if r.Context().Err() != nil {
+				http.Error(w, "cancelled", 500)
+				return
+			}
+			_, _ = w.Write([]byte("saved"))
+		}))
+	})
+	srv = web.NewServer(deps, mod)
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
 	go func() { _ = srv.Serve(ln) }()
-	resp, err := http.Get("http://" + ln.Addr().String() + "/live/competitions/x")
+	base := "http://" + ln.Addr().String()
+
+	type result struct {
+		code int
+		body string
+		err  error
+	}
+	slow := make(chan result, 1)
+	go func() {
+		resp, err := http.Get(base + "/slow")
+		if err != nil {
+			slow <- result{err: err}
+			return
+		}
+		defer resp.Body.Close()
+		b, _ := io.ReadAll(resp.Body)
+		slow <- result{code: resp.StatusCode, body: string(b)}
+	}()
+	<-started
+	resp, err := http.Get(base + "/live/competitions/x")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer resp.Body.Close()
-	waitFor(t, lines(bufio.NewScanner(resp.Body)), "", time.Second)
-	start := time.Now()
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := srv.Shutdown(ctx); err != nil {
-		t.Fatalf("Shutdown: %v", err)
+	stream := lines(bufio.NewScanner(resp.Body))
+	waitFor(t, stream, "", time.Second)
+
+	shut := make(chan error, 1)
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		shut <- srv.Shutdown(ctx)
+	}()
+	// the stream ends promptly while the slow request is still in flight
+	deadline := time.After(2 * time.Second)
+	for open := true; open; {
+		select {
+		case _, open = <-stream:
+		case <-deadline:
+			t.Fatal("SSE stream still open during Shutdown")
+		}
 	}
-	if d := time.Since(start); d > 2*time.Second {
-		t.Errorf("Shutdown took %s with an open stream", d)
+	select {
+	case err := <-shut:
+		t.Fatalf("Shutdown returned before the in-flight request finished: %v", err)
+	default:
+	}
+	close(release)
+	if r := <-slow; r.err != nil || r.code != 200 || r.body != "saved" {
+		t.Errorf("in-flight request: %+v", r)
+	}
+	if err := <-shut; err != nil {
+		t.Errorf("Shutdown: %v", err)
 	}
 }
 

@@ -24,7 +24,7 @@ const fragmentMaxAge = 5 * time.Second
 // registerLive wires the live updates: the SSE stream, the ranking fragment
 // the stream triggers, and the broadcast overlays.
 func registerLive(r *web.Router, p *results) {
-	r.Public("GET /live/competitions/{code}", &web.SSE{Bus: r.Deps().Bus, Exists: p.published})
+	r.Public("GET /live/competitions/{code}", &web.SSE{Bus: r.Deps().Bus, Exists: p.published, Drain: r.Deps().Draining})
 	r.PublicCached("GET /competitions/{code}/fragment", http.HandlerFunc(p.fragment), fragmentMaxAge, 0)
 	r.Public("GET /live/overlay/competitions/{code}/runs/{file}", http.HandlerFunc(p.overlayRun))
 	r.Public("GET /live/overlay/competitions/{code}/current.svg", http.HandlerFunc(p.overlayCurrent))

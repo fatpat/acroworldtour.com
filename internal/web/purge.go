@@ -26,19 +26,23 @@ type URLResolver func(ctx context.Context, e service.Event) ([]string, error)
 
 // StartPurger subscribes to every Bus event and purges the CDN copies of the
 // public pages and API responses they change, until ctx is done (pending
-// topics are flushed first). The subscription is in place when it returns.
+// topics are flushed first). The subscription is in place when it returns;
+// the returned channel is closed once the final flush is done, so callers
+// wait on it before closing the database.
 //
 // Cloudflare's free plan purges by exact URL only, so query-string variants
 // (/competitions/{code}?list=...) cannot be enumerated: the base URL is purged
 // and the variants rely on the short max-age of live pages (30 s). The same
 // bound covers the rare event the Bus drops for the purger (its buffer is
 // large and drops are logged): a stale page lives at most one max-age.
-func StartPurger(ctx context.Context, bus *service.Bus, purger cache.Purger, db *store.DB, baseURL string) {
+func StartPurger(ctx context.Context, bus *service.Bus, purger cache.Purger, db *store.DB, baseURL string) <-chan struct{} {
 	if bus == nil || purger == nil {
-		return
+		done := make(chan struct{})
+		close(done)
+		return done
 	}
 	q := gen.New(db.Read)
-	startPurger(ctx, bus, purger, purgeDelay, func(ctx context.Context, e service.Event) ([]string, error) {
+	return startPurger(ctx, bus, purger, purgeDelay, func(ctx context.Context, e service.Event) ([]string, error) {
 		return PurgeURLs(ctx, q, baseURL, e)
 	})
 }
@@ -46,7 +50,7 @@ func StartPurger(ctx context.Context, bus *service.Bus, purger cache.Purger, db 
 // startPurger runs two goroutines: the receiver only records the topics of
 // incoming events (no database or HTTP work, so the Bus buffer keeps
 // draining), and the worker resolves and purges them every delay.
-func startPurger(ctx context.Context, bus *service.Bus, purger cache.Purger, delay time.Duration, resolve URLResolver) {
+func startPurger(ctx context.Context, bus *service.Bus, purger cache.Purger, delay time.Duration, resolve URLResolver) <-chan struct{} {
 	events, unsubscribe := bus.SubscribeAll()
 	var (
 		mu      sync.Mutex
@@ -121,7 +125,9 @@ func startPurger(ctx context.Context, bus *service.Bus, purger cache.Purger, del
 			slog.Error("cdn purge", "urls", len(urls), "err", err)
 		}
 	}
+	stopped := make(chan struct{})
 	go func() {
+		defer close(stopped)
 		for {
 			select {
 			case <-done:
@@ -136,6 +142,7 @@ func startPurger(ctx context.Context, bus *service.Bus, purger cache.Purger, del
 			}
 		}
 	}()
+	return stopped
 }
 
 // PurgeURLs is the set of absolute public URLs affected by an event.

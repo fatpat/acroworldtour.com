@@ -27,6 +27,9 @@ type Deps struct {
 	// Bus carries the live-update events (SSE stream, CDN purge); nil
 	// disables the live routes' event source.
 	Bus *service.Bus
+	// Draining is closed when the server starts shutting down (set by
+	// NewServer); long-lived streams end on it.
+	Draining <-chan struct{}
 }
 
 // Guard is the access level a route requires.

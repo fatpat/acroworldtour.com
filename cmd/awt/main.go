@@ -100,7 +100,10 @@ func serve() error {
 		public.Module{}, admin.Module{})
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	web.StartPurger(ctx, bus, purger, db, cfg.BaseURL)
+	purged := web.StartPurger(ctx, bus, purger, db, cfg.BaseURL)
+	// Deferred after db.Close: the purger's final flush reads the database,
+	// so it must finish first.
+	defer func() { stop(); <-purged }()
 
 	errc := make(chan error, 1)
 	go func() {
