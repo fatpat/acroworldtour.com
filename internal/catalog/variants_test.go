@@ -86,24 +86,26 @@ func TestLoadJSONDefaultsAndErrors(t *testing.T) {
 }
 
 func TestLegacyCatalogsLoadAndGenerate(t *testing.T) {
-	for _, y := range []string{"2023", "2024", "2025"} {
+	for _, y := range []string{"2022", "2023", "2024", "2025"} {
+		seen := map[string]string{}
 		for _, tr := range loadFile(t, "../../testdata/catalog/"+y+".json") {
-			if len(Generate(tr)) == 0 {
+			vs := Generate(tr)
+			if len(vs) == 0 {
 				t.Errorf("%s %s: no variants", y, tr.Name)
+			}
+			for _, v := range vs {
+				if other, dup := seen[v.Acronym]; dup {
+					t.Errorf("%s: acronym %q of %q already used by %q", y, v.Acronym, tr.Name, other)
+				}
+				seen[v.Acronym] = tr.Name
 			}
 		}
 	}
 }
 
-// The 2022 files contain the direction "mirror", which the legacy API could
-// never import (no acronym configured); LoadJSON must reject it.
-func TestLegacy2022RejectsMirrorDirection(t *testing.T) {
-	f, err := os.Open("../../testdata/catalog/2022.json")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer f.Close()
-	if _, err := LoadJSON(f); err == nil || !strings.Contains(err.Error(), "mirror") {
+func TestLoadJSONRejectsUnknownDirection(t *testing.T) {
+	_, err := LoadJSON(strings.NewReader(`[{"name":"a","acronym":"A","directions":["left","mirror"]}]`))
+	if err == nil || !strings.Contains(err.Error(), "mirror") {
 		t.Fatalf("expected mirror direction error, got %v", err)
 	}
 }
