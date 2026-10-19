@@ -663,13 +663,23 @@ var scorerAllowed = map[string]bool{
 
 var wildcard = regexp.MustCompile(`\{[^}]*\}`)
 
+// loginSteps are the only anonymous /manager routes: the password step and
+// the second-factor step, both before any session exists.
+var loginSteps = map[string]bool{
+	"GET /manager/login":               true,
+	"POST /manager/login":              true,
+	"GET /manager/login/mfa":           true,
+	"POST /manager/login/mfa/totp":     true,
+	"POST /manager/login/mfa/recovery": true,
+}
+
 func TestEveryAdminRouteIsGuarded(t *testing.T) {
 	e := newEnv(t)
 	table := web.RouteTable(e.deps, admin.Module{})
 	n := 0
 	for _, rt := range table {
 		p := rt.Path()
-		if p != "/manager" && !strings.HasPrefix(p, "/manager/") || p == "/manager/login" {
+		if p != "/manager" && !strings.HasPrefix(p, "/manager/") || loginSteps[rt.Pattern] {
 			continue
 		}
 		n++

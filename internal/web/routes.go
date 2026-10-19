@@ -161,7 +161,10 @@ const loginMax = 16 << 10
 
 func isAdminPath(p string) bool { return p == "/manager" || strings.HasPrefix(p, "/manager/") }
 
-func isLoginPath(p string) bool { return p == "/manager/login" }
+// isLoginPath: the password step and the second step run before any session.
+func isLoginPath(p string) bool {
+	return p == "/manager/login" || p == "/manager/login/mfa" || strings.HasPrefix(p, "/manager/login/mfa/")
+}
 
 // newRouter builds the router with the built-in routes and the modules.
 func newRouter(deps Deps, mods ...Module) *Router {
@@ -175,6 +178,9 @@ func newRouter(deps Deps, mods ...Module) *Router {
 
 	r.Public("GET /manager/login", http.HandlerFunc(deps.loginPage))
 	r.Public("POST /manager/login", limitBody(loginMax, http.HandlerFunc(deps.loginSubmit)))
+	r.Public("GET /manager/login/mfa", http.HandlerFunc(deps.mfaPage))
+	r.Public("POST /manager/login/mfa/totp", deps.checkOrigin(limitBody(loginMax, deps.mfaTOTP())))
+	r.Public("POST /manager/login/mfa/recovery", deps.checkOrigin(limitBody(loginMax, deps.mfaRecovery())))
 	r.User("POST /manager/logout", http.HandlerFunc(deps.logout))
 
 	for _, m := range mods {

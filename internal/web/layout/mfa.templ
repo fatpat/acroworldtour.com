@@ -1,0 +1,73 @@
+package layout
+
+import "strconv"
+
+// MFAStep is what the second login step offers.
+type MFAStep struct {
+	TOTP          bool // the account has an authenticator app
+	TOTPAvailable bool // its secret can be opened with the current AWT_MFA_KEY
+	WebAuthn      bool
+	Recovery      bool
+	Error         string
+}
+
+// MFAPage is the second login step: authenticator code, security key and
+// recovery code. Every form posts to a path the pending cookie is scoped to.
+templ MFAPage(s MFAStep) {
+	@Base(Meta{Title: "Verify it's you", NoIndex: true}) {
+		<main id="main" class="wrapper">
+			<div class="login card">
+				<h1>Verify it's you</h1>
+				if s.Error != "" {
+					<p class="alert" role="alert">{ s.Error }</p>
+				}
+				if s.TOTP && s.TOTPAvailable {
+					<form method="post" action="/manager/login/mfa/totp">
+						<div class="field">
+							<label for="code">Code from your authenticator app</label>
+							<input id="code" name="code" type="text" inputmode="numeric" pattern="[0-9 ]*" maxlength="8" autocomplete="one-time-code" required autofocus/>
+						</div>
+						<button class="btn" type="submit">Verify</button>
+					</form>
+				} else if s.TOTP {
+					<p class="muted">Authenticator codes can't be checked for your account right now. Use a security key or a recovery code.</p>
+				}
+				if s.WebAuthn {
+					<div class="login__alt">
+						<button class="btn btn--ghost" type="button" data-webauthn-login disabled>Use a security key</button>
+					</div>
+				}
+				if s.Recovery {
+					<details class="login__alt" open?={ !s.TOTP || !s.TOTPAvailable }>
+						<summary>Use a recovery code</summary>
+						<form method="post" action="/manager/login/mfa/recovery">
+							<div class="field">
+								<label for="recovery">Recovery code</label>
+								<input id="recovery" name="code" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="32" required/>
+							</div>
+							<button class="btn" type="submit">Use recovery code</button>
+						</form>
+					</details>
+				}
+				<p class="login__alt"><a href="/manager/login">Start again</a></p>
+			</div>
+		</main>
+	}
+}
+
+// RecoveryUsedPage follows a login with a recovery code: it says how many
+// codes are left before going on to next.
+templ RecoveryUsedPage(left int, next string) {
+	@Base(Meta{Title: "Signed in", NoIndex: true}) {
+		<main id="main" class="wrapper">
+			<div class="login card">
+				<h1>Signed in with a recovery code</h1>
+				<p role="status">That code can't be used again. You have { strconv.Itoa(left) } recovery codes left.</p>
+				if left <= 3 {
+					<p class="muted">Generate new codes from your account page soon.</p>
+				}
+				<a class="btn" href={ templ.SafeURL(next) }>Continue</a>
+			</div>
+		</main>
+	}
+}

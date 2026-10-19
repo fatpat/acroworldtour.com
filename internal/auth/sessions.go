@@ -48,20 +48,40 @@ func hashToken(t string) string {
 // when the user is unknown so timing does not reveal which emails exist.
 var dummyHash = []byte("$2a$12$n0NefR8ArDHYJjtIsCy5JOtczxTeFEo6SivcaNkyJDh0.OZokgFqS")
 
-// Login checks the credentials and opens a new session (a fresh token on every
-// login).
-func (a *Auth) Login(ctx context.Context, email, password string) (Session, error) {
+// verifyPassword returns the enabled user behind email and password, or
+// ErrInvalidCredentials.
+func (a *Auth) verifyPassword(ctx context.Context, email, password string) (User, error) {
 	u, err := gen.New(a.db.Read).GetUserByEmail(ctx, normEmail(email))
 	hash := []byte(u.PasswordHash)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
-			return Session{}, err
+			return User{}, err
 		}
 		hash = dummyHash // keep the timing of unknown users close to real ones
 	}
 	if bcrypt.CompareHashAndPassword(hash, []byte(password)) != nil || err != nil || u.Disabled {
-		return Session{}, ErrInvalidCredentials
+		return User{}, ErrInvalidCredentials
 	}
+	return u, nil
+}
+
+// Login checks the credentials and opens a new session (a fresh token on every
+// login). An account with a second factor gets ErrMFARequired: the login
+// handler uses LoginStep1 instead.
+func (a *Auth) Login(ctx context.Context, email, password string) (Session, error) {
+	s, p, err := a.LoginStep1(ctx, email, password)
+	if err != nil {
+		return Session{}, err
+	}
+	if p != nil {
+		return Session{}, ErrMFARequired
+	}
+	return s, nil
+}
+
+// insertSession opens a session for u inside the caller's transaction,
+// pruning expired ones.
+func (a *Auth) insertSession(ctx context.Context, q *gen.Queries, u User, now time.Time) (Session, error) {
 	token, err := randomToken()
 	if err != nil {
 		return Session{}, err
@@ -70,16 +90,13 @@ func (a *Auth) Login(ctx context.Context, email, password string) (Session, erro
 	if err != nil {
 		return Session{}, err
 	}
-	now := a.now().UTC()
 	s := Session{Token: token, CSRF: csrf, ExpiresAt: now.Add(sessionTTL), User: u}
-	err = a.db.Tx(ctx, func(q *gen.Queries) error {
-		if err := q.DeleteExpiredSessions(ctx, now.Format(time.RFC3339)); err != nil {
-			return err
-		}
-		return q.InsertSession(ctx, gen.InsertSessionParams{
-			TokenHash: hashToken(token), UserID: u.ID, CsrfToken: csrf,
-			ExpiresAt: s.ExpiresAt.Format(time.RFC3339), CreatedAt: now.Format(time.RFC3339),
-		})
+	if err := q.DeleteExpiredSessions(ctx, now.Format(time.RFC3339)); err != nil {
+		return Session{}, fmt.Errorf("prune sessions: %w", err)
+	}
+	err = q.InsertSession(ctx, gen.InsertSessionParams{
+		TokenHash: hashToken(token), UserID: u.ID, CsrfToken: csrf,
+		ExpiresAt: s.ExpiresAt.Format(time.RFC3339), CreatedAt: now.Format(time.RFC3339),
 	})
 	if err != nil {
 		return Session{}, fmt.Errorf("create session: %w", err)

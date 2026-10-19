@@ -62,8 +62,9 @@ func TestServeModulesWiring(t *testing.T) {
 			continue
 		}
 		admin++
-		if p == "/manager/login" {
-			continue
+		switch p {
+		case "/manager/login", "/manager/login/mfa", "/manager/login/mfa/totp", "/manager/login/mfa/recovery":
+			continue // the login steps run before any session exists
 		}
 		if rt.Guard == web.GuardPublic {
 			t.Errorf("%s is under /manager but public", rt.Pattern)

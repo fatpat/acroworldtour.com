@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
@@ -128,6 +129,8 @@ func safeNext(n string) string {
 
 // HandleLogin handles the login form POST (fields email, password, next). The
 // failure limiter answers 429 once an email+IP pair failed 5 times in 15 min.
+// An account with a second factor is sent to /manager/login/mfa with a
+// pending login cookie (next is kept on the pending login).
 func (a *Auth) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	email, password := r.PostFormValue("email"), r.PostFormValue("password")
 	key := limiterKey(email, a.ClientIP(r))
@@ -136,16 +139,23 @@ func (a *Auth) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "too many failed attempts, try again later", http.StatusTooManyRequests)
 		return
 	}
-	s, err := a.Login(r.Context(), email, password)
+	s, pending, err := a.loginStep1(r.Context(), email, password, r.PostFormValue("next"))
 	if errors.Is(err, ErrInvalidCredentials) {
 		http.Error(w, "invalid email or password", http.StatusUnauthorized)
 		return
 	}
 	if err != nil {
+		slog.Error("login", "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 	a.limiter.Reset(key)
+	if pending != nil {
+		// The factor step has its own per-account lockout (completeFactor).
+		a.SetPendingCookie(w, *pending)
+		http.Redirect(w, r, "/manager/login/mfa", http.StatusSeeOther)
+		return
+	}
 	a.SetCookie(w, s)
 	http.Redirect(w, r, safeNext(r.PostFormValue("next")), http.StatusSeeOther)
 }
