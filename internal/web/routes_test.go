@@ -70,6 +70,33 @@ var wildcard = regexp.MustCompile(`\{[^}]*\}`)
 
 func TestAdminRoutesAreGuarded(t *testing.T) {
 	deps := newDeps(t)
+	walkAdminRoutes(t, deps, "anonymous")
+}
+
+// A pending login token is not a session: sent as the pending cookie or,
+// swapped, as the session cookie, it opens no admin route.
+func TestAdminRoutesRefusePendingLoginToken(t *testing.T) {
+	deps := newDeps(t)
+	ctx := context.Background()
+	u, err := deps.Auth.CreateUser(ctx, "pending@example.org", "P", auth.RoleAdmin, "correct horse battery")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := deps.DB.Write.Exec(`INSERT INTO user_totp (user_id, secret_enc, created_at, last_step) VALUES (?, 'x', '2026-01-01T00:00:00Z', 0)`, u.ID); err != nil {
+		t.Fatal(err)
+	}
+	s, p, err := deps.Auth.LoginStep1(ctx, "pending@example.org", "correct horse battery")
+	if err != nil || p == nil || s.Token != "" {
+		t.Fatalf("step 1: %+v %v %v", s, p, err)
+	}
+	walkAdminRoutes(t, deps, "as awt_mfa", &http.Cookie{Name: auth.PendingCookieName, Value: p.Token})
+	walkAdminRoutes(t, deps, "as awt_session", &http.Cookie{Name: auth.CookieName, Value: p.Token})
+}
+
+// walkAdminRoutes checks every /manager route is guarded in the table and
+// never answers 200 or 404 to a request carrying only cookies.
+func walkAdminRoutes(t *testing.T, deps web.Deps, who string, cookies ...*http.Cookie) {
+	t.Helper()
 	table := web.RouteTable(deps, sample)
 	h := web.Routes(deps, sample)
 	adminRoutes := 0
@@ -86,13 +113,16 @@ func TestAdminRoutesAreGuarded(t *testing.T) {
 			t.Errorf("%s is under /manager but public", rt.Pattern)
 			continue
 		}
-		// Behaviour, not just the table: anonymous requests never get through.
+		// Behaviour, not just the table: these requests never get through.
 		method, _, _ := strings.Cut(rt.Pattern, " ")
 		req := httptest.NewRequest(method, wildcard.ReplaceAllString(p, "x"), nil)
+		for _, c := range cookies {
+			req.AddCookie(c)
+		}
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, req)
 		if rec.Code == http.StatusOK || rec.Code == http.StatusNotFound {
-			t.Errorf("%s answered %d without a session", rt.Pattern, rec.Code)
+			t.Errorf("%s answered %d (%s)", rt.Pattern, rec.Code, who)
 		}
 	}
 	if adminRoutes < 6 {
@@ -624,18 +654,23 @@ func TestMFAOriginFromBaseURL(t *testing.T) {
 	deps := newDeps(t)
 	deps.Cfg.BaseURL = "https://Manager.Example.org/"
 	h := web.Routes(deps)
-	for origin, want := range map[string]int{
-		"https://manager.example.org": http.StatusUnauthorized, // passes the check, no pending login
-		"http://localhost:0":          http.StatusForbidden,
-		"null":                        http.StatusForbidden,
+	for _, path := range []string{
+		"/manager/login/mfa/totp", "/manager/login/mfa/recovery",
+		"/manager/login/mfa/webauthn/begin", "/manager/login/mfa/webauthn/finish",
 	} {
-		req := httptest.NewRequest(http.MethodPost, "/manager/login/mfa/recovery", strings.NewReader("code=x"))
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		req.Header.Set("Origin", origin)
-		rec := httptest.NewRecorder()
-		h.ServeHTTP(rec, req)
-		if rec.Code != want {
-			t.Errorf("Origin %s: %d, want %d", origin, rec.Code, want)
+		for origin, want := range map[string]int{
+			"https://manager.example.org": http.StatusUnauthorized, // passes the check, no pending login
+			"http://localhost:0":          http.StatusForbidden,
+			"null":                        http.StatusForbidden,
+		} {
+			req := httptest.NewRequest(http.MethodPost, path, strings.NewReader("code=x"))
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			req.Header.Set("Origin", origin)
+			rec := httptest.NewRecorder()
+			h.ServeHTTP(rec, req)
+			if rec.Code != want {
+				t.Errorf("%s Origin %s: %d, want %d", path, origin, rec.Code, want)
+			}
 		}
 	}
 }
