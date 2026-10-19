@@ -1,6 +1,11 @@
 package admin
 
-import "awt/internal/web/layout"
+import (
+	"strings"
+
+	"awt/internal/auth"
+	"awt/internal/web/layout"
+)
 
 templ usersPage(v usersView) {
 	@layout.Admin(layout.Meta{Title: "Users", Heading: "Users"}, "users") {
@@ -8,13 +13,18 @@ templ usersPage(v usersView) {
 		@errorSummary(v.Errors)
 		<div class="table-wrap">
 			<table class="table">
-				<thead><tr><th>Email</th><th>Name</th><th>Role</th><th></th></tr></thead>
+				<thead><tr><th>Email</th><th>Name</th><th>Role</th><th>Second factor</th><th></th></tr></thead>
 				<tbody>
 					for _, u := range v.Users {
 						<tr>
 							<td>{ u.Email }</td>
 							<td>{ u.Name }</td>
 							<td>{ roleLabel(u) }</td>
+							<td>
+								for _, l := range v.Badges[u.ID].Labels() {
+									<span class="badge">{ l }</span>
+								}
+							</td>
 							<td class="actions"><a class="btn btn--ghost" href={ templ.SafeURL("/manager/users/" + u.ID) }>Manage</a></td>
 						</tr>
 					}
@@ -63,6 +73,29 @@ templ userPage(v userView) {
 				<button class="btn" type="submit">Set password</button>
 			</form>
 		</div>
+		<section class="card" aria-labelledby="mfa-title">
+			<h2 id="mfa-title">Second factor</h2>
+			if v.Self {
+				<p class="muted">Use your <a href="/manager/account">own account page</a> to manage your own second factor.</p>
+			} else if v.Status.TOTP || len(v.Status.Keys) > 0 {
+				<p>Set up: { mfaSummary(v.Status) }. If this person lost their device and recovery codes, remove it: they log in with their password only and can set it up again.</p>
+				<form method="post" action={ templ.SafeURL("/manager/users/" + v.User.ID + "/reset-mfa") }>
+					@csrf()
+					if v.Confirm {
+						<input type="hidden" name="confirm" value="1"/>
+						<p>Remove every second factor and recovery code of <strong>{ v.User.Email }</strong> and close all their sessions?</p>
+						<p class="actions">
+							<button class="btn btn--danger" type="submit">Confirm reset</button>
+							<a class="btn btn--ghost" href={ templ.SafeURL("/manager/users/" + v.User.ID) }>Cancel</a>
+						</p>
+					} else {
+						<button class="btn btn--danger" type="submit">Remove second factor</button>
+					}
+				</form>
+			} else {
+				<p class="muted">No second factor is set up.</p>
+			}
+		</section>
 		<form class="card" method="post" action={ templ.SafeURL(userToggleAction(v)) }>
 			@csrf()
 			if v.User.Disabled {
@@ -84,4 +117,8 @@ func userToggleAction(v userView) string {
 		return "/manager/users/" + v.User.ID + "/enable"
 	}
 	return "/manager/users/" + v.User.ID + "/disable"
+}
+
+func mfaSummary(st auth.Status) string {
+	return strings.Join(auth.MFABadge{TOTP: st.TOTP, Keys: len(st.Keys)}.Labels(), ", ")
 }

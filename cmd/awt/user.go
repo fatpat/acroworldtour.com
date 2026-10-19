@@ -17,9 +17,9 @@ import (
 	"awt/internal/store"
 )
 
-const userUsage = "usage: awt user add --email E --name N --role admin|scorer | passwd --email E | assign --email E --competition ID|CODE (password on stdin)"
+const userUsage = "usage: awt user add --email E --name N --role admin|scorer | passwd --email E | assign --email E --competition ID|CODE | reset-mfa --email E (password on stdin for add and passwd)"
 
-// userCmd manages accounts: `awt user add|passwd|assign`.
+// userCmd manages accounts: `awt user add|passwd|assign|reset-mfa`.
 func userCmd(args []string, stdin *os.File) error {
 	if len(args) == 0 {
 		return errors.New(userUsage)
@@ -30,7 +30,7 @@ func userCmd(args []string, stdin *os.File) error {
 	role := fs.String("role", "", "admin or scorer (add)")
 	comp := fs.String("competition", "", "competition id or code (assign)")
 	switch args[0] {
-	case "add", "passwd", "assign":
+	case "add", "passwd", "assign", "reset-mfa":
 	default:
 		return errors.New(userUsage)
 	}
@@ -79,6 +79,15 @@ func userCmd(args []string, stdin *os.File) error {
 			return err
 		}
 		fmt.Printf("password updated for %s\n", *email)
+	case "reset-mfa":
+		u, err := a.UserByEmail(ctx, *email)
+		if err != nil {
+			return err
+		}
+		if err := a.ResetMFA(ctx, u.ID, "cli"); err != nil {
+			return err
+		}
+		fmt.Printf("second factors removed for %s; all sessions closed\n", u.Email)
 	case "assign":
 		if err := a.AssignCompetition(ctx, *email, *comp); err != nil {
 			return err

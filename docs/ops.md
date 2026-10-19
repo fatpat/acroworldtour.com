@@ -120,6 +120,18 @@ A failure exits non-zero (cron mails the output) and pings `$RESTORE_TEST_PING_U
 - Logs: `docker compose logs -f awt-prod` (JSON in prod). Docker keeps them under `/var/lib/docker`; set `log-driver` options in `/etc/docker/daemon.json` (`max-size` 10m, `max-file` 5).
 - Before the first live competition, run the k6 load test against training with Cloudflare in front.
 
+## 7b. Lost second factor (manager MFA)
+
+A manager who lost their authenticator app or security key and has no recovery code left cannot log in. Reset them; they then log in with their password only and set a second factor up again from `/manager/account`.
+
+- **Another admin is available:** open `/manager/users`, choose the user (Manage), press "Remove second factor", then "Confirm reset". This removes the app, the keys and the recovery codes, clears any MFA lockout and closes all the user's sessions. An admin cannot reset their own account here: use the account page.
+- **The only admin is locked out** (or no admin can log in): reset from the server, with the account's email (the command needs no password):
+  ```sh
+  docker compose exec awt-prod awt user reset-mfa --email you@example.org
+  ```
+- Every reset logs `event=mfa.reset_by_admin` with `user_id` and `actor` (the admin's user id, or `cli`). Hand the new password over by another channel if you also reset it (`awt user passwd`).
+- **Back up `AWT_MFA_KEY` with the other secrets.** TOTP secrets are encrypted with it: if it is lost or changed, every enrolled authenticator app stops working at once (security keys and recovery codes are unaffected) and each such manager needs a reset as above. Never rotate it casually.
+
 ## 8. Developer setup: browser tests
 
 `make e2e` drives the real binary with chromium (playwright-go, test-only dependency). Install the driver and the browser once:

@@ -15,6 +15,7 @@ import (
 
 type usersView struct {
 	Users  []auth.User
+	Badges map[string]auth.MFABadge
 	Flash  string
 	Errors formErrors
 	Form   userForm
@@ -26,6 +27,8 @@ type userView struct {
 	User     auth.User
 	Comps    []service.Competition
 	Assigned []string
+	Status   auth.Status
+	Confirm  bool // ask to confirm the second factor reset
 	Flash    string
 	Errors   formErrors
 	Self     bool
@@ -41,6 +44,7 @@ func (h *handlers) registerUsers(r *web.Router) {
 	post(r, "/manager/users/{id}/enable", func(w http.ResponseWriter, r *http.Request) { h.userDisabled(w, r, false) })
 	post(r, "/manager/users/{id}/competitions", h.userCompetitions)
 	post(r, "/manager/users/{id}/password", h.userPassword)
+	post(r, "/manager/users/{id}/reset-mfa", h.userResetMFA)
 }
 
 func (h *handlers) usersPage(w http.ResponseWriter, r *http.Request, status int, f userForm, fe formErrors) {
@@ -49,10 +53,15 @@ func (h *handlers) usersPage(w http.ResponseWriter, r *http.Request, status int,
 		h.fail(w, r, err, nil)
 		return
 	}
+	badges, err := h.auth.MFABadges(r.Context())
+	if err != nil {
+		h.fail(w, r, err, nil)
+		return
+	}
 	if f.Role == "" {
 		f.Role = auth.RoleScorer
 	}
-	render(w, r, status, usersPage(usersView{Users: users, Flash: flash(r), Errors: fe, Form: f}))
+	render(w, r, status, usersPage(usersView{Users: users, Badges: badges, Flash: flash(r), Errors: fe, Form: f}))
 }
 
 func (h *handlers) usersList(w http.ResponseWriter, r *http.Request) {
@@ -100,6 +109,16 @@ func (h *handlers) loadUser(w http.ResponseWriter, r *http.Request) (auth.User, 
 }
 
 func (h *handlers) userPage(w http.ResponseWriter, r *http.Request, status int, u auth.User, fe formErrors) {
+	h.userPageAsk(w, r, status, u, fe, false)
+}
+
+// userPageAsk is userPage, optionally asking to confirm the MFA reset.
+func (h *handlers) userPageAsk(w http.ResponseWriter, r *http.Request, status int, u auth.User, fe formErrors, confirm bool) {
+	mfa, err := h.auth.MFAStatus(r.Context(), u.ID)
+	if err != nil {
+		h.fail(w, r, err, nil)
+		return
+	}
 	comps, err := h.svc.ListCompetitions(r.Context())
 	if err != nil {
 		h.fail(w, r, err, nil)
@@ -111,7 +130,7 @@ func (h *handlers) userPage(w http.ResponseWriter, r *http.Request, status int, 
 		return
 	}
 	sess, _ := auth.SessionFromContext(r.Context())
-	render(w, r, status, userPage(userView{User: u, Comps: comps, Assigned: assigned, Flash: flash(r), Errors: fe, Self: sess.User.ID == u.ID}))
+	render(w, r, status, userPage(userView{User: u, Comps: comps, Assigned: assigned, Status: mfa, Confirm: confirm, Flash: flash(r), Errors: fe, Self: sess.User.ID == u.ID}))
 }
 
 func (h *handlers) userShow(w http.ResponseWriter, r *http.Request) {
@@ -176,6 +195,30 @@ func (h *handlers) userPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	redirect(w, r, "/manager/users/"+u.ID, "password")
+}
+
+// userResetMFA removes a user's second factors after an in-page confirmation
+// (the first post asks, the second, with confirm=1, resets). An admin manages
+// their own factors on the account page, where the password is re-checked.
+func (h *handlers) userResetMFA(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.loadUser(w, r)
+	if !ok {
+		return
+	}
+	sess := session(r)
+	if sess.User.ID == u.ID {
+		h.userPage(w, r, http.StatusConflict, u, messageError("Use your account page to manage your own MFA"))
+		return
+	}
+	if r.PostFormValue("confirm") != "1" {
+		h.userPageAsk(w, r, http.StatusOK, u, formErrors{}, true)
+		return
+	}
+	if err := h.auth.ResetMFA(r.Context(), u.ID, sess.User.ID); err != nil {
+		h.fail(w, r, err, nil)
+		return
+	}
+	redirect(w, r, "/manager/users/"+u.ID, "mfa_reset")
 }
 
 func roleLabel(u auth.User) string {

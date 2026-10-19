@@ -301,6 +301,43 @@ func (q *Queries) ListUserWebAuthnCredentials(ctx context.Context, userID string
 	return items, nil
 }
 
+const listUsersMFABadges = `-- name: ListUsersMFABadges :many
+SELECT u.id AS user_id,
+       EXISTS (SELECT 1 FROM user_totp t WHERE t.user_id = u.id) AS has_totp,
+       (SELECT count(*) FROM user_webauthn_credentials w WHERE w.user_id = u.id) AS key_count
+FROM users u
+`
+
+type ListUsersMFABadgesRow struct {
+	UserID   string `json:"user_id"`
+	HasTotp  bool   `json:"has_totp"`
+	KeyCount int64  `json:"key_count"`
+}
+
+// One row per user for the users list: no per-user query.
+func (q *Queries) ListUsersMFABadges(ctx context.Context) ([]ListUsersMFABadgesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listUsersMFABadges)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListUsersMFABadgesRow
+	for rows.Next() {
+		var i ListUsersMFABadgesRow
+		if err := rows.Scan(&i.UserID, &i.HasTotp, &i.KeyCount); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const lockUserMFA = `-- name: LockUserMFA :exec
 UPDATE users SET mfa_locked_until = ? WHERE id = ?
 `

@@ -76,3 +76,10 @@ UPDATE users SET mfa_failed_count = 0, mfa_locked_until = NULL WHERE id = ?;
 
 -- name: WebAuthnCredentialExists :one
 SELECT EXISTS (SELECT 1 FROM user_webauthn_credentials WHERE id = ?);
+
+-- name: ListUsersMFABadges :many
+-- One row per user for the users list: no per-user query.
+SELECT u.id AS user_id,
+       EXISTS (SELECT 1 FROM user_totp t WHERE t.user_id = u.id) AS has_totp,
+       (SELECT count(*) FROM user_webauthn_credentials w WHERE w.user_id = u.id) AS key_count
+FROM users u;

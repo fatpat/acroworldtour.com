@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 	"slices"
 	"strconv"
 	"strings"
@@ -384,4 +385,73 @@ func (a *Auth) ChangePassword(ctx context.Context, userID, current, next, keepSe
 		return fmt.Errorf("change password for %s: %w", userID, err)
 	}
 	return nil
+}
+
+// ResetMFA removes every second factor of userID (authenticator app, security
+// keys, recovery codes), its pending logins and its MFA lockout, and closes
+// all its sessions, in one transaction: the account logs in with its password
+// only. actor is the admin's user id, or "cli". sql.ErrNoRows (wrapped) when
+// the user does not exist.
+func (a *Auth) ResetMFA(ctx context.Context, userID, actor string) error {
+	err := a.db.Tx(ctx, func(q *gen.Queries) error {
+		if _, err := q.GetUser(ctx, userID); err != nil {
+			return fmt.Errorf("user %s: %w", userID, err)
+		}
+		steps := []struct {
+			what string
+			do   func() error
+		}{
+			{"totp", func() error { return q.DeleteUserTOTP(ctx, userID) }},
+			{"security keys", func() error { return q.DeleteUserWebAuthnCredentials(ctx, userID) }},
+			{"recovery codes", func() error { return q.DeleteUserRecoveryCodes(ctx, userID) }},
+			{"pending logins", func() error { return q.DeleteUserLoginChallenges(ctx, userID) }},
+			{"lockout", func() error { return q.ResetUserMFAFailures(ctx, userID) }},
+			{"sessions", func() error { return q.DeleteUserSessions(ctx, userID) }},
+		}
+		for _, s := range steps {
+			if err := s.do(); err != nil {
+				return fmt.Errorf("delete %s: %w", s.what, err)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("reset mfa for %s: %w", userID, err)
+	}
+	slog.Info("second factors reset", "event", "mfa.reset_by_admin", "user_id", userID, "actor", actor)
+	return nil
+}
+
+// MFABadge is what the users list shows of one account's second factors.
+type MFABadge struct {
+	TOTP bool
+	Keys int
+}
+
+// Labels are the badges to show: "App", "Key" or "Key ×N".
+func (b MFABadge) Labels() []string {
+	var out []string
+	if b.TOTP {
+		out = append(out, "App")
+	}
+	switch {
+	case b.Keys == 1:
+		out = append(out, "Key")
+	case b.Keys > 1:
+		out = append(out, "Key ×"+strconv.Itoa(b.Keys))
+	}
+	return out
+}
+
+// MFABadges returns the factors of every user, by user id, in one query.
+func (a *Auth) MFABadges(ctx context.Context) (map[string]MFABadge, error) {
+	rows, err := gen.New(a.db.Read).ListUsersMFABadges(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list mfa badges: %w", err)
+	}
+	out := make(map[string]MFABadge, len(rows))
+	for _, r := range rows {
+		out[r.UserID] = MFABadge{TOTP: r.HasTotp, Keys: int(r.KeyCount)}
+	}
+	return out, nil
 }

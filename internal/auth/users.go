@@ -173,6 +173,16 @@ func (a *Auth) GetUser(ctx context.Context, id string) (User, error) {
 	return gen.New(a.db.Read).GetUser(ctx, id)
 }
 
+// UserByEmail returns an account by email (any case); the error wraps
+// sql.ErrNoRows when unknown.
+func (a *Auth) UserByEmail(ctx context.Context, email string) (User, error) {
+	u, err := gen.New(a.db.Read).GetUserByEmail(ctx, normEmail(email))
+	if err != nil {
+		return User{}, fmt.Errorf("user %s: %w", email, err)
+	}
+	return u, nil
+}
+
 // UserCompetitions returns the ids of the competitions a user is assigned to.
 func (a *Auth) UserCompetitions(ctx context.Context, userID string) ([]string, error) {
 	return gen.New(a.db.Read).ListUserCompetitions(ctx, userID)
