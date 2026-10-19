@@ -124,7 +124,8 @@ func (a *Auth) CreateUser(ctx context.Context, email, name, role, password strin
 	return u, err
 }
 
-// SetPassword replaces a user's password and revokes their sessions.
+// SetPassword replaces a user's password and revokes their sessions and
+// pending logins.
 func (a *Auth) SetPassword(ctx context.Context, email, password string) error {
 	if err := checkPassword(password); err != nil {
 		return err
@@ -141,7 +142,13 @@ func (a *Auth) SetPassword(ctx context.Context, email, password string) error {
 		if err := q.UpdateUserPassword(ctx, gen.UpdateUserPasswordParams{PasswordHash: string(hash), ID: u.ID}); err != nil {
 			return err
 		}
-		return q.DeleteUserSessions(ctx, u.ID)
+		if err := q.DeleteUserSessions(ctx, u.ID); err != nil {
+			return err
+		}
+		if err := q.DeleteUserLoginChallenges(ctx, u.ID); err != nil {
+			return fmt.Errorf("drop pending logins: %w", err)
+		}
+		return nil
 	})
 }
 

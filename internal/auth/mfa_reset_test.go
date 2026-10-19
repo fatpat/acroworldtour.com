@@ -128,3 +128,19 @@ func TestMFABadgesBatched(t *testing.T) {
 		t.Fatalf("labels = %v", l)
 	}
 }
+
+func TestSetPasswordDropsPendingLogins(t *testing.T) {
+	a, _ := newMFAAuth(t)
+	u := mustUser(t, a, "pw@example.org", RoleAdmin)
+	enrolTOTP(t, a, u)
+	startPending(t, a, u.Email, "192.0.2.1")
+	if countRows(t, a, `SELECT count(*) FROM login_challenges WHERE user_id = ?`, u.ID) != 1 {
+		t.Fatal("setup: no pending login")
+	}
+	if err := a.SetPassword(context.Background(), u.Email, "another-passw0rd"); err != nil {
+		t.Fatal(err)
+	}
+	if n := countRows(t, a, `SELECT count(*) FROM login_challenges WHERE user_id = ?`, u.ID); n != 0 {
+		t.Fatalf("%d pending logins survived a password reset", n)
+	}
+}
