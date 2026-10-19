@@ -75,3 +75,16 @@ Decisions taken by the AI controller during the Go rewrite, on the owner's behal
 - Run the deploy pipeline once against the real VPS / Cloudflare / GHCR.
 - Consent-aware analytics for the public site.
 - One legacy news article has no git date and stays a draft until dated.
+
+## MFA feature rulings (2026-10-19)
+
+- T3 extends isLoginPath to "/manager/login" and the "/manager/login/mfa" prefix — login second step must be reachable without a session — cost if wrong: none.
+- T4 RP origins = origin of AWT_BASE_URL; in dev with empty BaseURL use http://localhost:<port> and http://127.0.0.1:<port> from AWT_ADDR — never derived from the request Host header (spoofable) — cost if wrong: dev keys need BaseURL set.
+- T5 updates TestEveryAdminRouteIsGuarded so /manager/account routes are allowed with the User guard (and only those) — cost if wrong: none.
+- sealSecret/openSecret take a purpose string used as GCM AAD (totp-secret|user:<id>, totp-enroll|user:<id>); TOTP keys < 16 bytes rejected — cheap defence in depth before Tasks 3/5 bind to the signature — cost if wrong: none.
+- the 5th failed factor attempt itself answers 429 (locking failure) — informs the user immediately; 6th is 429 too — cost if wrong: none.
+- Config.Origins() is the single origin source for Origin checks and the WebAuthn RP — cost if wrong: none.
+- account-form password checks get a per-user limiter (5 wrong current passwords / 15 min → 429), and bcrypt runs before the write Tx; inside the Tx the stored password_hash must still equal the one verified (else retry error) — no 250 ms write lock during live judging — cost if wrong: none.
+- failure counter without 15-min window kept (stricter than acceptance wording; matches settled "5 failed attempts") — cost if wrong: an old failure can contribute to a lock.
+- Deferred, owner to know: recovery codes are unsalted SHA-256 of ~49.5-bit codes (plan-mandated); a leaked DB allows offline cracking in about a day on one GPU, but the password is still required. Later: 16-character codes.
+- Deferred: the factor failure counter has no 15-minute window (failures accumulate until a success, a lock or an admin reset).
