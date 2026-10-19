@@ -129,8 +129,11 @@ A manager who lost their authenticator app or security key and has no recovery c
   ```sh
   docker compose exec awt-prod awt user reset-mfa --email you@example.org
   ```
-- Every reset logs `event=mfa.reset_by_admin` with `user_id` and `actor` (the admin's user id, or `cli`). Hand the new password over by another channel if you also reset it (`awt user passwd`).
+- Every reset logs `event=mfa.reset_by_admin` with `user_id`, `actor` (the admin's user id, or `cli`) and `ip` (empty from the CLI). Hand the new password over by another channel if you also reset it (`awt user passwd`).
 - **Back up `AWT_MFA_KEY` with the other secrets.** TOTP secrets are encrypted with it: if it is lost or changed, every enrolled authenticator app stops working at once (security keys and recovery codes are unaffected) and each such manager needs a reset as above. Never rotate it casually.
+- **Restarting after losing `AWT_MFA_KEY`.** The app refuses to start outside dev while TOTP secrets exist and no key is set, so pick one:
+  1. Set a **new** key (`openssl rand -base64 32`) in the environment file and start. The old TOTP secrets can no longer be opened: those managers see "authenticator codes unavailable" at login and sign in with a security key or a recovery code, or are reset by an admin. Once in, they remove the dead app on the account page and enrol again.
+  2. Or, **before** restarting, reset every TOTP user from the server with `awt user reset-mfa --email ...` (it works without the key); then the app starts without a key (authenticator apps stay unavailable until one is set, and a startup warning says so).
 
 ## 8. Developer setup: browser tests
 
