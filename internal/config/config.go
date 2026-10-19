@@ -2,6 +2,8 @@
 package config
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/netip"
@@ -29,6 +31,14 @@ type Config struct {
 	TrustedProxies []netip.Prefix
 	// ClientIPHeader is CF-Connecting-IP (default) or X-Forwarded-For.
 	ClientIPHeader string
+	// MFAKey is the 32-byte key sealing TOTP secrets (AWT_MFA_KEY, base64).
+	// Dev without the variable gets a fixed key derived from a constant;
+	// outside dev it stays empty and serve requires it once any TOTP row
+	// exists.
+	MFAKey []byte
+	// WebAuthnRPID is the WebAuthn relying party ID (AWT_WEBAUTHN_RP_ID):
+	// default is the host of AWT_BASE_URL, localhost in dev without one.
+	WebAuthnRPID string
 }
 
 // Load reads the configuration through getenv and refuses to start on a
@@ -104,6 +114,27 @@ func Load(getenv func(string) string) (Config, error) {
 		}
 	default:
 		return Config{}, fmt.Errorf("AWT_BLOB_BACKEND %q: must be fs or s3", cfg.BlobBackend)
+	}
+	if v := getenv("AWT_MFA_KEY"); v != "" {
+		key, err := base64.StdEncoding.DecodeString(v)
+		if err != nil {
+			return Config{}, errors.New("AWT_MFA_KEY: must be base64 (generate with: openssl rand -base64 32)")
+		}
+		if len(key) != 32 {
+			return Config{}, fmt.Errorf("AWT_MFA_KEY: decoded length is %d bytes, must be 32", len(key))
+		}
+		cfg.MFAKey = key
+	} else if cfg.Env == "dev" {
+		sum := sha256.Sum256([]byte("awt-dev-mfa-key"))
+		cfg.MFAKey = sum[:]
+	}
+	cfg.WebAuthnRPID = getenv("AWT_WEBAUTHN_RP_ID")
+	if cfg.WebAuthnRPID == "" {
+		cfg.WebAuthnRPID = "localhost"
+		if cfg.BaseURL != "" {
+			u, _ := url.Parse(cfg.BaseURL) // validated above
+			cfg.WebAuthnRPID = u.Hostname()
+		}
 	}
 	return cfg, nil
 }

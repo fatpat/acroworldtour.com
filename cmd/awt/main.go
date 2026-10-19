@@ -78,6 +78,9 @@ func serve() error {
 		handler = slog.NewJSONHandler(os.Stderr, nil)
 	}
 	slog.SetDefault(slog.New(handler))
+	if cfg.Env == "dev" && os.Getenv("AWT_MFA_KEY") == "" {
+		slog.Warn("AWT_MFA_KEY unset: using the fixed development MFA key, never use it outside dev")
+	}
 
 	db, err := openMigrated(cfg)
 	if err != nil {

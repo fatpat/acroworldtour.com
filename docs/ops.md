@@ -41,6 +41,10 @@ Nothing secret is committed. On the VPS, in `/opt/awt` (mode 600, owner = deploy
 
 There is no session secret: sessions are random tokens stored in the database. `AWT_ENV` is set per service in `compose.yaml` (`prod`, `training`); the app refuses to start outside dev without `AWT_BASE_URL`. Set `AWT_IMAGE` in `.env` to `ghcr.io/<lowercase-owner>/awt`. Create the Object Storage bucket(s) and an S3 user with read/write access to them. `LITESTREAM_S3_REGION` is the OVH region (for example `gra`). Leave `AWT_S3_BUCKET` empty to run without replication (not for prod).
 
+**Manager MFA key.** TOTP secrets are stored encrypted with `AWT_MFA_KEY` (base64, 32 bytes). Generate it once per environment with `openssl rand -base64 32` and put it in `.env.prod` / `.env.training` (different values). The app refuses to start outside dev if any TOTP secret exists and the key is missing; if the key is lost or changed, enrolled TOTP secrets become unusable and each affected manager must be reset by an admin and re-enrol. Back it up with the other secrets. In dev a fixed key is used and a warning is logged.
+
+**WebAuthn RP ID.** `AWT_WEBAUTHN_RP_ID` defaults to the host of `AWT_BASE_URL` (`localhost` in dev). Set it only to share passkeys across subdomains (a parent domain of the site host). Changing it later invalidates every registered passkey, so decide before managers enrol.
+
 GitHub repository secrets for the deploy workflow:
 
 - `VPS_HOST`, `VPS_USER` (`deploy`), `VPS_PORT`: the VPS address, deploy user and SSH port.

@@ -182,7 +182,7 @@ func (a *Auth) SetDisabled(ctx context.Context, id string, disabled bool) error 
 			return fmt.Errorf("user %s: %w", id, err)
 		}
 		u.Disabled = disabled
-		if err := q.UpsertUser(ctx, gen.UpsertUserParams(u)); err != nil {
+		if err := q.UpsertUser(ctx, gen.UpsertUserParams{ID: u.ID, Email: u.Email, Name: u.Name, PasswordHash: u.PasswordHash, Role: u.Role, Disabled: u.Disabled}); err != nil {
 			return err
 		}
 		if disabled {

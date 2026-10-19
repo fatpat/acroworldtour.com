@@ -164,6 +164,14 @@ type Judge struct {
 	DeletedAt sql.NullString `json:"deleted_at"`
 }
 
+type LoginChallenge struct {
+	TokenHash string `json:"token_hash"`
+	UserID    string `json:"user_id"`
+	Kind      string `json:"kind"`
+	Data      string `json:"data"`
+	ExpiresAt string `json:"expires_at"`
+}
+
 type News struct {
 	ID          string         `json:"id"`
 	Slug        string         `json:"slug"`
@@ -331,15 +339,39 @@ type UniqueTrick struct {
 }
 
 type User struct {
-	ID           string `json:"id"`
-	Email        string `json:"email"`
-	Name         string `json:"name"`
-	PasswordHash string `json:"password_hash"`
-	Role         string `json:"role"`
-	Disabled     bool   `json:"disabled"`
+	ID             string         `json:"id"`
+	Email          string         `json:"email"`
+	Name           string         `json:"name"`
+	PasswordHash   string         `json:"password_hash"`
+	Role           string         `json:"role"`
+	Disabled       bool           `json:"disabled"`
+	MfaFailedCount int64          `json:"mfa_failed_count"`
+	MfaLockedUntil sql.NullString `json:"mfa_locked_until"`
 }
 
 type UserCompetition struct {
 	UserID        string `json:"user_id"`
 	CompetitionID string `json:"competition_id"`
+}
+
+type UserRecoveryCode struct {
+	UserID   string         `json:"user_id"`
+	CodeHash string         `json:"code_hash"`
+	UsedAt   sql.NullString `json:"used_at"`
+}
+
+type UserTotp struct {
+	UserID    string `json:"user_id"`
+	SecretEnc string `json:"secret_enc"`
+	CreatedAt string `json:"created_at"`
+	LastStep  int64  `json:"last_step"`
+}
+
+type UserWebauthnCredential struct {
+	ID         string         `json:"id"`
+	UserID     string         `json:"user_id"`
+	Name       string         `json:"name"`
+	Credential string         `json:"credential"`
+	CreatedAt  string         `json:"created_at"`
+	LastUsedAt sql.NullString `json:"last_used_at"`
 }

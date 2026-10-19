@@ -1,6 +1,9 @@
 package config_test
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/base64"
 	"strings"
 	"testing"
 
@@ -87,5 +90,56 @@ func TestLoadRejectsRelativeBaseURL(t *testing.T) {
 		if _, err := config.Load(env(map[string]string{"AWT_ENV": "prod", "AWT_BASE_URL": u})); err == nil {
 			t.Errorf("AWT_BASE_URL %q accepted", u)
 		}
+	}
+}
+
+func TestLoadMFAKey(t *testing.T) {
+	good := base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{7}, 32))
+	cfg, err := config.Load(env(map[string]string{"AWT_ENV": "prod", "AWT_BASE_URL": "https://www.example.org", "AWT_MFA_KEY": good}))
+	if err != nil {
+		t.Fatalf("valid key: %v", err)
+	}
+	if !bytes.Equal(cfg.MFAKey, bytes.Repeat([]byte{7}, 32)) {
+		t.Errorf("MFAKey = %x", cfg.MFAKey)
+	}
+	for name, bad := range map[string]string{
+		"short":      base64.StdEncoding.EncodeToString(make([]byte, 16)),
+		"long":       base64.StdEncoding.EncodeToString(make([]byte, 33)),
+		"not base64": "***not base64***",
+	} {
+		_, err := config.Load(env(map[string]string{"AWT_ENV": "dev", "AWT_MFA_KEY": bad}))
+		if err == nil || !strings.Contains(err.Error(), "AWT_MFA_KEY") {
+			t.Errorf("%s: err = %v, want one naming AWT_MFA_KEY", name, err)
+		}
+	}
+	dev, err := config.Load(env(map[string]string{"AWT_ENV": "dev"}))
+	if err != nil {
+		t.Fatalf("dev without key: %v", err)
+	}
+	want := sha256.Sum256([]byte("awt-dev-mfa-key"))
+	if !bytes.Equal(dev.MFAKey, want[:]) {
+		t.Errorf("dev MFAKey = %x, want sha256 of awt-dev-mfa-key", dev.MFAKey)
+	}
+	// Outside dev the key stays empty when unset: serve enforces it when TOTP rows exist.
+	prod, err := config.Load(env(map[string]string{"AWT_ENV": "prod", "AWT_BASE_URL": "https://www.example.org"}))
+	if err != nil || len(prod.MFAKey) != 0 {
+		t.Errorf("prod without key: key=%x err=%v, want empty and no error", prod.MFAKey, err)
+	}
+}
+
+func TestLoadWebAuthnRPID(t *testing.T) {
+	prod := map[string]string{"AWT_ENV": "prod", "AWT_BASE_URL": "https://www.example.org:8443"}
+	cfg, err := config.Load(env(prod))
+	if err != nil || cfg.WebAuthnRPID != "www.example.org" {
+		t.Fatalf("default: rpid=%q err=%v, want www.example.org", cfg.WebAuthnRPID, err)
+	}
+	prod["AWT_WEBAUTHN_RP_ID"] = "example.org"
+	cfg, err = config.Load(env(prod))
+	if err != nil || cfg.WebAuthnRPID != "example.org" {
+		t.Fatalf("override: rpid=%q err=%v", cfg.WebAuthnRPID, err)
+	}
+	cfg, err = config.Load(env(map[string]string{"AWT_ENV": "dev"}))
+	if err != nil || cfg.WebAuthnRPID != "localhost" {
+		t.Fatalf("dev default: rpid=%q err=%v, want localhost", cfg.WebAuthnRPID, err)
 	}
 }

@@ -82,7 +82,7 @@ func (q *Queries) GetSession(ctx context.Context, arg GetSessionParams) (Session
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, email, name, password_hash, role, disabled FROM users WHERE id = ?
+SELECT id, email, name, password_hash, role, disabled, mfa_failed_count, mfa_locked_until FROM users WHERE id = ?
 `
 
 func (q *Queries) GetUser(ctx context.Context, id string) (User, error) {
@@ -95,12 +95,14 @@ func (q *Queries) GetUser(ctx context.Context, id string) (User, error) {
 		&i.PasswordHash,
 		&i.Role,
 		&i.Disabled,
+		&i.MfaFailedCount,
+		&i.MfaLockedUntil,
 	)
 	return i, err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, name, password_hash, role, disabled FROM users WHERE email = ?
+SELECT id, email, name, password_hash, role, disabled, mfa_failed_count, mfa_locked_until FROM users WHERE email = ?
 `
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
@@ -113,6 +115,8 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.PasswordHash,
 		&i.Role,
 		&i.Disabled,
+		&i.MfaFailedCount,
+		&i.MfaLockedUntil,
 	)
 	return i, err
 }
@@ -184,7 +188,7 @@ func (q *Queries) ListUserCompetitions(ctx context.Context, userID string) ([]st
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, email, name, password_hash, role, disabled FROM users ORDER BY email
+SELECT id, email, name, password_hash, role, disabled, mfa_failed_count, mfa_locked_until FROM users ORDER BY email
 `
 
 func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
@@ -203,6 +207,8 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 			&i.PasswordHash,
 			&i.Role,
 			&i.Disabled,
+			&i.MfaFailedCount,
+			&i.MfaLockedUntil,
 		); err != nil {
 			return nil, err
 		}
