@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"log/slog"
 	"net"
 	"net/http"
 	"path/filepath"
@@ -138,5 +140,26 @@ func TestPurgerOutlivesShutdown(t *testing.T) {
 	defer fp.mu.Unlock()
 	if !slices.Contains(fp.urls, "https://x.test/seasons/s1") {
 		t.Errorf("event of the in-flight request not purged: %v", fp.urls)
+	}
+}
+
+func TestWarnMFAKey(t *testing.T) {
+	run := func(env, key string) string {
+		t.Setenv("AWT_MFA_KEY", key)
+		var buf bytes.Buffer
+		old := slog.Default()
+		slog.SetDefault(slog.New(slog.NewTextHandler(&buf, nil)))
+		defer slog.SetDefault(old)
+		warnMFAKey(config.Config{Env: env})
+		return buf.String()
+	}
+	if got := run("prod", ""); !strings.Contains(got, "level=WARN") || !strings.Contains(got, "authenticator apps (TOTP) are unavailable") {
+		t.Errorf("prod without key: %q", got)
+	}
+	if got := run("dev", ""); !strings.Contains(got, "fixed development MFA key") {
+		t.Errorf("dev without key: %q", got)
+	}
+	if got := run("prod", "set"); got != "" {
+		t.Errorf("prod with key logged: %q", got)
 	}
 }

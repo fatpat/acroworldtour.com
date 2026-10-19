@@ -317,3 +317,9 @@ func TestAccountWrongPasswordsLimited(t *testing.T) {
 	// Only this account is limited.
 	e.wantRedirect(e.postAs(&e.admin, "/manager/account/password", url.Values{"current_password": {accountPassword}, "new_password": {"a-brand-new-one"}}, true), "/manager/account?ok=")
 }
+
+func TestTOTPEnrollmentWithoutMFAKeyShowsMessage(t *testing.T) {
+	e := newEnvNoMFAKey(t)
+	e.wantStatus(e.postAs(&e.scorer, "/manager/account/totp/start", nil, true), http.StatusServiceUnavailable,
+		"Authenticator apps are not available: the server has no MFA key configured")
+}

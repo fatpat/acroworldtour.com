@@ -70,6 +70,13 @@ func newEnv(t *testing.T) *env {
 	return buildEnv(t)
 }
 
+// newEnvNoMFAKey is newEnv with AWT_MFA_KEY unset (outside dev).
+func newEnvNoMFAKey(t *testing.T) *env {
+	t.Helper()
+	t.Parallel()
+	return buildEnv(t, func(c *config.Config) { c.MFAKey = nil })
+}
+
 // newSerialEnv is newEnv for tests that swap the global slog default: they
 // must not run in parallel.
 func newSerialEnv(t *testing.T) *env {
@@ -77,7 +84,7 @@ func newSerialEnv(t *testing.T) *env {
 	return buildEnv(t)
 }
 
-func buildEnv(t *testing.T) *env {
+func buildEnv(t *testing.T, tweak ...func(*config.Config)) *env {
 	t.Helper()
 	dir := t.TempDir()
 	db, err := store.Open(filepath.Join(dir, "awt.db"))
@@ -93,6 +100,9 @@ func buildEnv(t *testing.T) *env {
 		t.Fatal(err)
 	}
 	cfg := config.Config{Env: "dev", Addr: ":0", MFAKey: bytes.Repeat([]byte{7}, 32), WebAuthnRPID: "localhost"}
+	for _, f := range tweak {
+		f(&cfg)
+	}
 	svc := service.New(db, blobs, service.NewBus(), fakeCIVL{})
 	deps := web.Deps{Cfg: cfg, Auth: auth.New(db, cfg), DB: db, Purger: cache.NoopPurger{}, Blobs: blobs, Service: svc}
 	e := &env{t: t, deps: deps, svc: svc, h: web.Routes(deps, admin.Module{})}

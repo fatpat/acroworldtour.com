@@ -78,9 +78,7 @@ func serve() error {
 		handler = slog.NewJSONHandler(os.Stderr, nil)
 	}
 	slog.SetDefault(slog.New(handler))
-	if cfg.Env == "dev" && os.Getenv("AWT_MFA_KEY") == "" {
-		slog.Warn("AWT_MFA_KEY unset: using the fixed development MFA key, never use it outside dev")
-	}
+	warnMFAKey(cfg)
 
 	db, err := openMigrated(cfg)
 	if err != nil {
@@ -182,4 +180,18 @@ func openMigrated(cfg config.Config) (*store.DB, error) {
 		return nil, err
 	}
 	return db, nil
+}
+
+// warnMFAKey tells the operator about an unset AWT_MFA_KEY: dev uses a fixed
+// key; elsewhere authenticator apps are unavailable (security keys and
+// recovery codes still work).
+func warnMFAKey(cfg config.Config) {
+	if os.Getenv("AWT_MFA_KEY") != "" {
+		return
+	}
+	if cfg.Env == "dev" {
+		slog.Warn("AWT_MFA_KEY unset: using the fixed development MFA key, never use it outside dev")
+		return
+	}
+	slog.Warn("AWT_MFA_KEY unset: authenticator apps (TOTP) are unavailable until it is set (generate with: openssl rand -base64 32)")
 }

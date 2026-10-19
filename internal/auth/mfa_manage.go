@@ -34,6 +34,9 @@ var (
 	ErrTOTPEnrolled = errors.New("an authenticator app is already set up")
 	// ErrNoTOTP: the account has no authenticator app to remove.
 	ErrNoTOTP = errors.New("no authenticator app is set up")
+	// ErrNoMFAKey: the server has no AWT_MFA_KEY, so no TOTP secret can be
+	// sealed: authenticator apps are unavailable.
+	ErrNoMFAKey = errors.New("authenticator apps are not available: the server has no MFA key configured")
 	// ErrKeyNotFound: the account has no security key with that id.
 	ErrKeyNotFound = errors.New("security key not found")
 	// ErrNoFactor: recovery codes only back up a factor; there is none.
@@ -103,6 +106,9 @@ func (a *Auth) MFAStatus(ctx context.Context, userID string) (Status, error) {
 // otpauth URI and sealedPending, the secret sealed for this user with a
 // 10-minute expiry, to carry in the confirmation form. Nothing is stored.
 func (a *Auth) StartTOTPEnrollment(ctx context.Context, userID string) (secret, uri, sealedPending string, err error) {
+	if len(a.cfg.MFAKey) == 0 {
+		return "", "", "", ErrNoMFAKey
+	}
 	u, err := gen.New(a.db.Read).GetUser(ctx, userID)
 	if err != nil {
 		return "", "", "", fmt.Errorf("totp enrolment for %s: %w", userID, err)

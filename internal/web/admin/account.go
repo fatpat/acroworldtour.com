@@ -122,6 +122,8 @@ func (h *handlers) accountFail(w http.ResponseWriter, r *http.Request, err error
 		status, v.Errors = http.StatusConflict, messageError("No authenticator app is set up.")
 	case errors.Is(err, auth.ErrNoFactor):
 		status, v.Errors = http.StatusConflict, messageError("Add an authenticator app or a security key first.")
+	case errors.Is(err, auth.ErrNoMFAKey):
+		status, v.Enroll, v.Errors = http.StatusServiceUnavailable, nil, messageError("Authenticator apps are not available: the server has no MFA key configured")
 	case errors.Is(err, auth.ErrKeyNotFound):
 		h.notFound(w, r)
 		return
@@ -134,6 +136,10 @@ func (h *handlers) accountFail(w http.ResponseWriter, r *http.Request, err error
 
 func (h *handlers) accountTOTPStart(w http.ResponseWriter, r *http.Request) {
 	secret, _, pending, err := h.auth.StartTOTPEnrollment(r.Context(), session(r).User.ID)
+	if errors.Is(err, auth.ErrNoMFAKey) {
+		h.accountFail(w, r, err, accountView{Section: secTOTP})
+		return
+	}
 	if err != nil {
 		h.fail(w, r, err, nil)
 		return
