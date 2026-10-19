@@ -67,6 +67,18 @@ type env struct {
 func newEnv(t *testing.T) *env {
 	t.Helper()
 	t.Parallel()
+	return buildEnv(t)
+}
+
+// newSerialEnv is newEnv for tests that swap the global slog default: they
+// must not run in parallel.
+func newSerialEnv(t *testing.T) *env {
+	t.Helper()
+	return buildEnv(t)
+}
+
+func buildEnv(t *testing.T) *env {
+	t.Helper()
 	dir := t.TempDir()
 	db, err := store.Open(filepath.Join(dir, "awt.db"))
 	if err != nil {

@@ -56,7 +56,7 @@ func TestResetMFARemovesEverything(t *testing.T) {
 	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, nil)))
 	t.Cleanup(func() { slog.SetDefault(old) })
 
-	if err := a.ResetMFA(ctx, u.ID, "cli"); err != nil {
+	if err := a.ResetMFA(ctx, u.ID, "cli", "203.0.113.9"); err != nil {
 		t.Fatal(err)
 	}
 	for table, q := range map[string]string{
@@ -82,7 +82,7 @@ func TestResetMFARemovesEverything(t *testing.T) {
 		t.Fatalf("other account changed: %+v %v", st, err)
 	}
 	log := buf.String()
-	for _, want := range []string{"event=mfa.reset_by_admin", "user_id=" + u.ID, "actor=cli"} {
+	for _, want := range []string{"event=mfa.reset_by_admin", "user_id=" + u.ID, "actor=cli", "ip=203.0.113.9"} {
 		if !strings.Contains(log, want) {
 			t.Errorf("log missing %q: %s", want, log)
 		}
@@ -90,7 +90,7 @@ func TestResetMFARemovesEverything(t *testing.T) {
 	if strings.Contains(log, secret) {
 		t.Fatal("secret logged")
 	}
-	if err := a.ResetMFA(ctx, "nobody", "cli"); !errors.Is(err, sql.ErrNoRows) {
+	if err := a.ResetMFA(ctx, "nobody", "cli", ""); !errors.Is(err, sql.ErrNoRows) {
 		t.Fatalf("unknown user = %v", err)
 	}
 }

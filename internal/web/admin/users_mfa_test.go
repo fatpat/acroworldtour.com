@@ -1,8 +1,11 @@
 package admin_test
 
 import (
+	"bytes"
 	"context"
+	"log/slog"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
@@ -102,5 +105,26 @@ func TestResetMFAUnknownUserAndForbiddenScorer(t *testing.T) {
 	}
 	if rec := e.postAs(&e.admin, "/manager/users/"+e.scorer.User.ID+"/reset-mfa", url.Values{"confirm": {"1"}}, false); rec.Code != http.StatusForbidden {
 		t.Fatalf("no CSRF = %d, want 403", rec.Code)
+	}
+}
+
+func TestAdminResetLogsActorAndIP(t *testing.T) {
+	e := newSerialEnv(t)
+	scorerID := e.scorer.User.ID
+	e.enrolApp(&e.scorer)
+	var buf bytes.Buffer
+	old := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, nil)))
+	t.Cleanup(func() { slog.SetDefault(old) })
+
+	req := httptest.NewRequest(http.MethodPost, "/manager/users/"+scorerID+"/reset-mfa", strings.NewReader(url.Values{"confirm": {"1"}, "_csrf": {e.admin.CSRF}}.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.RemoteAddr = "198.51.100.7:4242"
+	e.wantRedirect(e.do(req, &e.admin), "/manager/users/"+scorerID+"?ok=mfa_reset")
+	log := buf.String()
+	for _, want := range []string{"event=mfa.reset_by_admin", "user_id=" + scorerID, "actor=" + e.admin.User.ID, "ip=198.51.100.7"} {
+		if !strings.Contains(log, want) {
+			t.Errorf("log missing %q: %s", want, log)
+		}
 	}
 }

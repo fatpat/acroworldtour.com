@@ -214,7 +214,7 @@ func (h *handlers) userResetMFA(w http.ResponseWriter, r *http.Request) {
 		h.userPageAsk(w, r, http.StatusOK, u, formErrors{}, true)
 		return
 	}
-	if err := h.auth.ResetMFA(r.Context(), u.ID, sess.User.ID); err != nil {
+	if err := h.auth.ResetMFA(r.Context(), u.ID, sess.User.ID, h.auth.ClientIP(r)); err != nil {
 		h.fail(w, r, err, nil)
 		return
 	}

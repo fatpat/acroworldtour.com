@@ -84,7 +84,7 @@ func userCmd(args []string, stdin *os.File) error {
 		if err != nil {
 			return err
 		}
-		if err := a.ResetMFA(ctx, u.ID, "cli"); err != nil {
+		if err := a.ResetMFA(ctx, u.ID, "cli", ""); err != nil {
 			return err
 		}
 		fmt.Printf("second factors removed for %s; all sessions closed\n", u.Email)

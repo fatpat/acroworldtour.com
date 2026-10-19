@@ -390,9 +390,10 @@ func (a *Auth) ChangePassword(ctx context.Context, userID, current, next, keepSe
 // ResetMFA removes every second factor of userID (authenticator app, security
 // keys, recovery codes), its pending logins and its MFA lockout, and closes
 // all its sessions, in one transaction: the account logs in with its password
-// only. actor is the admin's user id, or "cli". sql.ErrNoRows (wrapped) when
+// only. actor is the admin's user id, or "cli"; ip is the client address
+// ("" from the CLI). sql.ErrNoRows (wrapped) when
 // the user does not exist.
-func (a *Auth) ResetMFA(ctx context.Context, userID, actor string) error {
+func (a *Auth) ResetMFA(ctx context.Context, userID, actor, ip string) error {
 	err := a.db.Tx(ctx, func(q *gen.Queries) error {
 		if _, err := q.GetUser(ctx, userID); err != nil {
 			return fmt.Errorf("user %s: %w", userID, err)
@@ -418,7 +419,7 @@ func (a *Auth) ResetMFA(ctx context.Context, userID, actor string) error {
 	if err != nil {
 		return fmt.Errorf("reset mfa for %s: %w", userID, err)
 	}
-	slog.Info("second factors reset", "event", "mfa.reset_by_admin", "user_id", userID, "actor", actor)
+	slog.Info("second factors reset", "event", "mfa.reset_by_admin", "user_id", userID, "actor", actor, "ip", ip)
 	return nil
 }
 
