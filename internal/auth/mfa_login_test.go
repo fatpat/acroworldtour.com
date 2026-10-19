@@ -1,11 +1,14 @@
 package auth
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -423,5 +426,72 @@ func TestHandleLoginRedirectsToSecondStep(t *testing.T) {
 	req.AddCookie(rec.Result().Cookies()[0])
 	if p, err := a.PendingFromRequest(req); err != nil || p.Next != "/manager" {
 		t.Fatalf("unsafe next: %+v %v", p, err)
+	}
+}
+
+// TestNoSecretsInLogs: no TOTP secret, code or recovery code reaches the
+// logs, whatever the outcome of a factor operation.
+func TestNoSecretsInLogs(t *testing.T) {
+	a, c := newWebAuthnAuth(t)
+	ctx := context.Background()
+	u := mustUser(t, a, "logs@example.org", RoleAdmin)
+	var buf bytes.Buffer
+	old := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug})))
+	t.Cleanup(func() { slog.SetDefault(old) })
+
+	var sensitive []string
+	// Enrolment (ConfirmTOTP), then login with a code, a wrong code and
+	// recovery codes (right and wrong), regeneration, and a key ceremony.
+	secret, codes := accountTOTP(t, a, u, "")
+	enrolCode := code(t, secret, c.now())
+	sensitive = append(sensitive, secret, enrolCode)
+	c.advance(30 * time.Second)
+	next := code(t, secret, c.now())
+	bad := wrongCode(t, secret, c.now())
+	sensitive = append(sensitive, next)
+	req := startPending(t, a, u.Email, "192.0.2.1")
+	_, _ = a.CompleteWithTOTP(ctx, req, bad)
+	if _, err := a.CompleteWithTOTP(ctx, req, next); err != nil {
+		t.Fatal(err)
+	}
+	for _, rc := range codes[:2] {
+		sensitive = append(sensitive, rc, NormaliseRecoveryCode(rc))
+	}
+	req = startPending(t, a, u.Email, "192.0.2.1")
+	_, _, _ = a.CompleteWithRecovery(ctx, req, "aaaaa-bbbbb")
+	if _, _, err := a.CompleteWithRecovery(ctx, req, codes[0]); err != nil {
+		t.Fatal(err)
+	}
+	req = startPending(t, a, u.Email, "192.0.2.1")
+	if _, _, err := a.CompleteWithRecovery(ctx, req, strings.ToUpper(NormaliseRecoveryCode(codes[1]))); err != nil {
+		t.Fatal(err)
+	}
+	fresh, err := a.RegenerateRecoveryCodes(ctx, u.ID, testPassword, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, rc := range fresh {
+		sensitive = append(sensitive, rc, NormaliseRecoveryCode(rc))
+	}
+	key := registerKey(t, a, u, "Key")
+	req = startPending(t, a, u.Email, "192.0.2.1")
+	key.SignCount = 1
+	if _, err := a.FinishWebAuthnLogin(ctx, req, assertion(t, a, key, req, "https://evil.example")); !errors.Is(err, ErrMFAInvalid) {
+		t.Fatal(err)
+	}
+	req = startPending(t, a, u.Email, "192.0.2.1")
+	if _, err := a.FinishWebAuthnLogin(ctx, req, assertion(t, a, key, req, waOrigin)); err != nil {
+		t.Fatal(err)
+	}
+
+	log := buf.String()
+	if !strings.Contains(log, "mfa.failed") || !strings.Contains(log, "mfa.recovery_used") {
+		t.Fatalf("setup: expected events missing from the log: %s", log)
+	}
+	for _, s := range sensitive {
+		if s != "" && strings.Contains(log, s) {
+			t.Errorf("log contains %q", s)
+		}
 	}
 }

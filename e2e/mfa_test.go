@@ -113,9 +113,20 @@ func TestTOTPLoginFlow(t *testing.T) {
 	click(t, p.Locator("summary").Filter(playwright.LocatorFilterOptions{HasText: "Use a recovery code"}), "recovery summary")
 	must(t, p.GetByLabel("Recovery code").Fill(codes[0]), "spent recovery code")
 	click(t, role(p, "button", "Use recovery code"), "Use spent recovery code")
-	must(t, p.Locator("[role=alert]").First().WaitFor(), "spent code refused")
+	expectText(t, p.Locator("[role=alert]").First(), "Invalid code")
 	if strings.HasSuffix(p.URL(), "/manager") {
 		t.Fatal("a spent recovery code logged in")
+	}
+
+	// Item: nothing secret reached the server logs.
+	log := e.logs.String()
+	for _, secretValue := range append([]string{secret, code, next}, codes...) {
+		if strings.Contains(log, secretValue) || strings.Contains(log, strings.ReplaceAll(secretValue, "-", "")) {
+			t.Errorf("server logs contain %q", secretValue)
+		}
+	}
+	if !strings.Contains(log, "mfa.recovery_used") {
+		t.Error("server logs miss the recovery event (is the capture live?)")
 	}
 
 	// The default admin removes the second factor: password only again.
