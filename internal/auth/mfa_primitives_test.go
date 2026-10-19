@@ -38,6 +38,14 @@ func TestTOTPSecretFormat(t *testing.T) {
 	if err != nil || a != b {
 		t.Fatalf("lowercase/padded: %q vs %q, %v", a, b, err)
 	}
+	for _, bad := range []string{"", "MFRGGZDF"} {
+		if _, err := TOTPCode(bad, now); err == nil {
+			t.Fatalf("short secret %q accepted", bad)
+		}
+		if _, ok := VerifyTOTP(bad, "000000", now, 0); ok {
+			t.Fatalf("short secret %q verified", bad)
+		}
+	}
 	if _, err := TOTPCode("not base32!", now); err == nil {
 		t.Fatal("invalid secret accepted")
 	}
@@ -88,33 +96,40 @@ func TestTOTPURI(t *testing.T) {
 func TestSealOpenSecret(t *testing.T) {
 	key := make([]byte, 32)
 	key[0] = 1
-	sealed, err := sealSecret(key, "JBSWY3DP")
+	sealed, err := sealSecret(key, PurposeTOTPSecret+"u1", "JBSWY3DP")
 	if err != nil || !regexp.MustCompile(`^v1:[0-9a-f]{8}:[A-Za-z0-9+/=]+$`).MatchString(sealed) {
 		t.Fatalf("sealed %q, %v", sealed, err)
 	}
-	if got, err := openSecret(key, sealed); err != nil || got != "JBSWY3DP" {
+	if got, err := openSecret(key, PurposeTOTPSecret+"u1", sealed); err != nil || got != "JBSWY3DP" {
 		t.Fatalf("open: %q, %v", got, err)
 	}
-	other, _ := sealSecret(key, "JBSWY3DP")
+	other, _ := sealSecret(key, PurposeTOTPSecret+"u1", "JBSWY3DP")
 	if other == sealed {
 		t.Fatal("nonce reused")
 	}
 
 	parts := strings.Split(sealed, ":")
 	tampered := parts[0] + ":" + parts[1] + ":" + flip(parts[2])
-	if _, err := openSecret(key, tampered); err == nil || errors.Is(err, ErrMFAKeyMismatch) {
+	if _, err := openSecret(key, PurposeTOTPSecret+"u1", tampered); err == nil || errors.Is(err, ErrMFAKeyMismatch) {
 		t.Fatalf("tamper: %v", err)
 	}
-	if _, err := openSecret(key, "garbage"); err == nil {
+	if _, err := openSecret(key, PurposeTOTPSecret+"u1", "garbage"); err == nil {
 		t.Fatal("garbage accepted")
+	}
+
+	if _, err := openSecret(key, PurposeTOTPEnroll+"u1", sealed); err == nil || errors.Is(err, ErrMFAKeyMismatch) {
+		t.Fatalf("other purpose: %v", err)
+	}
+	if _, err := openSecret(key, PurposeTOTPSecret+"u2", sealed); err == nil {
+		t.Fatal("other user accepted")
 	}
 
 	key2 := make([]byte, 32)
 	key2[0] = 2
-	if _, err := openSecret(key2, sealed); !errors.Is(err, ErrMFAKeyMismatch) {
+	if _, err := openSecret(key2, PurposeTOTPSecret+"u1", sealed); !errors.Is(err, ErrMFAKeyMismatch) {
 		t.Fatalf("other key: %v", err)
 	}
-	if _, err := sealSecret([]byte("short"), "x"); err == nil {
+	if _, err := sealSecret([]byte("short"), PurposeTOTPSecret, "x"); err == nil {
 		t.Fatal("short key accepted")
 	}
 }

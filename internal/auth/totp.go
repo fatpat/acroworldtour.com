@@ -7,6 +7,7 @@ import (
 	"crypto/subtle"
 	"encoding/base32"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -35,6 +36,9 @@ func decodeTOTPSecret(secret string) ([]byte, error) {
 	key, err := totpEncoding.DecodeString(s)
 	if err != nil {
 		return nil, fmt.Errorf("decode totp secret: %w", err)
+	}
+	if len(key) < 16 { // RFC 4226 requirement R6: at least 128 bits
+		return nil, errors.New("decode totp secret: shorter than 16 bytes")
 	}
 	return key, nil
 }

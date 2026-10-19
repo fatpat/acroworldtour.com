@@ -16,8 +16,9 @@ const (
 )
 
 // NewRecoveryCodes returns 10 codes formatted xxxxx-xxxxx for display and
-// the SHA-256 hex of each normalised code for storage. The codes carry 50
-// bits of entropy, so an unsalted hash is enough.
+// the SHA-256 hex of each normalised code for storage. Each code carries
+// ≈49.5 bits; acceptable because a code only replaces the second factor,
+// the password is still required.
 func NewRecoveryCodes() (display, hashes []string, err error) {
 	max := big.NewInt(int64(len(recoveryAlphabet)))
 	for range recoveryCount {

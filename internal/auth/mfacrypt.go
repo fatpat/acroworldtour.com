@@ -33,9 +33,16 @@ func newGCM(key []byte) (cipher.AEAD, error) {
 	return cipher.NewGCM(block)
 }
 
+// Purposes bind a sealed value to its use and owner (GCM additional data);
+// callers append the user id.
+const (
+	PurposeTOTPSecret = "awt/totp-secret/v1|user:"
+	PurposeTOTPEnroll = "awt/totp-enroll/v1|user:"
+)
+
 // sealSecret encrypts plain with AES-256-GCM as
-// v1:<keyid8hex>:<base64(nonce|ciphertext)>.
-func sealSecret(key []byte, plain string) (string, error) {
+// v1:<keyid8hex>:<base64(nonce|ciphertext)>, authenticating purpose.
+func sealSecret(key []byte, purpose, plain string) (string, error) {
 	gcm, err := newGCM(key)
 	if err != nil {
 		return "", err
@@ -44,13 +51,13 @@ func sealSecret(key []byte, plain string) (string, error) {
 	if _, err := rand.Read(nonce); err != nil {
 		return "", fmt.Errorf("seal secret: %w", err)
 	}
-	ct := gcm.Seal(nonce, nonce, []byte(plain), nil)
+	ct := gcm.Seal(nonce, nonce, []byte(plain), []byte(purpose))
 	return "v1:" + mfaKeyID(key) + ":" + base64.StdEncoding.EncodeToString(ct), nil
 }
 
 // openSecret reverses sealSecret. A key id that differs yields
 // ErrMFAKeyMismatch; a damaged value yields a plain error.
-func openSecret(key []byte, sealed string) (string, error) {
+func openSecret(key []byte, purpose, sealed string) (string, error) {
 	parts := strings.Split(sealed, ":")
 	if len(parts) != 3 || parts[0] != "v1" {
 		return "", errors.New("open secret: unrecognised format")
@@ -69,7 +76,7 @@ func openSecret(key []byte, sealed string) (string, error) {
 	if len(raw) < gcm.NonceSize() {
 		return "", errors.New("open secret: truncated value")
 	}
-	plain, err := gcm.Open(nil, raw[:gcm.NonceSize()], raw[gcm.NonceSize():], nil)
+	plain, err := gcm.Open(nil, raw[:gcm.NonceSize()], raw[gcm.NonceSize():], []byte(purpose))
 	if err != nil {
 		return "", fmt.Errorf("open secret: %w", err)
 	}
