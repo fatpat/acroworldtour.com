@@ -681,7 +681,7 @@ func (s *Service) SaveRedirect(ctx context.Context, r Redirect) error {
 	switch {
 	case !strings.HasPrefix(r.From, "/") || strings.HasPrefix(r.From, "//") || strings.ContainsAny(r.From, "?# \\"):
 		errs = append(errs, domain.FieldError{Field: "from", Msg: "must be a path starting with / (no query or fragment)"})
-	case r.From == "/admin" || strings.HasPrefix(r.From, "/admin/"):
+	case r.From == "/manager" || strings.HasPrefix(r.From, "/manager/"):
 		errs = append(errs, domain.FieldError{Field: "from", Msg: "admin paths cannot be redirected"})
 	}
 	if !ValidRedirectTarget(r.To) {

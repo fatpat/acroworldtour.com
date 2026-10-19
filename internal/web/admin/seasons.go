@@ -33,13 +33,13 @@ type seasonFormView struct {
 }
 
 func (h *handlers) registerSeasons(r *web.Router) {
-	get(r, "/admin/seasons", h.seasonsList)
-	get(r, "/admin/seasons/new", h.seasonNew)
-	post(r, "/admin/seasons", h.seasonCreate)
-	get(r, "/admin/seasons/{id}/edit", h.seasonEdit)
-	post(r, "/admin/seasons/{id}", h.seasonUpdate)
-	get(r, "/admin/seasons/{id}/delete", h.seasonDeleteConfirm)
-	post(r, "/admin/seasons/{id}/delete", h.seasonDelete)
+	get(r, "/manager/seasons", h.seasonsList)
+	get(r, "/manager/seasons/new", h.seasonNew)
+	post(r, "/manager/seasons", h.seasonCreate)
+	get(r, "/manager/seasons/{id}/edit", h.seasonEdit)
+	post(r, "/manager/seasons/{id}", h.seasonUpdate)
+	get(r, "/manager/seasons/{id}/delete", h.seasonDeleteConfirm)
+	post(r, "/manager/seasons/{id}/delete", h.seasonDelete)
 }
 
 func (h *handlers) seasonsList(w http.ResponseWriter, r *http.Request) {
@@ -112,7 +112,7 @@ func (h *handlers) seasonSave(w http.ResponseWriter, r *http.Request, id string)
 	if id != "" {
 		key = "saved"
 	}
-	redirect(w, r, "/admin/seasons", key)
+	redirect(w, r, "/manager/seasons", key)
 }
 
 func (h *handlers) seasonCreate(w http.ResponseWriter, r *http.Request) { h.seasonSave(w, r, "") }
@@ -150,7 +150,7 @@ func (h *handlers) seasonDeleteConfirm(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	render(w, r, http.StatusOK, confirmDelete("seasons", "season", s.Name+" ("+s.Code+")", "/admin/seasons/"+s.ID+"/delete", "/admin/seasons"))
+	render(w, r, http.StatusOK, confirmDelete("seasons", "season", s.Name+" ("+s.Code+")", "/manager/seasons/"+s.ID+"/delete", "/manager/seasons"))
 }
 
 func (h *handlers) seasonDelete(w http.ResponseWriter, r *http.Request) {
@@ -158,5 +158,5 @@ func (h *handlers) seasonDelete(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, r, err, nil)
 		return
 	}
-	redirect(w, r, "/admin/seasons", "deleted")
+	redirect(w, r, "/manager/seasons", "deleted")
 }

@@ -18,10 +18,10 @@ type dashboardView struct {
 	Open                                         []service.Competition
 }
 
-// registerDashboard owns GET /admin: counts for admins, the open
+// registerDashboard owns GET /manager: counts for admins, the open
 // competitions for everybody (spec 05 §4 "Dashboard").
 func (h *handlers) registerDashboard(r *web.Router) {
-	r.User("GET /admin", http.HandlerFunc(h.dashboard))
+	r.User("GET /manager", http.HandlerFunc(h.dashboard))
 }
 
 func (h *handlers) dashboard(w http.ResponseWriter, r *http.Request) {

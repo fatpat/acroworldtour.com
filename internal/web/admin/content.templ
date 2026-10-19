@@ -3,7 +3,7 @@ package admin
 import "awt/internal/web/layout"
 
 // mdField is a Markdown textarea with a live preview (htmx posts the text to
-// /admin/content/preview and swaps the sanitised HTML in).
+// /manager/content/preview and swaps the sanitised HTML in).
 templ mdField(name, label, value string, fe formErrors) {
 	<div class="field">
 		<label for={ name }>{ label }</label>
@@ -11,7 +11,7 @@ templ mdField(name, label, value string, fe formErrors) {
 			id={ name }
 			name={ name }
 			rows="18"
-			hx-post="/admin/content/preview"
+			hx-post="/manager/content/preview"
 			hx-trigger="input changed delay:400ms, load"
 			hx-target={ "#" + name + "-preview" }
 			hx-swap="innerHTML"
@@ -50,12 +50,12 @@ templ fileSelect(name, label, value, hint string, files []imageOption, fe formEr
 templ contentHome(v contentHomeView) {
 	@layout.Admin(layout.Meta{Title: "Content", Heading: "Website content"}, "content") {
 		<ul class="plain-list">
-			<li><a href="/admin/content/news">News</a> ({ itoa(v.News) })</li>
-			<li><a href="/admin/content/events">Events</a> ({ itoa(v.Events) })</li>
-			<li><a href="/admin/content/documents">Documents</a> ({ itoa(v.Documents) })</li>
-			<li><a href="/admin/content/pages">Pages</a> ({ itoa(v.Pages) })</li>
-			<li><a href="/admin/content/redirects">Redirects</a> ({ itoa(v.Redirects) })</li>
-			<li><a href="/admin/content/settings">Home page and site settings</a></li>
+			<li><a href="/manager/content/news">News</a> ({ itoa(v.News) })</li>
+			<li><a href="/manager/content/events">Events</a> ({ itoa(v.Events) })</li>
+			<li><a href="/manager/content/documents">Documents</a> ({ itoa(v.Documents) })</li>
+			<li><a href="/manager/content/pages">Pages</a> ({ itoa(v.Pages) })</li>
+			<li><a href="/manager/content/redirects">Redirects</a> ({ itoa(v.Redirects) })</li>
+			<li><a href="/manager/content/settings">Home page and site settings</a></li>
 		</ul>
 	}
 }
@@ -65,7 +65,7 @@ templ contentHome(v contentHomeView) {
 templ newsListPage(v newsListView) {
 	@layout.Admin(layout.Meta{Title: "News", Heading: "News"}, "content") {
 		@notice(v.Flash)
-		<p><a class="btn" href="/admin/content/news/new">New article</a> <a class="btn btn--ghost" href="/admin/content">Content</a></p>
+		<p><a class="btn" href="/manager/content/news/new">New article</a> <a class="btn btn--ghost" href="/manager/content">Content</a></p>
 		<div class="table-wrap">
 			<table class="table">
 				<thead><tr><th>Title</th><th>Slug</th><th>Published</th><th></th></tr></thead>
@@ -76,8 +76,8 @@ templ newsListPage(v newsListView) {
 							<td><a href={ templ.SafeURL("/news/" + n.Slug) }>{ n.Slug }</a></td>
 							<td>{ publishedLabel(n.PublishedAt) }</td>
 							<td class="actions">
-								<a class="btn btn--ghost" href={ templ.SafeURL("/admin/content/news/" + n.ID + "/edit") }>Edit</a>
-								<a class="btn btn--ghost" href={ templ.SafeURL("/admin/content/news/" + n.ID + "/delete") }>Delete</a>
+								<a class="btn btn--ghost" href={ templ.SafeURL("/manager/content/news/" + n.ID + "/edit") }>Edit</a>
+								<a class="btn btn--ghost" href={ templ.SafeURL("/manager/content/news/" + n.ID + "/delete") }>Delete</a>
 							</td>
 						</tr>
 					}
@@ -93,7 +93,7 @@ templ newsListPage(v newsListView) {
 templ newsFormPage(v newsFormView) {
 	@layout.Admin(layout.Meta{Title: "Article", Heading: formHeading(v.Form.ID, "article")}, "content") {
 		@errorSummary(v.Errors)
-		<form class="card form" method="post" action={ templ.SafeURL(formAction("/admin/content/news", v.Form.ID)) }>
+		<form class="card form" method="post" action={ templ.SafeURL(formAction("/manager/content/news", v.Form.ID)) }>
 			@csrf()
 			@textField("title", "Title", "text", v.Form.Title, v.Errors, templ.Attributes{"required": true})
 			@textField("slug", "Slug (URL part, derived from the title when empty)", "text", v.Form.Slug, v.Errors, templ.Attributes{"autocapitalize": "off"})
@@ -104,7 +104,7 @@ templ newsFormPage(v newsFormView) {
 			@mdField("body_md", "Text", v.Form.BodyMD, v.Errors)
 			<p class="actions">
 				<button class="btn" type="submit">Save</button>
-				<a class="btn btn--ghost" href="/admin/content/news">Cancel</a>
+				<a class="btn btn--ghost" href="/manager/content/news">Cancel</a>
 			</p>
 		</form>
 	}
@@ -115,7 +115,7 @@ templ newsFormPage(v newsFormView) {
 templ eventsListPage(v eventsListView) {
 	@layout.Admin(layout.Meta{Title: "Events", Heading: "Events"}, "content") {
 		@notice(v.Flash)
-		<p><a class="btn" href="/admin/content/events/new">New event</a> <a class="btn btn--ghost" href="/admin/content">Content</a></p>
+		<p><a class="btn" href="/manager/content/events/new">New event</a> <a class="btn btn--ghost" href="/manager/content">Content</a></p>
 		<div class="table-wrap">
 			<table class="table">
 				<thead><tr><th>Name</th><th>Season</th><th>Dates</th><th>Status</th><th></th></tr></thead>
@@ -127,8 +127,8 @@ templ eventsListPage(v eventsListView) {
 							<td>{ e.StartDate } – { e.EndDate }</td>
 							<td>{ e.Status }</td>
 							<td class="actions">
-								<a class="btn btn--ghost" href={ templ.SafeURL("/admin/content/events/" + e.ID + "/edit") }>Edit</a>
-								<a class="btn btn--ghost" href={ templ.SafeURL("/admin/content/events/" + e.ID + "/delete") }>Delete</a>
+								<a class="btn btn--ghost" href={ templ.SafeURL("/manager/content/events/" + e.ID + "/edit") }>Edit</a>
+								<a class="btn btn--ghost" href={ templ.SafeURL("/manager/content/events/" + e.ID + "/delete") }>Delete</a>
 							</td>
 						</tr>
 					}
@@ -144,7 +144,7 @@ templ eventsListPage(v eventsListView) {
 templ eventFormPage(v eventFormView) {
 	@layout.Admin(layout.Meta{Title: "Event", Heading: formHeading(v.Form.ID, "event")}, "content") {
 		@errorSummary(v.Errors)
-		<form class="card form" method="post" action={ templ.SafeURL(formAction("/admin/content/events", v.Form.ID)) }>
+		<form class="card form" method="post" action={ templ.SafeURL(formAction("/manager/content/events", v.Form.ID)) }>
 			@csrf()
 			@textField("name", "Name", "text", v.Form.Name, v.Errors, templ.Attributes{"required": true})
 			@textField("slug", "Slug (derived from the name when empty; unique per season)", "text", v.Form.Slug, v.Errors, templ.Attributes{"autocapitalize": "off"})
@@ -178,7 +178,7 @@ templ eventFormPage(v eventFormView) {
 			@mdField("description_md", "Description", v.Form.DescriptionMD, v.Errors)
 			<p class="actions">
 				<button class="btn" type="submit">Save</button>
-				<a class="btn btn--ghost" href="/admin/content/events">Cancel</a>
+				<a class="btn btn--ghost" href="/manager/content/events">Cancel</a>
 			</p>
 		</form>
 	}
@@ -189,7 +189,7 @@ templ eventFormPage(v eventFormView) {
 templ documentsListPage(v documentsListView) {
 	@layout.Admin(layout.Meta{Title: "Documents", Heading: "Documents"}, "content") {
 		@notice(v.Flash)
-		<p><a class="btn" href="/admin/content/documents/new">New document</a> <a class="btn btn--ghost" href="/admin/content">Content</a></p>
+		<p><a class="btn" href="/manager/content/documents/new">New document</a> <a class="btn btn--ghost" href="/manager/content">Content</a></p>
 		<div class="table-wrap">
 			<table class="table">
 				<thead><tr><th>Title</th><th>Year</th><th>Category</th><th>File or URL</th><th></th></tr></thead>
@@ -205,8 +205,8 @@ templ documentsListPage(v documentsListView) {
 							<td>{ d.Category }</td>
 							<td>{ docTarget(d) }</td>
 							<td class="actions">
-								<a class="btn btn--ghost" href={ templ.SafeURL("/admin/content/documents/" + d.ID + "/edit") }>Edit</a>
-								<a class="btn btn--ghost" href={ templ.SafeURL("/admin/content/documents/" + d.ID + "/delete") }>Delete</a>
+								<a class="btn btn--ghost" href={ templ.SafeURL("/manager/content/documents/" + d.ID + "/edit") }>Edit</a>
+								<a class="btn btn--ghost" href={ templ.SafeURL("/manager/content/documents/" + d.ID + "/delete") }>Delete</a>
 							</td>
 						</tr>
 					}
@@ -222,7 +222,7 @@ templ documentsListPage(v documentsListView) {
 templ documentFormPage(v documentFormView) {
 	@layout.Admin(layout.Meta{Title: "Document", Heading: formHeading(v.Form.ID, "document")}, "content") {
 		@errorSummary(v.Errors)
-		<form class="card form" method="post" action={ templ.SafeURL(formAction("/admin/content/documents", v.Form.ID)) } enctype="multipart/form-data">
+		<form class="card form" method="post" action={ templ.SafeURL(formAction("/manager/content/documents", v.Form.ID)) } enctype="multipart/form-data">
 			@csrf()
 			@textField("title", "Title", "text", v.Form.Title, v.Errors, templ.Attributes{"required": true})
 			@textField("year", "Year (optional)", "number", v.Form.Year, v.Errors, templ.Attributes{"min": "1901", "max": "2999"})
@@ -238,7 +238,7 @@ templ documentFormPage(v documentFormView) {
 			@textField("url", "or an external URL", "url", v.Form.URL, v.Errors, nil)
 			<p class="actions">
 				<button class="btn" type="submit">Save</button>
-				<a class="btn btn--ghost" href="/admin/content/documents">Cancel</a>
+				<a class="btn btn--ghost" href="/manager/content/documents">Cancel</a>
 			</p>
 		</form>
 	}
@@ -249,7 +249,7 @@ templ documentFormPage(v documentFormView) {
 templ pagesListPage(v pagesListView) {
 	@layout.Admin(layout.Meta{Title: "Pages", Heading: "Pages"}, "content") {
 		@notice(v.Flash)
-		<p><a class="btn" href="/admin/content/pages/new">New page</a> <a class="btn btn--ghost" href="/admin/content">Content</a></p>
+		<p><a class="btn" href="/manager/content/pages/new">New page</a> <a class="btn btn--ghost" href="/manager/content">Content</a></p>
 		<div class="table-wrap">
 			<table class="table">
 				<thead><tr><th>Title</th><th>URL</th><th></th></tr></thead>
@@ -259,8 +259,8 @@ templ pagesListPage(v pagesListView) {
 							<td>{ p.Title }</td>
 							<td><a href={ templ.SafeURL("/" + p.Slug) }>{ "/" + p.Slug }</a></td>
 							<td class="actions">
-								<a class="btn btn--ghost" href={ templ.SafeURL("/admin/content/pages/" + p.Slug + "/edit") }>Edit</a>
-								<a class="btn btn--ghost" href={ templ.SafeURL("/admin/content/pages/" + p.Slug + "/delete") }>Delete</a>
+								<a class="btn btn--ghost" href={ templ.SafeURL("/manager/content/pages/" + p.Slug + "/edit") }>Edit</a>
+								<a class="btn btn--ghost" href={ templ.SafeURL("/manager/content/pages/" + p.Slug + "/delete") }>Delete</a>
 							</td>
 						</tr>
 					}
@@ -276,7 +276,7 @@ templ pagesListPage(v pagesListView) {
 templ pageFormPage(v pageFormView) {
 	@layout.Admin(layout.Meta{Title: "Page", Heading: formHeading(pageKey(v), "page")}, "content") {
 		@errorSummary(v.Errors)
-		<form class="card form" method="post" action={ templ.SafeURL(formAction("/admin/content/pages", pageKey(v))) }>
+		<form class="card form" method="post" action={ templ.SafeURL(formAction("/manager/content/pages", pageKey(v))) }>
 			@csrf()
 			if v.Create {
 				@textField("slug", "Slug (the page is served at /slug)", "text", v.Form.Slug, v.Errors, templ.Attributes{"required": true, "autocapitalize": "off"})
@@ -287,7 +287,7 @@ templ pageFormPage(v pageFormView) {
 			@mdField("body_md", "Text", v.Form.BodyMD, v.Errors)
 			<p class="actions">
 				<button class="btn" type="submit">Save</button>
-				<a class="btn btn--ghost" href="/admin/content/pages">Cancel</a>
+				<a class="btn btn--ghost" href="/manager/content/pages">Cancel</a>
 			</p>
 		</form>
 	}
@@ -299,7 +299,7 @@ templ redirectsPage(v redirectsView) {
 	@layout.Admin(layout.Meta{Title: "Redirects", Heading: "Redirects"}, "content") {
 		@notice(v.Flash)
 		@errorSummary(v.Errors)
-		<form class="card form" method="post" action="/admin/content/redirects">
+		<form class="card form" method="post" action="/manager/content/redirects">
 			@csrf()
 			@textField("from", "From path (e.g. /old-page)", "text", v.Form.From, v.Errors, templ.Attributes{"required": true, "autocapitalize": "off"})
 			@textField("to", "To (a path or an https URL)", "text", v.Form.To, v.Errors, templ.Attributes{"required": true, "autocapitalize": "off"})
@@ -316,7 +316,7 @@ templ redirectsPage(v redirectsView) {
 							<td><code>{ r.To }</code></td>
 							<td>{ redirectKind(r.Permanent) }</td>
 							<td>
-								<form method="post" action="/admin/content/redirects/delete">
+								<form method="post" action="/manager/content/redirects/delete">
 									@csrf()
 									<input type="hidden" name="from" value={ r.From }/>
 									<button class="btn btn--ghost" type="submit">Delete</button>
@@ -339,7 +339,7 @@ templ settingsPage(v settingsView) {
 	@layout.Admin(layout.Meta{Title: "Site settings", Heading: "Home page and site settings"}, "content") {
 		@notice(v.Flash)
 		@errorSummary(v.Errors)
-		<form class="card form" method="post" action="/admin/content/settings">
+		<form class="card form" method="post" action="/manager/content/settings">
 			@csrf()
 			@textField("hero_pre_title", "Hero: pre-title", "text", v.Form.HeroPreTitle, v.Errors, nil)
 			@textField("hero_title", "Hero: title (default: Acro World Tour)", "text", v.Form.HeroTitle, v.Errors, nil)
@@ -361,7 +361,7 @@ templ settingsPage(v settingsView) {
 			</div>
 			<p class="actions">
 				<button class="btn" type="submit">Save</button>
-				<a class="btn btn--ghost" href="/admin/content">Cancel</a>
+				<a class="btn btn--ghost" href="/manager/content">Cancel</a>
 			</p>
 		</form>
 	}

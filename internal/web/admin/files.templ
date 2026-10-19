@@ -6,7 +6,7 @@ templ filesPage(v filesView) {
 	@layout.Admin(layout.Meta{Title: "Files", Heading: "Files"}, "files") {
 		@notice(v.Flash)
 		@errorSummary(v.Errors)
-		<form class="card form" method="post" action="/admin/files" enctype="multipart/form-data">
+		<form class="card form" method="post" action="/manager/files" enctype="multipart/form-data">
 			@csrf()
 			<div class="field">
 				<label for="file">Upload a PNG, JPEG, WebP or PDF (10 MB max)</label>

@@ -6,17 +6,17 @@ templ dashboardPage(v dashboardView) {
 	@layout.Admin(layout.Meta{Title: "Dashboard", Heading: "Back-office"}, "") {
 		if v.Admin {
 			<ul class="stats">
-				<li><a href="/admin/pilots"><strong>{ itoa(v.Pilots) }</strong> pilots</a></li>
-				<li><a href="/admin/teams"><strong>{ itoa(v.Teams) }</strong> teams</a></li>
-				<li><a href="/admin/judges"><strong>{ itoa(v.Judges) }</strong> judges</a></li>
-				<li><a href={ templ.SafeURL("/admin/tricks?year=" + itoa(v.Year)) }><strong>{ itoa(v.Tricks) }</strong> tricks in { itoa(v.Year) }</a></li>
-				<li><a href="/admin/seasons"><strong>{ itoa(v.Seasons) }</strong> seasons</a></li>
-				<li><a href="/admin/competitions"><strong>{ itoa(v.Competitions) }</strong> competitions</a></li>
+				<li><a href="/manager/pilots"><strong>{ itoa(v.Pilots) }</strong> pilots</a></li>
+				<li><a href="/manager/teams"><strong>{ itoa(v.Teams) }</strong> teams</a></li>
+				<li><a href="/manager/judges"><strong>{ itoa(v.Judges) }</strong> judges</a></li>
+				<li><a href={ templ.SafeURL("/manager/tricks?year=" + itoa(v.Year)) }><strong>{ itoa(v.Tricks) }</strong> tricks in { itoa(v.Year) }</a></li>
+				<li><a href="/manager/seasons"><strong>{ itoa(v.Seasons) }</strong> seasons</a></li>
+				<li><a href="/manager/competitions"><strong>{ itoa(v.Competitions) }</strong> competitions</a></li>
 			</ul>
 			<p class="actions">
-				<a class="btn" href="/admin/pilots">Import a pilot</a>
-				<a class="btn btn--ghost" href="/admin/files">Upload a file</a>
-				<a class="btn btn--ghost" href="/admin/users">Manage users</a>
+				<a class="btn" href="/manager/pilots">Import a pilot</a>
+				<a class="btn btn--ghost" href="/manager/files">Upload a file</a>
+				<a class="btn btn--ghost" href="/manager/users">Manage users</a>
 			</p>
 		}
 		<h2>Open competitions</h2>
@@ -25,7 +25,7 @@ templ dashboardPage(v dashboardView) {
 		} else {
 			<ul class="plain">
 				for _, c := range v.Open {
-					<li><a href={ templ.SafeURL("/admin/competitions/" + c.Code) }>{ c.Name }</a> <span class="muted">{ c.StartDate.Format("2006-01-02") }, { c.Location }</span></li>
+					<li><a href={ templ.SafeURL("/manager/competitions/" + c.Code) }>{ c.Name }</a> <span class="muted">{ c.StartDate.Format("2006-01-02") }, { c.Location }</span></li>
 				}
 			</ul>
 		}

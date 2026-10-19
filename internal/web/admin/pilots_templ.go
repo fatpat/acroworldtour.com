@@ -52,7 +52,7 @@ func pilotsPage(v pilotsView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"toolbar\"><form class=\"inline\" method=\"get\" action=\"/admin/pilots\" role=\"search\"><label for=\"q\">Search by name or CIVL id</label> <input id=\"q\" name=\"q\" type=\"search\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"toolbar\"><form class=\"inline\" method=\"get\" action=\"/manager/pilots\" role=\"search\"><label for=\"q\">Search by name or CIVL id</label> <input id=\"q\" name=\"q\" type=\"search\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -65,7 +65,7 @@ func pilotsPage(v pilotsView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\"> <button class=\"btn btn--ghost\" type=\"submit\">Search</button></form><form class=\"inline\" method=\"post\" action=\"/admin/pilots/import\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\"> <button class=\"btn btn--ghost\" type=\"submit\">Search</button></form><form class=\"inline\" method=\"post\" action=\"/manager/pilots/import\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -86,7 +86,7 @@ func pilotsPage(v pilotsView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\" required> <button class=\"btn\" type=\"submit\">Add or update from CIVL</button></form><form class=\"inline\" method=\"post\" action=\"/admin/pilots/rankings\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\" required> <button class=\"btn\" type=\"submit\">Add or update from CIVL</button></form><form class=\"inline\" method=\"post\" action=\"/manager/pilots/rankings\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -136,7 +136,7 @@ func pilotsPage(v pilotsView) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</tbody></table></div><h2>AWT status for another year</h2><form class=\"inline\" method=\"post\" action=\"/admin/pilots/awt\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</tbody></table></div><h2>AWT status for another year</h2><form class=\"inline\" method=\"post\" action=\"/manager/pilots/awt\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -289,9 +289,9 @@ func pilotRow(p service.Pilot, now int) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var15 templ.SafeURL
-		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/pilots/" + itoa(p.CivlID) + "/gender"))
+		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/manager/pilots/" + itoa(p.CivlID) + "/gender"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/pilots.templ`, Line: 82, Col: 73}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/pilots.templ`, Line: 82, Col: 75}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 		if templ_7745c5c3_Err != nil {
@@ -302,9 +302,9 @@ func pilotRow(p service.Pilot, now int) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var16 string
-		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.ResolveAttributeValue("/admin/pilots/" + itoa(p.CivlID) + "/gender")
+		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.ResolveAttributeValue("/manager/pilots/" + itoa(p.CivlID) + "/gender")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/pilots.templ`, Line: 83, Col: 59}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/pilots.templ`, Line: 83, Col: 61}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var16)
 		if templ_7745c5c3_Err != nil {
@@ -341,9 +341,9 @@ func pilotRow(p service.Pilot, now int) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var18 templ.SafeURL
-			templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/pilots/" + itoa(p.CivlID) + "/awt"))
+			templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/manager/pilots/" + itoa(p.CivlID) + "/awt"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/pilots.templ`, Line: 96, Col: 72}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/pilots.templ`, Line: 96, Col: 74}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 			if templ_7745c5c3_Err != nil {
@@ -354,9 +354,9 @@ func pilotRow(p service.Pilot, now int) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var19 string
-			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.ResolveAttributeValue("/admin/pilots/" + itoa(p.CivlID) + "/awt")
+			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.ResolveAttributeValue("/manager/pilots/" + itoa(p.CivlID) + "/awt")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/pilots.templ`, Line: 97, Col: 58}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/pilots.templ`, Line: 97, Col: 60}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var19)
 			if templ_7745c5c3_Err != nil {
@@ -449,7 +449,7 @@ func pilotRow(p service.Pilot, now int) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "</div></td><td><form method=\"post\" action=\"/admin/pilots/import\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "</div></td><td><form method=\"post\" action=\"/manager/pilots/import\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -22,7 +22,7 @@ import (
 // marks attached to their trick and remove exactly the targeted entry
 // (spec 05 §6.4).
 
-const judgingPath = "/admin/competitions/{code}/runs/{n}/judging"
+const judgingPath = "/manager/competitions/{code}/runs/{n}/judging"
 
 func (h *handlers) registerJudging(r *web.Router) {
 	get := func(p string, fn http.HandlerFunc) { r.Scorer("GET "+judgingPath+p, codeFrom, fn) }

@@ -22,7 +22,7 @@ templ LoginPage(next, errMsg string) {
 				if errMsg != "" {
 					<p class="alert" role="alert">{ errMsg }</p>
 				}
-				<form method="post" action="/admin/login">
+				<form method="post" action="/manager/login">
 					<input type="hidden" name="next" value={ next }/>
 					<div class="field">
 						<label for="email">Email</label>

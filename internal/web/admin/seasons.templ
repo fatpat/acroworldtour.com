@@ -5,7 +5,7 @@ import "awt/internal/web/layout"
 templ seasonsPage(v seasonsView) {
 	@layout.Admin(layout.Meta{Title: "Seasons", Heading: "Seasons"}, "seasons") {
 		@notice(v.Flash)
-		<p><a class="btn" href="/admin/seasons/new">New season</a></p>
+		<p><a class="btn" href="/manager/seasons/new">New season</a></p>
 		<div class="table-wrap">
 			<table class="table">
 				<thead><tr><th>Name</th><th>Code</th><th>Year</th><th>Country</th><th>Index</th><th></th></tr></thead>
@@ -18,8 +18,8 @@ templ seasonsPage(v seasonsView) {
 							<td>{ s.Country }</td>
 							<td>{ itoa(s.SortIndex) }</td>
 							<td class="actions">
-								<a class="btn btn--ghost" href={ templ.SafeURL("/admin/seasons/" + s.ID + "/edit") }>Edit</a>
-								<a class="btn btn--ghost" href={ templ.SafeURL("/admin/seasons/" + s.ID + "/delete") }>Delete</a>
+								<a class="btn btn--ghost" href={ templ.SafeURL("/manager/seasons/" + s.ID + "/edit") }>Edit</a>
+								<a class="btn btn--ghost" href={ templ.SafeURL("/manager/seasons/" + s.ID + "/delete") }>Delete</a>
 							</td>
 						</tr>
 					}
@@ -51,12 +51,12 @@ templ seasonFormPage(v seasonFormView) {
 						<option value={ f.ID } selected?={ f.ID == v.Form.Image }>{ f.Filename }</option>
 					}
 				</select>
-				<p class="field__hint">Upload images on the <a href="/admin/files">Files</a> page first.</p>
+				<p class="field__hint">Upload images on the <a href="/manager/files">Files</a> page first.</p>
 				@fieldError(v.Errors, "image")
 			</div>
 			<p class="actions">
 				<button class="btn" type="submit">Save</button>
-				<a class="btn btn--ghost" href="/admin/seasons">Cancel</a>
+				<a class="btn btn--ghost" href="/manager/seasons">Cancel</a>
 			</p>
 		</form>
 	}
@@ -71,7 +71,7 @@ func seasonHeading(f seasonForm) string {
 
 func seasonAction(f seasonForm) string {
 	if f.ID == "" {
-		return "/admin/seasons"
+		return "/manager/seasons"
 	}
-	return "/admin/seasons/" + f.ID
+	return "/manager/seasons/" + f.ID
 }

@@ -49,7 +49,7 @@ func teamsPage(v teamsView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<p><a class=\"btn\" href=\"/admin/teams/new\">New team</a></p><div class=\"table-wrap\"><table class=\"table\"><thead><tr><th>Name</th><th>Pilots</th><th></th></tr></thead> <tbody>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<p><a class=\"btn\" href=\"/manager/teams/new\">New team</a></p><div class=\"table-wrap\"><table class=\"table\"><thead><tr><th>Name</th><th>Pilots</th><th></th></tr></thead> <tbody>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -85,9 +85,9 @@ func teamsPage(v teamsView) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var5 templ.SafeURL
-				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/teams/" + t.ID + "/edit"))
+				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/manager/teams/" + t.ID + "/edit"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/teams.templ`, Line: 20, Col: 88}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/teams.templ`, Line: 20, Col: 90}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 				if templ_7745c5c3_Err != nil {
@@ -98,9 +98,9 @@ func teamsPage(v teamsView) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var6 templ.SafeURL
-				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/teams/" + t.ID + "/delete"))
+				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/manager/teams/" + t.ID + "/delete"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/teams.templ`, Line: 21, Col: 90}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/teams.templ`, Line: 21, Col: 92}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 				if templ_7745c5c3_Err != nil {
@@ -257,7 +257,7 @@ func teamFormPage(v teamFormView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<p class=\"field__hint\">Start typing a name or a CIVL id, then pick the pilot. A team has exactly two different pilots.</p><p class=\"actions\"><button class=\"btn\" type=\"submit\">Save</button> <a class=\"btn btn--ghost\" href=\"/admin/teams\">Cancel</a></p></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<p class=\"field__hint\">Start typing a name or a CIVL id, then pick the pilot. A team has exactly two different pilots.</p><p class=\"actions\"><button class=\"btn\" type=\"submit\">Save</button> <a class=\"btn btn--ghost\" href=\"/manager/teams\">Cancel</a></p></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -280,9 +280,9 @@ func teamHeading(f teamForm) string {
 
 func teamAction(f teamForm) string {
 	if f.ID == "" {
-		return "/admin/teams"
+		return "/manager/teams"
 	}
-	return "/admin/teams/" + f.ID
+	return "/manager/teams/" + f.ID
 }
 
 func teamPilotNames(t service.Team, names map[int]string) string {

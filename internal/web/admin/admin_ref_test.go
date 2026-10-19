@@ -171,7 +171,7 @@ func (e *env) wantRedirect(rec *httptest.ResponseRecorder, prefix string) {
 func (e *env) importPilots(ids ...int) {
 	e.t.Helper()
 	for _, id := range ids {
-		e.wantRedirect(e.post("/admin/pilots/import", url.Values{"civlid": {fmt.Sprint(id)}}), "/admin/pilots")
+		e.wantRedirect(e.post("/manager/pilots/import", url.Values{"civlid": {fmt.Sprint(id)}}), "/manager/pilots")
 	}
 }
 
@@ -189,24 +189,24 @@ func firstID(t *testing.T, body, prefix string) string {
 func TestPilots(t *testing.T) {
 	e := newEnv(t)
 	e.importPilots(101, 102)
-	list := e.get("/admin/pilots")
+	list := e.get("/manager/pilots")
 	e.wantStatus(list, 200, "Pilot 101", "Pilot 102", "unranked")
 
 	// Search by CIVL id and by (accent-insensitive) name.
-	rec := e.get("/admin/pilots?q=102")
+	rec := e.get("/manager/pilots?q=102")
 	e.wantStatus(rec, 200, "Pilot 102")
 	if strings.Contains(rec.Body.String(), "Pilot 101") {
 		t.Fatal("search by id returned another pilot")
 	}
-	e.wantStatus(e.get("/admin/pilots?q=PILÓT+101"), 200) // no crash on accents, no regex
-	e.wantStatus(e.get("/admin/pilots?q=%5B"), 200)       // "[" is plain text, not a regex
+	e.wantStatus(e.get("/manager/pilots?q=PILÓT+101"), 200) // no crash on accents, no regex
+	e.wantStatus(e.get("/manager/pilots?q=%5B"), 200)       // "[" is plain text, not a regex
 
 	// Unknown CIVL id: clear message, 422.
-	e.wantStatus(e.post("/admin/pilots/import", url.Values{"civlid": {"900001"}}), 422, "900001 was not found on civlcomps.org")
-	e.wantStatus(e.post("/admin/pilots/import", url.Values{"civlid": {"abc"}}), 422, "positive CIVL id")
+	e.wantStatus(e.post("/manager/pilots/import", url.Values{"civlid": {"900001"}}), 422, "900001 was not found on civlcomps.org")
+	e.wantStatus(e.post("/manager/pilots/import", url.Values{"civlid": {"abc"}}), 422, "positive CIVL id")
 
 	// Rankings.
-	e.wantRedirect(e.post("/admin/pilots/rankings", nil), "/admin/pilots")
+	e.wantRedirect(e.post("/manager/pilots/rankings", nil), "/manager/pilots")
 	p, _ := e.svc.GetPilot(context.Background(), 101)
 	if p.Rank != 7 {
 		t.Fatalf("rank = %d", p.Rank)
@@ -218,7 +218,7 @@ func TestPilots(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	req := httptest.NewRequest(http.MethodPost, "/admin/pilots/101/gender", strings.NewReader(url.Values{"_csrf": {e.admin.CSRF}}.Encode()))
+	req := httptest.NewRequest(http.MethodPost, "/manager/pilots/101/gender", strings.NewReader(url.Values{"_csrf": {e.admin.CSRF}}.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("HX-Request", "true")
 	rec = e.do(req, &e.admin)
@@ -230,74 +230,74 @@ func TestPilots(t *testing.T) {
 	// AWT year toggle for the current and next year, then any year.
 	year := time.Now().UTC().Year()
 	for _, y := range []int{year, year + 1} {
-		rec = e.post("/admin/pilots/101/awt", url.Values{"year": {fmt.Sprint(y)}, "awt": {"1"}})
-		e.wantRedirect(rec, "/admin/pilots")
+		rec = e.post("/manager/pilots/101/awt", url.Values{"year": {fmt.Sprint(y)}, "awt": {"1"}})
+		e.wantRedirect(rec, "/manager/pilots")
 	}
-	e.wantRedirect(e.post("/admin/pilots/awt", url.Values{"civlid": {"101"}, "year": {"2022"}, "awt": {"1"}}), "/admin/pilots")
+	e.wantRedirect(e.post("/manager/pilots/awt", url.Values{"civlid": {"101"}, "year": {"2022"}, "awt": {"1"}}), "/manager/pilots")
 	p, _ = e.svc.GetPilot(context.Background(), 101)
 	if len(p.AWTYears) != 3 {
 		t.Fatalf("AWT years = %v", p.AWTYears)
 	}
-	e.wantRedirect(e.post("/admin/pilots/101/awt", url.Values{"year": {fmt.Sprint(year)}, "awt": {"0"}}), "/admin/pilots")
+	e.wantRedirect(e.post("/manager/pilots/101/awt", url.Values{"year": {fmt.Sprint(year)}, "awt": {"0"}}), "/manager/pilots")
 	p, _ = e.svc.GetPilot(context.Background(), 101)
 	if len(p.AWTYears) != 2 {
 		t.Fatalf("AWT years after removal = %v", p.AWTYears)
 	}
-	e.wantStatus(e.post("/admin/pilots/999/gender", nil), 404)
+	e.wantStatus(e.post("/manager/pilots/999/gender", nil), 404)
 }
 
 func TestTeams(t *testing.T) {
 	e := newEnv(t)
 	e.importPilots(101, 102, 103)
-	e.wantStatus(e.get("/admin/teams/new"), 200, `list="pilot-options"`, "Pilot 101 (101)")
+	e.wantStatus(e.get("/manager/teams/new"), 200, `list="pilot-options"`, "Pilot 101 (101)")
 
-	rec := e.post("/admin/teams", url.Values{"name": {"Duo"}, "pilot1": {"Pilot 101 (101)"}, "pilot2": {"102"}})
-	e.wantRedirect(rec, "/admin/teams")
-	list := e.get("/admin/teams")
+	rec := e.post("/manager/teams", url.Values{"name": {"Duo"}, "pilot1": {"Pilot 101 (101)"}, "pilot2": {"102"}})
+	e.wantRedirect(rec, "/manager/teams")
+	list := e.get("/manager/teams")
 	e.wantStatus(list, 200, "Duo", "Pilot 101 &amp; Pilot 102")
-	id := firstID(t, list.Body.String(), "/admin/teams/")
+	id := firstID(t, list.Body.String(), "/manager/teams/")
 
 	// Validation: same pilot twice, missing pilot, unknown pilot.
-	e.wantStatus(e.post("/admin/teams", url.Values{"name": {"Twin"}, "pilot1": {"101"}, "pilot2": {"101"}}), 422, "the two pilots must be different")
-	e.wantStatus(e.post("/admin/teams", url.Values{"name": {"Solo"}, "pilot1": {"101"}, "pilot2": {""}}), 422, "pick a pilot")
-	e.wantStatus(e.post("/admin/teams", url.Values{"name": {"Ghost"}, "pilot1": {"101"}, "pilot2": {"555"}}), 422, "pilot 555 is unknown")
-	e.wantStatus(e.post("/admin/teams", url.Values{"name": {""}, "pilot1": {"101"}, "pilot2": {"102"}}), 422)
+	e.wantStatus(e.post("/manager/teams", url.Values{"name": {"Twin"}, "pilot1": {"101"}, "pilot2": {"101"}}), 422, "the two pilots must be different")
+	e.wantStatus(e.post("/manager/teams", url.Values{"name": {"Solo"}, "pilot1": {"101"}, "pilot2": {""}}), 422, "pick a pilot")
+	e.wantStatus(e.post("/manager/teams", url.Values{"name": {"Ghost"}, "pilot1": {"101"}, "pilot2": {"555"}}), 422, "pilot 555 is unknown")
+	e.wantStatus(e.post("/manager/teams", url.Values{"name": {""}, "pilot1": {"101"}, "pilot2": {"102"}}), 422)
 	// The typed values are shown again.
-	e.wantStatus(e.post("/admin/teams", url.Values{"name": {"Keep me"}, "pilot1": {"101"}, "pilot2": {"101"}}), 422, `value="Keep me"`)
-	e.wantStatus(e.post("/admin/teams", url.Values{"name": {"Duo"}, "pilot1": {"101"}, "pilot2": {"103"}}), 409, "already exists")
+	e.wantStatus(e.post("/manager/teams", url.Values{"name": {"Keep me"}, "pilot1": {"101"}, "pilot2": {"101"}}), 422, `value="Keep me"`)
+	e.wantStatus(e.post("/manager/teams", url.Values{"name": {"Duo"}, "pilot1": {"101"}, "pilot2": {"103"}}), 409, "already exists")
 
 	// Edit.
-	e.wantStatus(e.get("/admin/teams/"+id+"/edit"), 200, `value="Duo"`, "Pilot 102 (102)")
-	e.wantRedirect(e.post("/admin/teams/"+id, url.Values{"name": {"Trio"}, "pilot1": {"101"}, "pilot2": {"103"}}), "/admin/teams")
-	e.wantStatus(e.get("/admin/teams"), 200, "Trio")
+	e.wantStatus(e.get("/manager/teams/"+id+"/edit"), 200, `value="Duo"`, "Pilot 102 (102)")
+	e.wantRedirect(e.post("/manager/teams/"+id, url.Values{"name": {"Trio"}, "pilot1": {"101"}, "pilot2": {"103"}}), "/manager/teams")
+	e.wantStatus(e.get("/manager/teams"), 200, "Trio")
 
 	// Delete needs the in-page confirmation page.
-	e.wantStatus(e.get("/admin/teams/"+id+"/delete"), 200, "Confirm delete", "Trio")
-	e.wantRedirect(e.post("/admin/teams/"+id+"/delete", nil), "/admin/teams")
-	e.wantStatus(e.get("/admin/teams/"+id+"/edit"), 404)
+	e.wantStatus(e.get("/manager/teams/"+id+"/delete"), 200, "Confirm delete", "Trio")
+	e.wantRedirect(e.post("/manager/teams/"+id+"/delete", nil), "/manager/teams")
+	e.wantStatus(e.get("/manager/teams/"+id+"/edit"), 404)
 }
 
 func TestJudges(t *testing.T) {
 	e := newEnv(t)
 	e.importPilots(101)
-	rec := e.post("/admin/judges", url.Values{"name": {"Jane Judge"}, "level": {"senior"}, "country": {"FRA"}, "civlid": {"101"}})
-	e.wantRedirect(rec, "/admin/judges")
-	list := e.get("/admin/judges")
+	rec := e.post("/manager/judges", url.Values{"name": {"Jane Judge"}, "level": {"senior"}, "country": {"FRA"}, "civlid": {"101"}})
+	e.wantRedirect(rec, "/manager/judges")
+	list := e.get("/manager/judges")
 	e.wantStatus(list, 200, "Jane Judge", "fra", "senior")
-	id := firstID(t, list.Body.String(), "/admin/judges/")
+	id := firstID(t, list.Body.String(), "/manager/judges/")
 
-	e.wantStatus(e.post("/admin/judges", url.Values{"name": {"Bad"}, "level": {"god"}, "country": {"fr"}}), 422, "country", "level")
-	e.wantStatus(e.post("/admin/judges", url.Values{"name": {"Bad"}, "level": {"senior"}, "country": {"fra"}, "civlid": {"zz"}}), 422, "positive CIVL id")
-	e.wantStatus(e.post("/admin/judges", url.Values{"name": {"Bad"}, "level": {"senior"}, "country": {"fra"}, "civlid": {"777"}}), 422, "pilot 777 is unknown")
-	e.wantStatus(e.post("/admin/judges", url.Values{"name": {"Keep"}, "level": {"nope"}, "country": {"fra"}}), 422, `value="Keep"`)
+	e.wantStatus(e.post("/manager/judges", url.Values{"name": {"Bad"}, "level": {"god"}, "country": {"fr"}}), 422, "country", "level")
+	e.wantStatus(e.post("/manager/judges", url.Values{"name": {"Bad"}, "level": {"senior"}, "country": {"fra"}, "civlid": {"zz"}}), 422, "positive CIVL id")
+	e.wantStatus(e.post("/manager/judges", url.Values{"name": {"Bad"}, "level": {"senior"}, "country": {"fra"}, "civlid": {"777"}}), 422, "pilot 777 is unknown")
+	e.wantStatus(e.post("/manager/judges", url.Values{"name": {"Keep"}, "level": {"nope"}, "country": {"fra"}}), 422, `value="Keep"`)
 
-	e.wantStatus(e.get("/admin/judges/"+id+"/edit"), 200, `value="Jane Judge"`, `value="101"`)
-	e.wantRedirect(e.post("/admin/judges/"+id, url.Values{"name": {"Jane J."}, "level": {"certified"}, "country": {"che"}}), "/admin/judges")
-	e.wantStatus(e.get("/admin/judges"), 200, "Jane J.", "certified", "che")
+	e.wantStatus(e.get("/manager/judges/"+id+"/edit"), 200, `value="Jane Judge"`, `value="101"`)
+	e.wantRedirect(e.post("/manager/judges/"+id, url.Values{"name": {"Jane J."}, "level": {"certified"}, "country": {"che"}}), "/manager/judges")
+	e.wantStatus(e.get("/manager/judges"), 200, "Jane J.", "certified", "che")
 
-	e.wantStatus(e.get("/admin/judges/"+id+"/delete"), 200, "Confirm delete")
-	e.wantRedirect(e.post("/admin/judges/"+id+"/delete", nil), "/admin/judges")
-	e.wantStatus(e.get("/admin/judges/"+id+"/edit"), 404)
+	e.wantStatus(e.get("/manager/judges/"+id+"/delete"), 200, "Confirm delete")
+	e.wantRedirect(e.post("/manager/judges/"+id+"/delete", nil), "/manager/judges")
+	e.wantStatus(e.get("/manager/judges/"+id+"/edit"), 404)
 }
 
 const catalogJSON = `[{"name":"Misty Flip","acronym":"M","solo":true,"directions":["left","right"],"technical_coefficient":1.65,"bonuses":[{"name":"twisted","bonus":2.5}]},
@@ -308,74 +308,74 @@ func TestTricks(t *testing.T) {
 	form := url.Values{"year": {"2026"}, "name": {"Helico"}, "acronym": {"H"}, "solo": {"1"}, "solo_awt": {"1"},
 		"technical_coefficient": {"1,5"}, "dir_left": {"1"}, "dir_right": {"1"}, "bonus_on_0": {"1"}, "bonus_val_0": {"2"},
 		"first_maneuver": {"1"}, "no_first_maneuver": {"0"}, "last_maneuver": {"0"}, "no_last_maneuver": {"0"}}
-	e.wantStatus(e.get("/admin/tricks/new?year=2026"), 200, "Technical coefficient", "reverse", "dir_left")
-	e.wantRedirect(e.post("/admin/tricks", form), "/admin/tricks?year=2026")
-	list := e.get("/admin/tricks?year=2026")
+	e.wantStatus(e.get("/manager/tricks/new?year=2026"), 200, "Technical coefficient", "reverse", "dir_left")
+	e.wantRedirect(e.post("/manager/tricks", form), "/manager/tricks?year=2026")
+	list := e.get("/manager/tricks?year=2026")
 	e.wantStatus(list, 200, "Helico", "reverse (2)", "left, right", "1.5")
-	id := firstID(t, list.Body.String(), "/admin/tricks/")
+	id := firstID(t, list.Body.String(), "/manager/tricks/")
 
 	// Unique tricks are generated and listed read-only.
-	e.wantStatus(e.get("/admin/tricks/unique?year=2026"), 200, "Helico")
-	e.wantStatus(e.get("/admin/tricks/unique?year=2026&q=zzz"), 200)
+	e.wantStatus(e.get("/manager/tricks/unique?year=2026"), 200, "Helico")
+	e.wantStatus(e.get("/manager/tricks/unique?year=2026&q=zzz"), 200)
 
 	// Validation re-render with messages.
 	bad := url.Values{"year": {"2026"}, "name": {""}, "acronym": {"X"}, "technical_coefficient": {"1"}}
-	e.wantStatus(e.post("/admin/tricks", bad), 422, "name: required")
+	e.wantStatus(e.post("/manager/tricks", bad), 422, "name: required")
 	bad = url.Values{"year": {"2026"}, "name": {"Z"}, "acronym": {"Z"}, "technical_coefficient": {"abc"}}
-	e.wantStatus(e.post("/admin/tricks", bad), 422, "must be a number", `value="Z"`)
+	e.wantStatus(e.post("/manager/tricks", bad), 422, "must be a number", `value="Z"`)
 	bad = url.Values{"year": {"2026"}, "name": {"Z"}, "acronym": {"Z"}, "technical_coefficient": {"1"}, "dir_left": {"1"}}
-	e.wantStatus(e.post("/admin/tricks", bad), 422, "at least 2 distinct directions")
+	e.wantStatus(e.post("/manager/tricks", bad), 422, "at least 2 distinct directions")
 	dup := url.Values{"year": {"2026"}, "name": {"Other"}, "acronym": {"H"}, "solo": {"1"}, "technical_coefficient": {"1"}}
-	e.wantStatus(e.post("/admin/tricks", dup), 409, "already exists")
+	e.wantStatus(e.post("/manager/tricks", dup), 409, "already exists")
 
 	// Edit keeps the catalog year.
-	e.wantStatus(e.get("/admin/tricks/"+id+"/edit"), 200, `value="Helico"`, `value="1.5"`)
+	e.wantStatus(e.get("/manager/tricks/"+id+"/edit"), 200, `value="Helico"`, `value="1.5"`)
 	form.Set("name", "Helico 2")
 	form.Set("year", "1999") // ignored: a trick stays in its year
-	e.wantRedirect(e.post("/admin/tricks/"+id, form), "/admin/tricks?year=2026")
-	e.wantStatus(e.get("/admin/tricks?year=2026"), 200, "Helico 2")
+	e.wantRedirect(e.post("/manager/tricks/"+id, form), "/manager/tricks?year=2026")
+	e.wantStatus(e.get("/manager/tricks?year=2026"), 200, "Helico 2")
 
 	// Import a JSON file into 2025, then duplicate 2025 into 2027.
-	e.wantRedirect(e.upload("/admin/tricks/import", map[string]string{"year": "2025"}, "catalog.json", []byte(catalogJSON)), "/admin/tricks?year=2025")
-	e.wantStatus(e.get("/admin/tricks?year=2025"), 200, "Misty Flip", "Tumbling")
-	e.wantStatus(e.upload("/admin/tricks/import", map[string]string{"year": "2025"}, "catalog.json", []byte("not json")), 422, "catalog")
-	e.wantStatus(e.upload("/admin/tricks/import", map[string]string{"year": "2025"}, "", nil), 422, "choose a JSON catalog file")
-	e.wantRedirect(e.post("/admin/tricks/duplicate", url.Values{"from": {"2025"}, "to": {"2027"}}), "/admin/tricks?year=2027")
-	e.wantStatus(e.get("/admin/tricks?year=2027"), 200, "Misty Flip", "Tumbling")
-	e.wantStatus(e.post("/admin/tricks/duplicate", url.Values{"from": {"2025"}, "to": {"2025"}}), 422, "must differ")
-	e.wantStatus(e.post("/admin/tricks/duplicate", url.Values{"from": {"2030"}, "to": {"2031"}}), 422, "has no tricks")
+	e.wantRedirect(e.upload("/manager/tricks/import", map[string]string{"year": "2025"}, "catalog.json", []byte(catalogJSON)), "/manager/tricks?year=2025")
+	e.wantStatus(e.get("/manager/tricks?year=2025"), 200, "Misty Flip", "Tumbling")
+	e.wantStatus(e.upload("/manager/tricks/import", map[string]string{"year": "2025"}, "catalog.json", []byte("not json")), 422, "catalog")
+	e.wantStatus(e.upload("/manager/tricks/import", map[string]string{"year": "2025"}, "", nil), 422, "choose a JSON catalog file")
+	e.wantRedirect(e.post("/manager/tricks/duplicate", url.Values{"from": {"2025"}, "to": {"2027"}}), "/manager/tricks?year=2027")
+	e.wantStatus(e.get("/manager/tricks?year=2027"), 200, "Misty Flip", "Tumbling")
+	e.wantStatus(e.post("/manager/tricks/duplicate", url.Values{"from": {"2025"}, "to": {"2025"}}), 422, "must differ")
+	e.wantStatus(e.post("/manager/tricks/duplicate", url.Values{"from": {"2030"}, "to": {"2031"}}), 422, "has no tricks")
 
 	// Delete with confirmation.
-	e.wantStatus(e.get("/admin/tricks/"+id+"/delete"), 200, "Confirm delete", "Helico 2")
-	e.wantRedirect(e.post("/admin/tricks/"+id+"/delete", nil), "/admin/tricks?year=2026")
-	e.wantStatus(e.get("/admin/tricks/"+id+"/edit"), 404)
+	e.wantStatus(e.get("/manager/tricks/"+id+"/delete"), 200, "Confirm delete", "Helico 2")
+	e.wantRedirect(e.post("/manager/tricks/"+id+"/delete", nil), "/manager/tricks?year=2026")
+	e.wantStatus(e.get("/manager/tricks/"+id+"/edit"), 404)
 }
 
 func TestSeasons(t *testing.T) {
 	e := newEnv(t)
-	e.wantStatus(e.get("/admin/seasons/new"), 200, `value="999"`)
-	e.wantRedirect(e.post("/admin/seasons", url.Values{"name": {"AWT 2026"}, "code": {"awt-2026"}, "year": {"2026"}, "index": {"1"}}), "/admin/seasons")
-	list := e.get("/admin/seasons")
+	e.wantStatus(e.get("/manager/seasons/new"), 200, `value="999"`)
+	e.wantRedirect(e.post("/manager/seasons", url.Values{"name": {"AWT 2026"}, "code": {"awt-2026"}, "year": {"2026"}, "index": {"1"}}), "/manager/seasons")
+	list := e.get("/manager/seasons")
 	e.wantStatus(list, 200, "AWT 2026", "awt-2026")
-	id := firstID(t, list.Body.String(), "/admin/seasons/")
+	id := firstID(t, list.Body.String(), "/manager/seasons/")
 
-	e.wantStatus(e.post("/admin/seasons", url.Values{"name": {"X"}, "code": {"BAD"}, "year": {"2026"}, "index": {"1"}}), 422, "code")
-	e.wantStatus(e.post("/admin/seasons", url.Values{"name": {"X"}, "code": {"xxx-2026"}, "year": {"20x"}, "index": {"1"}}), 422, "must be a whole number")
-	e.wantStatus(e.post("/admin/seasons", url.Values{"name": {"Kept name"}, "code": {"BAD"}, "year": {"2026"}, "index": {"1"}}), 422, `value="Kept name"`)
-	e.wantStatus(e.post("/admin/seasons", url.Values{"name": {"Dup"}, "code": {"awt-2026"}, "year": {"2026"}, "index": {"2"}}), 409, "already exists")
-	e.wantStatus(e.post("/admin/seasons", url.Values{"name": {"Img"}, "code": {"img-2026"}, "year": {"2026"}, "index": {"2"}, "image": {"nofile"}}), 422, "unknown")
+	e.wantStatus(e.post("/manager/seasons", url.Values{"name": {"X"}, "code": {"BAD"}, "year": {"2026"}, "index": {"1"}}), 422, "code")
+	e.wantStatus(e.post("/manager/seasons", url.Values{"name": {"X"}, "code": {"xxx-2026"}, "year": {"20x"}, "index": {"1"}}), 422, "must be a whole number")
+	e.wantStatus(e.post("/manager/seasons", url.Values{"name": {"Kept name"}, "code": {"BAD"}, "year": {"2026"}, "index": {"1"}}), 422, `value="Kept name"`)
+	e.wantStatus(e.post("/manager/seasons", url.Values{"name": {"Dup"}, "code": {"awt-2026"}, "year": {"2026"}, "index": {"2"}}), 409, "already exists")
+	e.wantStatus(e.post("/manager/seasons", url.Values{"name": {"Img"}, "code": {"img-2026"}, "year": {"2026"}, "index": {"2"}, "image": {"nofile"}}), 422, "unknown")
 
-	e.wantStatus(e.get("/admin/seasons/"+id+"/edit"), 200, `value="AWT 2026"`)
-	e.wantRedirect(e.post("/admin/seasons/"+id, url.Values{"name": {"AWT Tour 2026"}, "code": {"awt-2026"}, "year": {"2026"}, "index": {"3"}}), "/admin/seasons")
-	e.wantStatus(e.get("/admin/seasons"), 200, "AWT Tour 2026")
+	e.wantStatus(e.get("/manager/seasons/"+id+"/edit"), 200, `value="AWT 2026"`)
+	e.wantRedirect(e.post("/manager/seasons/"+id, url.Values{"name": {"AWT Tour 2026"}, "code": {"awt-2026"}, "year": {"2026"}, "index": {"3"}}), "/manager/seasons")
+	e.wantStatus(e.get("/manager/seasons"), 200, "AWT Tour 2026")
 	// The "new" form is fresh: nothing leaks from a previous season.
-	if strings.Contains(e.get("/admin/seasons/new").Body.String(), "AWT Tour") {
+	if strings.Contains(e.get("/manager/seasons/new").Body.String(), "AWT Tour") {
 		t.Fatal("new season form leaks previous values")
 	}
 
-	e.wantStatus(e.get("/admin/seasons/"+id+"/delete"), 200, "Confirm delete", "AWT Tour 2026")
-	e.wantRedirect(e.post("/admin/seasons/"+id+"/delete", nil), "/admin/seasons")
-	e.wantStatus(e.get("/admin/seasons/"+id+"/edit"), 404)
+	e.wantStatus(e.get("/manager/seasons/"+id+"/delete"), 200, "Confirm delete", "AWT Tour 2026")
+	e.wantRedirect(e.post("/manager/seasons/"+id+"/delete", nil), "/manager/seasons")
+	e.wantStatus(e.get("/manager/seasons/"+id+"/edit"), 404)
 }
 
 var pngBytes = func() []byte {
@@ -385,26 +385,26 @@ var pngBytes = func() []byte {
 
 func TestFiles(t *testing.T) {
 	e := newEnv(t)
-	e.wantRedirect(e.upload("/admin/files", nil, "logo.png", pngBytes), "/admin/files")
-	list := e.get("/admin/files")
+	e.wantRedirect(e.upload("/manager/files", nil, "logo.png", pngBytes), "/manager/files")
+	list := e.get("/manager/files")
 	e.wantStatus(list, 200, "logo.png", "image/png", `value="/files/`)
 	// Rejected types: HTML is never accepted.
-	e.wantStatus(e.upload("/admin/files", nil, "evil.png", []byte("<html><script>alert(1)</script></html>")), 422, "must be a PNG")
-	e.wantStatus(e.upload("/admin/files", nil, "", nil), 422, "choose a file")
+	e.wantStatus(e.upload("/manager/files", nil, "evil.png", []byte("<html><script>alert(1)</script></html>")), 422, "must be a PNG")
+	e.wantStatus(e.upload("/manager/files", nil, "", nil), 422, "choose a file")
 
 	// An uploaded image can be picked as a season image.
 	id := regexp.MustCompile(`value="/files/([0-9a-f]{64})"`).FindStringSubmatch(list.Body.String())[1]
-	e.wantStatus(e.get("/admin/seasons/new"), 200, `value="`+id+`"`)
-	rec := e.post("/admin/seasons", url.Values{"name": {"Swiss 2026"}, "code": {"swi-2026"}, "year": {"2026"}, "index": {"1"}, "image": {id}, "country": {"swi"}})
-	e.wantRedirect(rec, "/admin/seasons")
+	e.wantStatus(e.get("/manager/seasons/new"), 200, `value="`+id+`"`)
+	rec := e.post("/manager/seasons", url.Values{"name": {"Swiss 2026"}, "code": {"swi-2026"}, "year": {"2026"}, "index": {"1"}, "image": {id}, "country": {"swi"}})
+	e.wantRedirect(rec, "/manager/seasons")
 }
 
 func TestUsers(t *testing.T) {
 	e := newEnv(t)
 	ctx := context.Background()
-	e.wantStatus(e.get("/admin/users"), 200, "admin@example.org", "scorer@example.org")
+	e.wantStatus(e.get("/manager/users"), 200, "admin@example.org", "scorer@example.org")
 
-	e.wantRedirect(e.post("/admin/users", url.Values{"email": {"new@example.org"}, "name": {"New One"}, "role": {"scorer"}, "password": {"a long enough pass"}}), "/admin/users")
+	e.wantRedirect(e.post("/manager/users", url.Values{"email": {"new@example.org"}, "name": {"New One"}, "role": {"scorer"}, "password": {"a long enough pass"}}), "/manager/users")
 	users, _ := e.deps.Auth.ListUsers(ctx)
 	var newID string
 	for _, u := range users {
@@ -415,11 +415,11 @@ func TestUsers(t *testing.T) {
 	if newID == "" {
 		t.Fatal("user not created")
 	}
-	e.wantStatus(e.post("/admin/users", url.Values{"email": {"x@example.org"}, "name": {"X"}, "role": {"scorer"}, "password": {"short"}}), 422, "at least 10 characters")
-	e.wantStatus(e.post("/admin/users", url.Values{"email": {"x@example.org"}, "name": {"X"}, "role": {"boss"}, "password": {"a long enough pass"}}), 422, "admin or scorer")
-	e.wantStatus(e.post("/admin/users", url.Values{"email": {"not-an-email"}, "name": {"X"}, "role": {"scorer"}, "password": {"a long enough pass"}}), 422, "name@example.org")
-	e.wantStatus(e.post("/admin/users", url.Values{"email": {"y@example.org"}, "name": {"  "}, "role": {"scorer"}, "password": {"a long enough pass"}}), 422, "name is required")
-	e.wantStatus(e.post("/admin/users", url.Values{"email": {"new@example.org"}, "name": {"X"}, "role": {"scorer"}, "password": {"a long enough pass"}}), 409, "already exists")
+	e.wantStatus(e.post("/manager/users", url.Values{"email": {"x@example.org"}, "name": {"X"}, "role": {"scorer"}, "password": {"short"}}), 422, "at least 10 characters")
+	e.wantStatus(e.post("/manager/users", url.Values{"email": {"x@example.org"}, "name": {"X"}, "role": {"boss"}, "password": {"a long enough pass"}}), 422, "admin or scorer")
+	e.wantStatus(e.post("/manager/users", url.Values{"email": {"not-an-email"}, "name": {"X"}, "role": {"scorer"}, "password": {"a long enough pass"}}), 422, "name@example.org")
+	e.wantStatus(e.post("/manager/users", url.Values{"email": {"y@example.org"}, "name": {"  "}, "role": {"scorer"}, "password": {"a long enough pass"}}), 422, "name is required")
+	e.wantStatus(e.post("/manager/users", url.Values{"email": {"new@example.org"}, "name": {"X"}, "role": {"scorer"}, "password": {"a long enough pass"}}), 409, "already exists")
 
 	// Assign competitions.
 	comp, err := e.svc.CreateCompetition(ctx, service.CompetitionInput{Name: "Cup", Type: domain.TypeSolo,
@@ -427,32 +427,32 @@ func TestUsers(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	e.wantStatus(e.get("/admin/users/"+newID), 200, "Cup", "Reset password")
-	e.wantRedirect(e.post("/admin/users/"+newID+"/competitions", url.Values{"competition": {comp.ID, "bogus"}}), "/admin/users/"+newID)
+	e.wantStatus(e.get("/manager/users/"+newID), 200, "Cup", "Reset password")
+	e.wantRedirect(e.post("/manager/users/"+newID+"/competitions", url.Values{"competition": {comp.ID, "bogus"}}), "/manager/users/"+newID)
 	assigned, _ := e.deps.Auth.UserCompetitions(ctx, newID)
 	if len(assigned) != 1 || assigned[0] != comp.ID {
 		t.Fatalf("assigned = %v", assigned)
 	}
-	e.wantStatus(e.get("/admin/users/"+newID), 200, `value="`+comp.ID+`" checked`)
+	e.wantStatus(e.get("/manager/users/"+newID), 200, `value="`+comp.ID+`" checked`)
 
 	// Reset password: the new one works, short ones are refused.
-	e.wantStatus(e.post("/admin/users/"+newID+"/password", url.Values{"password": {"short"}}), 422, "at least 10 characters")
-	e.wantRedirect(e.post("/admin/users/"+newID+"/password", url.Values{"password": {"another long password"}}), "/admin/users/"+newID)
+	e.wantStatus(e.post("/manager/users/"+newID+"/password", url.Values{"password": {"short"}}), 422, "at least 10 characters")
+	e.wantRedirect(e.post("/manager/users/"+newID+"/password", url.Values{"password": {"another long password"}}), "/manager/users/"+newID)
 	if _, err := e.deps.Auth.Login(ctx, "new@example.org", "another long password"); err != nil {
 		t.Fatalf("login with the new password: %v", err)
 	}
 
 	// Disable: cannot log in; cannot disable oneself.
-	e.wantRedirect(e.post("/admin/users/"+newID+"/disable", nil), "/admin/users/"+newID)
+	e.wantRedirect(e.post("/manager/users/"+newID+"/disable", nil), "/manager/users/"+newID)
 	if _, err := e.deps.Auth.Login(ctx, "new@example.org", "another long password"); err == nil {
 		t.Fatal("disabled user can log in")
 	}
-	e.wantRedirect(e.post("/admin/users/"+newID+"/enable", nil), "/admin/users/"+newID)
+	e.wantRedirect(e.post("/manager/users/"+newID+"/enable", nil), "/manager/users/"+newID)
 	if _, err := e.deps.Auth.Login(ctx, "new@example.org", "another long password"); err != nil {
 		t.Fatalf("re-enabled user cannot log in: %v", err)
 	}
-	e.wantStatus(e.post("/admin/users/"+e.admin.User.ID+"/disable", nil), 409, "cannot disable your own")
-	e.wantStatus(e.get("/admin/users/nope"), 404)
+	e.wantStatus(e.post("/manager/users/"+e.admin.User.ID+"/disable", nil), 409, "cannot disable your own")
+	e.wantStatus(e.get("/manager/users/nope"), 404)
 }
 
 func TestDashboard(t *testing.T) {
@@ -472,13 +472,13 @@ func TestDashboard(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	e.wantStatus(e.get("/admin"), 200, "<strong>2</strong> pilots", "<strong>2</strong> judges", "No competition is open.")
+	e.wantStatus(e.get("/manager"), 200, "<strong>2</strong> pilots", "<strong>2</strong> judges", "No competition is open.")
 	if err := errors.Join(e.svc.SetParticipants(ctx, comp.ID, []int{101, 102}, nil), e.svc.SetJudges(ctx, comp.ID, judges), e.svc.OpenCompetition(ctx, comp.ID)); err != nil {
 		t.Fatal(err)
 	}
-	e.wantStatus(e.get("/admin"), 200, "Open Cup", "/admin/competitions/"+comp.Code)
+	e.wantStatus(e.get("/manager"), 200, "Open Cup", "/manager/competitions/"+comp.Code)
 	// Scorers see the dashboard, without the reference data counts.
-	rec := e.do(httptest.NewRequest(http.MethodGet, "/admin", nil), &e.scorer)
+	rec := e.do(httptest.NewRequest(http.MethodGet, "/manager", nil), &e.scorer)
 	e.wantStatus(rec, 200, "No competition is open.") // not assigned yet
 	if strings.Contains(rec.Body.String(), "Open Cup") {
 		t.Fatal("scorer sees a competition they are not assigned to")
@@ -486,7 +486,7 @@ func TestDashboard(t *testing.T) {
 	if err := e.deps.Auth.AssignCompetition(ctx, "scorer@example.org", comp.ID); err != nil {
 		t.Fatal(err)
 	}
-	rec = e.do(httptest.NewRequest(http.MethodGet, "/admin", nil), &e.scorer)
+	rec = e.do(httptest.NewRequest(http.MethodGet, "/manager", nil), &e.scorer)
 	e.wantStatus(rec, 200, "Open Cup")
 	if strings.Contains(rec.Body.String(), "pilots</a>") {
 		t.Fatal("scorer sees the admin counts")
@@ -495,14 +495,14 @@ func TestDashboard(t *testing.T) {
 
 func TestScorerIsForbiddenOnReferenceData(t *testing.T) {
 	e := newEnv(t)
-	for _, p := range []string{"/admin/pilots", "/admin/teams", "/admin/teams/new", "/admin/judges", "/admin/tricks",
-		"/admin/tricks/unique", "/admin/seasons", "/admin/files", "/admin/users"} {
+	for _, p := range []string{"/manager/pilots", "/manager/teams", "/manager/teams/new", "/manager/judges", "/manager/tricks",
+		"/manager/tricks/unique", "/manager/seasons", "/manager/files", "/manager/users"} {
 		rec := e.do(httptest.NewRequest(http.MethodGet, p, nil), &e.scorer)
 		if rec.Code != http.StatusForbidden {
 			t.Errorf("scorer GET %s = %d, want 403", p, rec.Code)
 		}
 	}
-	for _, p := range []string{"/admin/pilots/import", "/admin/teams", "/admin/judges", "/admin/tricks", "/admin/seasons", "/admin/users"} {
+	for _, p := range []string{"/manager/pilots/import", "/manager/teams", "/manager/judges", "/manager/tricks", "/manager/seasons", "/manager/users"} {
 		rec := e.postAs(&e.scorer, p, url.Values{"name": {"x"}}, true)
 		if rec.Code != http.StatusForbidden {
 			t.Errorf("scorer POST %s = %d, want 403", p, rec.Code)
@@ -515,8 +515,8 @@ func TestScorerIsForbiddenOnReferenceData(t *testing.T) {
 
 func TestCSRFIsRequired(t *testing.T) {
 	e := newEnv(t)
-	for _, p := range []string{"/admin/pilots/import", "/admin/pilots/rankings", "/admin/teams", "/admin/judges", "/admin/tricks",
-		"/admin/seasons", "/admin/users", "/admin/tricks/duplicate"} {
+	for _, p := range []string{"/manager/pilots/import", "/manager/pilots/rankings", "/manager/teams", "/manager/judges", "/manager/tricks",
+		"/manager/seasons", "/manager/users", "/manager/tricks/duplicate"} {
 		rec := e.postAs(&e.admin, p, url.Values{"name": {"x"}, "civlid": {"101"}}, false)
 		if rec.Code != http.StatusForbidden {
 			t.Errorf("POST %s without CSRF = %d, want 403", p, rec.Code)
@@ -537,12 +537,12 @@ func TestOversizedBodiesAre413(t *testing.T) {
 	big := url.Values{"name": {strings.Repeat("a", 70<<10)}, "pilot1": {"101"}, "pilot2": {"102"}, "_csrf": {e.admin.CSRF}}.Encode()
 
 	// Declared length over the cap: refused up front.
-	req := httptest.NewRequest(http.MethodPost, "/admin/teams", strings.NewReader(big))
+	req := httptest.NewRequest(http.MethodPost, "/manager/teams", strings.NewReader(big))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	e.wantStatus(e.do(req, &e.admin), http.StatusRequestEntityTooLarge)
 
 	// Unknown length (chunked): the MaxBytesReader error is mapped to 413, not 403.
-	req = httptest.NewRequest(http.MethodPost, "/admin/teams", strings.NewReader(big))
+	req = httptest.NewRequest(http.MethodPost, "/manager/teams", strings.NewReader(big))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.ContentLength = -1
 	e.wantStatus(e.do(req, &e.admin), http.StatusRequestEntityTooLarge)
@@ -552,7 +552,7 @@ func TestOversizedBodiesAre413(t *testing.T) {
 
 	// An upload over a (small) cap, declared and chunked.
 	h := web.Routes(e.deps, web.ModuleFunc(func(r *web.Router) {
-		r.AdminMax("POST /admin/smallmax", 1024, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.AdminMax("POST /manager/smallmax", 1024, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
 		}))
 	}))
@@ -563,7 +563,7 @@ func TestOversizedBodiesAre413(t *testing.T) {
 	_, _ = fw.Write(bytes.Repeat([]byte{1}, 4096))
 	_ = mw.Close()
 	for _, chunked := range []bool{false, true} {
-		req := httptest.NewRequest(http.MethodPost, "/admin/smallmax", bytes.NewReader(buf.Bytes()))
+		req := httptest.NewRequest(http.MethodPost, "/manager/smallmax", bytes.NewReader(buf.Bytes()))
 		req.Header.Set("Content-Type", mw.FormDataContentType())
 		if chunked {
 			req.ContentLength = -1
@@ -580,11 +580,11 @@ func TestOversizedBodiesAre413(t *testing.T) {
 func TestDuplicateCatalogReplacesSameNameTricks(t *testing.T) {
 	e := newEnv(t)
 	ctx := context.Background()
-	e.wantRedirect(e.upload("/admin/tricks/import", map[string]string{"year": "2025"}, "c.json", []byte(catalogJSON)), "/admin/tricks")
+	e.wantRedirect(e.upload("/manager/tricks/import", map[string]string{"year": "2025"}, "c.json", []byte(catalogJSON)), "/manager/tricks")
 	// The target year already has an older "Misty Flip" and an unrelated trick.
 	old := `[{"name":"Misty Flip","acronym":"MO","solo":true,"directions":[],"technical_coefficient":0.5,"bonuses":[]},
 {"name":"Keep Me","acronym":"K","solo":true,"directions":[],"technical_coefficient":1,"bonuses":[]}]`
-	e.wantRedirect(e.upload("/admin/tricks/import", map[string]string{"year": "2026"}, "o.json", []byte(old)), "/admin/tricks")
+	e.wantRedirect(e.upload("/manager/tricks/import", map[string]string{"year": "2026"}, "o.json", []byte(old)), "/manager/tricks")
 	before, _ := e.svc.ListTricks(ctx, 2026)
 	var mistyID string
 	for _, tr := range before {
@@ -592,7 +592,7 @@ func TestDuplicateCatalogReplacesSameNameTricks(t *testing.T) {
 			mistyID = tr.ID
 		}
 	}
-	e.wantRedirect(e.post("/admin/tricks/duplicate", url.Values{"from": {"2025"}, "to": {"2026"}}), "/admin/tricks?year=2026")
+	e.wantRedirect(e.post("/manager/tricks/duplicate", url.Values{"from": {"2025"}, "to": {"2026"}}), "/manager/tricks?year=2026")
 	after, err := e.svc.ListTricks(ctx, 2026)
 	if err != nil {
 		t.Fatal(err)
@@ -613,37 +613,37 @@ func TestDuplicateCatalogReplacesSameNameTricks(t *testing.T) {
 	if len(src) != 2 {
 		t.Fatalf("source catalog changed: %d tricks", len(src))
 	}
-	e.wantStatus(e.post("/admin/tricks/duplicate", url.Values{"from": {"2025"}, "to": {"99999"}}), 422, "between 1901 and 2999")
+	e.wantStatus(e.post("/manager/tricks/duplicate", url.Values{"from": {"2025"}, "to": {"99999"}}), 422, "between 1901 and 2999")
 }
 
 func TestTamperedYearIs422(t *testing.T) {
 	e := newEnv(t)
-	for _, p := range []string{"/admin/tricks?year=abc", "/admin/tricks?year=99999", "/admin/tricks/unique?year=-1", "/admin/tricks/new?year=x"} {
+	for _, p := range []string{"/manager/tricks?year=abc", "/manager/tricks?year=99999", "/manager/tricks/unique?year=-1", "/manager/tricks/new?year=x"} {
 		e.wantStatus(e.get(p), 422, "between 1901 and 2999")
 	}
-	e.wantStatus(e.upload("/admin/tricks/import", map[string]string{"year": "abc"}, "c.json", []byte(catalogJSON)), 422, "year")
-	e.wantStatus(e.post("/admin/tricks", url.Values{"year": {"abc"}, "name": {"Z"}, "acronym": {"Z"}, "technical_coefficient": {"1"}}), 422, "year")
+	e.wantStatus(e.upload("/manager/tricks/import", map[string]string{"year": "abc"}, "c.json", []byte(catalogJSON)), 422, "year")
+	e.wantStatus(e.post("/manager/tricks", url.Values{"year": {"abc"}, "name": {"Z"}, "acronym": {"Z"}, "technical_coefficient": {"1"}}), 422, "year")
 }
 
 func TestNamesAreEscaped(t *testing.T) {
 	e := newEnv(t)
 	e.importPilots(666, 101)
-	e.wantRedirect(e.post("/admin/teams", url.Values{"name": {"<script>alert(2)</script>"}, "pilot1": {"666"}, "pilot2": {"101"}}), "/admin/teams")
-	for _, p := range []string{"/admin/pilots", "/admin/teams", "/admin/teams/new", "/admin/judges/new"} {
+	e.wantRedirect(e.post("/manager/teams", url.Values{"name": {"<script>alert(2)</script>"}, "pilot1": {"666"}, "pilot2": {"101"}}), "/manager/teams")
+	for _, p := range []string{"/manager/pilots", "/manager/teams", "/manager/teams/new", "/manager/judges/new"} {
 		body := e.get(p).Body.String()
 		if strings.Contains(body, "<script>alert") {
 			t.Fatalf("%s renders an unescaped script tag", p)
 		}
 	}
-	e.wantStatus(e.get("/admin/pilots"), 200, "&lt;script&gt;alert(1)&lt;/script&gt;")
-	e.wantStatus(e.get("/admin/teams"), 200, "&lt;script&gt;alert(2)&lt;/script&gt;")
+	e.wantStatus(e.get("/manager/pilots"), 200, "&lt;script&gt;alert(1)&lt;/script&gt;")
+	e.wantStatus(e.get("/manager/teams"), 200, "&lt;script&gt;alert(2)&lt;/script&gt;")
 }
 
 func TestAnonymousIsRedirectedToLogin(t *testing.T) {
 	e := newEnv(t)
-	rec := e.do(httptest.NewRequest(http.MethodGet, "/admin/pilots", nil), nil)
-	e.wantRedirect(rec, "/admin/login?next=")
-	req := httptest.NewRequest(http.MethodPost, "/admin/pilots/gender", nil)
+	rec := e.do(httptest.NewRequest(http.MethodGet, "/manager/pilots", nil), nil)
+	e.wantRedirect(rec, "/manager/login?next=")
+	req := httptest.NewRequest(http.MethodPost, "/manager/pilots/gender", nil)
 	req.Header.Set("HX-Request", "true")
 	if rec := e.do(req, nil); rec.Header().Get("HX-Redirect") == "" && rec.Code == http.StatusOK {
 		t.Fatal("anonymous htmx request passed")
@@ -652,13 +652,13 @@ func TestAnonymousIsRedirectedToLogin(t *testing.T) {
 
 // scorerAllowed are the exact routes open to assigned scorers (read-only).
 var scorerAllowed = map[string]bool{
-	"GET /admin/competitions/{code}":                              true,
-	"GET /admin/competitions/{code}/runs/{n}":                     true,
-	"GET /admin/competitions/{code}/export/results.xlsx":          true,
-	"GET /admin/competitions/{code}/export/results.html":          true,
-	"GET /admin/competitions/{code}/runs/{n}/export/results.xlsx": true,
-	"GET /admin/competitions/{code}/runs/{n}/export/results.html": true,
-	"GET /admin/competitions/{code}/runs/{n}/starting-order.html": true,
+	"GET /manager/competitions/{code}":                              true,
+	"GET /manager/competitions/{code}/runs/{n}":                     true,
+	"GET /manager/competitions/{code}/export/results.xlsx":          true,
+	"GET /manager/competitions/{code}/export/results.html":          true,
+	"GET /manager/competitions/{code}/runs/{n}/export/results.xlsx": true,
+	"GET /manager/competitions/{code}/runs/{n}/export/results.html": true,
+	"GET /manager/competitions/{code}/runs/{n}/starting-order.html": true,
 }
 
 var wildcard = regexp.MustCompile(`\{[^}]*\}`)
@@ -669,7 +669,7 @@ func TestEveryAdminRouteIsGuarded(t *testing.T) {
 	n := 0
 	for _, rt := range table {
 		p := rt.Path()
-		if p != "/admin" && !strings.HasPrefix(p, "/admin/") || p == "/admin/login" {
+		if p != "/manager" && !strings.HasPrefix(p, "/manager/") || p == "/manager/login" {
 			continue
 		}
 		n++
@@ -685,7 +685,7 @@ func TestEveryAdminRouteIsGuarded(t *testing.T) {
 		// Reference data and users are admin-only; only the dashboard is user-level.
 		// Only the listed read-only GETs (and the judging routes of Task 21)
 		// may be scorer-guarded; everything else is admin-only.
-		if rt.Pattern != "GET /admin" && rt.Pattern != "POST /admin/logout" && rt.Guard != web.GuardAdmin &&
+		if rt.Pattern != "GET /manager" && rt.Pattern != "POST /manager/logout" && rt.Guard != web.GuardAdmin &&
 			!scorerAllowed[rt.Pattern] && !(rt.Guard == web.GuardScorer && strings.Contains(p, "/judging")) {
 			t.Errorf("%s has guard %s, want admin", rt.Pattern, rt.Guard)
 		}

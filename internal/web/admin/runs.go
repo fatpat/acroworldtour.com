@@ -13,14 +13,14 @@ import (
 )
 
 func (h *handlers) registerRuns(r *web.Router) {
-	get(r, "/admin/competitions/{code}/runs/new", h.runNew)
-	post(r, "/admin/competitions/{code}/runs", h.runCreate)
-	scorer(r, "/admin/competitions/{code}/runs/{n}", h.runShow)
-	post(r, "/admin/competitions/{code}/runs/{n}/move", h.runMove)
-	post(r, "/admin/competitions/{code}/runs/{n}/judges", h.runJudgesSave)
-	post(r, "/admin/competitions/{code}/runs/{n}/config", h.runConfigSave)
-	get(r, "/admin/competitions/{code}/runs/{n}/state/{action}", h.runStateConfirm)
-	post(r, "/admin/competitions/{code}/runs/{n}/state/{action}", h.runStateDo)
+	get(r, "/manager/competitions/{code}/runs/new", h.runNew)
+	post(r, "/manager/competitions/{code}/runs", h.runCreate)
+	scorer(r, "/manager/competitions/{code}/runs/{n}", h.runShow)
+	post(r, "/manager/competitions/{code}/runs/{n}/move", h.runMove)
+	post(r, "/manager/competitions/{code}/runs/{n}/judges", h.runJudgesSave)
+	post(r, "/manager/competitions/{code}/runs/{n}/config", h.runConfigSave)
+	get(r, "/manager/competitions/{code}/runs/{n}/state/{action}", h.runStateConfirm)
+	post(r, "/manager/competitions/{code}/runs/{n}/state/{action}", h.runStateDo)
 }
 
 // resetPolicies explain the repetition reset policy (spec 03 §5.3).

@@ -23,11 +23,11 @@ const (
 // registerExports wires the printable and CIVL exports (spec 05 §8). They
 // are open to admins and to the scorers of the competition.
 func (h *handlers) registerExports(r *web.Router) {
-	scorer(r, "/admin/competitions/{code}/export/results.xlsx", h.compExportXLSX)
-	scorer(r, "/admin/competitions/{code}/export/results.html", h.compExportHTML)
-	scorer(r, "/admin/competitions/{code}/runs/{n}/export/results.xlsx", h.runExportXLSX)
-	scorer(r, "/admin/competitions/{code}/runs/{n}/export/results.html", h.runExportHTML)
-	scorer(r, "/admin/competitions/{code}/runs/{n}/starting-order.html", h.startingOrderHTML)
+	scorer(r, "/manager/competitions/{code}/export/results.xlsx", h.compExportXLSX)
+	scorer(r, "/manager/competitions/{code}/export/results.html", h.compExportHTML)
+	scorer(r, "/manager/competitions/{code}/runs/{n}/export/results.xlsx", h.runExportXLSX)
+	scorer(r, "/manager/competitions/{code}/runs/{n}/export/results.html", h.runExportHTML)
+	scorer(r, "/manager/competitions/{code}/runs/{n}/starting-order.html", h.startingOrderHTML)
 }
 
 // fileSafe keeps a download filename to [a-z0-9._-].

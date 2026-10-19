@@ -36,47 +36,47 @@ var eventStatusOptions = []option{
 func (h *handlers) registerContent(r *web.Router) {
 	d := r.Deps()
 	c := &content{handlers: h, purger: d.Purger, cfg: d.Cfg}
-	get(r, "/admin/content", c.home)
-	r.AdminMax("POST /admin/content/preview", contentMax, http.HandlerFunc(c.preview))
+	get(r, "/manager/content", c.home)
+	r.AdminMax("POST /manager/content/preview", contentMax, http.HandlerFunc(c.preview))
 
-	get(r, "/admin/content/news", c.newsList)
-	get(r, "/admin/content/news/new", c.newsNew)
-	r.AdminMax("POST /admin/content/news", contentMax, http.HandlerFunc(c.newsCreate))
-	get(r, "/admin/content/news/{id}/edit", c.newsEdit)
-	r.AdminMax("POST /admin/content/news/{id}", contentMax, http.HandlerFunc(c.newsUpdate))
-	get(r, "/admin/content/news/{id}/delete", c.newsDeleteConfirm)
-	post(r, "/admin/content/news/{id}/delete", c.newsDelete)
+	get(r, "/manager/content/news", c.newsList)
+	get(r, "/manager/content/news/new", c.newsNew)
+	r.AdminMax("POST /manager/content/news", contentMax, http.HandlerFunc(c.newsCreate))
+	get(r, "/manager/content/news/{id}/edit", c.newsEdit)
+	r.AdminMax("POST /manager/content/news/{id}", contentMax, http.HandlerFunc(c.newsUpdate))
+	get(r, "/manager/content/news/{id}/delete", c.newsDeleteConfirm)
+	post(r, "/manager/content/news/{id}/delete", c.newsDelete)
 
-	get(r, "/admin/content/events", c.eventsList)
-	get(r, "/admin/content/events/new", c.eventNew)
-	r.AdminMax("POST /admin/content/events", contentMax, http.HandlerFunc(c.eventCreate))
-	get(r, "/admin/content/events/{id}/edit", c.eventEdit)
-	r.AdminMax("POST /admin/content/events/{id}", contentMax, http.HandlerFunc(c.eventUpdate))
-	get(r, "/admin/content/events/{id}/delete", c.eventDeleteConfirm)
-	post(r, "/admin/content/events/{id}/delete", c.eventDelete)
+	get(r, "/manager/content/events", c.eventsList)
+	get(r, "/manager/content/events/new", c.eventNew)
+	r.AdminMax("POST /manager/content/events", contentMax, http.HandlerFunc(c.eventCreate))
+	get(r, "/manager/content/events/{id}/edit", c.eventEdit)
+	r.AdminMax("POST /manager/content/events/{id}", contentMax, http.HandlerFunc(c.eventUpdate))
+	get(r, "/manager/content/events/{id}/delete", c.eventDeleteConfirm)
+	post(r, "/manager/content/events/{id}/delete", c.eventDelete)
 
-	get(r, "/admin/content/documents", c.documentsList)
-	get(r, "/admin/content/documents/new", c.documentNew)
-	postUpload(r, "/admin/content/documents", c.documentCreate)
-	get(r, "/admin/content/documents/{id}/edit", c.documentEdit)
-	postUpload(r, "/admin/content/documents/{id}", c.documentUpdate)
-	get(r, "/admin/content/documents/{id}/delete", c.documentDeleteConfirm)
-	post(r, "/admin/content/documents/{id}/delete", c.documentDelete)
+	get(r, "/manager/content/documents", c.documentsList)
+	get(r, "/manager/content/documents/new", c.documentNew)
+	postUpload(r, "/manager/content/documents", c.documentCreate)
+	get(r, "/manager/content/documents/{id}/edit", c.documentEdit)
+	postUpload(r, "/manager/content/documents/{id}", c.documentUpdate)
+	get(r, "/manager/content/documents/{id}/delete", c.documentDeleteConfirm)
+	post(r, "/manager/content/documents/{id}/delete", c.documentDelete)
 
-	get(r, "/admin/content/pages", c.pagesList)
-	get(r, "/admin/content/pages/new", c.pageNew)
-	r.AdminMax("POST /admin/content/pages", contentMax, http.HandlerFunc(c.pageCreate))
-	get(r, "/admin/content/pages/{id}/edit", c.pageEdit)
-	r.AdminMax("POST /admin/content/pages/{id}", contentMax, http.HandlerFunc(c.pageUpdate))
-	get(r, "/admin/content/pages/{id}/delete", c.pageDeleteConfirm)
-	post(r, "/admin/content/pages/{id}/delete", c.pageDelete)
+	get(r, "/manager/content/pages", c.pagesList)
+	get(r, "/manager/content/pages/new", c.pageNew)
+	r.AdminMax("POST /manager/content/pages", contentMax, http.HandlerFunc(c.pageCreate))
+	get(r, "/manager/content/pages/{id}/edit", c.pageEdit)
+	r.AdminMax("POST /manager/content/pages/{id}", contentMax, http.HandlerFunc(c.pageUpdate))
+	get(r, "/manager/content/pages/{id}/delete", c.pageDeleteConfirm)
+	post(r, "/manager/content/pages/{id}/delete", c.pageDelete)
 
-	get(r, "/admin/content/redirects", c.redirectsList)
-	post(r, "/admin/content/redirects", c.redirectSave)
-	post(r, "/admin/content/redirects/delete", c.redirectDelete)
+	get(r, "/manager/content/redirects", c.redirectsList)
+	post(r, "/manager/content/redirects", c.redirectSave)
+	post(r, "/manager/content/redirects/delete", c.redirectDelete)
 
-	get(r, "/admin/content/settings", c.settingsShow)
-	post(r, "/admin/content/settings", c.settingsSave)
+	get(r, "/manager/content/settings", c.settingsShow)
+	post(r, "/manager/content/settings", c.settingsSave)
 }
 
 // purge asks the CDN to drop the pages a change affects. It runs after the
@@ -250,7 +250,7 @@ func (c *content) newsSave(w http.ResponseWriter, r *http.Request, id string) {
 		return
 	}
 	c.purge("/", "/news", "/news/"+n.Slug, "/sitemap.xml")
-	redirect(w, r, "/admin/content/news", savedKey(id))
+	redirect(w, r, "/manager/content/news", savedKey(id))
 }
 
 func (c *content) newsCreate(w http.ResponseWriter, r *http.Request) { c.newsSave(w, r, "") }
@@ -276,7 +276,7 @@ func (c *content) newsDeleteConfirm(w http.ResponseWriter, r *http.Request) {
 		c.fail(w, r, err, nil)
 		return
 	}
-	render(w, r, http.StatusOK, confirmDelete("content", "article", n.Title, "/admin/content/news/"+n.ID+"/delete", "/admin/content/news"))
+	render(w, r, http.StatusOK, confirmDelete("content", "article", n.Title, "/manager/content/news/"+n.ID+"/delete", "/manager/content/news"))
 }
 
 func (c *content) newsDelete(w http.ResponseWriter, r *http.Request) {
@@ -289,7 +289,7 @@ func (c *content) newsDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	c.purge("/", "/news", "/news/"+n.Slug, "/sitemap.xml")
-	redirect(w, r, "/admin/content/news", "deleted")
+	redirect(w, r, "/manager/content/news", "deleted")
 }
 
 // ---- events ----
@@ -391,7 +391,7 @@ func (c *content) eventSave(w http.ResponseWriter, r *http.Request, id string) {
 		return
 	}
 	c.purge("/", "/events", "/event/"+e.Slug, "/sitemap.xml")
-	redirect(w, r, "/admin/content/events", savedKey(id))
+	redirect(w, r, "/manager/content/events", savedKey(id))
 }
 
 func (c *content) eventCreate(w http.ResponseWriter, r *http.Request) { c.eventSave(w, r, "") }
@@ -420,7 +420,7 @@ func (c *content) eventDeleteConfirm(w http.ResponseWriter, r *http.Request) {
 		c.fail(w, r, err, nil)
 		return
 	}
-	render(w, r, http.StatusOK, confirmDelete("content", "event", e.Name, "/admin/content/events/"+e.ID+"/delete", "/admin/content/events"))
+	render(w, r, http.StatusOK, confirmDelete("content", "event", e.Name, "/manager/content/events/"+e.ID+"/delete", "/manager/content/events"))
 }
 
 func (c *content) eventDelete(w http.ResponseWriter, r *http.Request) {
@@ -433,7 +433,7 @@ func (c *content) eventDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	c.purge("/", "/events", "/event/"+e.Slug, "/sitemap.xml")
-	redirect(w, r, "/admin/content/events", "deleted")
+	redirect(w, r, "/manager/content/events", "deleted")
 }
 
 // ---- documents ----
@@ -509,7 +509,7 @@ func (c *content) documentSave(w http.ResponseWriter, r *http.Request, id, curre
 		return
 	}
 	c.purge("/", "/documents")
-	redirect(w, r, "/admin/content/documents", savedKey(id))
+	redirect(w, r, "/manager/content/documents", savedKey(id))
 }
 
 func (c *content) documentCreate(w http.ResponseWriter, r *http.Request) {
@@ -544,7 +544,7 @@ func (c *content) documentDeleteConfirm(w http.ResponseWriter, r *http.Request) 
 		c.fail(w, r, err, nil)
 		return
 	}
-	render(w, r, http.StatusOK, confirmDelete("content", "document", d.Title, "/admin/content/documents/"+d.ID+"/delete", "/admin/content/documents"))
+	render(w, r, http.StatusOK, confirmDelete("content", "document", d.Title, "/manager/content/documents/"+d.ID+"/delete", "/manager/content/documents"))
 }
 
 func (c *content) documentDelete(w http.ResponseWriter, r *http.Request) {
@@ -553,7 +553,7 @@ func (c *content) documentDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	c.purge("/", "/documents")
-	redirect(w, r, "/admin/content/documents", "deleted")
+	redirect(w, r, "/manager/content/documents", "deleted")
 }
 
 // ---- pages ----
@@ -607,7 +607,7 @@ func (c *content) pageSave(w http.ResponseWriter, r *http.Request, create bool, 
 		return
 	}
 	c.purge("/"+f.Slug, "/sitemap.xml")
-	redirect(w, r, "/admin/content/pages", map[bool]string{true: "created", false: "saved"}[create])
+	redirect(w, r, "/manager/content/pages", map[bool]string{true: "created", false: "saved"}[create])
 }
 
 func (c *content) pageCreate(w http.ResponseWriter, r *http.Request) { c.pageSave(w, r, true, "") }
@@ -630,7 +630,7 @@ func (c *content) pageDeleteConfirm(w http.ResponseWriter, r *http.Request) {
 		c.fail(w, r, err, nil)
 		return
 	}
-	render(w, r, http.StatusOK, confirmDelete("content", "page", p.Title+" (/"+p.Slug+")", "/admin/content/pages/"+p.Slug+"/delete", "/admin/content/pages"))
+	render(w, r, http.StatusOK, confirmDelete("content", "page", p.Title+" (/"+p.Slug+")", "/manager/content/pages/"+p.Slug+"/delete", "/manager/content/pages"))
 }
 
 func (c *content) pageDelete(w http.ResponseWriter, r *http.Request) {
@@ -640,7 +640,7 @@ func (c *content) pageDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	c.purge("/"+slug, "/sitemap.xml")
-	redirect(w, r, "/admin/content/pages", "deleted")
+	redirect(w, r, "/manager/content/pages", "deleted")
 }
 
 // ---- redirects ----
@@ -686,7 +686,7 @@ func (c *content) redirectSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	c.purge(f.From)
-	redirect(w, r, "/admin/content/redirects", "saved")
+	redirect(w, r, "/manager/content/redirects", "saved")
 }
 
 func (c *content) redirectDelete(w http.ResponseWriter, r *http.Request) {
@@ -696,7 +696,7 @@ func (c *content) redirectDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	c.purge(from)
-	redirect(w, r, "/admin/content/redirects", "deleted")
+	redirect(w, r, "/manager/content/redirects", "deleted")
 }
 
 // ---- settings ----
@@ -753,7 +753,7 @@ func (c *content) settingsSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	c.purge("/", "/documents")
-	redirect(w, r, "/admin/content/settings", "saved")
+	redirect(w, r, "/manager/content/settings", "saved")
 }
 
 // shortID abbreviates a file id for display.

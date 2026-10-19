@@ -26,12 +26,12 @@ type pilotsView struct {
 }
 
 func (h *handlers) registerPilots(r *web.Router) {
-	get(r, "/admin/pilots", h.pilotsList)
-	post(r, "/admin/pilots/import", h.pilotsImport)
-	post(r, "/admin/pilots/rankings", h.pilotsRankings)
-	post(r, "/admin/pilots/awt", h.pilotsAWTForm)
-	post(r, "/admin/pilots/{id}/gender", h.pilotsGender)
-	post(r, "/admin/pilots/{id}/awt", h.pilotsAWT)
+	get(r, "/manager/pilots", h.pilotsList)
+	post(r, "/manager/pilots/import", h.pilotsImport)
+	post(r, "/manager/pilots/rankings", h.pilotsRankings)
+	post(r, "/manager/pilots/awt", h.pilotsAWTForm)
+	post(r, "/manager/pilots/{id}/gender", h.pilotsGender)
+	post(r, "/manager/pilots/{id}/awt", h.pilotsAWT)
 }
 
 // filterPilots keeps the pilots matching q: a positive integer is a CIVL id,
@@ -89,7 +89,7 @@ func (h *handlers) pilotsImport(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	redirect(w, r, "/admin/pilots?q="+strconv.Itoa(id), "imported")
+	redirect(w, r, "/manager/pilots?q="+strconv.Itoa(id), "imported")
 }
 
 func (h *handlers) pilotsRankings(w http.ResponseWriter, r *http.Request) {
@@ -101,14 +101,14 @@ func (h *handlers) pilotsRankings(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, r, err, nil)
 		return
 	}
-	redirect(w, r, "/admin/pilots", "ranks")
+	redirect(w, r, "/manager/pilots", "ranks")
 }
 
 // pilotRowResponse answers a row action: the updated row for htmx, the list
 // for a plain form post.
 func (h *handlers) pilotRowResponse(w http.ResponseWriter, r *http.Request, civlid int) {
 	if !isHTMX(r) {
-		redirect(w, r, "/admin/pilots?q="+strconv.Itoa(civlid), "saved")
+		redirect(w, r, "/manager/pilots?q="+strconv.Itoa(civlid), "saved")
 		return
 	}
 	p, err := h.svc.GetPilot(r.Context(), civlid)
@@ -185,7 +185,7 @@ func (h *handlers) pilotsAWTForm(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, r, err, func(status int, fe formErrors) { h.pilotsPage(w, r, status, "", "", fe) })
 		return
 	}
-	redirect(w, r, "/admin/pilots?q="+strconv.Itoa(id), "saved")
+	redirect(w, r, "/manager/pilots?q="+strconv.Itoa(id), "saved")
 }
 
 // pilotYears lists the years shown as toggles: the current and next year,

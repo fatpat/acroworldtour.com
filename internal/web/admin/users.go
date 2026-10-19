@@ -34,13 +34,13 @@ type userView struct {
 var roleOptions = []option{{auth.RoleScorer, "scorer (judges assigned competitions)"}, {auth.RoleAdmin, "admin"}}
 
 func (h *handlers) registerUsers(r *web.Router) {
-	get(r, "/admin/users", h.usersList)
-	post(r, "/admin/users", h.userCreate)
-	get(r, "/admin/users/{id}", h.userShow)
-	post(r, "/admin/users/{id}/disable", func(w http.ResponseWriter, r *http.Request) { h.userDisabled(w, r, true) })
-	post(r, "/admin/users/{id}/enable", func(w http.ResponseWriter, r *http.Request) { h.userDisabled(w, r, false) })
-	post(r, "/admin/users/{id}/competitions", h.userCompetitions)
-	post(r, "/admin/users/{id}/password", h.userPassword)
+	get(r, "/manager/users", h.usersList)
+	post(r, "/manager/users", h.userCreate)
+	get(r, "/manager/users/{id}", h.userShow)
+	post(r, "/manager/users/{id}/disable", func(w http.ResponseWriter, r *http.Request) { h.userDisabled(w, r, true) })
+	post(r, "/manager/users/{id}/enable", func(w http.ResponseWriter, r *http.Request) { h.userDisabled(w, r, false) })
+	post(r, "/manager/users/{id}/competitions", h.userCompetitions)
+	post(r, "/manager/users/{id}/password", h.userPassword)
 }
 
 func (h *handlers) usersPage(w http.ResponseWriter, r *http.Request, status int, f userForm, fe formErrors) {
@@ -83,7 +83,7 @@ func (h *handlers) userCreate(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	redirect(w, r, "/admin/users", "created")
+	redirect(w, r, "/manager/users", "created")
 }
 
 func (h *handlers) loadUser(w http.ResponseWriter, r *http.Request) (auth.User, bool) {
@@ -137,7 +137,7 @@ func (h *handlers) userDisabled(w http.ResponseWriter, r *http.Request, disabled
 	if disabled {
 		key = "disabled"
 	}
-	redirect(w, r, "/admin/users/"+u.ID, key)
+	redirect(w, r, "/manager/users/"+u.ID, key)
 }
 
 func (h *handlers) userCompetitions(w http.ResponseWriter, r *http.Request) {
@@ -160,7 +160,7 @@ func (h *handlers) userCompetitions(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, r, err, nil)
 		return
 	}
-	redirect(w, r, "/admin/users/"+u.ID, "saved")
+	redirect(w, r, "/manager/users/"+u.ID, "saved")
 }
 
 func (h *handlers) userPassword(w http.ResponseWriter, r *http.Request) {
@@ -175,7 +175,7 @@ func (h *handlers) userPassword(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	redirect(w, r, "/admin/users/"+u.ID, "password")
+	redirect(w, r, "/manager/users/"+u.ID, "password")
 }
 
 func roleLabel(u auth.User) string {

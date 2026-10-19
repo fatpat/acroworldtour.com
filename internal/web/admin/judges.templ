@@ -5,7 +5,7 @@ import "awt/internal/web/layout"
 templ judgesPage(v judgesView) {
 	@layout.Admin(layout.Meta{Title: "Judges", Heading: "Judges"}, "judges") {
 		@notice(v.Flash)
-		<p><a class="btn" href="/admin/judges/new">New judge</a></p>
+		<p><a class="btn" href="/manager/judges/new">New judge</a></p>
 		<div class="table-wrap">
 			<table class="table">
 				<thead><tr><th>Name</th><th>Country</th><th>Level</th><th>CIVL id</th><th></th></tr></thead>
@@ -21,8 +21,8 @@ templ judgesPage(v judgesView) {
 								}
 							</td>
 							<td class="actions">
-								<a class="btn btn--ghost" href={ templ.SafeURL("/admin/judges/" + j.ID + "/edit") }>Edit</a>
-								<a class="btn btn--ghost" href={ templ.SafeURL("/admin/judges/" + j.ID + "/delete") }>Delete</a>
+								<a class="btn btn--ghost" href={ templ.SafeURL("/manager/judges/" + j.ID + "/edit") }>Edit</a>
+								<a class="btn btn--ghost" href={ templ.SafeURL("/manager/judges/" + j.ID + "/delete") }>Delete</a>
 							</td>
 						</tr>
 					}
@@ -46,7 +46,7 @@ templ judgeFormPage(v judgeFormView) {
 			@textField("civlid", "CIVL id (optional, must be an imported pilot)", "number", v.Form.CivlID, v.Errors, templ.Attributes{"min": "1"})
 			<p class="actions">
 				<button class="btn" type="submit">Save</button>
-				<a class="btn btn--ghost" href="/admin/judges">Cancel</a>
+				<a class="btn btn--ghost" href="/manager/judges">Cancel</a>
 			</p>
 		</form>
 	}
@@ -61,7 +61,7 @@ func judgeHeading(f judgeForm) string {
 
 func judgeAction(f judgeForm) string {
 	if f.ID == "" {
-		return "/admin/judges"
+		return "/manager/judges"
 	}
-	return "/admin/judges/" + f.ID
+	return "/manager/judges/" + f.ID
 }

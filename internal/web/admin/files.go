@@ -15,8 +15,8 @@ type filesView struct {
 }
 
 func (h *handlers) registerFiles(r *web.Router) {
-	get(r, "/admin/files", h.filesList)
-	postUpload(r, "/admin/files", h.fileUpload)
+	get(r, "/manager/files", h.filesList)
+	postUpload(r, "/manager/files", h.fileUpload)
 }
 
 func (h *handlers) filesPage(w http.ResponseWriter, r *http.Request, status int, fe formErrors) {
@@ -44,7 +44,7 @@ func (h *handlers) fileUpload(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, r, err, redo)
 		return
 	}
-	redirect(w, r, "/admin/files", "upload")
+	redirect(w, r, "/manager/files", "upload")
 }
 
 // fileURL is the public URL of an uploaded file.

@@ -47,7 +47,7 @@ func seasonsPage(v seasonsView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<p><a class=\"btn\" href=\"/admin/seasons/new\">New season</a></p><div class=\"table-wrap\"><table class=\"table\"><thead><tr><th>Name</th><th>Code</th><th>Year</th><th>Country</th><th>Index</th><th></th></tr></thead> <tbody>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<p><a class=\"btn\" href=\"/manager/seasons/new\">New season</a></p><div class=\"table-wrap\"><table class=\"table\"><thead><tr><th>Name</th><th>Code</th><th>Year</th><th>Country</th><th>Index</th><th></th></tr></thead> <tbody>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -122,9 +122,9 @@ func seasonsPage(v seasonsView) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var8 templ.SafeURL
-				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/seasons/" + s.ID + "/edit"))
+				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/manager/seasons/" + s.ID + "/edit"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/seasons.templ`, Line: 21, Col: 90}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/seasons.templ`, Line: 21, Col: 92}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
@@ -135,9 +135,9 @@ func seasonsPage(v seasonsView) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var9 templ.SafeURL
-				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/seasons/" + s.ID + "/delete"))
+				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/manager/seasons/" + s.ID + "/delete"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/seasons.templ`, Line: 22, Col: 92}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/seasons.templ`, Line: 22, Col: 94}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 				if templ_7745c5c3_Err != nil {
@@ -296,7 +296,7 @@ func seasonFormPage(v seasonFormView) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</select><p class=\"field__hint\">Upload images on the <a href=\"/admin/files\">Files</a> page first.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</select><p class=\"field__hint\">Upload images on the <a href=\"/manager/files\">Files</a> page first.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -304,7 +304,7 @@ func seasonFormPage(v seasonFormView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "</div><p class=\"actions\"><button class=\"btn\" type=\"submit\">Save</button> <a class=\"btn btn--ghost\" href=\"/admin/seasons\">Cancel</a></p></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "</div><p class=\"actions\"><button class=\"btn\" type=\"submit\">Save</button> <a class=\"btn btn--ghost\" href=\"/manager/seasons\">Cancel</a></p></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -327,9 +327,9 @@ func seasonHeading(f seasonForm) string {
 
 func seasonAction(f seasonForm) string {
 	if f.ID == "" {
-		return "/admin/seasons"
+		return "/manager/seasons"
 	}
-	return "/admin/seasons/" + f.ID
+	return "/manager/seasons/" + f.ID
 }
 
 var _ = templruntime.GeneratedTemplate

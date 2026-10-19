@@ -27,7 +27,7 @@ func CSRFToken(ctx context.Context) string {
 }
 
 func loginURL(r *http.Request) string {
-	u := "/admin/login"
+	u := "/manager/login"
 	if r.Method == http.MethodGet || r.Method == http.MethodHead {
 		u += "?next=" + url.QueryEscape(r.URL.RequestURI())
 	}
@@ -106,7 +106,7 @@ func resolveCompetition(ctx context.Context, q *gen.Queries, ref string) (string
 
 // safeNext only accepts local absolute paths, to avoid open redirects.
 func safeNext(n string) string {
-	const fallback = "/admin"
+	const fallback = "/manager"
 	if !strings.HasPrefix(n, "/") || strings.HasPrefix(n, "//") || strings.HasPrefix(n, "/\\") {
 		return fallback
 	}

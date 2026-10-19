@@ -44,7 +44,7 @@ type page struct {
 type consoleError struct{ url, msg string }
 
 var (
-	judgingURL   = regexp.MustCompile(`^https?://[^/]+/admin/competitions/[^/]+/runs/\d+/judging(/[^/?#]+)?([?#].*)?$`)
+	judgingURL   = regexp.MustCompile(`^https?://[^/]+/manager/competitions/[^/]+/runs/\d+/judging(/[^/?#]+)?([?#].*)?$`)
 	judgingNoise = regexp.MustCompile(`^console error: (Failed to load resource: the server responded with a status of (422 \(Unprocessable Entity\)|409 \(Conflict\))|htmx:(sendAbort|afterRequest))$`)
 )
 
@@ -146,7 +146,7 @@ func newAdminPage() (*page, func(), error) {
 }
 
 func doLogin(p *page) error {
-	if _, err := p.Goto(e.baseURL + "/admin/login"); err != nil {
+	if _, err := p.Goto(e.baseURL + "/manager/login"); err != nil {
 		return err
 	}
 	if err := p.GetByLabel("Email").Fill(adminEmail); err != nil {
@@ -158,7 +158,7 @@ func doLogin(p *page) error {
 	if err := p.GetByRole("button", playwright.PageGetByRoleOptions{Name: "Log in"}).Click(); err != nil {
 		return err
 	}
-	return p.WaitForURL("**/admin")
+	return p.WaitForURL("**/manager")
 }
 
 // adminPage is a page of a fresh context, logged in as the admin.

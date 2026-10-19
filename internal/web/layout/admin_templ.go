@@ -21,15 +21,15 @@ type adminLink struct {
 // adminNav is the back-office sidebar. Scorers only see Competitions; the
 // rest is admin-only (spec 05, decision 0009).
 var adminNav = []adminLink{
-	{Key: "pilots", Label: "Pilots", Href: "/admin/pilots", AdminOnly: true},
-	{Key: "teams", Label: "Teams", Href: "/admin/teams", AdminOnly: true},
-	{Key: "judges", Label: "Judges", Href: "/admin/judges", AdminOnly: true},
-	{Key: "tricks", Label: "Tricks", Href: "/admin/tricks", AdminOnly: true},
-	{Key: "seasons", Label: "Seasons", Href: "/admin/seasons", AdminOnly: true},
-	{Key: "competitions", Label: "Competitions", Href: "/admin/competitions"},
-	{Key: "files", Label: "Files", Href: "/admin/files", AdminOnly: true},
-	{Key: "users", Label: "Users", Href: "/admin/users", AdminOnly: true},
-	{Key: "content", Label: "Content", Href: "/admin/content", AdminOnly: true},
+	{Key: "pilots", Label: "Pilots", Href: "/manager/pilots", AdminOnly: true},
+	{Key: "teams", Label: "Teams", Href: "/manager/teams", AdminOnly: true},
+	{Key: "judges", Label: "Judges", Href: "/manager/judges", AdminOnly: true},
+	{Key: "tricks", Label: "Tricks", Href: "/manager/tricks", AdminOnly: true},
+	{Key: "seasons", Label: "Seasons", Href: "/manager/seasons", AdminOnly: true},
+	{Key: "competitions", Label: "Competitions", Href: "/manager/competitions"},
+	{Key: "files", Label: "Files", Href: "/manager/files", AdminOnly: true},
+	{Key: "users", Label: "Users", Href: "/manager/users", AdminOnly: true},
+	{Key: "content", Label: "Content", Href: "/manager/content", AdminOnly: true},
 }
 
 func visibleAdminLinks(role string) []adminLink {
@@ -87,7 +87,7 @@ func Admin(m Meta, active string) templ.Component {
 			}
 			ctx = templ.InitializeContext(ctx)
 			if !hasSession {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, " <main id=\"main\" class=\"admin__main\"><a href=\"/admin/login\">Log in</a>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, " <main id=\"main\" class=\"admin__main\"><a href=\"/manager/login\">Log in</a>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -100,14 +100,14 @@ func Admin(m Meta, active string) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			} else {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div class=\"admin\"><div class=\"admin__top\"><a href=\"/admin\"><img src=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div class=\"admin\"><div class=\"admin__top\"><a href=\"/manager\"><img src=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var3 string
 				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.ResolveAttributeValue(static.URL("img/logo.svg"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/layout/admin.templ`, Line: 59, Col: 59}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/layout/admin.templ`, Line: 59, Col: 61}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var3)
 				if templ_7745c5c3_Err != nil {
@@ -139,7 +139,7 @@ func Admin(m Meta, active string) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, ")</span><form method=\"post\" action=\"/admin/logout\"><input type=\"hidden\" name=\"_csrf\" value=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, ")</span><form method=\"post\" action=\"/manager/logout\"><input type=\"hidden\" name=\"_csrf\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

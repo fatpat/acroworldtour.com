@@ -61,11 +61,11 @@ templ frozenPage(c service.Competition) {
 templ compListPage(v compListView) {
 	@layout.Admin(layout.Meta{Title: "Competitions", Heading: "Competitions"}, "competitions") {
 		@notice(v.Flash)
-		<p><a class="btn" href="/admin/competitions/new">New competition</a></p>
+		<p><a class="btn" href="/manager/competitions/new">New competition</a></p>
 		if len(v.Years) > 0 {
 			<nav class="tabs" aria-label="Year">
 				for _, y := range v.Years {
-					<a class="tabs__link" href={ templ.SafeURL("/admin/competitions?year=" + itoa(y)) } aria-current={ tabCurrent(y == v.Year) }>{ itoa(y) }</a>
+					<a class="tabs__link" href={ templ.SafeURL("/manager/competitions?year=" + itoa(y)) } aria-current={ tabCurrent(y == v.Year) }>{ itoa(y) }</a>
 				}
 			</nav>
 		}
@@ -143,7 +143,7 @@ templ imageSelect(name, label, value string, files []service.File, fe formErrors
 				<option value={ f.ID } selected?={ f.ID == value }>{ f.Filename }</option>
 			}
 		</select>
-		<p class="field__hint">Upload images on the <a href="/admin/files">Files</a> page first.</p>
+		<p class="field__hint">Upload images on the <a href="/manager/files">Files</a> page first.</p>
 		@fieldError(fe, name)
 	</div>
 }
@@ -166,16 +166,16 @@ func compHeading(f compForm) string {
 
 func compAction(f compForm) string {
 	if f.Code == "" {
-		return "/admin/competitions"
+		return "/manager/competitions"
 	}
-	return "/admin/competitions/" + f.Code + "/edit"
+	return "/manager/competitions/" + f.Code + "/edit"
 }
 
 func compCancel(f compForm) string {
 	if f.Code == "" {
-		return "/admin/competitions"
+		return "/manager/competitions"
 	}
-	return "/admin/competitions/" + f.Code
+	return "/manager/competitions/" + f.Code
 }
 
 templ compShowPage(v compShowView) {

@@ -17,7 +17,7 @@ type comp struct {
 	Synchro    bool
 }
 
-func (c comp) admin(path string) string { return e.baseURL + "/admin/competitions/" + c.Code + path }
+func (c comp) admin(path string) string { return e.baseURL + "/manager/competitions/" + c.Code + path }
 func (c comp) public() string           { return e.baseURL + "/competitions/" + c.Code }
 
 // createComp creates a published competition of the catalog year (the mini
@@ -26,7 +26,7 @@ func createComp(t *testing.T, p *page, typ, label string) comp {
 	t.Helper()
 	n := compSeq.Add(1)
 	c := comp{Name: fmt.Sprintf("E2E %s %d", label, n), Code: fmt.Sprintf("e2e-%s-%d", slug(label), n), Synchro: typ == "synchro"}
-	_, err := p.Goto(e.baseURL + "/admin/competitions/new")
+	_, err := p.Goto(e.baseURL + "/manager/competitions/new")
 	must(t, err, "open the new competition form")
 	must(t, p.Locator("#name").Fill(c.Name), "name")
 	must(t, p.Locator("#code").Fill(c.Code), "code")

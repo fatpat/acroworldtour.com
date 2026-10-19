@@ -97,6 +97,6 @@ func (w *www) sitemap(rw http.ResponseWriter, r *http.Request) {
 
 // robots keeps crawlers out of the back-office and points to the sitemap.
 func (w *www) robots(rw http.ResponseWriter, _ *http.Request) {
-	body := "User-agent: *\nAllow: /\nDisallow: /admin/\n\nSitemap: " + strings.TrimRight(w.cfg.BaseURL, "/") + "/sitemap.xml\n"
+	body := "User-agent: *\nAllow: /\nDisallow: /manager/\n\nSitemap: " + strings.TrimRight(w.cfg.BaseURL, "/") + "/sitemap.xml\n"
 	renderText(rw, "text/plain; charset=utf-8", []byte(body))
 }

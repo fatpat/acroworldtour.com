@@ -47,7 +47,7 @@ func judgesPage(v judgesView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<p><a class=\"btn\" href=\"/admin/judges/new\">New judge</a></p><div class=\"table-wrap\"><table class=\"table\"><thead><tr><th>Name</th><th>Country</th><th>Level</th><th>CIVL id</th><th></th></tr></thead> <tbody>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<p><a class=\"btn\" href=\"/manager/judges/new\">New judge</a></p><div class=\"table-wrap\"><table class=\"table\"><thead><tr><th>Name</th><th>Country</th><th>Level</th><th>CIVL id</th><th></th></tr></thead> <tbody>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -111,9 +111,9 @@ func judgesPage(v judgesView) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var7 templ.SafeURL
-				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/judges/" + j.ID + "/edit"))
+				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/manager/judges/" + j.ID + "/edit"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/judges.templ`, Line: 24, Col: 89}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/judges.templ`, Line: 24, Col: 91}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 				if templ_7745c5c3_Err != nil {
@@ -124,9 +124,9 @@ func judgesPage(v judgesView) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var8 templ.SafeURL
-				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/judges/" + j.ID + "/delete"))
+				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/manager/judges/" + j.ID + "/delete"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/judges.templ`, Line: 25, Col: 91}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/judges.templ`, Line: 25, Col: 93}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
@@ -231,7 +231,7 @@ func judgeFormPage(v judgeFormView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<p class=\"actions\"><button class=\"btn\" type=\"submit\">Save</button> <a class=\"btn btn--ghost\" href=\"/admin/judges\">Cancel</a></p></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<p class=\"actions\"><button class=\"btn\" type=\"submit\">Save</button> <a class=\"btn btn--ghost\" href=\"/manager/judges\">Cancel</a></p></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -254,9 +254,9 @@ func judgeHeading(f judgeForm) string {
 
 func judgeAction(f judgeForm) string {
 	if f.ID == "" {
-		return "/admin/judges"
+		return "/manager/judges"
 	}
-	return "/admin/judges/" + f.ID
+	return "/manager/judges/" + f.ID
 }
 
 var _ = templruntime.GeneratedTemplate

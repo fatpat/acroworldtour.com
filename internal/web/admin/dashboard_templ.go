@@ -44,40 +44,40 @@ func dashboardPage(v dashboardView) templ.Component {
 			}
 			ctx = templ.InitializeContext(ctx)
 			if v.Admin {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<ul class=\"stats\"><li><a href=\"/admin/pilots\"><strong>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<ul class=\"stats\"><li><a href=\"/manager/pilots\"><strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var3 string
 				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(itoa(v.Pilots))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/dashboard.templ`, Line: 9, Col: 56}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/dashboard.templ`, Line: 9, Col: 58}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</strong> pilots</a></li><li><a href=\"/admin/teams\"><strong>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</strong> pilots</a></li><li><a href=\"/manager/teams\"><strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var4 string
 				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(itoa(v.Teams))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/dashboard.templ`, Line: 10, Col: 54}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/dashboard.templ`, Line: 10, Col: 56}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</strong> teams</a></li><li><a href=\"/admin/judges\"><strong>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</strong> teams</a></li><li><a href=\"/manager/judges\"><strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var5 string
 				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(itoa(v.Judges))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/dashboard.templ`, Line: 11, Col: 56}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/dashboard.templ`, Line: 11, Col: 58}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 				if templ_7745c5c3_Err != nil {
@@ -88,9 +88,9 @@ func dashboardPage(v dashboardView) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var6 templ.SafeURL
-				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/tricks?year=" + itoa(v.Year)))
+				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/manager/tricks?year=" + itoa(v.Year)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/dashboard.templ`, Line: 12, Col: 69}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/dashboard.templ`, Line: 12, Col: 71}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 				if templ_7745c5c3_Err != nil {
@@ -103,7 +103,7 @@ func dashboardPage(v dashboardView) templ.Component {
 				var templ_7745c5c3_Var7 string
 				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(itoa(v.Tricks))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/dashboard.templ`, Line: 12, Col: 96}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/dashboard.templ`, Line: 12, Col: 98}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 				if templ_7745c5c3_Err != nil {
@@ -116,39 +116,39 @@ func dashboardPage(v dashboardView) templ.Component {
 				var templ_7745c5c3_Var8 string
 				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(itoa(v.Year))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/dashboard.templ`, Line: 12, Col: 132}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/dashboard.templ`, Line: 12, Col: 134}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</a></li><li><a href=\"/admin/seasons\"><strong>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</a></li><li><a href=\"/manager/seasons\"><strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var9 string
 				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(itoa(v.Seasons))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/dashboard.templ`, Line: 13, Col: 58}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/dashboard.templ`, Line: 13, Col: 60}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</strong> seasons</a></li><li><a href=\"/admin/competitions\"><strong>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</strong> seasons</a></li><li><a href=\"/manager/competitions\"><strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var10 string
 				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(itoa(v.Competitions))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/dashboard.templ`, Line: 14, Col: 68}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/dashboard.templ`, Line: 14, Col: 70}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</strong> competitions</a></li></ul><p class=\"actions\"><a class=\"btn\" href=\"/admin/pilots\">Import a pilot</a> <a class=\"btn btn--ghost\" href=\"/admin/files\">Upload a file</a> <a class=\"btn btn--ghost\" href=\"/admin/users\">Manage users</a></p>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</strong> competitions</a></li></ul><p class=\"actions\"><a class=\"btn\" href=\"/manager/pilots\">Import a pilot</a> <a class=\"btn btn--ghost\" href=\"/manager/files\">Upload a file</a> <a class=\"btn btn--ghost\" href=\"/manager/users\">Manage users</a></p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -173,9 +173,9 @@ func dashboardPage(v dashboardView) templ.Component {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var11 templ.SafeURL
-					templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/competitions/" + c.Code))
+					templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/manager/competitions/" + c.Code))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/dashboard.templ`, Line: 28, Col: 65}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/dashboard.templ`, Line: 28, Col: 67}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 					if templ_7745c5c3_Err != nil {
@@ -188,7 +188,7 @@ func dashboardPage(v dashboardView) templ.Component {
 					var templ_7745c5c3_Var12 string
 					templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(c.Name)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/dashboard.templ`, Line: 28, Col: 76}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/dashboard.templ`, Line: 28, Col: 78}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 					if templ_7745c5c3_Err != nil {
@@ -201,7 +201,7 @@ func dashboardPage(v dashboardView) templ.Component {
 					var templ_7745c5c3_Var13 string
 					templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(c.StartDate.Format("2006-01-02"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/dashboard.templ`, Line: 28, Col: 137}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/dashboard.templ`, Line: 28, Col: 139}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 					if templ_7745c5c3_Err != nil {
@@ -214,7 +214,7 @@ func dashboardPage(v dashboardView) templ.Component {
 					var templ_7745c5c3_Var14 string
 					templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(c.Location)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/dashboard.templ`, Line: 28, Col: 153}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/dashboard.templ`, Line: 28, Col: 155}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 					if templ_7745c5c3_Err != nil {

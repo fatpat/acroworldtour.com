@@ -70,7 +70,7 @@ func tricksPage(v tricksView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"toolbar\"><form class=\"inline\" method=\"get\" action=\"/admin/tricks\"><label for=\"year\">Year</label> <input id=\"year\" name=\"year\" type=\"number\" min=\"1901\" max=\"2999\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"toolbar\"><form class=\"inline\" method=\"get\" action=\"/manager/tricks\"><label for=\"year\">Year</label> <input id=\"year\" name=\"year\" type=\"number\" min=\"1901\" max=\"2999\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -111,9 +111,9 @@ func tricksPage(v tricksView) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var6 templ.SafeURL
-				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/tricks?year=" + itoa(y)))
+				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/manager/tricks?year=" + itoa(y)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/tricks.templ`, Line: 36, Col: 113}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/tricks.templ`, Line: 36, Col: 115}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 				if templ_7745c5c3_Err != nil {
@@ -126,7 +126,7 @@ func tricksPage(v tricksView) templ.Component {
 				var templ_7745c5c3_Var7 string
 				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(itoa(y))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/tricks.templ`, Line: 36, Col: 125}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/tricks.templ`, Line: 36, Col: 127}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 				if templ_7745c5c3_Err != nil {
@@ -142,9 +142,9 @@ func tricksPage(v tricksView) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var8 templ.SafeURL
-			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/tricks/new?year=" + itoa(v.Year)))
+			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/manager/tricks/new?year=" + itoa(v.Year)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/tricks.templ`, Line: 39, Col: 80}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/tricks.templ`, Line: 39, Col: 82}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 			if templ_7745c5c3_Err != nil {
@@ -155,9 +155,9 @@ func tricksPage(v tricksView) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var9 templ.SafeURL
-			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/tricks/unique?year=" + itoa(v.Year)))
+			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/manager/tricks/unique?year=" + itoa(v.Year)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/tricks.templ`, Line: 40, Col: 94}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/tricks.templ`, Line: 40, Col: 96}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 			if templ_7745c5c3_Err != nil {
@@ -355,9 +355,9 @@ func tricksPage(v tricksView) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var24 templ.SafeURL
-				templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/tricks/" + t.ID + "/edit"))
+				templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/manager/tricks/" + t.ID + "/edit"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/tricks.templ`, Line: 61, Col: 89}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/tricks.templ`, Line: 61, Col: 91}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 				if templ_7745c5c3_Err != nil {
@@ -368,9 +368,9 @@ func tricksPage(v tricksView) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var25 templ.SafeURL
-				templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/tricks/" + t.ID + "/delete"))
+				templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/manager/tricks/" + t.ID + "/delete"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/tricks.templ`, Line: 62, Col: 91}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/tricks.templ`, Line: 62, Col: 93}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 				if templ_7745c5c3_Err != nil {
@@ -400,7 +400,7 @@ func tricksPage(v tricksView) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "</tbody></table></div><div class=\"grid-2\"><form class=\"card form\" method=\"post\" action=\"/admin/tricks/import\" enctype=\"multipart/form-data\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "</tbody></table></div><div class=\"grid-2\"><form class=\"card form\" method=\"post\" action=\"/manager/tricks/import\" enctype=\"multipart/form-data\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -434,7 +434,7 @@ func tricksPage(v tricksView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "\"><div class=\"field\"><label for=\"catalog-file\">JSON file</label> <input id=\"catalog-file\" name=\"file\" type=\"file\" accept=\"application/json,.json\" required><p class=\"field__hint\">A trick already in the catalog with the same name is replaced.</p></div><button class=\"btn\" type=\"submit\">Import</button></form><form class=\"card form\" method=\"post\" action=\"/admin/tricks/duplicate\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "\"><div class=\"field\"><label for=\"catalog-file\">JSON file</label> <input id=\"catalog-file\" name=\"file\" type=\"file\" accept=\"application/json,.json\" required><p class=\"field__hint\">A trick already in the catalog with the same name is replaced.</p></div><button class=\"btn\" type=\"submit\">Import</button></form><form class=\"card form\" method=\"post\" action=\"/manager/tricks/duplicate\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -527,7 +527,7 @@ func uniquePage(v uniqueView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, " shown.</p><form class=\"inline\" method=\"get\" action=\"/admin/tricks/unique\" role=\"search\"><label for=\"year\">Year</label> <input id=\"year\" name=\"year\" type=\"number\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, " shown.</p><form class=\"inline\" method=\"get\" action=\"/manager/tricks/unique\" role=\"search\"><label for=\"year\">Year</label> <input id=\"year\" name=\"year\" type=\"number\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -558,9 +558,9 @@ func uniquePage(v uniqueView) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var35 templ.SafeURL
-			templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/tricks?year=" + itoa(v.Year)))
+			templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/manager/tricks?year=" + itoa(v.Year)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/tricks.templ`, Line: 105, Col: 64}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/tricks.templ`, Line: 105, Col: 66}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
 			if templ_7745c5c3_Err != nil {
@@ -963,9 +963,9 @@ func trickFormPage(v trickFormView) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var53 templ.SafeURL
-			templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/tricks?year=" + itoa(v.Form.Year)))
+			templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/manager/tricks?year=" + itoa(v.Form.Year)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/tricks.templ`, Line: 176, Col: 93}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/tricks.templ`, Line: 176, Col: 95}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var53))
 			if templ_7745c5c3_Err != nil {
@@ -994,9 +994,9 @@ func trickHeading(f trickForm) string {
 
 func trickAction(f trickForm) string {
 	if f.ID == "" {
-		return "/admin/tricks"
+		return "/manager/tricks"
 	}
-	return "/admin/tricks/" + f.ID
+	return "/manager/tricks/" + f.ID
 }
 
 var _ = templruntime.GeneratedTemplate

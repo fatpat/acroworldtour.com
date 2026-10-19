@@ -463,7 +463,7 @@ func compListPage(v compListView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<p><a class=\"btn\" href=\"/admin/competitions/new\">New competition</a></p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<p><a class=\"btn\" href=\"/manager/competitions/new\">New competition</a></p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -478,9 +478,9 @@ func compListPage(v compListView) templ.Component {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var25 templ.SafeURL
-					templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/competitions?year=" + itoa(y)))
+					templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/manager/competitions?year=" + itoa(y)))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/competitions.templ`, Line: 68, Col: 86}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/competitions.templ`, Line: 68, Col: 88}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 					if templ_7745c5c3_Err != nil {
@@ -493,7 +493,7 @@ func compListPage(v compListView) templ.Component {
 					var templ_7745c5c3_Var26 string
 					templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.ResolveAttributeValue(tabCurrent(y == v.Year))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/competitions.templ`, Line: 68, Col: 127}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/competitions.templ`, Line: 68, Col: 129}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var26)
 					if templ_7745c5c3_Err != nil {
@@ -506,7 +506,7 @@ func compListPage(v compListView) templ.Component {
 					var templ_7745c5c3_Var27 string
 					templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(itoa(y))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/competitions.templ`, Line: 68, Col: 139}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/competitions.templ`, Line: 68, Col: 141}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 					if templ_7745c5c3_Err != nil {
@@ -1044,7 +1044,7 @@ func imageSelect(name, label, value string, files []service.File, fe formErrors)
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, "</select><p class=\"field__hint\">Upload images on the <a href=\"/admin/files\">Files</a> page first.</p>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, "</select><p class=\"field__hint\">Upload images on the <a href=\"/manager/files\">Files</a> page first.</p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1078,16 +1078,16 @@ func compHeading(f compForm) string {
 
 func compAction(f compForm) string {
 	if f.Code == "" {
-		return "/admin/competitions"
+		return "/manager/competitions"
 	}
-	return "/admin/competitions/" + f.Code + "/edit"
+	return "/manager/competitions/" + f.Code + "/edit"
 }
 
 func compCancel(f compForm) string {
 	if f.Code == "" {
-		return "/admin/competitions"
+		return "/manager/competitions"
 	}
-	return "/admin/competitions/" + f.Code
+	return "/manager/competitions/" + f.Code
 }
 
 func compShowPage(v compShowView) templ.Component {

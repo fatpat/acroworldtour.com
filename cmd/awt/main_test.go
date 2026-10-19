@@ -21,7 +21,7 @@ import (
 )
 
 // TestServeModulesWiring checks the composition serve actually uses: the
-// public JSON API is registered (and public), and every /admin route except
+// public JSON API is registered (and public), and every /manager route except
 // the login endpoints is guarded (CLAUDE.md web rules).
 func TestServeModulesWiring(t *testing.T) {
 	dir := t.TempDir()
@@ -47,7 +47,7 @@ func TestServeModulesWiring(t *testing.T) {
 		"GET /api/v1/competitions":        false,
 		"GET /api/v1/competitions/{code}": false,
 		"GET /competitions":               false,
-		"GET /admin/competitions/{code}":  false,
+		"GET /manager/competitions/{code}":  false,
 	}
 	admin := 0
 	for _, rt := range table {
@@ -58,15 +58,15 @@ func TestServeModulesWiring(t *testing.T) {
 			t.Errorf("%s guard = %s, want public", rt.Pattern, rt.Guard)
 		}
 		p := rt.Path()
-		if p != "/admin" && !strings.HasPrefix(p, "/admin/") {
+		if p != "/manager" && !strings.HasPrefix(p, "/manager/") {
 			continue
 		}
 		admin++
-		if p == "/admin/login" {
+		if p == "/manager/login" {
 			continue
 		}
 		if rt.Guard == web.GuardPublic {
-			t.Errorf("%s is under /admin but public", rt.Pattern)
+			t.Errorf("%s is under /manager but public", rt.Pattern)
 		}
 	}
 	for p, found := range want {

@@ -209,7 +209,7 @@ func seed() error {
 		{"E2E Senior", "senior", "fra"},
 		{"E2E Certified", "certified", "che"},
 	} {
-		if _, err := p.Goto(e.baseURL + "/admin/judges/new"); err != nil {
+		if _, err := p.Goto(e.baseURL + "/manager/judges/new"); err != nil {
 			return err
 		}
 		if err := p.GetByLabel("Name").Fill(j.name); err != nil {
@@ -229,7 +229,7 @@ func seed() error {
 		}
 	}
 	// A synchro competition needs 2 teams; the fixture has one.
-	if _, err := p.Goto(e.baseURL + "/admin/teams/new"); err != nil {
+	if _, err := p.Goto(e.baseURL + "/manager/teams/new"); err != nil {
 		return err
 	}
 	if err := p.Locator("#name").Fill("E2E Duo"); err != nil {

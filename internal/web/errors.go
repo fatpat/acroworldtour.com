@@ -96,7 +96,7 @@ func adminHome(w http.ResponseWriter, r *http.Request) {
 func (d Deps) loginPage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	if _, err := d.Auth.UserFromRequest(r); err == nil {
-		http.Redirect(w, r, "/admin", http.StatusSeeOther)
+		http.Redirect(w, r, "/manager", http.StatusSeeOther)
 		return
 	}
 	render(w, r, http.StatusOK, layout.LoginPage(r.URL.Query().Get("next"), ""))
@@ -150,7 +150,7 @@ func (d Deps) logout(w http.ResponseWriter, r *http.Request) {
 	if err := d.Auth.Logout(w, r); err != nil {
 		slog.Error("logout", "err", err)
 	}
-	http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
+	http.Redirect(w, r, "/manager/login", http.StatusSeeOther)
 }
 
 // safeRedirectTarget accepts a local absolute path or an http(s) URL. It

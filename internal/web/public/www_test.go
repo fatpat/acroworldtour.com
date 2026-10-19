@@ -284,7 +284,7 @@ func TestWWWSitemapAndRobots(t *testing.T) {
 		}
 	}
 	robots := wwwGet(t, h, "/robots.txt").Body.String()
-	mustContain(t, "robots", robots, "Disallow: /admin/", "Sitemap: "+wwwBase+"/sitemap.xml")
+	mustContain(t, "robots", robots, "Disallow: /manager/", "Sitemap: "+wwwBase+"/sitemap.xml")
 }
 
 func TestWWWLegacyRedirects(t *testing.T) {

@@ -13,15 +13,15 @@ type adminLink struct {
 // adminNav is the back-office sidebar. Scorers only see Competitions; the
 // rest is admin-only (spec 05, decision 0009).
 var adminNav = []adminLink{
-	{Key: "pilots", Label: "Pilots", Href: "/admin/pilots", AdminOnly: true},
-	{Key: "teams", Label: "Teams", Href: "/admin/teams", AdminOnly: true},
-	{Key: "judges", Label: "Judges", Href: "/admin/judges", AdminOnly: true},
-	{Key: "tricks", Label: "Tricks", Href: "/admin/tricks", AdminOnly: true},
-	{Key: "seasons", Label: "Seasons", Href: "/admin/seasons", AdminOnly: true},
-	{Key: "competitions", Label: "Competitions", Href: "/admin/competitions"},
-	{Key: "files", Label: "Files", Href: "/admin/files", AdminOnly: true},
-	{Key: "users", Label: "Users", Href: "/admin/users", AdminOnly: true},
-	{Key: "content", Label: "Content", Href: "/admin/content", AdminOnly: true},
+	{Key: "pilots", Label: "Pilots", Href: "/manager/pilots", AdminOnly: true},
+	{Key: "teams", Label: "Teams", Href: "/manager/teams", AdminOnly: true},
+	{Key: "judges", Label: "Judges", Href: "/manager/judges", AdminOnly: true},
+	{Key: "tricks", Label: "Tricks", Href: "/manager/tricks", AdminOnly: true},
+	{Key: "seasons", Label: "Seasons", Href: "/manager/seasons", AdminOnly: true},
+	{Key: "competitions", Label: "Competitions", Href: "/manager/competitions"},
+	{Key: "files", Label: "Files", Href: "/manager/files", AdminOnly: true},
+	{Key: "users", Label: "Users", Href: "/manager/users", AdminOnly: true},
+	{Key: "content", Label: "Content", Href: "/manager/content", AdminOnly: true},
 }
 
 func visibleAdminLinks(role string) []adminLink {
@@ -50,16 +50,16 @@ templ Admin(m Meta, active string) {
 		if !hasSession {
 			// Rendered outside RequireUser: minimal shell, no user data.
 			<main id="main" class="admin__main">
-				<a href="/admin/login">Log in</a>
+				<a href="/manager/login">Log in</a>
 				{ children... }
 			</main>
 		} else {
 			<div class="admin">
 				<div class="admin__top">
-					<a href="/admin"><img src={ static.URL("img/logo.svg") } alt="Acro World Tour admin" width="129" height="57"/></a>
+					<a href="/manager"><img src={ static.URL("img/logo.svg") } alt="Acro World Tour admin" width="129" height="57"/></a>
 					<div class="admin__user">
 						<span>{ sess.User.Name } ({ sess.User.Role })</span>
-						<form method="post" action="/admin/logout">
+						<form method="post" action="/manager/logout">
 							<input type="hidden" name="_csrf" value={ sess.CSRF }/>
 							<button class="btn btn--ghost" type="submit">Log out</button>
 						</form>

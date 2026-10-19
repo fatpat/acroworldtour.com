@@ -31,13 +31,13 @@ type teamFormView struct {
 }
 
 func (h *handlers) registerTeams(r *web.Router) {
-	get(r, "/admin/teams", h.teamsList)
-	get(r, "/admin/teams/new", h.teamNew)
-	post(r, "/admin/teams", h.teamCreate)
-	get(r, "/admin/teams/{id}/edit", h.teamEdit)
-	post(r, "/admin/teams/{id}", h.teamUpdate)
-	get(r, "/admin/teams/{id}/delete", h.teamDeleteConfirm)
-	post(r, "/admin/teams/{id}/delete", h.teamDelete)
+	get(r, "/manager/teams", h.teamsList)
+	get(r, "/manager/teams/new", h.teamNew)
+	post(r, "/manager/teams", h.teamCreate)
+	get(r, "/manager/teams/{id}/edit", h.teamEdit)
+	post(r, "/manager/teams/{id}", h.teamUpdate)
+	get(r, "/manager/teams/{id}/delete", h.teamDeleteConfirm)
+	post(r, "/manager/teams/{id}/delete", h.teamDelete)
 }
 
 func (h *handlers) pilotNames(w http.ResponseWriter, r *http.Request) ([]service.Pilot, map[int]string, bool) {
@@ -136,7 +136,7 @@ func (h *handlers) teamSave(w http.ResponseWriter, r *http.Request, id string) {
 	if id != "" {
 		flashKey = "saved"
 	}
-	redirect(w, r, "/admin/teams", flashKey)
+	redirect(w, r, "/manager/teams", flashKey)
 }
 
 func (h *handlers) teamCreate(w http.ResponseWriter, r *http.Request) { h.teamSave(w, r, "") }
@@ -169,7 +169,7 @@ func (h *handlers) teamDeleteConfirm(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, r, err, nil)
 		return
 	}
-	render(w, r, http.StatusOK, confirmDelete("teams", "team", t.Name, "/admin/teams/"+t.ID+"/delete", "/admin/teams"))
+	render(w, r, http.StatusOK, confirmDelete("teams", "team", t.Name, "/manager/teams/"+t.ID+"/delete", "/manager/teams"))
 }
 
 func (h *handlers) teamDelete(w http.ResponseWriter, r *http.Request) {
@@ -177,5 +177,5 @@ func (h *handlers) teamDelete(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, r, err, nil)
 		return
 	}
-	redirect(w, r, "/admin/teams", "deleted")
+	redirect(w, r, "/manager/teams", "deleted")
 }

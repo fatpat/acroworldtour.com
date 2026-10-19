@@ -26,18 +26,18 @@ templ tricksPage(v tricksView) {
 		@notice(v.Flash)
 		@errorSummary(v.Errors)
 		<div class="toolbar">
-			<form class="inline" method="get" action="/admin/tricks">
+			<form class="inline" method="get" action="/manager/tricks">
 				<label for="year">Year</label>
 				<input id="year" name="year" type="number" min="1901" max="2999" value={ itoa(v.Year) }/>
 				<button class="btn btn--ghost" type="submit">Show</button>
 			</form>
 			<span class="chips">
 				for _, y := range v.Years {
-					<a class={ "chip", templ.KV("chip--on", y == v.Year) } href={ templ.SafeURL("/admin/tricks?year=" + itoa(y)) }>{ itoa(y) }</a>
+					<a class={ "chip", templ.KV("chip--on", y == v.Year) } href={ templ.SafeURL("/manager/tricks?year=" + itoa(y)) }>{ itoa(y) }</a>
 				}
 			</span>
-			<a class="btn" href={ templ.SafeURL("/admin/tricks/new?year=" + itoa(v.Year)) }>New trick</a>
-			<a class="btn btn--ghost" href={ templ.SafeURL("/admin/tricks/unique?year=" + itoa(v.Year)) }>Unique tricks</a>
+			<a class="btn" href={ templ.SafeURL("/manager/tricks/new?year=" + itoa(v.Year)) }>New trick</a>
+			<a class="btn btn--ghost" href={ templ.SafeURL("/manager/tricks/unique?year=" + itoa(v.Year)) }>Unique tricks</a>
 		</div>
 		<h2>Catalog { itoa(v.Year) } <span class="muted">({ itoa(len(v.Tricks)) } tricks)</span></h2>
 		<div class="table-wrap">
@@ -58,8 +58,8 @@ templ tricksPage(v tricksView) {
 							<td>{ trickBonuses(t) }</td>
 							<td>{ itoa(t.FirstManeuver) } / { itoa(t.NoFirstManeuver) } / { itoa(t.LastManeuver) } / { itoa(t.NoLastManeuver) }</td>
 							<td class="actions">
-								<a class="btn btn--ghost" href={ templ.SafeURL("/admin/tricks/" + t.ID + "/edit") }>Edit</a>
-								<a class="btn btn--ghost" href={ templ.SafeURL("/admin/tricks/" + t.ID + "/delete") }>Delete</a>
+								<a class="btn btn--ghost" href={ templ.SafeURL("/manager/tricks/" + t.ID + "/edit") }>Edit</a>
+								<a class="btn btn--ghost" href={ templ.SafeURL("/manager/tricks/" + t.ID + "/delete") }>Delete</a>
 							</td>
 						</tr>
 					}
@@ -70,7 +70,7 @@ templ tricksPage(v tricksView) {
 			</table>
 		</div>
 		<div class="grid-2">
-			<form class="card form" method="post" action="/admin/tricks/import" enctype="multipart/form-data">
+			<form class="card form" method="post" action="/manager/tricks/import" enctype="multipart/form-data">
 				@csrf()
 				<h2>Import a catalog into { itoa(v.Year) }</h2>
 				<input type="hidden" name="year" value={ itoa(v.Year) }/>
@@ -81,7 +81,7 @@ templ tricksPage(v tricksView) {
 				</div>
 				<button class="btn" type="submit">Import</button>
 			</form>
-			<form class="card form" method="post" action="/admin/tricks/duplicate">
+			<form class="card form" method="post" action="/manager/tricks/duplicate">
 				@csrf()
 				<h2>Duplicate a year</h2>
 				@textField("from", "From year", "number", dupValue(v.DupFrom, v.Year), v.Errors, templ.Attributes{"min": "1901", "max": "2999", "required": true})
@@ -96,13 +96,13 @@ templ tricksPage(v tricksView) {
 templ uniquePage(v uniqueView) {
 	@layout.Admin(layout.Meta{Title: "Unique tricks " + itoa(v.Year), Heading: "Unique tricks " + itoa(v.Year)}, "tricks") {
 		<p class="muted">Read-only: the variants generated from the catalog (trick, direction and bonuses). { itoa(len(v.Tricks)) } of { itoa(v.Total) } shown.</p>
-		<form class="inline" method="get" action="/admin/tricks/unique" role="search">
+		<form class="inline" method="get" action="/manager/tricks/unique" role="search">
 			<label for="year">Year</label>
 			<input id="year" name="year" type="number" value={ itoa(v.Year) }/>
 			<label for="q">Search</label>
 			<input id="q" name="q" type="search" value={ v.Query }/>
 			<button class="btn btn--ghost" type="submit">Show</button>
-			<a href={ templ.SafeURL("/admin/tricks?year=" + itoa(v.Year)) }>Back to the catalog</a>
+			<a href={ templ.SafeURL("/manager/tricks?year=" + itoa(v.Year)) }>Back to the catalog</a>
 		</form>
 		<div class="table-wrap">
 			<table class="table">
@@ -173,7 +173,7 @@ templ trickFormPage(v trickFormView) {
 			@textField("sample_video", "Sample video URL", "url", v.Form.Video, v.Errors, templ.Attributes{})
 			<p class="actions">
 				<button class="btn" type="submit">Save</button>
-				<a class="btn btn--ghost" href={ templ.SafeURL("/admin/tricks?year=" + itoa(v.Form.Year)) }>Cancel</a>
+				<a class="btn btn--ghost" href={ templ.SafeURL("/manager/tricks?year=" + itoa(v.Form.Year)) }>Cancel</a>
 			</p>
 		</form>
 	}
@@ -188,7 +188,7 @@ func trickHeading(f trickForm) string {
 
 func trickAction(f trickForm) string {
 	if f.ID == "" {
-		return "/admin/tricks"
+		return "/manager/tricks"
 	}
-	return "/admin/tricks/" + f.ID
+	return "/manager/tricks/" + f.ID
 }

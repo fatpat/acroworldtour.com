@@ -23,24 +23,24 @@ func scorer(r *web.Router, pattern string, fn http.HandlerFunc) {
 }
 
 func (h *handlers) registerCompetitions(r *web.Router) {
-	get(r, "/admin/competitions", h.compList)
-	get(r, "/admin/competitions/new", h.compNew)
-	post(r, "/admin/competitions", h.compCreate)
-	scorer(r, "/admin/competitions/{code}", h.compShow)
-	get(r, "/admin/competitions/{code}/edit", h.compEdit)
-	post(r, "/admin/competitions/{code}/edit", h.compUpdate)
-	get(r, "/admin/competitions/{code}/participants", h.participantsPage)
-	post(r, "/admin/competitions/{code}/participants", h.participantsSave)
-	get(r, "/admin/competitions/{code}/judges", h.judgesPage)
-	post(r, "/admin/competitions/{code}/judges", h.judgesSave)
-	get(r, "/admin/competitions/{code}/tricks", h.repeatablePage)
-	post(r, "/admin/competitions/{code}/tricks", h.repeatableSave)
-	get(r, "/admin/competitions/{code}/config", h.compConfigPage)
-	post(r, "/admin/competitions/{code}/config", h.compConfigSave)
-	get(r, "/admin/competitions/{code}/state/{action}", h.compStateConfirm)
-	post(r, "/admin/competitions/{code}/state/{action}", h.compStateDo)
-	get(r, "/admin/competitions/{code}/delete", h.compDeleteConfirm)
-	post(r, "/admin/competitions/{code}/delete", h.compDelete)
+	get(r, "/manager/competitions", h.compList)
+	get(r, "/manager/competitions/new", h.compNew)
+	post(r, "/manager/competitions", h.compCreate)
+	scorer(r, "/manager/competitions/{code}", h.compShow)
+	get(r, "/manager/competitions/{code}/edit", h.compEdit)
+	post(r, "/manager/competitions/{code}/edit", h.compUpdate)
+	get(r, "/manager/competitions/{code}/participants", h.participantsPage)
+	post(r, "/manager/competitions/{code}/participants", h.participantsSave)
+	get(r, "/manager/competitions/{code}/judges", h.judgesPage)
+	post(r, "/manager/competitions/{code}/judges", h.judgesSave)
+	get(r, "/manager/competitions/{code}/tricks", h.repeatablePage)
+	post(r, "/manager/competitions/{code}/tricks", h.repeatableSave)
+	get(r, "/manager/competitions/{code}/config", h.compConfigPage)
+	post(r, "/manager/competitions/{code}/config", h.compConfigSave)
+	get(r, "/manager/competitions/{code}/state/{action}", h.compStateConfirm)
+	post(r, "/manager/competitions/{code}/state/{action}", h.compStateDo)
+	get(r, "/manager/competitions/{code}/delete", h.compDeleteConfirm)
+	post(r, "/manager/competitions/{code}/delete", h.compDelete)
 	h.registerRuns(r)
 	h.registerExports(r)
 }
@@ -75,7 +75,7 @@ func (h *handlers) writableAt(w http.ResponseWriter, r *http.Request, c service.
 	return true
 }
 
-func compHref(c service.Competition) string { return "/admin/competitions/" + c.Code }
+func compHref(c service.Competition) string { return "/manager/competitions/" + c.Code }
 
 func isAdmin(r *http.Request) bool {
 	s, _ := auth.SessionFromContext(r.Context())
@@ -347,5 +347,5 @@ func (h *handlers) compDelete(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, r, err, nil)
 		return
 	}
-	redirect(w, r, "/admin/competitions", "deleted")
+	redirect(w, r, "/manager/competitions", "deleted")
 }

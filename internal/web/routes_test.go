@@ -48,10 +48,10 @@ func ok(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok")) }
 // sample registers one route per guard level, as feature modules will.
 var sample = web.ModuleFunc(func(r *web.Router) {
 	r.Public("GET /pilots", http.HandlerFunc(ok))
-	r.User("GET /admin/me", http.HandlerFunc(ok))
-	r.Admin("GET /admin/users", http.HandlerFunc(ok))
-	r.Admin("POST /admin/users", http.HandlerFunc(ok))
-	r.Scorer("GET /admin/competitions/{code}/flights", func(r *http.Request) string { return r.PathValue("code") }, http.HandlerFunc(ok))
+	r.User("GET /manager/me", http.HandlerFunc(ok))
+	r.Admin("GET /manager/users", http.HandlerFunc(ok))
+	r.Admin("POST /manager/users", http.HandlerFunc(ok))
+	r.Scorer("GET /manager/competitions/{code}/flights", func(r *http.Request) string { return r.PathValue("code") }, http.HandlerFunc(ok))
 	r.Public("GET /boom", http.HandlerFunc(func(http.ResponseWriter, *http.Request) { panic("kaboom") }))
 })
 
@@ -74,15 +74,15 @@ func TestAdminRoutesAreGuarded(t *testing.T) {
 	adminRoutes := 0
 	for _, rt := range table {
 		p := rt.Path()
-		if p != "/admin" && !strings.HasPrefix(p, "/admin/") {
+		if p != "/manager" && !strings.HasPrefix(p, "/manager/") {
 			continue
 		}
 		adminRoutes++
-		if p == "/admin/login" {
+		if p == "/manager/login" {
 			continue // the login form and its POST are the only anonymous admin URLs
 		}
 		if rt.Guard == web.GuardPublic {
-			t.Errorf("%s is under /admin but public", rt.Pattern)
+			t.Errorf("%s is under /manager but public", rt.Pattern)
 			continue
 		}
 		// Behaviour, not just the table: anonymous requests never get through.
@@ -107,7 +107,7 @@ func TestPublicRouteUnderAdminIsRefused(t *testing.T) {
 		}
 	}()
 	web.Routes(deps, web.ModuleFunc(func(r *web.Router) {
-		r.Public("GET /admin/secret", http.HandlerFunc(ok))
+		r.Public("GET /manager/secret", http.HandlerFunc(ok))
 	}))
 }
 
@@ -280,12 +280,12 @@ func TestLoginAdminAndLogoutFlow(t *testing.T) {
 	}
 	h := web.Routes(deps)
 
-	rec := get(h, "/admin")
-	if rec.Code != 303 || !strings.HasPrefix(rec.Header().Get("Location"), "/admin/login?next=") {
-		t.Fatalf("anonymous /admin: %d %q", rec.Code, rec.Header().Get("Location"))
+	rec := get(h, "/manager")
+	if rec.Code != 303 || !strings.HasPrefix(rec.Header().Get("Location"), "/manager/login?next=") {
+		t.Fatalf("anonymous /manager: %d %q", rec.Code, rec.Header().Get("Location"))
 	}
-	rec = get(h, "/admin/login?next=%2Fadmin%2Fpilots")
-	if rec.Code != 200 || !strings.Contains(rec.Body.String(), `action="/admin/login"`) || !strings.Contains(rec.Body.String(), `value="/admin/pilots"`) {
+	rec = get(h, "/manager/login?next=%2Fmanager%2Fpilots")
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), `action="/manager/login"`) || !strings.Contains(rec.Body.String(), `value="/manager/pilots"`) {
 		t.Fatalf("login page: %d\n%s", rec.Code, rec.Body.String())
 	}
 
@@ -300,13 +300,13 @@ func TestLoginAdminAndLogoutFlow(t *testing.T) {
 		return rec
 	}
 
-	rec = post("/admin/login", url.Values{"email": {"boss@example.org"}, "password": {"wrong"}})
+	rec = post("/manager/login", url.Values{"email": {"boss@example.org"}, "password": {"wrong"}})
 	if rec.Code != 401 || !strings.Contains(rec.Body.String(), "invalid email or password") || !strings.Contains(rec.Body.String(), "<form") {
 		t.Fatalf("bad login: %d %q", rec.Code, rec.Body.String())
 	}
 
-	rec = post("/admin/login", url.Values{"email": {"boss@example.org"}, "password": {"s3cret-passw0rd"}, "next": {"/admin"}})
-	if rec.Code != 303 || rec.Header().Get("Location") != "/admin" {
+	rec = post("/manager/login", url.Values{"email": {"boss@example.org"}, "password": {"s3cret-passw0rd"}, "next": {"/manager"}})
+	if rec.Code != 303 || rec.Header().Get("Location") != "/manager" {
 		t.Fatalf("login: %d %q", rec.Code, rec.Header().Get("Location"))
 	}
 	cookies := rec.Result().Cookies()
@@ -314,10 +314,10 @@ func TestLoginAdminAndLogoutFlow(t *testing.T) {
 		t.Fatalf("cookies = %v", cookies)
 	}
 
-	rec = get(h, "/admin", cookies[0])
+	rec = get(h, "/manager", cookies[0])
 	body := rec.Body.String()
 	if rec.Code != 200 {
-		t.Fatalf("/admin: %d", rec.Code)
+		t.Fatalf("/manager: %d", rec.Code)
 	}
 	m := regexp.MustCompile(`<meta name="csrf-token" content="([^"]+)"`).FindStringSubmatch(body)
 	if m == nil {
@@ -327,7 +327,7 @@ func TestLoginAdminAndLogoutFlow(t *testing.T) {
 	if !strings.Contains(body, "hx-headers=") || !strings.Contains(body, "X-CSRF-Token") {
 		t.Error("htmx hx-headers wiring missing")
 	}
-	for _, want := range []string{">Pilots<", ">Teams<", ">Judges<", ">Tricks<", ">Seasons<", ">Competitions<", ">Files<", ">Users<", ">Content<", "Boss", `action="/admin/logout"`} {
+	for _, want := range []string{">Pilots<", ">Teams<", ">Judges<", ">Tricks<", ">Seasons<", ">Competitions<", ">Files<", ">Users<", ">Content<", "Boss", `action="/manager/logout"`} {
 		if !strings.Contains(body, want) {
 			t.Errorf("admin layout missing %q", want)
 		}
@@ -336,14 +336,14 @@ func TestLoginAdminAndLogoutFlow(t *testing.T) {
 		t.Errorf("admin Cache-Control = %q", rec.Header().Get("Cache-Control"))
 	}
 
-	if rec = post("/admin/logout", nil, cookies[0]); rec.Code != 403 {
+	if rec = post("/manager/logout", nil, cookies[0]); rec.Code != 403 {
 		t.Fatalf("logout without CSRF: %d", rec.Code)
 	}
-	rec = post("/admin/logout", url.Values{"_csrf": {token}}, cookies[0])
-	if rec.Code != 303 || rec.Header().Get("Location") != "/admin/login" {
+	rec = post("/manager/logout", url.Values{"_csrf": {token}}, cookies[0])
+	if rec.Code != 303 || rec.Header().Get("Location") != "/manager/login" {
 		t.Fatalf("logout: %d %q", rec.Code, rec.Header().Get("Location"))
 	}
-	if rec = get(h, "/admin", cookies[0]); rec.Code != 303 {
+	if rec = get(h, "/manager", cookies[0]); rec.Code != 303 {
 		t.Fatalf("session still valid after logout: %d", rec.Code)
 	}
 }
@@ -367,7 +367,7 @@ func TestAdminLayoutWithoutSessionDoesNotPanic(t *testing.T) {
 	if err := layout.AdminHome().Render(context.Background(), &buf); err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(buf.String(), "/admin/logout") {
+	if strings.Contains(buf.String(), "/manager/logout") {
 		t.Error("no session: no user menu expected")
 	}
 }
@@ -376,7 +376,7 @@ func TestAdminLayoutWithoutSessionDoesNotPanic(t *testing.T) {
 func TestLoginBodyCapped(t *testing.T) {
 	h := web.Routes(newDeps(t))
 	big := url.Values{"email": {"a@b.c"}, "password": {strings.Repeat("x", 64<<10)}}.Encode()
-	req := httptest.NewRequest(http.MethodPost, "/admin/login", strings.NewReader(big))
+	req := httptest.NewRequest(http.MethodPost, "/manager/login", strings.NewReader(big))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
@@ -384,7 +384,7 @@ func TestLoginBodyCapped(t *testing.T) {
 		t.Fatalf("oversized login = %d, want 413", rec.Code)
 	}
 	// Chunked (no Content-Length): the reader cap applies.
-	req = httptest.NewRequest(http.MethodPost, "/admin/login", io.MultiReader(strings.NewReader(big)))
+	req = httptest.NewRequest(http.MethodPost, "/manager/login", io.MultiReader(strings.NewReader(big)))
 	req.ContentLength = -1
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	rec = httptest.NewRecorder()

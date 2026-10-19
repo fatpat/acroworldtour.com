@@ -11,7 +11,7 @@ import templruntime "github.com/a-h/templ/runtime"
 import "awt/internal/web/layout"
 
 // mdField is a Markdown textarea with a live preview (htmx posts the text to
-// /admin/content/preview and swaps the sanitised HTML in).
+// /manager/content/preview and swaps the sanitised HTML in).
 func mdField(name, label, value string, fe formErrors) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
@@ -85,7 +85,7 @@ func mdField(name, label, value string, fe formErrors) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\" rows=\"18\" hx-post=\"/admin/content/preview\" hx-trigger=\"input changed delay:400ms, load\" hx-target=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\" rows=\"18\" hx-post=\"/manager/content/preview\" hx-trigger=\"input changed delay:400ms, load\" hx-target=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -379,72 +379,72 @@ func contentHome(v contentHomeView) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<ul class=\"plain-list\"><li><a href=\"/admin/content/news\">News</a> (")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<ul class=\"plain-list\"><li><a href=\"/manager/content/news\">News</a> (")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var21 string
 			templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(itoa(v.News))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 53, Col: 61}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 53, Col: 63}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, ")</li><li><a href=\"/admin/content/events\">Events</a> (")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, ")</li><li><a href=\"/manager/content/events\">Events</a> (")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var22 string
 			templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(itoa(v.Events))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 54, Col: 67}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 54, Col: 69}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, ")</li><li><a href=\"/admin/content/documents\">Documents</a> (")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, ")</li><li><a href=\"/manager/content/documents\">Documents</a> (")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var23 string
 			templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(itoa(v.Documents))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 55, Col: 76}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 55, Col: 78}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, ")</li><li><a href=\"/admin/content/pages\">Pages</a> (")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, ")</li><li><a href=\"/manager/content/pages\">Pages</a> (")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var24 string
 			templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(itoa(v.Pages))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 56, Col: 64}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 56, Col: 66}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, ")</li><li><a href=\"/admin/content/redirects\">Redirects</a> (")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, ")</li><li><a href=\"/manager/content/redirects\">Redirects</a> (")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var25 string
 			templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(itoa(v.Redirects))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 57, Col: 76}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 57, Col: 78}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, ")</li><li><a href=\"/admin/content/settings\">Home page and site settings</a></li></ul>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, ")</li><li><a href=\"/manager/content/settings\">Home page and site settings</a></li></ul>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -496,7 +496,7 @@ func newsListPage(v newsListView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "<p><a class=\"btn\" href=\"/admin/content/news/new\">New article</a> <a class=\"btn btn--ghost\" href=\"/admin/content\">Content</a></p><div class=\"table-wrap\"><table class=\"table\"><thead><tr><th>Title</th><th>Slug</th><th>Published</th><th></th></tr></thead> <tbody>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "<p><a class=\"btn\" href=\"/manager/content/news/new\">New article</a> <a class=\"btn btn--ghost\" href=\"/manager/content\">Content</a></p><div class=\"table-wrap\"><table class=\"table\"><thead><tr><th>Title</th><th>Slug</th><th>Published</th><th></th></tr></thead> <tbody>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -558,9 +558,9 @@ func newsListPage(v newsListView) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var32 templ.SafeURL
-				templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/content/news/" + n.ID + "/edit"))
+				templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/manager/content/news/" + n.ID + "/edit"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 79, Col: 95}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 79, Col: 97}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 				if templ_7745c5c3_Err != nil {
@@ -571,9 +571,9 @@ func newsListPage(v newsListView) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var33 templ.SafeURL
-				templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/content/news/" + n.ID + "/delete"))
+				templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/manager/content/news/" + n.ID + "/delete"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 80, Col: 97}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 80, Col: 99}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 				if templ_7745c5c3_Err != nil {
@@ -646,9 +646,9 @@ func newsFormPage(v newsFormView) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var36 templ.SafeURL
-			templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(formAction("/admin/content/news", v.Form.ID)))
+			templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(formAction("/manager/content/news", v.Form.ID)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 96, Col: 108}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 96, Col: 110}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 			if templ_7745c5c3_Err != nil {
@@ -690,7 +690,7 @@ func newsFormPage(v newsFormView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "<p class=\"actions\"><button class=\"btn\" type=\"submit\">Save</button> <a class=\"btn btn--ghost\" href=\"/admin/content/news\">Cancel</a></p></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "<p class=\"actions\"><button class=\"btn\" type=\"submit\">Save</button> <a class=\"btn btn--ghost\" href=\"/manager/content/news\">Cancel</a></p></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -742,7 +742,7 @@ func eventsListPage(v eventsListView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "<p><a class=\"btn\" href=\"/admin/content/events/new\">New event</a> <a class=\"btn btn--ghost\" href=\"/admin/content\">Content</a></p><div class=\"table-wrap\"><table class=\"table\"><thead><tr><th>Name</th><th>Season</th><th>Dates</th><th>Status</th><th></th></tr></thead> <tbody>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "<p><a class=\"btn\" href=\"/manager/content/events/new\">New event</a> <a class=\"btn btn--ghost\" href=\"/manager/content\">Content</a></p><div class=\"table-wrap\"><table class=\"table\"><thead><tr><th>Name</th><th>Season</th><th>Dates</th><th>Status</th><th></th></tr></thead> <tbody>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -830,9 +830,9 @@ func eventsListPage(v eventsListView) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var45 templ.SafeURL
-				templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/content/events/" + e.ID + "/edit"))
+				templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/manager/content/events/" + e.ID + "/edit"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 130, Col: 97}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 130, Col: 99}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var45))
 				if templ_7745c5c3_Err != nil {
@@ -843,9 +843,9 @@ func eventsListPage(v eventsListView) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var46 templ.SafeURL
-				templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/content/events/" + e.ID + "/delete"))
+				templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/manager/content/events/" + e.ID + "/delete"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 131, Col: 99}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 131, Col: 101}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
 				if templ_7745c5c3_Err != nil {
@@ -918,9 +918,9 @@ func eventFormPage(v eventFormView) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var49 templ.SafeURL
-			templ_7745c5c3_Var49, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(formAction("/admin/content/events", v.Form.ID)))
+			templ_7745c5c3_Var49, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(formAction("/manager/content/events", v.Form.ID)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 147, Col: 110}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 147, Col: 112}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var49))
 			if templ_7745c5c3_Err != nil {
@@ -1085,7 +1085,7 @@ func eventFormPage(v eventFormView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 71, "<p class=\"actions\"><button class=\"btn\" type=\"submit\">Save</button> <a class=\"btn btn--ghost\" href=\"/admin/content/events\">Cancel</a></p></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 71, "<p class=\"actions\"><button class=\"btn\" type=\"submit\">Save</button> <a class=\"btn btn--ghost\" href=\"/manager/content/events\">Cancel</a></p></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1137,7 +1137,7 @@ func documentsListPage(v documentsListView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, "<p><a class=\"btn\" href=\"/admin/content/documents/new\">New document</a> <a class=\"btn btn--ghost\" href=\"/admin/content\">Content</a></p><div class=\"table-wrap\"><table class=\"table\"><thead><tr><th>Title</th><th>Year</th><th>Category</th><th>File or URL</th><th></th></tr></thead> <tbody>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, "<p><a class=\"btn\" href=\"/manager/content/documents/new\">New document</a> <a class=\"btn btn--ghost\" href=\"/manager/content\">Content</a></p><div class=\"table-wrap\"><table class=\"table\"><thead><tr><th>Title</th><th>Year</th><th>Category</th><th>File or URL</th><th></th></tr></thead> <tbody>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1201,9 +1201,9 @@ func documentsListPage(v documentsListView) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var59 templ.SafeURL
-				templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/content/documents/" + d.ID + "/edit"))
+				templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/manager/content/documents/" + d.ID + "/edit"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 208, Col: 100}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 208, Col: 102}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var59))
 				if templ_7745c5c3_Err != nil {
@@ -1214,9 +1214,9 @@ func documentsListPage(v documentsListView) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var60 templ.SafeURL
-				templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/content/documents/" + d.ID + "/delete"))
+				templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/manager/content/documents/" + d.ID + "/delete"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 209, Col: 102}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 209, Col: 104}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var60))
 				if templ_7745c5c3_Err != nil {
@@ -1289,9 +1289,9 @@ func documentFormPage(v documentFormView) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var63 templ.SafeURL
-			templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(formAction("/admin/content/documents", v.Form.ID)))
+			templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(formAction("/manager/content/documents", v.Form.ID)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 225, Col: 113}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 225, Col: 115}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var63))
 			if templ_7745c5c3_Err != nil {
@@ -1365,7 +1365,7 @@ func documentFormPage(v documentFormView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "<p class=\"actions\"><button class=\"btn\" type=\"submit\">Save</button> <a class=\"btn btn--ghost\" href=\"/admin/content/documents\">Cancel</a></p></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "<p class=\"actions\"><button class=\"btn\" type=\"submit\">Save</button> <a class=\"btn btn--ghost\" href=\"/manager/content/documents\">Cancel</a></p></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1417,7 +1417,7 @@ func pagesListPage(v pagesListView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 90, "<p><a class=\"btn\" href=\"/admin/content/pages/new\">New page</a> <a class=\"btn btn--ghost\" href=\"/admin/content\">Content</a></p><div class=\"table-wrap\"><table class=\"table\"><thead><tr><th>Title</th><th>URL</th><th></th></tr></thead> <tbody>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 90, "<p><a class=\"btn\" href=\"/manager/content/pages/new\">New page</a> <a class=\"btn btn--ghost\" href=\"/manager/content\">Content</a></p><div class=\"table-wrap\"><table class=\"table\"><thead><tr><th>Title</th><th>URL</th><th></th></tr></thead> <tbody>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1466,9 +1466,9 @@ func pagesListPage(v pagesListView) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var71 templ.SafeURL
-				templ_7745c5c3_Var71, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/content/pages/" + p.Slug + "/edit"))
+				templ_7745c5c3_Var71, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/manager/content/pages/" + p.Slug + "/edit"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 262, Col: 98}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 262, Col: 100}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var71))
 				if templ_7745c5c3_Err != nil {
@@ -1479,9 +1479,9 @@ func pagesListPage(v pagesListView) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var72 templ.SafeURL
-				templ_7745c5c3_Var72, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/content/pages/" + p.Slug + "/delete"))
+				templ_7745c5c3_Var72, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/manager/content/pages/" + p.Slug + "/delete"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 263, Col: 100}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 263, Col: 102}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var72))
 				if templ_7745c5c3_Err != nil {
@@ -1554,9 +1554,9 @@ func pageFormPage(v pageFormView) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var75 templ.SafeURL
-			templ_7745c5c3_Var75, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(formAction("/admin/content/pages", pageKey(v))))
+			templ_7745c5c3_Var75, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(formAction("/manager/content/pages", pageKey(v))))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 279, Col: 110}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/content.templ`, Line: 279, Col: 112}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var75))
 			if templ_7745c5c3_Err != nil {
@@ -1602,7 +1602,7 @@ func pageFormPage(v pageFormView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, "<p class=\"actions\"><button class=\"btn\" type=\"submit\">Save</button> <a class=\"btn btn--ghost\" href=\"/admin/content/pages\">Cancel</a></p></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, "<p class=\"actions\"><button class=\"btn\" type=\"submit\">Save</button> <a class=\"btn btn--ghost\" href=\"/manager/content/pages\">Cancel</a></p></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1658,7 +1658,7 @@ func redirectsPage(v redirectsView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 104, "<form class=\"card form\" method=\"post\" action=\"/admin/content/redirects\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 104, "<form class=\"card form\" method=\"post\" action=\"/manager/content/redirects\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1722,7 +1722,7 @@ func redirectsPage(v redirectsView) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, "</td><td><form method=\"post\" action=\"/admin/content/redirects/delete\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, "</td><td><form method=\"post\" action=\"/manager/content/redirects/delete\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1810,7 +1810,7 @@ func settingsPage(v settingsView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 114, "<form class=\"card form\" method=\"post\" action=\"/admin/content/settings\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 114, "<form class=\"card form\" method=\"post\" action=\"/manager/content/settings\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1900,7 +1900,7 @@ func settingsPage(v settingsView) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 121, "</select></div><p class=\"actions\"><button class=\"btn\" type=\"submit\">Save</button> <a class=\"btn btn--ghost\" href=\"/admin/content\">Cancel</a></p></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 121, "</select></div><p class=\"actions\"><button class=\"btn\" type=\"submit\">Save</button> <a class=\"btn btn--ghost\" href=\"/manager/content\">Cancel</a></p></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

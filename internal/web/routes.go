@@ -46,7 +46,7 @@ const (
 
 // Route is one entry of the route table.
 type Route struct {
-	Pattern string // as given to ServeMux, e.g. "GET /admin/pilots"
+	Pattern string // as given to ServeMux, e.g. "GET /manager/pilots"
 	Guard   Guard
 }
 
@@ -93,11 +93,11 @@ func (r *Router) add(pattern string, g Guard, h http.Handler) {
 	r.mux.Handle(pattern, h)
 }
 
-// Public registers an unauthenticated route. Anything under /admin/ is
+// Public registers an unauthenticated route. Anything under /manager/ is
 // refused (panics at startup: a programming error) except the login endpoints.
 func (r *Router) Public(pattern string, h http.Handler) {
 	if p := (Route{Pattern: pattern}).Path(); isAdminPath(p) && !isLoginPath(p) {
-		panic("web: public route under /admin: " + pattern)
+		panic("web: public route under /manager: " + pattern)
 	}
 	r.add(pattern, GuardPublic, h)
 }
@@ -159,9 +159,9 @@ func (r *Router) ScorerMax(pattern string, max int64, compFrom func(*http.Reques
 // loginMax caps the anonymous login form (email, password, next).
 const loginMax = 16 << 10
 
-func isAdminPath(p string) bool { return p == "/admin" || strings.HasPrefix(p, "/admin/") }
+func isAdminPath(p string) bool { return p == "/manager" || strings.HasPrefix(p, "/manager/") }
 
-func isLoginPath(p string) bool { return p == "/admin/login" }
+func isLoginPath(p string) bool { return p == "/manager/login" }
 
 // newRouter builds the router with the built-in routes and the modules.
 func newRouter(deps Deps, mods ...Module) *Router {
@@ -173,16 +173,16 @@ func newRouter(deps Deps, mods ...Module) *Router {
 	r.Public("GET "+static.Prefix, static.Handler())
 	r.Public("GET /favicon.ico", http.HandlerFunc(serveFavicon))
 
-	r.Public("GET /admin/login", http.HandlerFunc(deps.loginPage))
-	r.Public("POST /admin/login", limitBody(loginMax, http.HandlerFunc(deps.loginSubmit)))
-	r.User("POST /admin/logout", http.HandlerFunc(deps.logout))
+	r.Public("GET /manager/login", http.HandlerFunc(deps.loginPage))
+	r.Public("POST /manager/login", limitBody(loginMax, http.HandlerFunc(deps.loginSubmit)))
+	r.User("POST /manager/logout", http.HandlerFunc(deps.logout))
 
 	for _, m := range mods {
 		m.Register(r)
 	}
-	// The dashboard module may own GET /admin; otherwise the placeholder.
-	if !r.has("GET /admin") {
-		r.User("GET /admin", http.HandlerFunc(adminHome))
+	// The dashboard module may own GET /manager; otherwise the placeholder.
+	if !r.has("GET /manager") {
+		r.User("GET /manager", http.HandlerFunc(adminHome))
 	}
 	// Anything unmatched: redirects table first, then the 404 page.
 	r.Public("/", http.HandlerFunc(deps.notFound))

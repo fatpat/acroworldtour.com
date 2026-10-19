@@ -66,7 +66,7 @@ func newJudging(t *testing.T, typ domain.CompetitionType, seasons []string, open
 	}
 	c, err = e.svc.GetCompetition(ctx, c.ID)
 	e.mustOK(err)
-	return &judgingEnv{env: e, c: c, judges: judges[:2], base: "/admin/competitions/" + c.Code + "/runs/1/judging"}
+	return &judgingEnv{env: e, c: c, judges: judges[:2], base: "/manager/competitions/" + c.Code + "/runs/1/judging"}
 }
 
 // hx sends an htmx form POST with the admin session.

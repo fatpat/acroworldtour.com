@@ -100,9 +100,9 @@ func usersPage(v usersView) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var6 templ.SafeURL
-				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/users/" + u.ID))
+				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/manager/users/" + u.ID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/users.templ`, Line: 18, Col: 97}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/users.templ`, Line: 18, Col: 99}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 				if templ_7745c5c3_Err != nil {
@@ -113,7 +113,7 @@ func usersPage(v usersView) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</tbody></table></div><form class=\"card form\" method=\"post\" action=\"/admin/users\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</tbody></table></div><form class=\"card form\" method=\"post\" action=\"/manager/users\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -227,9 +227,9 @@ func userPage(v userView) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var11 templ.SafeURL
-			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/users/" + v.User.ID + "/competitions"))
+			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/manager/users/" + v.User.ID + "/competitions"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/users.templ`, Line: 42, Col: 110}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/users.templ`, Line: 42, Col: 112}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 			if templ_7745c5c3_Err != nil {
@@ -328,9 +328,9 @@ func userPage(v userView) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var15 templ.SafeURL
-			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/users/" + v.User.ID + "/password"))
+			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/manager/users/" + v.User.ID + "/password"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/users.templ`, Line: 59, Col: 106}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/users.templ`, Line: 59, Col: 108}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 			if templ_7745c5c3_Err != nil {
@@ -389,7 +389,7 @@ func userPage(v userView) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "</form><p><a href=\"/admin/users\">Back to users</a></p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "</form><p><a href=\"/manager/users\">Back to users</a></p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -405,9 +405,9 @@ func userPage(v userView) templ.Component {
 
 func userToggleAction(v userView) string {
 	if v.User.Disabled {
-		return "/admin/users/" + v.User.ID + "/enable"
+		return "/manager/users/" + v.User.ID + "/enable"
 	}
-	return "/admin/users/" + v.User.ID + "/disable"
+	return "/manager/users/" + v.User.ID + "/disable"
 }
 
 var _ = templruntime.GeneratedTemplate

@@ -35,13 +35,13 @@ var judgeLevels = []option{
 }
 
 func (h *handlers) registerJudges(r *web.Router) {
-	get(r, "/admin/judges", h.judgesList)
-	get(r, "/admin/judges/new", h.judgeNew)
-	post(r, "/admin/judges", h.judgeCreate)
-	get(r, "/admin/judges/{id}/edit", h.judgeEdit)
-	post(r, "/admin/judges/{id}", h.judgeUpdate)
-	get(r, "/admin/judges/{id}/delete", h.judgeDeleteConfirm)
-	post(r, "/admin/judges/{id}/delete", h.judgeDelete)
+	get(r, "/manager/judges", h.judgesList)
+	get(r, "/manager/judges/new", h.judgeNew)
+	post(r, "/manager/judges", h.judgeCreate)
+	get(r, "/manager/judges/{id}/edit", h.judgeEdit)
+	post(r, "/manager/judges/{id}", h.judgeUpdate)
+	get(r, "/manager/judges/{id}/delete", h.judgeDeleteConfirm)
+	post(r, "/manager/judges/{id}/delete", h.judgeDelete)
 }
 
 func (h *handlers) judgesList(w http.ResponseWriter, r *http.Request) {
@@ -86,7 +86,7 @@ func (h *handlers) judgeSave(w http.ResponseWriter, r *http.Request, id string) 
 	if id != "" {
 		key = "saved"
 	}
-	redirect(w, r, "/admin/judges", key)
+	redirect(w, r, "/manager/judges", key)
 }
 
 func (h *handlers) judgeCreate(w http.ResponseWriter, r *http.Request) { h.judgeSave(w, r, "") }
@@ -111,7 +111,7 @@ func (h *handlers) judgeDeleteConfirm(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, r, err, nil)
 		return
 	}
-	render(w, r, http.StatusOK, confirmDelete("judges", "judge", j.Name, "/admin/judges/"+j.ID+"/delete", "/admin/judges"))
+	render(w, r, http.StatusOK, confirmDelete("judges", "judge", j.Name, "/manager/judges/"+j.ID+"/delete", "/manager/judges"))
 }
 
 func (h *handlers) judgeDelete(w http.ResponseWriter, r *http.Request) {
@@ -119,5 +119,5 @@ func (h *handlers) judgeDelete(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, r, err, nil)
 		return
 	}
-	redirect(w, r, "/admin/judges", "deleted")
+	redirect(w, r, "/manager/judges", "deleted")
 }

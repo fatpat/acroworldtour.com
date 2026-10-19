@@ -65,16 +65,16 @@ type uniqueView struct {
 }
 
 func (h *handlers) registerTricks(r *web.Router) {
-	get(r, "/admin/tricks", h.tricksList)
-	get(r, "/admin/tricks/unique", h.uniqueList)
-	get(r, "/admin/tricks/new", h.trickNew)
-	post(r, "/admin/tricks", h.trickCreate)
-	postUpload(r, "/admin/tricks/import", h.tricksImport)
-	post(r, "/admin/tricks/duplicate", h.tricksDuplicate)
-	get(r, "/admin/tricks/{id}/edit", h.trickEdit)
-	post(r, "/admin/tricks/{id}", h.trickUpdate)
-	get(r, "/admin/tricks/{id}/delete", h.trickDeleteConfirm)
-	post(r, "/admin/tricks/{id}/delete", h.trickDelete)
+	get(r, "/manager/tricks", h.tricksList)
+	get(r, "/manager/tricks/unique", h.uniqueList)
+	get(r, "/manager/tricks/new", h.trickNew)
+	post(r, "/manager/tricks", h.trickCreate)
+	postUpload(r, "/manager/tricks/import", h.tricksImport)
+	post(r, "/manager/tricks/duplicate", h.tricksDuplicate)
+	get(r, "/manager/tricks/{id}/edit", h.trickEdit)
+	post(r, "/manager/tricks/{id}", h.trickUpdate)
+	get(r, "/manager/tricks/{id}/delete", h.trickDeleteConfirm)
+	post(r, "/manager/tricks/{id}/delete", h.trickDelete)
 }
 
 // yearParam reads a year form value: absent means the current year, a
@@ -165,7 +165,7 @@ func (h *handlers) tricksImport(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, r, err, redo)
 		return
 	}
-	redirect(w, r, "/admin/tricks?year="+strconv.Itoa(year), "imported")
+	redirect(w, r, "/manager/tricks?year="+strconv.Itoa(year), "imported")
 }
 
 func (h *handlers) tricksDuplicate(w http.ResponseWriter, r *http.Request) {
@@ -190,7 +190,7 @@ func (h *handlers) tricksDuplicate(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, r, err, redo)
 		return
 	}
-	redirect(w, r, "/admin/tricks?year="+strconv.Itoa(to), "created")
+	redirect(w, r, "/manager/tricks?year="+strconv.Itoa(to), "created")
 }
 
 func (h *handlers) trickNew(w http.ResponseWriter, r *http.Request) {
@@ -367,7 +367,7 @@ func (h *handlers) trickSave(w http.ResponseWriter, r *http.Request, id string) 
 	if id == "" {
 		key = "created"
 	}
-	redirect(w, r, "/admin/tricks?year="+strconv.Itoa(f.Year), key)
+	redirect(w, r, "/manager/tricks?year="+strconv.Itoa(f.Year), key)
 }
 
 // carryBonusVideos keeps the sample videos of bonuses the form cannot edit.
@@ -399,8 +399,8 @@ func (h *handlers) trickDeleteConfirm(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, r, err, nil)
 		return
 	}
-	back := "/admin/tricks?year=" + strconv.Itoa(t.Year)
-	render(w, r, http.StatusOK, confirmDelete("tricks", "trick", t.Name+" ("+strconv.Itoa(t.Year)+")", "/admin/tricks/"+t.ID+"/delete", back))
+	back := "/manager/tricks?year=" + strconv.Itoa(t.Year)
+	render(w, r, http.StatusOK, confirmDelete("tricks", "trick", t.Name+" ("+strconv.Itoa(t.Year)+")", "/manager/tricks/"+t.ID+"/delete", back))
 }
 
 func (h *handlers) trickDelete(w http.ResponseWriter, r *http.Request) {
@@ -412,5 +412,5 @@ func (h *handlers) trickDelete(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, r, err, nil)
 		return
 	}
-	redirect(w, r, "/admin/tricks?year="+strconv.Itoa(t.Year), "deleted")
+	redirect(w, r, "/manager/tricks?year="+strconv.Itoa(t.Year), "deleted")
 }

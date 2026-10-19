@@ -188,12 +188,12 @@ func TestCookieAttributes(t *testing.T) {
 func TestRequireUserRedirects(t *testing.T) {
 	a := newAuth(t, "dev")
 	h := a.RequireUser(ok)
-	rec := do(h, "GET", "/admin/pilots?x=1", nil, nil, "")
-	if rec.Code != 303 || rec.Header().Get("Location") != "/admin/login?next="+url.QueryEscape("/admin/pilots?x=1") {
+	rec := do(h, "GET", "/manager/pilots?x=1", nil, nil, "")
+	if rec.Code != 303 || rec.Header().Get("Location") != "/manager/login?next="+url.QueryEscape("/manager/pilots?x=1") {
 		t.Fatalf("redirect: %d %q", rec.Code, rec.Header().Get("Location"))
 	}
-	rec = do(h, "GET", "/admin/pilots", nil, map[string]string{"HX-Request": "true"}, "")
-	if rec.Code != 401 || rec.Header().Get("HX-Redirect") != "/admin/login?next=%2Fadmin%2Fpilots" {
+	rec = do(h, "GET", "/manager/pilots", nil, map[string]string{"HX-Request": "true"}, "")
+	if rec.Code != 401 || rec.Header().Get("HX-Redirect") != "/manager/login?next=%2Fmanager%2Fpilots" {
 		t.Fatalf("htmx: %d %q", rec.Code, rec.Header().Get("HX-Redirect"))
 	}
 }
@@ -272,7 +272,7 @@ func TestLimiterBlocksSixthAttempt(t *testing.T) {
 	a := newAuth(t, "dev")
 	mustUser(t, a, "a@example.com", "admin")
 	login := func(pw string) *httptest.ResponseRecorder {
-		req := httptest.NewRequest("POST", "/admin/login", strings.NewReader(url.Values{"email": {"A@example.com"}, "password": {pw}}.Encode()))
+		req := httptest.NewRequest("POST", "/manager/login", strings.NewReader(url.Values{"email": {"A@example.com"}, "password": {pw}}.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.RemoteAddr = "1.2.3.4:5555"
 		rec := httptest.NewRecorder()
@@ -342,7 +342,7 @@ func TestLimiterConcurrentAttempts(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			req := httptest.NewRequest("POST", "/admin/login", strings.NewReader(url.Values{"email": {"a@example.com"}, "password": {"bad"}}.Encode()))
+			req := httptest.NewRequest("POST", "/manager/login", strings.NewReader(url.Values{"email": {"a@example.com"}, "password": {"bad"}}.Encode()))
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 			rec := httptest.NewRecorder()
 			a.HandleLogin(rec, req)
@@ -411,18 +411,18 @@ func TestHandleLoginSuccessAndNext(t *testing.T) {
 	a := newAuth(t, "dev")
 	mustUser(t, a, "a@example.com", "admin")
 	post := func(next string) *httptest.ResponseRecorder {
-		req := httptest.NewRequest("POST", "/admin/login", strings.NewReader(url.Values{"email": {"a@example.com"}, "password": {"s3cret-passw0rd"}, "next": {next}}.Encode()))
+		req := httptest.NewRequest("POST", "/manager/login", strings.NewReader(url.Values{"email": {"a@example.com"}, "password": {"s3cret-passw0rd"}, "next": {next}}.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		rec := httptest.NewRecorder()
 		a.HandleLogin(rec, req)
 		return rec
 	}
-	rec := post("/admin/pilots")
-	if rec.Code != 303 || rec.Header().Get("Location") != "/admin/pilots" || len(rec.Result().Cookies()) != 1 {
+	rec := post("/manager/pilots")
+	if rec.Code != 303 || rec.Header().Get("Location") != "/manager/pilots" || len(rec.Result().Cookies()) != 1 {
 		t.Fatalf("%d %q", rec.Code, rec.Header().Get("Location"))
 	}
 	for _, bad := range []string{"https://evil.com", "//evil.com", `/\evil.com`, "/\t/evil.com", "/\n/evil.com", "/%09/evil.com", "/\r/evil.com", "/\x7f/x"} {
-		if loc := post(bad).Header().Get("Location"); loc != "/admin" {
+		if loc := post(bad).Header().Get("Location"); loc != "/manager" {
 			t.Errorf("open redirect %q -> %q", bad, loc)
 		}
 	}

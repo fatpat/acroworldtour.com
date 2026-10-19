@@ -8,18 +8,18 @@ templ pilotsPage(v pilotsView) {
 		@notice(v.Flash)
 		@errorSummary(v.Errors)
 		<div class="toolbar">
-			<form class="inline" method="get" action="/admin/pilots" role="search">
+			<form class="inline" method="get" action="/manager/pilots" role="search">
 				<label for="q">Search by name or CIVL id</label>
 				<input id="q" name="q" type="search" value={ v.Query }/>
 				<button class="btn btn--ghost" type="submit">Search</button>
 			</form>
-			<form class="inline" method="post" action="/admin/pilots/import">
+			<form class="inline" method="post" action="/manager/pilots/import">
 				@csrf()
 				<label for="civlid">CIVL id</label>
 				<input id="civlid" name="civlid" type="number" min="1" inputmode="numeric" value={ v.ImportV } required/>
 				<button class="btn" type="submit">Add or update from CIVL</button>
 			</form>
-			<form class="inline" method="post" action="/admin/pilots/rankings">
+			<form class="inline" method="post" action="/manager/pilots/rankings">
 				@csrf()
 				<button class="btn btn--ghost" type="submit">Refresh CIVL rankings</button>
 			</form>
@@ -41,7 +41,7 @@ templ pilotsPage(v pilotsView) {
 			</table>
 		</div>
 		<h2>AWT status for another year</h2>
-		<form class="inline" method="post" action="/admin/pilots/awt">
+		<form class="inline" method="post" action="/manager/pilots/awt">
 			@csrf()
 			<label for="awt-civlid">CIVL id</label>
 			<input id="awt-civlid" name="civlid" type="number" min="1" required/>
@@ -79,8 +79,8 @@ templ pilotRow(p service.Pilot, now int) {
 		<td>
 			<form
 				method="post"
-				action={ templ.SafeURL("/admin/pilots/" + itoa(p.CivlID) + "/gender") }
-				hx-post={ "/admin/pilots/" + itoa(p.CivlID) + "/gender" }
+				action={ templ.SafeURL("/manager/pilots/" + itoa(p.CivlID) + "/gender") }
+				hx-post={ "/manager/pilots/" + itoa(p.CivlID) + "/gender" }
 				hx-target="closest tr"
 				hx-swap="outerHTML"
 			>
@@ -93,8 +93,8 @@ templ pilotRow(p service.Pilot, now int) {
 				for _, y := range pilotYears(p, now) {
 					<form
 						method="post"
-						action={ templ.SafeURL("/admin/pilots/" + itoa(p.CivlID) + "/awt") }
-						hx-post={ "/admin/pilots/" + itoa(p.CivlID) + "/awt" }
+						action={ templ.SafeURL("/manager/pilots/" + itoa(p.CivlID) + "/awt") }
+						hx-post={ "/manager/pilots/" + itoa(p.CivlID) + "/awt" }
 						hx-target="closest tr"
 						hx-swap="outerHTML"
 					>
@@ -107,7 +107,7 @@ templ pilotRow(p service.Pilot, now int) {
 			</div>
 		</td>
 		<td>
-			<form method="post" action="/admin/pilots/import">
+			<form method="post" action="/manager/pilots/import">
 				@csrf()
 				<input type="hidden" name="civlid" value={ itoa(p.CivlID) }/>
 				<button class="btn btn--ghost" type="submit">Update from CIVL</button>
