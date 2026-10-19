@@ -44,10 +44,10 @@ func TestServeModulesWiring(t *testing.T) {
 
 	table := web.RouteTable(deps, modules()...)
 	want := map[string]bool{
-		"GET /api/v1/competitions":        false,
-		"GET /api/v1/competitions/{code}": false,
-		"GET /competitions":               false,
-		"GET /manager/competitions/{code}":  false,
+		"GET /api/v1/competitions":         false,
+		"GET /api/v1/competitions/{code}":  false,
+		"GET /competitions":                false,
+		"GET /manager/competitions/{code}": false,
 	}
 	admin := 0
 	for _, rt := range table {
