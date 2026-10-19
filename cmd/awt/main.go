@@ -87,6 +87,9 @@ func serve() error {
 		return err
 	}
 	defer db.Close()
+	if err := auth.CheckMFAKeyRequired(context.Background(), db, cfg); err != nil {
+		return err
+	}
 
 	var purger cache.Purger = cache.NoopPurger{}
 	if cfg.CloudflareZoneID != "" && cfg.CloudflareToken != "" {
