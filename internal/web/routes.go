@@ -181,6 +181,8 @@ func newRouter(deps Deps, mods ...Module) *Router {
 	r.Public("GET /manager/login/mfa", http.HandlerFunc(deps.mfaPage))
 	r.Public("POST /manager/login/mfa/totp", deps.checkOrigin(limitBody(loginMax, deps.mfaTOTP())))
 	r.Public("POST /manager/login/mfa/recovery", deps.checkOrigin(limitBody(loginMax, deps.mfaRecovery())))
+	r.Public("POST /manager/login/mfa/webauthn/begin", deps.checkOrigin(limitBody(loginMax, http.HandlerFunc(deps.mfaKeyBegin))))
+	r.Public("POST /manager/login/mfa/webauthn/finish", deps.checkOrigin(limitBody(loginMax, http.HandlerFunc(deps.mfaKeyFinish))))
 	r.User("POST /manager/logout", http.HandlerFunc(deps.logout))
 
 	for _, m := range mods {

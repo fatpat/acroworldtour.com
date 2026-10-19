@@ -1,6 +1,10 @@
 package layout
 
-import "strconv"
+import (
+	"strconv"
+
+	"awt/web/static"
+)
 
 // MFAStep is what the second login step offers.
 type MFAStep struct {
@@ -34,8 +38,10 @@ templ MFAPage(s MFAStep) {
 				}
 				if s.WebAuthn {
 					<div class="login__alt">
-						<button class="btn btn--ghost" type="button" data-webauthn-login disabled>Use a security key</button>
+						<button class="btn btn--ghost" type="button" data-webauthn-login data-begin-url="/manager/login/mfa/webauthn/begin" data-finish-url="/manager/login/mfa/webauthn/finish">Use a security key</button>
+						<p class="alert" role="alert" data-webauthn-error hidden></p>
 					</div>
+					<script src={ static.URL("js/webauthn.js") } defer></script>
 				}
 				if s.Recovery {
 					<details class="login__alt" open?={ !s.TOTP || !s.TOTPAvailable }>

@@ -4,15 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"net"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
 	"awt/internal/auth"
-	"awt/internal/config"
 	"awt/internal/web/layout"
 )
 
@@ -27,32 +24,12 @@ const (
 	msgStepFailed   = "Something went wrong, please try again."
 )
 
-// allowedOrigins is the origin of AWT_BASE_URL; in dev without one, the
-// local addresses of AWT_ADDR (never derived from the request Host header).
-func allowedOrigins(cfg config.Config) []string {
-	if cfg.BaseURL != "" {
-		u, err := url.Parse(cfg.BaseURL)
-		if err != nil {
-			return nil
-		}
-		return []string{strings.ToLower(u.Scheme + "://" + u.Host)}
-	}
-	if cfg.Env != "dev" {
-		return nil
-	}
-	_, port, err := net.SplitHostPort(cfg.Addr)
-	if err != nil {
-		return nil
-	}
-	return []string{"http://localhost:" + port, "http://127.0.0.1:" + port}
-}
-
 // checkOrigin refuses a request whose Origin header names another origin.
 // Browsers send Origin on every cross-site POST; its absence (older clients,
 // same-origin navigations in some browsers) is let through, the SameSite=Strict
 // pending cookie covering that case.
 func (d Deps) checkOrigin(next http.Handler) http.Handler {
-	allowed := allowedOrigins(d.Cfg)
+	allowed := d.Cfg.Origins()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if o := r.Header.Get("Origin"); o != "" {
 			match := false

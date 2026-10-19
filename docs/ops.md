@@ -43,7 +43,7 @@ There is no session secret: sessions are random tokens stored in the database. `
 
 **Manager MFA key.** TOTP secrets are stored encrypted with `AWT_MFA_KEY` (base64, 32 bytes). Generate it once per environment with `openssl rand -base64 32` and put it in `.env.prod` / `.env.training` (different values). The app refuses to start outside dev if any TOTP secret exists and the key is missing; if the key is lost or changed, enrolled TOTP secrets become unusable and each affected manager must be reset by an admin and re-enrol. Back it up with the other secrets. In dev a fixed key is used and a warning is logged.
 
-**WebAuthn RP ID.** `AWT_WEBAUTHN_RP_ID` defaults to the host of `AWT_BASE_URL` (`localhost` in dev). Set it only to share passkeys across subdomains (a parent domain of the site host). Changing it later invalidates every registered passkey, so decide before managers enrol.
+**WebAuthn RP ID.** `AWT_WEBAUTHN_RP_ID` defaults to the host of `AWT_BASE_URL` (`localhost` in dev). Set it only to share passkeys across subdomains (a parent domain of the site host). Changing it later invalidates every registered passkey, so decide before managers enrol. The accepted WebAuthn origin is the origin of `AWT_BASE_URL` (in dev without it, `http://localhost:<port>` and `http://127.0.0.1:<port>` from `AWT_ADDR`), so security keys only work when the manager is opened at that address.
 
 GitHub repository secrets for the deploy workflow:
 

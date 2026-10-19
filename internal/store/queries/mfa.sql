@@ -53,6 +53,9 @@ INSERT INTO login_challenges (token_hash, user_id, kind, data, expires_at) VALUE
 -- name: GetLoginChallenge :one
 SELECT * FROM login_challenges WHERE token_hash = ? AND kind = ? AND expires_at > ?;
 
+-- name: UpdateLoginChallengeData :exec
+UPDATE login_challenges SET data = ? WHERE token_hash = ?;
+
 -- name: DeleteLoginChallenge :exec
 DELETE FROM login_challenges WHERE token_hash = ?;
 

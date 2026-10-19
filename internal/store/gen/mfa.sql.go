@@ -335,6 +335,20 @@ func (q *Queries) ResetUserMFAFailures(ctx context.Context, id string) error {
 	return err
 }
 
+const updateLoginChallengeData = `-- name: UpdateLoginChallengeData :exec
+UPDATE login_challenges SET data = ? WHERE token_hash = ?
+`
+
+type UpdateLoginChallengeDataParams struct {
+	Data      string `json:"data"`
+	TokenHash string `json:"token_hash"`
+}
+
+func (q *Queries) UpdateLoginChallengeData(ctx context.Context, arg UpdateLoginChallengeDataParams) error {
+	_, err := q.db.ExecContext(ctx, updateLoginChallengeData, arg.Data, arg.TokenHash)
+	return err
+}
+
 const updateUserWebAuthnCredential = `-- name: UpdateUserWebAuthnCredential :exec
 UPDATE user_webauthn_credentials SET credential = ?, last_used_at = ? WHERE id = ? AND user_id = ?
 `

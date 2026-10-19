@@ -666,11 +666,13 @@ var wildcard = regexp.MustCompile(`\{[^}]*\}`)
 // loginSteps are the only anonymous /manager routes: the password step and
 // the second-factor step, both before any session exists.
 var loginSteps = map[string]bool{
-	"GET /manager/login":               true,
-	"POST /manager/login":              true,
-	"GET /manager/login/mfa":           true,
-	"POST /manager/login/mfa/totp":     true,
-	"POST /manager/login/mfa/recovery": true,
+	"GET /manager/login":                      true,
+	"POST /manager/login":                     true,
+	"GET /manager/login/mfa":                  true,
+	"POST /manager/login/mfa/totp":            true,
+	"POST /manager/login/mfa/recovery":        true,
+	"POST /manager/login/mfa/webauthn/begin":  true,
+	"POST /manager/login/mfa/webauthn/finish": true,
 }
 
 func TestEveryAdminRouteIsGuarded(t *testing.T) {

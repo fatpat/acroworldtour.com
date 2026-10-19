@@ -63,7 +63,8 @@ func TestServeModulesWiring(t *testing.T) {
 		}
 		admin++
 		switch p {
-		case "/manager/login", "/manager/login/mfa", "/manager/login/mfa/totp", "/manager/login/mfa/recovery":
+		case "/manager/login", "/manager/login/mfa", "/manager/login/mfa/totp", "/manager/login/mfa/recovery",
+			"/manager/login/mfa/webauthn/begin", "/manager/login/mfa/webauthn/finish":
 			continue // the login steps run before any session exists
 		}
 		if rt.Guard == web.GuardPublic {

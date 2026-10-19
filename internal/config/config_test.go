@@ -143,3 +143,19 @@ func TestLoadWebAuthnRPID(t *testing.T) {
 		t.Fatalf("dev default: rpid=%q err=%v, want localhost", cfg.WebAuthnRPID, err)
 	}
 }
+
+func TestOrigins(t *testing.T) {
+	for _, tc := range []struct {
+		cfg  config.Config
+		want string
+	}{
+		{config.Config{Env: "prod", BaseURL: "https://Manager.Example.org/path"}, "https://manager.example.org"},
+		{config.Config{Env: "dev", BaseURL: "http://localhost:3000"}, "http://localhost:3000"},
+		{config.Config{Env: "dev", Addr: ":8080"}, "http://localhost:8080 http://127.0.0.1:8080"},
+		{config.Config{Env: "prod", Addr: ":8080"}, ""},
+	} {
+		if got := strings.Join(tc.cfg.Origins(), " "); got != tc.want {
+			t.Errorf("%+v: Origins = %q, want %q", tc.cfg, got, tc.want)
+		}
+	}
+}

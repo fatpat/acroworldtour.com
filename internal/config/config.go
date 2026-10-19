@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"net"
 	"net/netip"
 	"net/url"
 	"strings"
@@ -137,4 +138,26 @@ func Load(getenv func(string) string) (Config, error) {
 		}
 	}
 	return cfg, nil
+}
+
+// Origins are the browser origins the manager is served from: the origin of
+// AWT_BASE_URL; in dev without one, the local addresses of AWT_ADDR. Never
+// derived from a request's Host header, which the client controls. The
+// login steps' Origin check and the WebAuthn relying party use them.
+func (c Config) Origins() []string {
+	if c.BaseURL != "" {
+		u, err := url.Parse(c.BaseURL)
+		if err != nil {
+			return nil
+		}
+		return []string{strings.ToLower(u.Scheme + "://" + u.Host)}
+	}
+	if c.Env != "dev" {
+		return nil
+	}
+	_, port, err := net.SplitHostPort(c.Addr)
+	if err != nil {
+		return nil
+	}
+	return []string{"http://localhost:" + port, "http://127.0.0.1:" + port}
 }
