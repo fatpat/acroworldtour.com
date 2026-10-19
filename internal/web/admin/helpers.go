@@ -78,6 +78,13 @@ var flashMessages = map[string]string{
 	"opened":   "Opened.",
 	"closed":   "Closed.",
 	"reopened": "Reopened.",
+	// account page
+	"totp_added":   "Authenticator app added; your other sessions were closed.",
+	"totp_removed": "Authenticator app removed; your other sessions were closed.",
+	"key_added":    "Security key added; your other sessions were closed.",
+	"key_removed":  "Security key removed; your other sessions were closed.",
+	"codes_saved":  "Keep your recovery codes somewhere safe.",
+	"own_password": "Password changed; your other sessions were closed.",
 }
 
 func flash(r *http.Request) string { return flashMessages[r.URL.Query().Get("ok")] }

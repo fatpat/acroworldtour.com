@@ -3,6 +3,10 @@
 // navigator.credentials.create (options with a user: registration) or .get
 // (login), posts the credential as JSON and follows {"redirect": ...}; any
 // {"error": ...} is shown in the nearest [data-webauthn-error] element.
+// Registration (account page) runs from a form[data-webauthn-register]: the
+// finish request carries the key name, the current password and the
+// challenge token from the begin answer; {"recoveryCodes": [...]} (a first
+// factor) is shown in the [data-webauthn-codes] box.
 {
   const b64urlToBuffer = (s) => {
     const b64 = s.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(s.length / 4) * 4, "=");
@@ -75,7 +79,35 @@
     };
   };
 
+  // showCodes replaces the registration form with the recovery codes box.
+  const showCodes = (form, codes) => {
+    const box = document.querySelector("[data-webauthn-codes]");
+    if (!box) return false;
+    const list = box.querySelector("ol");
+    list.replaceChildren(
+      ...codes.map((c) => {
+        const li = document.createElement("li");
+        li.textContent = c;
+        return li;
+      }),
+    );
+    box.hidden = false;
+    form.hidden = true;
+    box.scrollIntoView();
+    return true;
+  };
+
+  const errorMessage = (err) => {
+    // NotAllowedError: the user cancelled or the prompt timed out.
+    if (err && err.name === "NotAllowedError") return "The security key request was cancelled or timed out";
+    // InvalidStateError: the authenticator holds an excluded credential.
+    if (err && err.name === "InvalidStateError") return "This security key is already registered";
+    return err.message;
+  };
+
   const run = async (btn) => {
+    const form = btn.closest("form[data-webauthn-register]");
+    if (form && !form.reportValidity()) return;
     const slot = errorSlot(btn);
     if (slot) slot.hidden = true;
     btn.disabled = true;
@@ -86,14 +118,25 @@
         ? await navigator.credentials.create({ publicKey: pk })
         : await navigator.credentials.get({ publicKey: pk });
       if (!cred) throw new Error("No security key answered");
-      const done = await post(btn.dataset.finishUrl, JSON.stringify(encodeCredential(cred)));
+      let body = JSON.stringify(encodeCredential(cred));
+      if (form) {
+        const data = new FormData(form);
+        body = JSON.stringify({
+          name: data.get("name"),
+          password: data.get("current_password"),
+          token: options.token,
+          credential: encodeCredential(cred),
+        });
+      }
+      const done = await post(btn.dataset.finishUrl, body);
+      if (form) form.reset();
+      if (done.recoveryCodes && showCodes(form, done.recoveryCodes)) return;
       if (done.redirect) {
         window.location.assign(done.redirect);
         return;
       }
     } catch (err) {
-      // NotAllowedError: the user cancelled or the prompt timed out.
-      showError(btn, err && err.name === "NotAllowedError" ? "The security key request was cancelled or timed out" : err.message);
+      showError(btn, errorMessage(err));
     }
     btn.disabled = false;
   };
@@ -105,5 +148,13 @@
       continue;
     }
     btn.addEventListener("click", () => run(btn));
+    // Enter in the registration form runs the ceremony instead of posting it.
+    const form = btn.closest("form[data-webauthn-register]");
+    if (form) {
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        if (!btn.disabled) run(btn);
+      });
+    }
   }
 }

@@ -19,7 +19,8 @@ type handlers struct {
 }
 
 // Register implements web.Module. Reference data is admin-only (decision
-// 0009); only the dashboard is open to every logged-in user.
+// 0009); only the dashboard and one's own account page are open to every
+// logged-in user.
 func (Module) Register(r *web.Router) {
 	d := r.Deps()
 	h := &handlers{svc: d.Service, auth: d.Auth}
@@ -34,4 +35,5 @@ func (Module) Register(r *web.Router) {
 	h.registerJudging(r)
 	h.registerContent(r)
 	h.registerUsers(r)
+	h.registerAccount(r)
 }

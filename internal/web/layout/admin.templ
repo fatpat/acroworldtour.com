@@ -59,6 +59,7 @@ templ Admin(m Meta, active string) {
 					<a href="/manager"><img src={ static.URL("img/logo.svg") } alt="Acro World Tour admin" width="129" height="57"/></a>
 					<div class="admin__user">
 						<span>{ sess.User.Name } ({ sess.User.Role })</span>
+						<a class="btn btn--ghost" href="/manager/account" aria-current={ current(active == "account") }>My account</a>
 						<form method="post" action="/manager/logout">
 							<input type="hidden" name="_csrf" value={ sess.CSRF }/>
 							<button class="btn btn--ghost" type="submit">Log out</button>

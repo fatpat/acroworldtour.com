@@ -43,7 +43,7 @@ func registerKey(t *testing.T, a *Auth, u User, name string) *webauthntest.Key {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := a.FinishWebAuthnRegistration(ctx, u.ID, token, name, body); err != nil {
+	if _, err := a.FinishWebAuthnRegistration(ctx, u.ID, token, name, testPassword, "", body); err != nil {
 		t.Fatalf("finish registration: %v", err)
 	}
 	return key
@@ -113,7 +113,7 @@ func TestWebAuthnRegisterThenLogin(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := a.FinishWebAuthnRegistration(ctx, u.ID, token, "  YubiKey 5  ", body); err != nil {
+	if _, err := a.FinishWebAuthnRegistration(ctx, u.ID, token, "  YubiKey 5  ", testPassword, "", body); err != nil {
 		t.Fatalf("finish registration: %v", err)
 	}
 	var name, credential string
@@ -133,7 +133,8 @@ func TestWebAuthnRegisterThenLogin(t *testing.T) {
 	// Login: password, then the key.
 	req := startPending(t, a, "key@example.org", "192.0.2.1")
 	p, err := a.PendingFromRequest(req)
-	if err != nil || len(p.Methods) != 1 || p.Methods[0] != MethodWebAuthn {
+	// The key is the first factor: recovery codes came with it.
+	if err != nil || strings.Join(p.Methods, ",") != MethodWebAuthn+","+MethodRecovery {
 		t.Fatalf("pending = %+v, %v", p, err)
 	}
 	opts, err = a.BeginWebAuthnLogin(ctx, req)
@@ -193,25 +194,25 @@ func TestWebAuthnRegistrationRules(t *testing.T) {
 		t.Fatal(err)
 	}
 	body, _ := key.Create(opts, "https://evil.example")
-	if err := a.FinishWebAuthnRegistration(ctx, u.ID, token, "Key", body); !errors.Is(err, ErrWebAuthnInvalid) {
+	if _, err := a.FinishWebAuthnRegistration(ctx, u.ID, token, "Key", testPassword, "", body); !errors.Is(err, ErrWebAuthnInvalid) {
 		t.Fatalf("wrong origin = %v, want ErrWebAuthnInvalid", err)
 	}
 	// The challenge is single use, even after a failure.
 	body, _ = key.Create(opts, waOrigin)
-	if err := a.FinishWebAuthnRegistration(ctx, u.ID, token, "Key", body); !errors.Is(err, ErrWebAuthnChallenge) {
+	if _, err := a.FinishWebAuthnRegistration(ctx, u.ID, token, "Key", testPassword, "", body); !errors.Is(err, ErrWebAuthnChallenge) {
 		t.Fatalf("reused challenge = %v, want ErrWebAuthnChallenge", err)
 	}
 	// Another user's challenge.
 	opts, token, _ = a.BeginWebAuthnRegistration(ctx, u.ID)
 	body, _ = key.Create(opts, waOrigin)
-	if err := a.FinishWebAuthnRegistration(ctx, other.ID, token, "Key", body); !errors.Is(err, ErrWebAuthnChallenge) {
+	if _, err := a.FinishWebAuthnRegistration(ctx, other.ID, token, "Key", testPassword, "", body); !errors.Is(err, ErrWebAuthnChallenge) {
 		t.Fatalf("other user's challenge = %v", err)
 	}
 	// Expired after 5 minutes.
 	opts, token, _ = a.BeginWebAuthnRegistration(ctx, u.ID)
 	body, _ = key.Create(opts, waOrigin)
 	c.advance(5*time.Minute + time.Second)
-	if err := a.FinishWebAuthnRegistration(ctx, u.ID, token, "Key", body); !errors.Is(err, ErrWebAuthnChallenge) {
+	if _, err := a.FinishWebAuthnRegistration(ctx, u.ID, token, "Key", testPassword, "", body); !errors.Is(err, ErrWebAuthnChallenge) {
 		t.Fatalf("expired challenge = %v", err)
 	}
 	// A name is required (checked before the challenge is spent).
@@ -219,14 +220,14 @@ func TestWebAuthnRegistrationRules(t *testing.T) {
 	body, _ = key.Create(opts, waOrigin)
 	var in *InputError
 	for _, name := range []string{"  ", strings.Repeat("x", 65)} {
-		if err := a.FinishWebAuthnRegistration(ctx, u.ID, token, name, body); !errors.As(err, &in) || in.Field != "name" {
+		if _, err := a.FinishWebAuthnRegistration(ctx, u.ID, token, name, testPassword, "", body); !errors.As(err, &in) || in.Field != "name" {
 			t.Fatalf("name %q = %v, want an InputError on name", name, err)
 		}
 	}
 	if stored() != 0 {
 		t.Fatal("a refused registration stored a credential")
 	}
-	if err := a.FinishWebAuthnRegistration(ctx, u.ID, token, "Key", body); err != nil {
+	if _, err := a.FinishWebAuthnRegistration(ctx, u.ID, token, "Key", testPassword, "", body); err != nil {
 		t.Fatalf("valid registration: %v", err)
 	}
 
@@ -247,7 +248,7 @@ func TestWebAuthnRegistrationRules(t *testing.T) {
 		t.Fatalf("excludeCredentials = %+v", creation.PublicKey.Exclude)
 	}
 	body, _ = key.Create(opts, waOrigin)
-	if err := a.FinishWebAuthnRegistration(ctx, u.ID, token, "Again", body); !errors.Is(err, ErrWebAuthnInvalid) {
+	if _, err := a.FinishWebAuthnRegistration(ctx, u.ID, token, "Again", testPassword, "", body); !errors.Is(err, ErrWebAuthnInvalid) {
 		t.Fatalf("duplicate credential = %v", err)
 	}
 	if stored() != 1 {
@@ -286,8 +287,12 @@ func TestWebAuthnReplayRejected(t *testing.T) {
 		t.Fatalf("first login: %v", err)
 	}
 
-	// The same assertion again, on a fresh pending login: its challenge is gone.
+	// The same assertion again, on a fresh pending login with a new
+	// challenge: it answers the old challenge and is refused.
 	req = startPending(t, a, "key@example.org", "192.0.2.1")
+	if _, err := a.BeginWebAuthnLogin(ctx, req); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := a.FinishWebAuthnLogin(ctx, req, body); !errors.Is(err, ErrMFAInvalid) {
 		t.Fatalf("replayed assertion = %v, want ErrMFAInvalid", err)
 	}

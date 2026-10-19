@@ -36,8 +36,11 @@ var (
 	// expired, already used or belongs to another user.
 	ErrWebAuthnChallenge = errors.New("security key challenge expired")
 	// ErrWebAuthnInvalid is a registration response that does not verify, or
-	// a credential the user already registered.
+	// a credential already registered (ErrWebAuthnRegistered).
 	ErrWebAuthnInvalid = errors.New("security key response rejected")
+	// ErrWebAuthnRegistered is the ErrWebAuthnInvalid of a credential that
+	// is already stored, for this account or another.
+	ErrWebAuthnRegistered = fmt.Errorf("%w: already registered", ErrWebAuthnInvalid)
 	// ErrNoSecurityKey: the pending login's account has no security key.
 	ErrNoSecurityKey = errors.New("no security key registered")
 )
@@ -157,70 +160,92 @@ func (a *Auth) BeginWebAuthnRegistration(ctx context.Context, userID string) ([]
 
 // FinishWebAuthnRegistration verifies the authenticator's response (body,
 // the PublicKeyCredential JSON) to the challenge behind challengeToken and
-// stores the key under name. The challenge is spent whatever the outcome.
-func (a *Auth) FinishWebAuthnRegistration(ctx context.Context, userID, challengeToken, name string, body []byte) error {
+// stores the key under name. Like every sensitive account action it needs
+// the current password and revokes the user's sessions other than
+// keepSession, in the same transaction. Once the password is right the
+// challenge is spent whatever the outcome. It returns the recovery codes
+// when the key is the account's first factor (nil otherwise).
+func (a *Auth) FinishWebAuthnRegistration(ctx context.Context, userID, challengeToken, name, currentPassword, keepSession string, body []byte) ([]string, error) {
 	name = strings.TrimSpace(name)
 	if name == "" || utf8.RuneCountInString(name) > maxKeyNameLen {
-		return &InputError{Field: "name", Msg: fmt.Sprintf("give the security key a name of at most %d characters", maxKeyNameLen)}
+		return nil, &InputError{Field: "name", Msg: fmt.Sprintf("give the security key a name of at most %d characters", maxKeyNameLen)}
 	}
 	rp, err := a.relyingParty()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	now := a.now().UTC()
-	var outcome error
-	err = a.db.Tx(ctx, func(q *gen.Queries) error {
-		ch, err := q.GetLoginChallenge(ctx, gen.GetLoginChallengeParams{TokenHash: hashToken(challengeToken), Kind: kindWebAuthnRegister, ExpiresAt: now.Format(time.RFC3339)})
-		if errors.Is(err, sql.ErrNoRows) || (err == nil && ch.UserID != userID) {
-			outcome = ErrWebAuthnChallenge
-			return nil
-		}
+	var (
+		outcome error
+		codes   []string
+	)
+	err = a.sensitive(ctx, userID, currentPassword, keepSession, func(q *gen.Queries, u User, now time.Time) (bool, error) {
+		methods, err := userMethods(ctx, q, u.ID)
 		if err != nil {
-			return fmt.Errorf("read challenge: %w", err)
+			return false, err
 		}
-		if err := q.DeleteLoginChallenge(ctx, ch.TokenHash); err != nil {
-			return fmt.Errorf("spend challenge: %w", err)
+		if outcome, err = registerCredential(ctx, q, rp, u, challengeToken, name, body, now); err != nil || outcome != nil {
+			return false, err // a rejected response still commits the spent challenge
 		}
-		var session webauthn.SessionData
-		if err := json.Unmarshal([]byte(ch.Data), &session); err != nil {
-			return fmt.Errorf("challenge data: %w", err)
-		}
-		u, err := q.GetUser(ctx, userID)
-		if err != nil {
-			return fmt.Errorf("read user: %w", err)
-		}
-		creds, err := userCredentials(ctx, q, u.ID)
-		if err != nil {
-			return err
-		}
-		parsed, err := protocol.ParseCredentialCreationResponseBytes(body)
-		if err != nil {
-			outcome = fmt.Errorf("%w: %w", ErrWebAuthnInvalid, err)
-			return nil
-		}
-		cred, err := rp.CreateCredential(webauthnUser{u: u, creds: creds}, session, parsed)
-		if err != nil {
-			outcome = fmt.Errorf("%w: %w", ErrWebAuthnInvalid, err)
-			return nil
-		}
-		for _, c := range creds {
-			if credentialID(c.ID) == credentialID(cred.ID) {
-				outcome = fmt.Errorf("%w: already registered", ErrWebAuthnInvalid)
-				return nil
-			}
-		}
-		stored, err := json.Marshal(cred)
-		if err != nil {
-			return err
-		}
-		return q.InsertUserWebAuthnCredential(ctx, gen.InsertUserWebAuthnCredentialParams{
-			ID: credentialID(cred.ID), UserID: u.ID, Name: name, Credential: string(stored), CreatedAt: now.Format(time.RFC3339),
-		})
+		codes, err = firstFactorCodes(ctx, q, u.ID, hasFactor(methods))
+		return true, err
 	})
 	if err != nil {
-		return fmt.Errorf("security key registration for %s: %w", userID, err)
+		return nil, fmt.Errorf("security key registration for %s: %w", userID, err)
 	}
-	return outcome
+	return codes, outcome
+}
+
+// registerCredential spends the registration challenge behind
+// challengeToken and, when the response verifies, stores the credential for
+// u inside the caller's transaction. A rejected response is the returned
+// outcome (ErrWebAuthnChallenge or ErrWebAuthnInvalid), not an error.
+func registerCredential(ctx context.Context, q *gen.Queries, rp *webauthn.WebAuthn, u User, challengeToken, name string, body []byte, now time.Time) (outcome, err error) {
+	ch, err := q.GetLoginChallenge(ctx, gen.GetLoginChallengeParams{TokenHash: hashToken(challengeToken), Kind: kindWebAuthnRegister, ExpiresAt: now.Format(time.RFC3339)})
+	if errors.Is(err, sql.ErrNoRows) || (err == nil && ch.UserID != u.ID) {
+		return ErrWebAuthnChallenge, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("read challenge: %w", err)
+	}
+	if err := q.DeleteLoginChallenge(ctx, ch.TokenHash); err != nil {
+		return nil, fmt.Errorf("spend challenge: %w", err)
+	}
+	var session webauthn.SessionData
+	if err := json.Unmarshal([]byte(ch.Data), &session); err != nil {
+		return nil, fmt.Errorf("challenge data: %w", err)
+	}
+	creds, err := userCredentials(ctx, q, u.ID)
+	if err != nil {
+		return nil, err
+	}
+	parsed, err := protocol.ParseCredentialCreationResponseBytes(body)
+	if err != nil {
+		return fmt.Errorf("%w: %w", ErrWebAuthnInvalid, err), nil
+	}
+	cred, err := rp.CreateCredential(webauthnUser{u: u, creds: creds}, session, parsed)
+	if err != nil {
+		return fmt.Errorf("%w: %w", ErrWebAuthnInvalid, err), nil
+	}
+	// Credential ids are unique across accounts: one already stored (this
+	// user's or another's) is refused rather than hitting the primary key.
+	taken, err := q.WebAuthnCredentialExists(ctx, credentialID(cred.ID))
+	if err != nil {
+		return nil, fmt.Errorf("check credential id: %w", err)
+	}
+	if taken {
+		return ErrWebAuthnRegistered, nil
+	}
+	stored, err := json.Marshal(cred)
+	if err != nil {
+		return nil, err
+	}
+	err = q.InsertUserWebAuthnCredential(ctx, gen.InsertUserWebAuthnCredentialParams{
+		ID: credentialID(cred.ID), UserID: u.ID, Name: name, Credential: string(stored), CreatedAt: now.Format(time.RFC3339),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("store security key: %w", err)
+	}
+	return nil, nil
 }
 
 // BeginWebAuthnLogin opens the login ceremony for the pending login behind
@@ -282,9 +307,10 @@ func (a *Auth) BeginWebAuthnLogin(ctx context.Context, r *http.Request) ([]byte,
 // FinishWebAuthnLogin finishes the pending login behind r with the
 // authenticator's assertion (body, the PublicKeyCredential JSON). Same rules
 // as the other factors (completeFactor): a rejected assertion counts toward
-// the account lockout. The challenge is spent by any attempt; a signature
-// counter that did not move (a cloned authenticator) is refused. Success
-// stores the new counter and last use.
+// the account lockout. The challenge is spent by any attempt. Sign
+// counters (decision 0014): a non-zero counter that did not increase (a
+// cloned authenticator) is refused; 0/0 is accepted because synced passkeys
+// always report 0. Success stores the new counter and last use.
 func (a *Auth) FinishWebAuthnLogin(ctx context.Context, r *http.Request, body []byte) (Session, error) {
 	rp, err := a.relyingParty()
 	if err != nil {

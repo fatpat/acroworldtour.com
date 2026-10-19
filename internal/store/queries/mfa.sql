@@ -73,3 +73,6 @@ UPDATE users SET mfa_locked_until = ? WHERE id = ?;
 
 -- name: ResetUserMFAFailures :exec
 UPDATE users SET mfa_failed_count = 0, mfa_locked_until = NULL WHERE id = ?;
+
+-- name: WebAuthnCredentialExists :one
+SELECT EXISTS (SELECT 1 FROM user_webauthn_credentials WHERE id = ?);

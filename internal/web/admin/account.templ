@@ -1,0 +1,227 @@
+package admin
+
+import (
+	"net/url"
+
+	"awt/internal/auth"
+	"awt/internal/web/layout"
+	"awt/web/static"
+)
+
+func (v accountView) factors() int {
+	n := len(v.Status.Keys)
+	if v.Status.TOTP {
+		n++
+	}
+	return n
+}
+
+func (v accountView) sectionFailed(section string) bool {
+	return v.Section == section && v.Errors.Any()
+}
+
+func qrURL(pending string) string {
+	return "/manager/account/totp/qr.png?p=" + url.QueryEscape(pending)
+}
+
+func keyUsed(k auth.KeyInfo) string {
+	if k.LastUsedAt.IsZero() {
+		return "never used"
+	}
+	return "last used " + k.LastUsedAt.Format("2006-01-02")
+}
+
+// currentPassword is the re-entered password every sensitive form carries;
+// id keeps the fields of the page's several forms distinct.
+templ currentPassword(id string, fe formErrors) {
+	<div class="field">
+		<label for={ id }>Current password</label>
+		<input
+			id={ id }
+			name="current_password"
+			type="password"
+			autocomplete="current-password"
+			required
+			if fe.Msg("current_password") != "" {
+				aria-invalid="true"
+				aria-describedby={ id + "-error" }
+			}
+		/>
+		if m := fe.Msg("current_password"); m != "" {
+			<p class="field__error" id={ id + "-error" }>{ m }</p>
+		}
+	</div>
+}
+
+// lastFactorWarning tells the user what removing their only factor does.
+templ lastFactorWarning(v accountView) {
+	if v.factors() == 1 {
+		<p class="muted">This is your only second factor: removing it turns two-step login off and deletes your recovery codes.</p>
+	}
+}
+
+// recoveryCodes shows fresh recovery codes once. hidden is the empty box
+// webauthn.js fills after a first security key.
+templ recoveryCodes(codes []string, hidden bool) {
+	<section class="card account__codes" aria-labelledby="codes-title" hidden?={ hidden } data-webauthn-codes?={ hidden }>
+		<h2 id="codes-title">Recovery codes</h2>
+		<p>Each code logs you in once if you lose your authenticator app or security key. They are shown only now: save them somewhere safe, such as a password manager.</p>
+		<ol class="account__code-list" id="recovery-codes">
+			for _, c := range codes {
+				<li>{ c }</li>
+			}
+		</ol>
+		<p class="actions">
+			<button class="btn btn--ghost" type="button" data-copy-list="recovery-codes" hidden>Copy codes</button>
+			<a class="btn" href="/manager/account?ok=codes_saved">I saved them</a>
+		</p>
+	</section>
+}
+
+templ accountPage(v accountView) {
+	@layout.Admin(layout.Meta{Title: "My account", Heading: "My account"}, "account") {
+		@notice(v.Flash)
+		<p>{ v.User.Name } &middot; { v.User.Email } &middot; { v.User.Role }</p>
+		if len(v.Codes) > 0 {
+			@recoveryCodes(v.Codes, false)
+		}
+		<section class="card account__section" aria-labelledby="totp-title">
+			<h2 id="totp-title">Authenticator app</h2>
+			if v.Section == secTOTP {
+				@errorSummary(v.Errors)
+			}
+			if v.Status.TOTP {
+				<p>An authenticator app is set up: after your password, the login asks for its 6-digit code.</p>
+				<details open?={ v.sectionFailed(secTOTP) }>
+					<summary>Remove the authenticator app</summary>
+					<form class="form" method="post" action="/manager/account/totp/remove">
+						@csrf()
+						@lastFactorWarning(v)
+						@currentPassword("totp-remove-password", v.errorsFor(secTOTP))
+						<button class="btn btn--danger" type="submit">Remove authenticator app</button>
+					</form>
+				</details>
+			} else if v.Enroll != nil {
+				<ol>
+					<li>
+						<p>Scan this QR code with your authenticator app:</p>
+						<img class="account__qr" src={ qrURL(v.Enroll.Pending) } alt="QR code of the authenticator app setup key"/>
+						<p>Or enter this setup key: <code id="totp-secret">{ groupSecret(v.Enroll.Secret) }</code></p>
+					</li>
+					<li>
+						<form class="form" method="post" action="/manager/account/totp/confirm">
+							@csrf()
+							<input type="hidden" name="pending" value={ v.Enroll.Pending }/>
+							<div class="field">
+								<label for="code">Code shown by the app</label>
+								<input
+									id="code"
+									name="code"
+									type="text"
+									inputmode="numeric"
+									pattern="[0-9 ]*"
+									maxlength="8"
+									autocomplete="one-time-code"
+									required
+									if v.errorsFor(secTOTP).Msg("code") != "" {
+										aria-invalid="true"
+										aria-describedby="code-error"
+									}
+								/>
+								@fieldError(v.errorsFor(secTOTP), "code")
+							</div>
+							@currentPassword("totp-password", v.errorsFor(secTOTP))
+							<p class="actions">
+								<button class="btn" type="submit">Turn on</button>
+								<a class="btn btn--ghost" href="/manager/account">Cancel</a>
+							</p>
+						</form>
+					</li>
+				</ol>
+			} else {
+				<p>Use an app such as a password manager or an authenticator app to get a 6-digit code at login.</p>
+				<form method="post" action="/manager/account/totp/start">
+					@csrf()
+					<button class="btn" type="submit">Set up an authenticator app</button>
+				</form>
+			}
+		</section>
+		<section class="card account__section" aria-labelledby="keys-title">
+			<h2 id="keys-title">Security keys</h2>
+			if len(v.Status.Keys) > 0 {
+				<ul class="plain">
+					for _, k := range v.Status.Keys {
+						<li>
+							<strong>{ k.Name }</strong> <span class="muted">added { k.CreatedAt.Format("2006-01-02") }, { keyUsed(k) }</span>
+							if v.Section == "key:"+k.ID {
+								@errorSummary(v.Errors)
+							}
+							<details open?={ v.sectionFailed("key:" + k.ID) }>
+								<summary>Remove { k.Name }</summary>
+								<form class="form" method="post" action={ templ.SafeURL("/manager/account/keys/" + k.ID + "/remove") }>
+									@csrf()
+									@lastFactorWarning(v)
+									@currentPassword("key-remove-password-"+k.ID, v.errorsFor("key:"+k.ID))
+									<button class="btn btn--danger" type="submit">Remove security key</button>
+								</form>
+							</details>
+						</li>
+					}
+				</ul>
+			} else {
+				<p>A security key or a passkey confirms your login with a touch or your device's lock screen.</p>
+			}
+			// Without JavaScript the form cannot run the ceremony; the action
+			// keeps a stray submission off the URL (it lacks the CSRF field).
+			<form class="form" method="post" action="/manager/account/keys/finish" data-webauthn-register>
+				<div class="field">
+					<label for="key-name">Name of the new key</label>
+					<input id="key-name" name="name" type="text" maxlength="64" placeholder="e.g. YubiKey, laptop" autocomplete="off" required/>
+				</div>
+				@currentPassword("key-password", formErrors{})
+				<button class="btn" type="button" data-begin-url="/manager/account/keys/begin" data-finish-url="/manager/account/keys/finish">Add a security key</button>
+				<p class="alert" role="alert" data-webauthn-error hidden></p>
+			</form>
+			if len(v.Codes) == 0 {
+				@recoveryCodes(nil, true)
+			}
+			<script src={ static.URL("js/webauthn.js") } defer></script>
+		</section>
+		<section class="card account__section" aria-labelledby="recovery-title">
+			<h2 id="recovery-title">Recovery codes</h2>
+			if v.factors() > 0 {
+				<p>{ itoa(v.Status.RecoveryLeft) } recovery codes left.</p>
+				if v.Section == secCodes {
+					@errorSummary(v.Errors)
+				}
+				<details open?={ v.sectionFailed(secCodes) }>
+					<summary>Create new recovery codes</summary>
+					<form class="form" method="post" action="/manager/account/recovery/regenerate">
+						@csrf()
+						<p class="muted">The current codes stop working.</p>
+						@currentPassword("codes-password", v.errorsFor(secCodes))
+						<button class="btn" type="submit">Create new codes</button>
+					</form>
+				</details>
+			} else {
+				if v.Section == secCodes {
+					@errorSummary(v.Errors)
+				}
+				<p class="muted">Recovery codes come with your first authenticator app or security key.</p>
+			}
+		</section>
+		<section class="card account__section" aria-labelledby="password-title">
+			<h2 id="password-title">Change password</h2>
+			if v.Section == secPassword {
+				@errorSummary(v.Errors)
+			}
+			<form class="form" method="post" action="/manager/account/password">
+				@csrf()
+				@currentPassword("password-current", v.errorsFor(secPassword))
+				@textField("new_password", "New password (10 characters minimum)", "password", "", v.errorsFor(secPassword), templ.Attributes{"required": true, "minlength": "10", "autocomplete": "new-password"})
+				<button class="btn" type="submit">Change password</button>
+			</form>
+			<p class="muted">Changing your password, or any setting above, logs you out everywhere else.</p>
+		</section>
+	}
+}

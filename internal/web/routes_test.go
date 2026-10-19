@@ -3,11 +3,6 @@ package web_test
 import (
 	"bytes"
 	"context"
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/sha256"
-	"encoding/base64"
-	"encoding/hex"
 	"io"
 	"log/slog"
 	"net/http"
@@ -416,25 +411,6 @@ func TestPublicLoginPathsAreExact(t *testing.T) {
 
 var mfaKey = bytes.Repeat([]byte{7}, 32)
 
-// sealTOTP mirrors auth's sealed format (v1:<keyid>:<base64(nonce|ct)>, the
-// purpose as GCM additional data): Task 5 builds the enrolment that stores
-// it, and auth keeps sealSecret unexported.
-func sealTOTP(t *testing.T, userID, secret string) string {
-	t.Helper()
-	block, err := aes.NewCipher(mfaKey)
-	if err != nil {
-		t.Fatal(err)
-	}
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		t.Fatal(err)
-	}
-	nonce := make([]byte, gcm.NonceSize())
-	ct := gcm.Seal(nonce, nonce, []byte(secret), []byte(auth.PurposeTOTPSecret+userID))
-	id := sha256.Sum256(mfaKey)
-	return "v1:" + hex.EncodeToString(id[:4]) + ":" + base64.StdEncoding.EncodeToString(ct)
-}
-
 type mfaEnv struct {
 	t       *testing.T
 	h       http.Handler
@@ -454,21 +430,19 @@ func newMFAEnv(t *testing.T) *mfaEnv {
 	if err != nil {
 		t.Fatal(err)
 	}
-	secret, err := auth.NewTOTPSecret()
+	secret, _, pending, err := deps.Auth.StartTOTPEnrollment(ctx, u.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := deps.DB.Write.Exec(`INSERT INTO user_totp (user_id, secret_enc, created_at) VALUES (?, ?, ?)`, u.ID, sealTOTP(t, u.ID, secret), time.Now().UTC().Format(time.RFC3339)); err != nil {
-		t.Fatal(err)
-	}
-	display, hashes, err := auth.NewRecoveryCodes()
+	// Enrol with the previous step's code (accepted within the ±1 window) so
+	// the current step stays free for the login under test.
+	code, err := auth.TOTPCode(secret, time.Now().Add(-30*time.Second))
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, h := range hashes {
-		if _, err := deps.DB.Write.Exec(`INSERT INTO user_recovery_codes (user_id, code_hash) VALUES (?, ?)`, u.ID, h); err != nil {
-			t.Fatal(err)
-		}
+	display, err := deps.Auth.ConfirmTOTP(ctx, u.ID, pending, code, "s3cret-passw0rd", "")
+	if err != nil {
+		t.Fatal(err)
 	}
 	return &mfaEnv{t: t, h: web.Routes(deps), deps: deps, secret: secret, recover: display}
 }

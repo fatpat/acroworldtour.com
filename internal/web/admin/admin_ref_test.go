@@ -80,7 +80,7 @@ func newEnv(t *testing.T) *env {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cfg := config.Config{Env: "dev", Addr: ":0"}
+	cfg := config.Config{Env: "dev", Addr: ":0", MFAKey: bytes.Repeat([]byte{7}, 32), WebAuthnRPID: "localhost"}
 	svc := service.New(db, blobs, service.NewBus(), fakeCIVL{})
 	deps := web.Deps{Cfg: cfg, Auth: auth.New(db, cfg), DB: db, Purger: cache.NoopPurger{}, Blobs: blobs, Service: svc}
 	e := &env{t: t, deps: deps, svc: svc, h: web.Routes(deps, admin.Module{})}
@@ -694,10 +694,18 @@ func TestEveryAdminRouteIsGuarded(t *testing.T) {
 		if rec.Code == http.StatusOK || rec.Code == http.StatusNotFound {
 			t.Errorf("%s answered %d without a session", rt.Pattern, rec.Code)
 		}
-		// Reference data and users are admin-only; only the dashboard is user-level.
-		// Only the listed read-only GETs (and the judging routes of Task 21)
-		// may be scorer-guarded; everything else is admin-only.
-		if rt.Pattern != "GET /manager" && rt.Pattern != "POST /manager/logout" && rt.Guard != web.GuardAdmin &&
+		// Reference data and users are admin-only; the dashboard, logout and
+		// one's own account page are user-level. Only the listed read-only
+		// GETs (and the judging routes of Task 21) may be scorer-guarded;
+		// everything else is admin-only.
+		account := p == "/manager/account" || strings.HasPrefix(p, "/manager/account/")
+		if account && rt.Guard != web.GuardUser {
+			t.Errorf("%s has guard %s, want user", rt.Pattern, rt.Guard)
+		}
+		if rt.Guard == web.GuardUser && !account && rt.Pattern != "GET /manager" && rt.Pattern != "POST /manager/logout" {
+			t.Errorf("%s is user-guarded; only the dashboard, logout and the account page may be", rt.Pattern)
+		}
+		if rt.Pattern != "GET /manager" && rt.Pattern != "POST /manager/logout" && !account && rt.Guard != web.GuardAdmin &&
 			!scorerAllowed[rt.Pattern] && !(rt.Guard == web.GuardScorer && strings.Contains(p, "/judging")) {
 			t.Errorf("%s has guard %s, want admin", rt.Pattern, rt.Guard)
 		}

@@ -45,3 +45,6 @@ SELECT EXISTS (SELECT 1 FROM user_competitions WHERE user_id = ? AND competition
 
 -- name: DeleteUserSessions :exec
 DELETE FROM sessions WHERE user_id = ?;
+
+-- name: DeleteUserSessionsExcept :exec
+DELETE FROM sessions WHERE user_id = ? AND token_hash <> ?;

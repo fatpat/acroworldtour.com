@@ -112,6 +112,12 @@ func (r *Router) User(pattern string, h http.Handler) {
 	r.add(pattern, GuardUser, cache.NoStore(r.deps.Auth.RequireUser(r.deps.Auth.CSRF(h))))
 }
 
+// UserMax is User with the request body capped at max bytes before any
+// parsing, CSRF check included.
+func (r *Router) UserMax(pattern string, max int64, h http.Handler) {
+	r.add(pattern, GuardUser, cache.NoStore(limitBody(max, r.deps.Auth.RequireUser(r.deps.Auth.CSRF(h)))))
+}
+
 // Admin registers a route for admins only (CSRF checked on writes).
 func (r *Router) Admin(pattern string, h http.Handler) {
 	r.add(pattern, GuardAdmin, cache.NoStore(r.deps.Auth.RequireAdmin(r.deps.Auth.CSRF(h))))

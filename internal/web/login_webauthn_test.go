@@ -38,7 +38,7 @@ func newKeyEnv(t *testing.T) (*mfaEnv, *webauthntest.Key) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := deps.Auth.FinishWebAuthnRegistration(ctx, u.ID, token, "Key", body); err != nil {
+	if _, err := deps.Auth.FinishWebAuthnRegistration(ctx, u.ID, token, "Key", "s3cret-passw0rd", "", body); err != nil {
 		t.Fatal(err)
 	}
 	return &mfaEnv{t: t, h: web.Routes(deps), deps: deps}, key

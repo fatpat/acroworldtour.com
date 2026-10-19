@@ -410,3 +410,11 @@ ul.plain { list-style: none; padding: 0; }
 .judging__form .btn--ghost { padding: 4px 10px; }
 .judging__form .field__error:empty { display: none; }
 .judging__provisional dd { font-variant-numeric: tabular-nums; }
+
+/* Account page (spec 2026-10-19-manager-mfa) */
+.account__section { margin-top: 24px; }
+.account__section summary { cursor: pointer; color: var(--c-link); margin-top: 8px; }
+.account__qr { display: block; max-width: 100%; height: auto; image-rendering: pixelated; background: #fff; }
+#totp-secret { font-size: 18px; letter-spacing: 1px; word-break: break-word; }
+.account__codes { margin-top: 24px; border: 2px solid var(--c-ok); }
+.account__code-list { font-family: ui-monospace, monospace; font-size: 18px; columns: 2; padding-left: 24px; }

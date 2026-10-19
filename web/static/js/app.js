@@ -25,3 +25,17 @@ document.addEventListener("click", (e) => {
   input.select();
   if (navigator.clipboard) navigator.clipboard.writeText(input.value).catch(() => {});
 });
+
+// Account page: copy the recovery codes, one per line. The button only
+// shows when this script runs.
+for (const btn of document.querySelectorAll("[data-copy-list]")) {
+  btn.hidden = false;
+  btn.addEventListener("click", () => {
+    const list = document.getElementById(btn.dataset.copyList);
+    if (!list || !navigator.clipboard) return;
+    const text = Array.from(list.querySelectorAll("li"), (li) => li.textContent).join("\n");
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = "Copied";
+    }).catch(() => {});
+  });
+}

@@ -403,3 +403,14 @@ func (q *Queries) UseUserRecoveryCode(ctx context.Context, arg UseUserRecoveryCo
 	}
 	return result.RowsAffected()
 }
+
+const webAuthnCredentialExists = `-- name: WebAuthnCredentialExists :one
+SELECT EXISTS (SELECT 1 FROM user_webauthn_credentials WHERE id = ?)
+`
+
+func (q *Queries) WebAuthnCredentialExists(ctx context.Context, id string) (bool, error) {
+	row := q.db.QueryRowContext(ctx, webAuthnCredentialExists, id)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
