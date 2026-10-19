@@ -3,6 +3,7 @@ package web_test
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -247,7 +248,13 @@ func TestPanicRecoveryAndRequestLog(t *testing.T) {
 	if strings.Contains(rec.Body.String(), "kaboom") {
 		t.Fatal("panic value leaked to the client")
 	}
+	// The query string is never logged: the account page's QR route carries
+	// the sealed enrolment value there.
+	get(h, "/manager/me?p=sealed-enrolment-value")
 	log := buf.String()
+	if strings.Contains(log, "sealed-enrolment-value") || !strings.Contains(log, "path=/manager/me ") {
+		t.Fatalf("request log must hold the path without the query: %s", log)
+	}
 	for _, want := range []string{"panic", "kaboom", "method=GET", "path=/boom", "status=500", "duration=", "ip="} {
 		if !strings.Contains(log, want) {
 			t.Errorf("log missing %q:\n%s", want, log)
@@ -435,14 +442,23 @@ func newMFAEnv(t *testing.T) *mfaEnv {
 		t.Fatal(err)
 	}
 	// Enrol with the previous step's code (accepted within the ±1 window) so
-	// the current step stays free for the login under test.
-	code, err := auth.TOTPCode(secret, time.Now().Add(-30*time.Second))
-	if err != nil {
-		t.Fatal(err)
-	}
-	display, err := deps.Auth.ConfirmTOTP(ctx, u.ID, pending, code, "s3cret-passw0rd", "")
-	if err != nil {
-		t.Fatal(err)
+	// the current step stays free for the login under test. Auth reads the
+	// wall clock: when a 30 s boundary falls between computing the code and
+	// checking it, the code is two steps old and refused, so the code is
+	// computed afresh and tried again (two tries cannot both straddle one).
+	var display []string
+	for try := 1; ; try++ {
+		code, err := auth.TOTPCode(secret, time.Now().Add(-30*time.Second))
+		if err != nil {
+			t.Fatal(err)
+		}
+		display, err = deps.Auth.ConfirmTOTP(ctx, u.ID, pending, code, "s3cret-passw0rd", "")
+		if err == nil {
+			break
+		}
+		if !errors.Is(err, auth.ErrMFAInvalid) || try == 2 {
+			t.Fatal(err)
+		}
 	}
 	return &mfaEnv{t: t, h: web.Routes(deps), deps: deps, secret: secret, recover: display}
 }

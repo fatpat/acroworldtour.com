@@ -37,7 +37,18 @@ var (
 	ErrKeyNotFound = errors.New("security key not found")
 	// ErrNoFactor: recovery codes only back up a factor; there is none.
 	ErrNoFactor = errors.New("no second factor is set up")
+	// ErrPasswordChanged: the password changed between its check and the
+	// action (a concurrent change); nothing was done.
+	ErrPasswordChanged = errors.New("password changed during the action")
 )
+
+// ErrReauthLimited is returned once a user gave 5 wrong current passwords
+// within 15 minutes; RetryAfter is when one attempt is available again.
+type ErrReauthLimited struct{ RetryAfter time.Duration }
+
+func (e *ErrReauthLimited) Error() string {
+	return fmt.Sprintf("too many wrong passwords, retry in %s", e.RetryAfter.Round(time.Second))
+}
 
 // KeyInfo describes a registered security key. LastUsedAt is zero when the
 // key never logged in.
@@ -137,20 +148,54 @@ func (a *Auth) TOTPEnrollment(ctx context.Context, userID, sealedPending string)
 	return secret, TOTPURI(secret, u.Email), nil
 }
 
-// sensitive runs a sensitive account action in one transaction: it checks
-// currentPassword, runs fn, then revokes the user's sessions other than
-// keepSession (a session token). fn reports whether it changed anything;
-// when it did not (a spent challenge, say) the sessions are left alone and
-// the transaction still commits. An error from fn rolls everything back.
+// reauthenticate checks the current password of userID, outside any
+// transaction (bcrypt is slow), within the per-user limit of wrong
+// passwords: the limit is consulted first, a wrong password counts, a
+// right one resets it.
+func (a *Auth) reauthenticate(ctx context.Context, userID, currentPassword string) (User, error) {
+	key := "reauth|" + userID
+	if !a.reauth.Attempt(key) {
+		return User{}, &ErrReauthLimited{RetryAfter: a.reauth.RetryAfter(key)}
+	}
+	u, err := gen.New(a.db.Read).GetUser(ctx, userID)
+	if err != nil {
+		return User{}, fmt.Errorf("user %s: %w", userID, err)
+	}
+	if bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(currentPassword)) != nil {
+		return User{}, ErrWrongPassword
+	}
+	a.reauth.Reset(key)
+	return u, nil
+}
+
+// sensitive runs a sensitive account action: it checks currentPassword
+// (reauthenticate), then in one transaction requires the password to be
+// unchanged since, runs fn and revokes the user's sessions other than
+// keepSession (a session token).
 func (a *Auth) sensitive(ctx context.Context, userID, currentPassword, keepSession string, fn func(q *gen.Queries, u User, now time.Time) (bool, error)) error {
+	u, err := a.reauthenticate(ctx, userID, currentPassword)
+	if err != nil {
+		return err
+	}
+	return a.sensitiveTx(ctx, u, keepSession, fn)
+}
+
+// sensitiveTx is the transaction of a sensitive action for u, whose
+// password was just verified. fn reports whether it changed anything; when
+// it did not (a spent challenge, say) the sessions are left alone and the
+// transaction still commits. An error from fn rolls everything back.
+func (a *Auth) sensitiveTx(ctx context.Context, verified User, keepSession string, fn func(q *gen.Queries, u User, now time.Time) (bool, error)) error {
+	if a.beforeSensitiveTx != nil {
+		a.beforeSensitiveTx()
+	}
 	now := a.now().UTC()
 	return a.db.Tx(ctx, func(q *gen.Queries) error {
-		u, err := q.GetUser(ctx, userID)
+		u, err := q.GetUser(ctx, verified.ID)
 		if err != nil {
-			return fmt.Errorf("user %s: %w", userID, err)
+			return fmt.Errorf("user %s: %w", verified.ID, err)
 		}
-		if bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(currentPassword)) != nil {
-			return ErrWrongPassword
+		if u.PasswordHash != verified.PasswordHash {
+			return ErrPasswordChanged
 		}
 		changed, err := fn(q, u, now)
 		if err != nil || !changed {
@@ -311,6 +356,10 @@ func (a *Auth) RegenerateRecoveryCodes(ctx context.Context, userID, currentPassw
 // ChangePassword sets the user's own password (same policy as account
 // creation). Pending logins opened with the old password are dropped.
 func (a *Auth) ChangePassword(ctx context.Context, userID, current, next, keepSession string) error {
+	u, err := a.reauthenticate(ctx, userID, current)
+	if err != nil {
+		return fmt.Errorf("change password for %s: %w", userID, err)
+	}
 	if err := checkPassword(next); err != nil {
 		var in *InputError
 		if errors.As(err, &in) {
@@ -322,7 +371,7 @@ func (a *Auth) ChangePassword(ctx context.Context, userID, current, next, keepSe
 	if err != nil {
 		return fmt.Errorf("hash password: %w", err)
 	}
-	err = a.sensitive(ctx, userID, current, keepSession, func(q *gen.Queries, u User, _ time.Time) (bool, error) {
+	err = a.sensitiveTx(ctx, u, keepSession, func(q *gen.Queries, u User, _ time.Time) (bool, error) {
 		if err := q.UpdateUserPassword(ctx, gen.UpdateUserPasswordParams{PasswordHash: string(hash), ID: u.ID}); err != nil {
 			return false, fmt.Errorf("update password: %w", err)
 		}

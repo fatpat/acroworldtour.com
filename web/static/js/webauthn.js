@@ -102,7 +102,7 @@
     if (err && err.name === "NotAllowedError") return "The security key request was cancelled or timed out";
     // InvalidStateError: the authenticator holds an excluded credential.
     if (err && err.name === "InvalidStateError") return "This security key is already registered";
-    return err.message;
+    return (err && err.message) || "Something went wrong, please try again.";
   };
 
   const run = async (btn) => {
@@ -147,14 +147,17 @@
       showError(btn, "This browser does not support security keys");
       continue;
     }
-    btn.addEventListener("click", () => run(btn));
-    // Enter in the registration form runs the ceremony instead of posting it.
+    // Registration: the button submits its form (a click or Enter), and the
+    // submission runs the ceremony instead of posting. Login: a plain button.
     const form = btn.closest("form[data-webauthn-register]");
     if (form) {
+      btn.disabled = false;
       form.addEventListener("submit", (e) => {
         e.preventDefault();
         if (!btn.disabled) run(btn);
       });
+    } else {
+      btn.addEventListener("click", () => run(btn));
     }
   }
 }

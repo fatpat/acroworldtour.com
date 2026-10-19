@@ -61,6 +61,18 @@ func (l *LoginLimiter) Attempt(key string) bool {
 	return true
 }
 
+// RetryAfter is how long until key gets an attempt back (zero when it has
+// some left).
+func (l *LoginLimiter) RetryAfter(key string) time.Duration {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	live := l.prune(key)
+	if len(live) < l.max {
+		return 0
+	}
+	return live[len(live)-l.max].Add(l.window).Sub(l.now())
+}
+
 // Reset forgets the failures of key (after a successful login).
 func (l *LoginLimiter) Reset(key string) {
 	l.mu.Lock()

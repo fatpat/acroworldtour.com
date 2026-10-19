@@ -41,13 +41,18 @@ type Auth struct {
 	db      *store.DB
 	cfg     config.Config
 	limiter *LoginLimiter
-	now     func() time.Time
-	cost    int // bcrypt cost; lowered by tests only
+	// reauth limits wrong current passwords on account actions, per user.
+	reauth *LoginLimiter
+	// beforeSensitiveTx runs between the password check and the
+	// transaction of a sensitive action; tests use it to race a change.
+	beforeSensitiveTx func()
+	now               func() time.Time
+	cost              int // bcrypt cost; lowered by tests only
 }
 
 // New builds an Auth on db.
 func New(db *store.DB, cfg config.Config) *Auth {
-	return &Auth{db: db, cfg: cfg, limiter: NewLoginLimiter(5, 15*time.Minute), now: time.Now, cost: defaultBcryptCost}
+	return &Auth{db: db, cfg: cfg, limiter: NewLoginLimiter(5, 15*time.Minute), reauth: NewLoginLimiter(5, 15*time.Minute), now: time.Now, cost: defaultBcryptCost}
 }
 
 const minPasswordLen = 10

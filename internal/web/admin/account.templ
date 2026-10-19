@@ -171,15 +171,18 @@ templ accountPage(v accountView) {
 			} else {
 				<p>A security key or a passkey confirms your login with a touch or your device's lock screen.</p>
 			}
-			// Without JavaScript the form cannot run the ceremony; the action
-			// keeps a stray submission off the URL (it lacks the CSRF field).
+			// webauthn.js runs the ceremony on submit; the method and action
+			// only keep a stray submission off the URL (it lacks the CSRF
+			// field, so it is refused).
 			<form class="form" method="post" action="/manager/account/keys/finish" data-webauthn-register>
 				<div class="field">
 					<label for="key-name">Name of the new key</label>
 					<input id="key-name" name="name" type="text" maxlength="64" placeholder="e.g. YubiKey, laptop" autocomplete="off" required/>
 				</div>
 				@currentPassword("key-password", formErrors{})
-				<button class="btn" type="button" data-begin-url="/manager/account/keys/begin" data-finish-url="/manager/account/keys/finish">Add a security key</button>
+				// A submit button so Enter runs the ceremony; webauthn.js enables it.
+				<button class="btn" type="submit" disabled data-begin-url="/manager/account/keys/begin" data-finish-url="/manager/account/keys/finish">Add a security key</button>
+				<noscript><p class="muted">Adding a security key needs JavaScript.</p></noscript>
 				<p class="alert" role="alert" data-webauthn-error hidden></p>
 			</form>
 			if len(v.Codes) == 0 {

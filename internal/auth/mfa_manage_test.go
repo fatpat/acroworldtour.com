@@ -363,3 +363,85 @@ func TestWebAuthnZeroCounterAccepted(t *testing.T) {
 		}
 	}
 }
+
+func TestWrongCurrentPasswordsAreLimited(t *testing.T) {
+	a, _ := newWebAuthnAuth(t)
+	ctx := context.Background()
+	u := mustUser(t, a, "pw@example.org", RoleScorer)
+	other := mustUser(t, a, "other@example.org", RoleScorer)
+	current := mustLogin(t, a, "pw@example.org")
+	limiterNow := time.Now()
+	a.reauth.now = func() time.Time { return limiterNow }
+
+	// A right password resets the count: 4 wrong, 1 right, 4 wrong still pass.
+	for range 4 {
+		if err := a.ChangePassword(ctx, u.ID, "wrong-password", "a-brand-new-one", current.Token); !errors.Is(err, ErrWrongPassword) {
+			t.Fatalf("wrong password = %v", err)
+		}
+	}
+	if _, err := a.RegenerateRecoveryCodes(ctx, u.ID, testPassword, current.Token); !errors.Is(err, ErrNoFactor) {
+		t.Fatalf("right password = %v, want ErrNoFactor", err)
+	}
+	for i := range 5 {
+		if err := a.RemoveTOTP(ctx, u.ID, "wrong-password", current.Token); !errors.Is(err, ErrWrongPassword) {
+			t.Fatalf("wrong password %d = %v", i+1, err)
+		}
+	}
+	// The 6th attempt is refused before the password is looked at.
+	var limited *ErrReauthLimited
+	err := a.ChangePassword(ctx, u.ID, testPassword, "a-brand-new-one", current.Token)
+	if !errors.As(err, &limited) || limited.RetryAfter <= 0 || limited.RetryAfter > 15*time.Minute {
+		t.Fatalf("6th attempt with the right password = %v, want ErrReauthLimited", err)
+	}
+	if _, err := a.FinishWebAuthnRegistration(ctx, u.ID, "token", "Key", testPassword, current.Token, nil); !errors.As(err, &limited) {
+		t.Fatalf("key registration while limited = %v", err)
+	}
+	if _, err := a.Login(ctx, "pw@example.org", testPassword); err != nil {
+		t.Fatalf("password unchanged, login: %v", err)
+	}
+	// Per user: another account is not affected.
+	if err := a.ChangePassword(ctx, other.ID, testPassword, "a-brand-new-one", ""); err != nil {
+		t.Fatalf("other user: %v", err)
+	}
+	limiterNow = limiterNow.Add(15*time.Minute + time.Second)
+	if err := a.ChangePassword(ctx, u.ID, testPassword, "a-brand-new-one", current.Token); err != nil {
+		t.Fatalf("after the window: %v", err)
+	}
+}
+
+func TestKeyRegistrationChecksPasswordFirst(t *testing.T) {
+	a, _ := newWebAuthnAuth(t)
+	ctx := context.Background()
+	u := mustUser(t, a, "key@example.org", RoleScorer)
+	if _, err := a.FinishWebAuthnRegistration(ctx, u.ID, "no-such-token", "Key", "wrong-password", "", []byte("{}")); !errors.Is(err, ErrWrongPassword) {
+		t.Fatalf("bad token, wrong password = %v, want ErrWrongPassword", err)
+	}
+	if _, err := a.FinishWebAuthnRegistration(ctx, u.ID, "no-such-token", "  ", "wrong-password", "", []byte("{}")); !errors.Is(err, ErrWrongPassword) {
+		t.Fatalf("bad name, wrong password = %v, want ErrWrongPassword", err)
+	}
+}
+
+func TestPasswordChangedDuringSensitiveAction(t *testing.T) {
+	a, c := newMFAAuth(t)
+	ctx := context.Background()
+	u := mustUser(t, a, "app@example.org", RoleScorer)
+	current := mustLogin(t, a, "app@example.org")
+	elsewhere := mustLogin(t, a, "app@example.org")
+	secret, _, pending, err := a.StartTOTPEnrollment(ctx, u.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	code, _ := TOTPCode(secret, c.now())
+	// The password changes after it was checked, before the transaction.
+	a.beforeSensitiveTx = func() {
+		if _, err := a.db.Write.Exec(`UPDATE users SET password_hash = 'changed' WHERE id = ?`, u.ID); err != nil {
+			t.Error(err)
+		}
+	}
+	if _, err := a.ConfirmTOTP(ctx, u.ID, pending, code, testPassword, current.Token); !errors.Is(err, ErrPasswordChanged) {
+		t.Fatalf("raced confirm = %v, want ErrPasswordChanged", err)
+	}
+	if st, _ := a.MFAStatus(ctx, u.ID); st.TOTP || st.RecoveryLeft != 0 || !hasSession(t, a, elsewhere) {
+		t.Fatalf("raced confirm changed something: %+v", st)
+	}
+}

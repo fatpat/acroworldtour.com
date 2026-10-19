@@ -137,7 +137,7 @@ func TestAccountEnrollTOTP(t *testing.T) {
 		t.Fatalf("refused confirmation changed something: %+v", st)
 	}
 
-	rec := confirm(codeAt(t, secret, time.Now().Add(-30*time.Second)), accountPassword)
+	rec := confirm(codeAt(t, secret, time.Now()), accountPassword)
 	e.wantStatus(rec, http.StatusOK, "Recovery codes", "I saved them", "data-copy-list")
 	codes := recoveryShown.FindAllStringSubmatch(rec.Body.String(), -1)
 	if len(codes) != 10 {
@@ -236,6 +236,8 @@ func (e *env) addKey(s *auth.Session, key *webauthntest.Key, name, password stri
 	return e.postJSON(s, "/manager/account/keys/finish", string(body))
 }
 
+const backupName = "Backup <script>alert(1)</script>"
+
 func TestAccountSecurityKeys(t *testing.T) {
 	e := newEnv(t)
 	elsewhere := e.login("scorer@example.org", accountPassword)
@@ -263,13 +265,16 @@ func TestAccountSecurityKeys(t *testing.T) {
 		t.Fatalf("same key again = %d %s", rec.Code, rec.Body.String())
 	}
 	key2, _ := webauthntest.NewKey()
-	rec = e.addKey(&e.scorer, key2, "Backup", accountPassword)
+	rec = e.addKey(&e.scorer, key2, backupName, accountPassword)
 	done.RecoveryCodes = nil
 	if err := json.Unmarshal(rec.Body.Bytes(), &done); rec.Code != http.StatusOK || err != nil || done.Redirect != "/manager/account?ok=key_added" || done.RecoveryCodes != nil {
 		t.Fatalf("second key = %d %s", rec.Code, rec.Body.String())
 	}
 	page := e.do(httptest.NewRequest(http.MethodGet, "/manager/account", nil), &e.scorer)
-	e.wantStatus(page, http.StatusOK, "YubiKey", "Backup", "never used")
+	e.wantStatus(page, http.StatusOK, "YubiKey", "Backup &lt;script&gt;alert(1)&lt;/script&gt;", "never used")
+	if strings.Contains(page.Body.String(), "<script>alert(1)") {
+		t.Fatal("key name not escaped")
+	}
 
 	// Removal: own keys only, password required.
 	id := base64.RawURLEncoding.EncodeToString(key.ID)
@@ -283,10 +288,32 @@ func TestAccountSecurityKeys(t *testing.T) {
 	}
 	e.wantStatus(e.postAs(&e.scorer, "/manager/account/keys/"+id+"/remove", url.Values{"current_password": {"wrong-password"}}, true), http.StatusUnprocessableEntity, "Current password is wrong")
 	e.wantRedirect(e.postAs(&e.scorer, "/manager/account/keys/"+id+"/remove", url.Values{"current_password": {accountPassword}}, true), "/manager/account?ok=")
-	if st := e.status(e.scorer.User.ID); len(st.Keys) != 1 || st.Keys[0].Name != "Backup" || st.RecoveryLeft != 10 {
+	if st := e.status(e.scorer.User.ID); len(st.Keys) != 1 || st.Keys[0].Name != backupName || st.RecoveryLeft != 10 {
 		t.Fatalf("status = %+v", st)
 	}
 	if st := e.status(e.admin.User.ID); len(st.Keys) != 1 {
 		t.Fatalf("admin's key touched: %+v", st)
 	}
+}
+
+func TestAccountWrongPasswordsLimited(t *testing.T) {
+	e := newEnv(t)
+	change := func(current string) *httptest.ResponseRecorder {
+		return e.postAs(&e.scorer, "/manager/account/password", url.Values{"current_password": {current}, "new_password": {"a-brand-new-one"}}, true)
+	}
+	for range 5 {
+		e.wantStatus(change("wrong-password"), http.StatusUnprocessableEntity, "Current password is wrong")
+	}
+	rec := change(accountPassword)
+	e.wantStatus(rec, http.StatusTooManyRequests, "Too many wrong passwords, try again in 15 minutes")
+	if ra := rec.Header().Get("Retry-After"); ra == "" || ra == "0" {
+		t.Fatalf("Retry-After = %q", ra)
+	}
+	key, _ := webauthntest.NewKey()
+	rec = e.addKey(&e.scorer, key, "Key", accountPassword)
+	if rec.Code != http.StatusTooManyRequests || rec.Header().Get("Retry-After") == "" || !strings.Contains(rec.Body.String(), "Too many wrong passwords") {
+		t.Fatalf("key finish while limited = %d %s", rec.Code, rec.Body.String())
+	}
+	// Only this account is limited.
+	e.wantRedirect(e.postAs(&e.admin, "/manager/account/password", url.Values{"current_password": {accountPassword}, "new_password": {"a-brand-new-one"}}, true), "/manager/account?ok=")
 }

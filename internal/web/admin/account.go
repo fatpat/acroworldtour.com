@@ -3,9 +3,12 @@ package admin
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
+	"time"
 
 	"rsc.io/qr"
 
@@ -95,9 +98,16 @@ func (h *handlers) account(w http.ResponseWriter, r *http.Request) {
 
 // accountFail maps an account action error onto its section of the page.
 func (h *handlers) accountFail(w http.ResponseWriter, r *http.Request, err error, v accountView) {
-	var in *auth.InputError
+	var (
+		in      *auth.InputError
+		limited *auth.ErrReauthLimited
+	)
 	status := http.StatusUnprocessableEntity
 	switch {
+	case errors.As(err, &limited):
+		status, v.Errors = http.StatusTooManyRequests, messageError(limitedMessage(w, limited))
+	case errors.Is(err, auth.ErrPasswordChanged):
+		status, v.Errors = http.StatusConflict, messageError(msgPasswordChanged)
 	case errors.Is(err, auth.ErrWrongPassword):
 		v.Errors = validationErrors([]domain.FieldError{{Field: "current_password", Msg: "Current password is wrong"}})
 	case errors.Is(err, auth.ErrMFAInvalid):
@@ -184,6 +194,16 @@ func (h *handlers) accountTOTPRemove(w http.ResponseWriter, r *http.Request) {
 	redirect(w, r, "/manager/account", "totp_removed")
 }
 
+const msgPasswordChanged = "Your password changed, please try again"
+
+// limitedMessage sets Retry-After and returns the message of a refused
+// password re-check (5 wrong current passwords in 15 minutes).
+func limitedMessage(w http.ResponseWriter, e *auth.ErrReauthLimited) string {
+	secs := int((e.RetryAfter + time.Second - 1) / time.Second)
+	w.Header().Set("Retry-After", strconv.Itoa(max(secs, 1)))
+	return fmt.Sprintf("Too many wrong passwords, try again in %d minutes", max((secs+59)/60, 1))
+}
+
 // keyJSON writes the JSON answer webauthn.js reads.
 func keyJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
@@ -235,9 +255,18 @@ func (h *handlers) accountKeyFinish(w http.ResponseWriter, r *http.Request) {
 	}
 	s := session(r)
 	codes, err := h.auth.FinishWebAuthnRegistration(r.Context(), s.User.ID, in.Token, in.Name, in.Password, s.Token, in.Credential)
-	var input *auth.InputError
+	var (
+		input   *auth.InputError
+		limited *auth.ErrReauthLimited
+	)
 	switch {
 	case err == nil:
+	case errors.As(err, &limited):
+		keyErr(w, http.StatusTooManyRequests, limitedMessage(w, limited))
+		return
+	case errors.Is(err, auth.ErrPasswordChanged):
+		keyErr(w, http.StatusConflict, msgPasswordChanged)
+		return
 	case errors.Is(err, auth.ErrWrongPassword):
 		keyErr(w, http.StatusUnprocessableEntity, "Current password is wrong")
 		return

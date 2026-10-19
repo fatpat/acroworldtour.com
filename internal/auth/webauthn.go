@@ -162,23 +162,29 @@ func (a *Auth) BeginWebAuthnRegistration(ctx context.Context, userID string) ([]
 // the PublicKeyCredential JSON) to the challenge behind challengeToken and
 // stores the key under name. Like every sensitive account action it needs
 // the current password and revokes the user's sessions other than
-// keepSession, in the same transaction. Once the password is right the
-// challenge is spent whatever the outcome. It returns the recovery codes
+// keepSession, in the same transaction. The password is checked first;
+// once it is right the challenge is spent whatever the outcome. It returns the recovery codes
 // when the key is the account's first factor (nil otherwise).
 func (a *Auth) FinishWebAuthnRegistration(ctx context.Context, userID, challengeToken, name, currentPassword, keepSession string, body []byte) ([]string, error) {
-	name = strings.TrimSpace(name)
-	if name == "" || utf8.RuneCountInString(name) > maxKeyNameLen {
-		return nil, &InputError{Field: "name", Msg: fmt.Sprintf("give the security key a name of at most %d characters", maxKeyNameLen)}
-	}
 	rp, err := a.relyingParty()
 	if err != nil {
 		return nil, err
+	}
+	// The password comes first, so neither the name nor the challenge can
+	// be probed without it.
+	u, err := a.reauthenticate(ctx, userID, currentPassword)
+	if err != nil {
+		return nil, fmt.Errorf("security key registration for %s: %w", userID, err)
+	}
+	name = strings.TrimSpace(name)
+	if name == "" || utf8.RuneCountInString(name) > maxKeyNameLen {
+		return nil, &InputError{Field: "name", Msg: fmt.Sprintf("give the security key a name of at most %d characters", maxKeyNameLen)}
 	}
 	var (
 		outcome error
 		codes   []string
 	)
-	err = a.sensitive(ctx, userID, currentPassword, keepSession, func(q *gen.Queries, u User, now time.Time) (bool, error) {
+	err = a.sensitiveTx(ctx, u, keepSession, func(q *gen.Queries, u User, now time.Time) (bool, error) {
 		methods, err := userMethods(ctx, q, u.ID)
 		if err != nil {
 			return false, err

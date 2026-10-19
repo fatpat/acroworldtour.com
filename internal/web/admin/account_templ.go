@@ -610,7 +610,7 @@ func accountPage(v accountView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "<button class=\"btn\" type=\"button\" data-begin-url=\"/manager/account/keys/begin\" data-finish-url=\"/manager/account/keys/finish\">Add a security key</button><p class=\"alert\" role=\"alert\" data-webauthn-error hidden></p></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "<button class=\"btn\" type=\"submit\" disabled data-begin-url=\"/manager/account/keys/begin\" data-finish-url=\"/manager/account/keys/finish\">Add a security key</button><noscript><p class=\"muted\">Adding a security key needs JavaScript.</p></noscript><p class=\"alert\" role=\"alert\" data-webauthn-error hidden></p></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -627,7 +627,7 @@ func accountPage(v accountView) templ.Component {
 			var templ_7745c5c3_Var23 string
 			templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.ResolveAttributeValue(static.URL("js/webauthn.js"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/account.templ`, Line: 188, Col: 45}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/account.templ`, Line: 191, Col: 45}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var23)
 			if templ_7745c5c3_Err != nil {
@@ -645,7 +645,7 @@ func accountPage(v accountView) templ.Component {
 				var templ_7745c5c3_Var24 string
 				templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(itoa(v.Status.RecoveryLeft))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/account.templ`, Line: 193, Col: 36}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/admin/account.templ`, Line: 196, Col: 36}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 				if templ_7745c5c3_Err != nil {
