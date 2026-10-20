@@ -16,7 +16,7 @@ require (
 	github.com/go-webauthn/webauthn v0.18.2
 	github.com/minio/minio-go/v7 v7.4.1
 	github.com/playwright-community/playwright-go v0.5700.1
-	github.com/xuri/excelize/v2 v2.11.0
+	github.com/xuri/excelize/v2 v2.11.1-0.20260930021559-01a9ff32fb3c
 	github.com/yuin/goldmark v1.8.6
 	golang.org/x/crypto v0.58.0
 	golang.org/x/net v0.61.0
@@ -78,7 +78,7 @@ require (
 	github.com/pingcap/log v1.1.0 // indirect
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20260418072757-ce92298d1124 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
-	github.com/richardlehane/mscfb v1.0.7 // indirect
+	github.com/richardlehane/mscfb v1.0.8 // indirect
 	github.com/richardlehane/msoleps v1.0.6 // indirect
 	github.com/riza-io/grpc-go v0.2.0 // indirect
 	github.com/rs/xid v1.6.0 // indirect
@@ -92,7 +92,7 @@ require (
 	github.com/wasilibs/go-pgquery v0.0.0-20250409022910-10ac41983c07 // indirect
 	github.com/wasilibs/wazero-helpers v0.0.0-20240620070341-3dff1577cd52 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	github.com/xuri/efp v0.0.1 // indirect
+	github.com/xuri/efp v0.0.2 // indirect
 	github.com/xuri/nfp v0.0.2-0.20250530014748-2ddeb826f9a9 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
