@@ -368,8 +368,7 @@ func (a *Auth) ChangePassword(ctx context.Context, userID, current, next, keepSe
 		return fmt.Errorf("change password for %s: %w", userID, err)
 	}
 	if err := checkPassword(next); err != nil {
-		var in *InputError
-		if errors.As(err, &in) {
+		if in, ok := errors.AsType[*InputError](err); ok {
 			in.Field = "new_password"
 		}
 		return err

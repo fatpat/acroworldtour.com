@@ -18,7 +18,8 @@ import (
 // production formatting: config floats loaded from MongoDB print as 13.0 /
 // 1.0 (the spec's harness printed in-memory int defaults as 13 / 1).
 
-func fp(v float64) *float64 { return &v }
+//go:fix inline
+func fp(v float64) *float64 { return new(v) }
 
 var trickDB = map[string]catalog.UniqueTrick{
 	"/LM":  ut("twisted left Misty Flip", "/LM", "Misty Flip", 1.65, 2.5, []string{"twist"}, []string{"left"}, nil),
@@ -106,8 +107,8 @@ func baseInput() Input {
 
 func marks3() []JudgeMark {
 	return []JudgeMark{
-		{Judge: "S", Technical: fp(7), Choreography: fp(6.5), Landing: fp(8)},
-		{Judge: "C", Technical: fp(7.5), Choreography: fp(7), Landing: fp(9)},
+		{Judge: "S", Technical: fp(7), Choreography: new(6.5), Landing: fp(8)},
+		{Judge: "C", Technical: new(7.5), Choreography: fp(7), Landing: fp(9)},
 		{Judge: "T", Technical: fp(6), Choreography: fp(5), Landing: fp(5)},
 	}
 }
@@ -556,7 +557,7 @@ func TestDirectionBalance(t *testing.T) {
 			in := baseInput()
 			in.JudgeLevels = map[string]JudgeLevel{"S": Senior}
 			in.Flight = Flight{Tricks: flown(tc.tricks...),
-				Marks: []JudgeMark{{Judge: "S", Technical: fp(7), Choreography: fp(tc.choreo), Landing: fp(7)}}}
+				Marks: []JudgeMark{{Judge: "S", Technical: fp(7), Choreography: new(tc.choreo), Landing: fp(7)}}}
 			res := mustScore(t, in)
 			want := tc.choreo
 			if tc.lowered {
@@ -767,7 +768,7 @@ func TestScoreDoesNotMutateInput(t *testing.T) {
 
 func TestFlownTrickJSON(t *testing.T) {
 	tr := flown("/LM")[0]
-	tr.TechnicalMark = fp(7.5)
+	tr.TechnicalMark = new(7.5)
 	tr.TechnicalMarks = map[string]float64{"S": 7.5}
 	b, err := json.Marshal(tr)
 	if err != nil {
@@ -823,7 +824,7 @@ func randomInput(r *rand.Rand) Input {
 			in.Previous = append(in.Previous, PreviousFlight{RunIndex: i, Tricks: pick(r.IntN(8)), Warnings1: r.IntN(2), Warnings2: r.IntN(2)})
 		}
 	}
-	mark := func() *float64 { return fp(Round3(r.Float64() * 10)) }
+	mark := func() *float64 { return new(Round3(r.Float64() * 10)) }
 	f := Flight{DidNotStart: r.IntN(20) == 0, Tricks: pick(r.IntN(10)), TipTouches: r.IntN(5)}
 	for range r.IntN(2) {
 		f.Warnings1 = append(f.Warnings1, "w")

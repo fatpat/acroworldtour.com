@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
+	"maps"
 	"net/http"
 	"strings"
 
@@ -119,8 +120,7 @@ func (d Deps) loginSubmit(w http.ResponseWriter, r *http.Request) {
 	// Parse here so an oversized body (limitBody) is a 413, not an empty
 	// form counted as a failed attempt.
 	if err := r.ParseForm(); err != nil {
-		var tooLarge *http.MaxBytesError
-		if errors.As(err, &tooLarge) {
+		if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
 			http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
 			return
 		}
@@ -130,9 +130,7 @@ func (d Deps) loginSubmit(w http.ResponseWriter, r *http.Request) {
 	c := &capture{h: http.Header{}, status: http.StatusOK}
 	d.Auth.HandleLogin(c, r)
 	if c.status >= 300 && c.status < 400 {
-		for k, v := range c.h {
-			w.Header()[k] = v
-		}
+		maps.Copy(w.Header(), c.h)
 		w.WriteHeader(c.status)
 		return
 	}

@@ -114,8 +114,7 @@ func newView() *simView {
 func (s *simulator) submit(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, maxBodyBytes)
 	if err := r.ParseForm(); err != nil {
-		var tooBig *http.MaxBytesError
-		if errors.As(err, &tooBig) {
+		if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
 			v := newView()
 			v.Message = "The submitted form is too large."
 			s.render(w, r, http.StatusRequestEntityTooLarge, v)
@@ -387,8 +386,7 @@ func (v *simView) compute(d *catalogData) {
 		prev := scoring.PreviousFlight{RunIndex: i, Tricks: flown}
 		if err != nil {
 			v.Failed = true
-			var ve scoring.ValidationError
-			if errors.As(err, &ve) {
+			if ve, ok := errors.AsType[scoring.ValidationError](err); ok {
 				p.src.Errors = append(p.src.Errors, ve.Msg)
 			} else {
 				slog.Error("simulator: score", "err", err)

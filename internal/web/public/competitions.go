@@ -96,9 +96,9 @@ func (p *results) competitions(w http.ResponseWriter, r *http.Request) {
 	// seasons are ordered year desc, index, code; cards by start date asc
 	for _, s := range seasons {
 		g := compGroup{Name: s.Name, Href: "/seasons/" + s.Code}
-		for i := len(inYear) - 1; i >= 0; i-- {
-			if slices.Contains(codes[inYear[i].ID], s.Code) {
-				g.Comps = append(g.Comps, cardFromList(inYear[i]))
+		for _, i := range slices.Backward(inYear) {
+			if slices.Contains(codes[i.ID], s.Code) {
+				g.Comps = append(g.Comps, cardFromList(i))
 			}
 		}
 		if len(g.Comps) > 0 {

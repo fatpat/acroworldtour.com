@@ -33,7 +33,7 @@ func HTML(src string) string {
 // dropped, whitespace collapsed and the result cut to max runes at a word.
 func Plain(src string, max int) string {
 	var b strings.Builder
-	for _, line := range strings.Split(src, "\n") {
+	for line := range strings.SplitSeq(src, "\n") {
 		line = strings.TrimSpace(line)
 		line = strings.TrimLeft(line, "#>*-+ ")
 		if line == "" || strings.HasPrefix(line, "![") {

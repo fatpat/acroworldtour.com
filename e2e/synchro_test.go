@@ -34,7 +34,7 @@ func TestSynchroScoring(t *testing.T) {
 	must(t, err, "reopen the flight")
 	expectText(t, p.Locator("#flight"), "Saved, not published")
 	assertValue(t, p.GetByLabel("Tip touches"), "2")
-	assertValue(t, p.GetByLabel("E2E Senior, synchro", playwright.PageGetByLabelOptions{Exact: playwright.Bool(true)}), "9")
+	assertValue(t, p.GetByLabel("E2E Senior, synchro", playwright.PageGetByLabelOptions{Exact: new(true)}), "9")
 	if got := scoreOf(t, p); got != score {
 		t.Fatalf("score after reload %s, want %s", got, score)
 	}

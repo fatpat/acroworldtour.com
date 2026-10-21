@@ -111,11 +111,9 @@ func TestSSEDisconnectUnsubscribes(t *testing.T) {
 	var wg sync.WaitGroup
 	cancels := make([]context.CancelFunc, 5)
 	for i := range cancels {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			_, cancels[i] = connect(t, srv, "live-cup")
-		}()
+		})
 	}
 	wg.Wait()
 	if n := s.Active(); n != 5 {

@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"strings"
 
-	"awt/internal/catalog"
 	"awt/internal/domain"
 	"awt/internal/ranking"
 	"awt/internal/scoring"
@@ -159,10 +158,9 @@ func flownTricks(ctx context.Context, q *gen.Queries, flightID int64) ([]scoring
 	}
 	out := make([]scoring.FlownTrick, 0, len(rows))
 	for _, r := range rows {
-		t := scoring.FlownTrick{UniqueTrick: catalog.UniqueTrick{
+		t := scoring.FlownTrick{
 			Name: r.Name, Acronym: r.Acronym, BaseTrick: r.BaseTrick, TechnicalCoefficient: r.TechnicalCoefficient, Bonus: r.Bonus,
-			Solo: r.Solo.Bool, SoloAWT: r.SoloAwt.Bool, Synchro: r.Synchro.Bool,
-		}}
+			Solo: r.Solo.Bool, SoloAWT: r.SoloAwt.Bool, Synchro: r.Synchro.Bool}
 		if err := errors.Join(decodeJSON(r.BonusTypes, &t.BonusTypes), decodeJSON(r.Uniqueness, &t.Uniqueness),
 			decodeJSON(r.Bonuses, &t.Bonuses), decodeJSON(r.Types, &t.Types)); err != nil {
 			return nil, fmt.Errorf("decode trick %d of flight %d: %w", r.Position, flightID, err)

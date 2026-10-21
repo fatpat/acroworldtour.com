@@ -660,7 +660,7 @@ func TestBus(t *testing.T) {
 	ch, unsubscribe := b.Subscribe("competition:x")
 	other, unsubscribeOther := b.Subscribe("competition:y")
 	defer unsubscribeOther()
-	for i := 0; i < subscriberBuffer+3; i++ {
+	for range subscriberBuffer + 3 {
 		b.Publish(Event{Topic: "competition:x", Kind: KindRun})
 	}
 	if len(ch) != subscriberBuffer || b.Dropped() != 3 {

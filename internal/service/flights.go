@@ -407,8 +407,7 @@ func rescoreFlight(ctx context.Context, q *gen.Queries, env *scoringEnv, idx int
 		return err
 	}
 	res, err := scoreFlight(ctx, q, env, idx, p, flight)
-	var ve scoring.ValidationError
-	if errors.As(err, &ve) {
+	if ve, ok := errors.AsType[scoring.ValidationError](err); ok {
 		return fmt.Errorf("%w: flight of %s in run %d: %s", ErrRescore, participantKey(p), idx+1, ve.Msg)
 	}
 	if err != nil {

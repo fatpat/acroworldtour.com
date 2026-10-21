@@ -42,12 +42,11 @@ func decodeJSON(s string, v any) error {
 }
 
 func trickFromRow(ctx context.Context, q *gen.Queries, r gen.Trick) (Trick, error) {
-	t := Trick{ID: r.ID, Year: int(r.Year), Trick: catalog.Trick{
+	t := Trick{ID: r.ID, Year: int(r.Year),
 		Name: r.Name, Acronym: r.Acronym, Solo: r.Solo, SoloAWT: r.SoloAwt, Synchro: r.Synchro,
 		TechnicalCoefficient: r.TechnicalCoefficient, FirstManeuver: int(r.FirstManeuver), NoFirstManeuver: int(r.NoFirstManeuver),
 		LastManeuver: int(r.LastManeuver), NoLastManeuver: int(r.NoLastManeuver), Repeatable: r.Repeatable,
-		SampleVideo: r.SampleVideo.String,
-	}}
+		SampleVideo: r.SampleVideo.String}
 	if err := errors.Join(decodeJSON(r.Directions, &t.Directions), decodeJSON(r.Bonuses, &t.Bonuses),
 		decodeJSON(r.BonusConstraints, &t.BonusConstraints), decodeJSON(r.Types, &t.Types)); err != nil {
 		return Trick{}, fmt.Errorf("decode trick %s: %w", r.ID, err)

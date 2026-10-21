@@ -39,7 +39,7 @@ func TestResetMFARemovesEverything(t *testing.T) {
 	// A pending login and a lockout, then a live session.
 	req := startPending(t, a, u.Email, "192.0.2.1")
 	bad := wrongCode(t, secret, c.now())
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		_, _ = a.CompleteWithTOTP(ctx, req, bad)
 	}
 	if countRows(t, a, `SELECT count(*) FROM login_challenges WHERE user_id = ?`, u.ID) == 0 {

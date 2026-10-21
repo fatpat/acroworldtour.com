@@ -251,8 +251,7 @@ type keyFinish struct {
 func (h *handlers) accountKeyFinish(w http.ResponseWriter, r *http.Request) {
 	var in keyFinish
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
-		var tooLarge *http.MaxBytesError
-		if errors.As(err, &tooLarge) {
+		if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
 			keyErr(w, http.StatusRequestEntityTooLarge, "Request too large")
 			return
 		}

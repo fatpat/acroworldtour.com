@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"log/slog"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -85,9 +86,7 @@ func twoRuns(extra url.Values) url.Values {
 		"tricks1": {"LM"}, "technical1": {"7"}, "choreography1": {"7"}, "landing1": {"7"},
 		"tricks2": {"LM"}, "technical2": {"7"}, "choreography2": {"7"}, "landing2": {"7"},
 	}
-	for k, v := range extra {
-		f[k] = v
-	}
+	maps.Copy(f, extra)
 	return f
 }
 

@@ -1,5 +1,7 @@
 package scoring
 
+import "slices"
+
 import "fmt"
 
 // positionWarnings is step 6 (spec 03 §6.1): automatic cat-1 warnings from
@@ -21,12 +23,9 @@ func positionWarnings(in Input, tricks []FlownTrick) []string {
 		if r.NoLast > 0 && i >= n-r.NoLast {
 			out = append(out, positionMessage(t.Name, "can't be", "last", r.NoLast))
 		}
-		for _, bt := range t.BonusTypes {
-			if bt == "flip" {
-				if i >= n-2 {
-					out = append(out, fmt.Sprintf("flips can't be performed as one of the last 2 maneuvers (%s)", t.Name))
-				}
-				break
+		if slices.Contains(t.BonusTypes, "flip") {
+			if i >= n-2 {
+				out = append(out, fmt.Sprintf("flips can't be performed as one of the last 2 maneuvers (%s)", t.Name))
 			}
 		}
 	}

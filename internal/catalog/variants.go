@@ -130,7 +130,7 @@ func forEachCombination(n, k int, fn func(idx []int)) {
 }
 
 func violatesConstraint(combo []Bonus, constraints [][]string) bool {
-	for i := 0; i < len(combo); i++ {
+	for i := range combo {
 		for j := i + 1; j < len(combo); j++ {
 			pair := []string{combo[i].Name, combo[j].Name}
 			slices.Sort(pair)

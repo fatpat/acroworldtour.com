@@ -89,10 +89,10 @@ func newContext(t *testing.T) playwright.BrowserContext {
 	if err != nil {
 		t.Fatalf("new context: %v", err)
 	}
-	if err := ctx.AddInitScript(playwright.Script{Content: playwright.String(cspHook)}); err != nil {
+	if err := ctx.AddInitScript(playwright.Script{Content: new(cspHook)}); err != nil {
 		t.Fatalf("init script: %v", err)
 	}
-	if err := ctx.Tracing().Start(playwright.TracingStartOptions{Screenshots: playwright.Bool(true), Snapshots: playwright.Bool(true)}); err != nil {
+	if err := ctx.Tracing().Start(playwright.TracingStartOptions{Screenshots: new(true), Snapshots: new(true)}); err != nil {
 		t.Fatalf("tracing: %v", err)
 	}
 	t.Cleanup(func() {
@@ -100,7 +100,7 @@ func newContext(t *testing.T) playwright.BrowserContext {
 		if t.Failed() {
 			dir := artifactDir(t)
 			for i, p := range ctx.Pages() {
-				_, _ = p.Screenshot(playwright.PageScreenshotOptions{Path: playwright.String(filepath.Join(dir, fmt.Sprintf("page-%d.png", i))), FullPage: playwright.Bool(true)})
+				_, _ = p.Screenshot(playwright.PageScreenshotOptions{Path: new(filepath.Join(dir, fmt.Sprintf("page-%d.png", i))), FullPage: new(true)})
 				if html, err := p.Content(); err == nil {
 					_ = os.WriteFile(filepath.Join(dir, fmt.Sprintf("page-%d.html", i)), []byte(html), 0o644)
 				}
@@ -183,7 +183,7 @@ func must(t *testing.T, err error, what string) {
 }
 
 func role(p playwright.Page, r string, name string) playwright.Locator {
-	return p.GetByRole(playwright.AriaRole(r), playwright.PageGetByRoleOptions{Name: name, Exact: playwright.Bool(true)})
+	return p.GetByRole(playwright.AriaRole(r), playwright.PageGetByRoleOptions{Name: name, Exact: new(true)})
 }
 
 func click(t *testing.T, l playwright.Locator, what string) {

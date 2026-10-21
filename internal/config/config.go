@@ -66,7 +66,7 @@ func Load(getenv func(string) string) (Config, error) {
 		CloudflareToken:  getenv("AWT_CLOUDFLARE_TOKEN"),
 		ClientIPHeader:   get("AWT_CLIENT_IP_HEADER", "CF-Connecting-IP"),
 	}
-	for _, c := range strings.Split(getenv("AWT_TRUSTED_PROXIES"), ",") {
+	for c := range strings.SplitSeq(getenv("AWT_TRUSTED_PROXIES"), ",") {
 		if c = strings.TrimSpace(c); c == "" {
 			continue
 		}

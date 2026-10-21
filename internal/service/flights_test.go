@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -20,12 +21,7 @@ import (
 )
 
 func hasString(list []string, s string) bool {
-	for _, v := range list {
-		if v == s {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(list, s)
 }
 
 // flightEnv is an open solo competition of 2025 (production 2025 catalog)
@@ -68,7 +64,8 @@ func newFlightEnv(t *testing.T, pilots, awt []int, seasons []string) *flightEnv 
 	return &flightEnv{fixture: f, comp: must(f.svc.GetCompetition(ctx, c.ID))(t), judges: []string{j1.ID, j2.ID}}
 }
 
-func ptr(v float64) *float64 { return &v }
+//go:fix inline
+func ptr(v float64) *float64 { return new(v) }
 
 // input is a flight where both judges give technical t (classic and per
 // trick), choreography 6 and landing 6 (spec 03 §8.2).
@@ -77,9 +74,9 @@ func (e *flightEnv) input(t float64, tricks ...string) FlightInput {
 	for _, j := range e.judges {
 		tpt := make([]*float64, len(tricks))
 		for i := range tpt {
-			tpt[i] = ptr(t)
+			tpt[i] = new(t)
 		}
-		in.Marks = append(in.Marks, MarkInput{Judge: j, Technical: ptr(t), Choreography: ptr(6), Landing: ptr(6), TechnicalPerTrick: tpt})
+		in.Marks = append(in.Marks, MarkInput{Judge: j, Technical: new(t), Choreography: ptr(6), Landing: ptr(6), TechnicalPerTrick: tpt})
 	}
 	return in
 }
@@ -364,7 +361,7 @@ func TestSaveFlightValidation(t *testing.T) {
 	stranger := must(e.svc.CreateJudge(ctx, JudgeInput{Name: "Stranger", Country: "fra", Level: domain.JudgeSenior}))(t)
 	var ve *ValidationError
 	bad := e.input(7, "LM")
-	bad.Marks[0].Landing = ptr(10.5)
+	bad.Marks[0].Landing = new(10.5)
 	if _, err := e.svc.SaveFlight(ctx, e.comp.ID, 0, "201", bad, true, ""); !errors.As(err, &ve) {
 		t.Errorf("mark 10.5: %v", err)
 	}
@@ -442,12 +439,10 @@ func TestConcurrentFlightSaves(t *testing.T) {
 	var wg sync.WaitGroup
 	errs := make(chan error, len(pilots))
 	for i, p := range pilots {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			_, err := e.svc.SaveFlight(ctx, e.comp.ID, 0, fmt.Sprint(p), e.input(5+float64(i)/10, "LM", "RMC", "LS"), true, "")
 			errs <- err
-		}()
+		})
 	}
 	wg.Wait()
 	close(errs)

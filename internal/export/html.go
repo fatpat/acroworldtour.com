@@ -54,7 +54,7 @@ func participant(pilot *ExportPilot, team *ExportTeam, link bool) templates.Part
 	case pilot != nil:
 		return templates.Participant{Person: person(*pilot, link)}
 	case team != nil:
-		p := templates.Participant{Person: templates.Person{Name: team.Name}}
+		p := templates.Participant{Name: team.Name}
 		for _, m := range team.Pilots {
 			p.Members = append(p.Members, person(m, false))
 		}
@@ -77,9 +77,8 @@ func ResultsHTML(w io.Writer, data CompetitionExport) error {
 	if data.LimitRun >= 0 {
 		heading += " after run " + strconv.Itoa(data.LimitRun+1)
 	}
-	v := templates.ResultsView{Page: templates.Page{
-		CompName: data.Name, Heading: heading, Updated: updated(data.UpdatedAt), Solo: data.Type == TypeSolo,
-	}}
+	v := templates.ResultsView{
+		CompName: data.Name, Heading: heading, Updated: updated(data.UpdatedAt), Solo: data.Type == TypeSolo}
 	for _, l := range data.Lists {
 		t := templates.ResultsTable{Title: listTitle(l.Title, l.Key)}
 		for i, e := range l.Entries {
@@ -102,12 +101,11 @@ func RunResultsHTML(w io.Writer, data RunExport) error {
 	if data.Final {
 		state = "final"
 	}
-	v := templates.RunResultsView{Page: templates.Page{
+	v := templates.RunResultsView{
 		CompName: data.CompName,
 		Heading:  fmt.Sprintf("run %d %s results", data.RunIndex+1, state),
 		Updated:  updated(data.UpdatedAt),
-		Solo:     data.Type == TypeSolo,
-	}}
+		Solo:     data.Type == TypeSolo}
 	for _, l := range data.Lists {
 		t := templates.RunTable{Title: listTitle(l.Title, l.Key)}
 		for i, e := range l.Entries {
@@ -134,12 +132,11 @@ func RunResultsHTML(w io.Writer, data RunExport) error {
 
 // StartingOrderHTML writes the printable starting order of a run.
 func StartingOrderHTML(w io.Writer, data StartingOrderExport) error {
-	v := templates.StartingOrderView{Page: templates.Page{
+	v := templates.StartingOrderView{
 		CompName: data.CompName,
 		Heading:  fmt.Sprintf("Starting Order - run %d", data.RunIndex+1),
 		Updated:  updated(data.UpdatedAt),
-		Solo:     data.Type == TypeSolo,
-	}}
+		Solo:     data.Type == TypeSolo}
 	for _, l := range data.Lists {
 		t := templates.StartingTable{Title: l.Title + " Starting Order"}
 		for i, e := range l.Entries {

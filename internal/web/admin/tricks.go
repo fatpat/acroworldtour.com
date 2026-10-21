@@ -244,7 +244,7 @@ func formFromTrick(t service.Trick) trickForm {
 
 func splitList(s string) []string {
 	var out []string
-	for _, p := range strings.Split(s, ",") {
+	for p := range strings.SplitSeq(s, ",") {
 		if p = strings.TrimSpace(p); p != "" {
 			out = append(out, p)
 		}
@@ -310,7 +310,7 @@ func readTrickForm(r *http.Request) (trickForm, catalog.Trick, []domain.FieldErr
 		}
 		t.Bonuses = append(t.Bonuses, catalog.Bonus{Name: name, Bonus: v})
 	}
-	for _, line := range strings.Split(f.Constraints, "\n") {
+	for line := range strings.SplitSeq(f.Constraints, "\n") {
 		if line = strings.TrimSpace(line); line != "" {
 			parts := splitList(line)
 			t.BonusConstraints = append(t.BonusConstraints, parts)

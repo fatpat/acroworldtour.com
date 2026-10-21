@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -303,12 +304,7 @@ type eventForm struct {
 }
 
 func (f eventForm) hasCompetition(id string) bool {
-	for _, c := range f.Competitions {
-		if c == id {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(f.Competitions, id)
 }
 
 type eventsListView struct {

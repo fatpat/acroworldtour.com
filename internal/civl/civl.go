@@ -142,7 +142,7 @@ func (c *Client) FetchPilot(ctx context.Context, civlid int) (PilotData, error) 
 	if flag == nil {
 		return PilotData{}, fmt.Errorf("civl: %s: country flag (div.country-place i) not found", pageURL)
 	}
-	for _, cl := range strings.Fields(attr(flag, "class")) {
+	for cl := range strings.FieldsSeq(attr(flag, "class")) {
 		if cl != "flag" && strings.HasPrefix(cl, "flag-") {
 			p.Country = strings.TrimPrefix(cl, "flag-")
 		}
@@ -157,7 +157,7 @@ func (c *Client) FetchPilot(ctx context.Context, civlid int) (PilotData, error) 
 
 	for _, e := range all(doc, step{tag: "a", class: "social-link"}) {
 		var rest []string
-		for _, cl := range strings.Fields(attr(e, "class")) {
+		for cl := range strings.FieldsSeq(attr(e, "class")) {
 			if cl != "social-link" {
 				rest = append(rest, cl)
 			}

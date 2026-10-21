@@ -12,6 +12,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -99,12 +100,7 @@ func (s *source) requireAll() error {
 }
 
 func isCollection(name string) bool {
-	for _, c := range collections {
-		if c == name {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(collections, name)
 }
 
 // decodeLines decodes every JSON value of a collection into a T. A missing

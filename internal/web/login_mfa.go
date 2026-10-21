@@ -92,8 +92,7 @@ func (d Deps) mfaSubmit(complete func(r *http.Request, code string) (auth.Sessio
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
 		if err := r.ParseForm(); err != nil {
-			var tooLarge *http.MaxBytesError
-			if errors.As(err, &tooLarge) {
+			if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
 				http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
 				return
 			}

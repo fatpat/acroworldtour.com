@@ -3,6 +3,7 @@ package admin_test
 import (
 	"bytes"
 	"context"
+	"maps"
 	"net/http"
 	"net/url"
 	"os"
@@ -107,9 +108,7 @@ func TestCompetitionSetupFlow(t *testing.T) {
 	}
 	// An invalid config (percentages not summing to 100) is a field error.
 	bad := url.Values{}
-	for k, v := range form {
-		bad[k] = v
-	}
+	maps.Copy(bad, form)
 	bad.Set("mark_percentages.solo.technical", "10")
 	e.wantStatus(e.post("/manager/competitions/test-cup-2026/config", bad), http.StatusUnprocessableEntity, "sum to")
 

@@ -224,7 +224,7 @@ func seed() error {
 		if err := p.GetByRole("button", playwright.PageGetByRoleOptions{Name: "Save"}).Click(); err != nil {
 			return err
 		}
-		if err := p.GetByRole("cell", playwright.PageGetByRoleOptions{Name: j.name, Exact: playwright.Bool(true)}).WaitFor(); err != nil {
+		if err := p.GetByRole("cell", playwright.PageGetByRoleOptions{Name: j.name, Exact: new(true)}).WaitFor(); err != nil {
 			return fmt.Errorf("judge %s: %w", j.name, err)
 		}
 	}

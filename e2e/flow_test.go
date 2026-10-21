@@ -47,7 +47,7 @@ func addParticipant(t *testing.T, p *page, c comp, name string) {
 	_, err := p.Goto(c.admin("/participants") + "?q=" + strings.ReplaceAll(name, " ", "+"))
 	must(t, err, "open participants")
 	row := p.Locator("tr").Filter(playwright.LocatorFilterOptions{HasText: name})
-	click(t, row.GetByRole("button", playwright.LocatorGetByRoleOptions{Name: "Add", Exact: playwright.Bool(true)}), "Add "+name)
+	click(t, row.GetByRole("button", playwright.LocatorGetByRoleOptions{Name: "Add", Exact: new(true)}), "Add "+name)
 	must(t, p.Locator("tr").Filter(playwright.LocatorFilterOptions{HasText: name}).GetByRole("button", playwright.LocatorGetByRoleOptions{Name: "Remove"}).WaitFor(), "registered "+name)
 }
 
@@ -106,6 +106,6 @@ func fillMarks(t *testing.T, p *page, col string, marks ...string) {
 	t.Helper()
 	judges := []string{"E2E Senior", "E2E Certified"}
 	for i, m := range marks {
-		must(t, p.GetByLabel(judges[i]+", "+col, playwright.PageGetByLabelOptions{Exact: playwright.Bool(true)}).Fill(m), "mark "+col)
+		must(t, p.GetByLabel(judges[i]+", "+col, playwright.PageGetByLabelOptions{Exact: new(true)}).Fill(m), "mark "+col)
 	}
 }

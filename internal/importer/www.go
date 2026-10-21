@@ -641,7 +641,7 @@ func (w *wwwImport) events(ctx context.Context) error {
 			}
 		}
 		if d := find(doc, byClass("event__discipline")); d != nil {
-			for _, part := range strings.Split(text(d), "+") {
+			for part := range strings.SplitSeq(text(d), "+") {
 				if p := strings.ToLower(strings.TrimSpace(part)); p == "solo" || p == "synchro" {
 					disciplines = append(disciplines, p)
 				}

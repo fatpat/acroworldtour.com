@@ -279,7 +279,7 @@ func TestLimiterBlocksSixthAttempt(t *testing.T) {
 		a.HandleLogin(rec, req)
 		return rec
 	}
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		if rec := login("bad"); rec.Code != 401 {
 			t.Fatalf("attempt %d: %d", i+1, rec.Code)
 		}
@@ -296,7 +296,7 @@ func TestLimiterWindowAndSuccessReset(t *testing.T) {
 	now := time.Now()
 	l := NewLoginLimiter(5, 15*time.Minute)
 	l.now = func() time.Time { return now }
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		if !l.Attempt("k") {
 			t.Fatalf("attempt %d refused", i+1)
 		}
@@ -312,7 +312,7 @@ func TestLimiterWindowAndSuccessReset(t *testing.T) {
 		t.Fatal("window not expired")
 	}
 	l.Reset("k")
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		if !l.Attempt("k") {
 			t.Fatal("reset ignored")
 		}
@@ -338,10 +338,8 @@ func TestLimiterConcurrentAttempts(t *testing.T) {
 	mustUser(t, a, "a@example.com", "admin")
 	var wg sync.WaitGroup
 	var reached, blocked atomic.Int32
-	for i := 0; i < 20; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range 20 {
+		wg.Go(func() {
 			req := httptest.NewRequest("POST", "/manager/login", strings.NewReader(url.Values{"email": {"a@example.com"}, "password": {"bad"}}.Encode()))
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 			rec := httptest.NewRecorder()
@@ -351,7 +349,7 @@ func TestLimiterConcurrentAttempts(t *testing.T) {
 			} else {
 				reached.Add(1)
 			}
-		}()
+		})
 	}
 	wg.Wait()
 	if reached.Load() != 5 || blocked.Load() != 15 {

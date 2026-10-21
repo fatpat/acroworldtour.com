@@ -22,7 +22,7 @@ func (s step) match(n *html.Node) bool {
 	}
 	if s.class != "" {
 		ok := false
-		for _, c := range strings.Fields(attr(n, "class")) {
+		for c := range strings.FieldsSeq(attr(n, "class")) {
 			if c == s.class {
 				ok = true
 			}
