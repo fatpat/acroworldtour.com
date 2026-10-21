@@ -1,3 +1,16 @@
+# check runs `make check` on every push and pull request. On a push to the
+# deploy branch, once check is green, build pushes the image to GHCR and
+# deploy rolls it out to training then prod (deploy/deploy.sh health-checks
+# each and rolls back to the previous tag on failure).
+#
+# Deploy is a job of this workflow rather than a separate `workflow_run`
+# workflow: GitHub only runs `workflow_run` workflows that exist on the
+# repository's default branch, which is not the deploy branch here.
+#
+# Repository secrets: VPS_HOST, VPS_USER, VPS_PORT (SSH port, non-default),
+# VPS_SSH_KEY (private key of the restricted deploy key), VPS_KNOWN_HOSTS
+# (output of `ssh-keyscan -p <port> <host>`, verified once).
+
 name: ci
 
 on:
@@ -23,3 +36,85 @@ jobs:
           key: playwright-1.57.0-${{ hashFiles('scripts/install-playwright.sh') }}
       - run: make e2e-deps
       - run: make check
+
+  build:
+    needs: check
+    # Deploy only pushes to the deploy branch (not pull requests, not other
+    # branches). Change the branch name here to deploy from another branch.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/rewrite-go'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      tag: ${{ steps.vars.outputs.tag }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ github.sha }}
+      - id: vars
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          echo "image=ghcr.io/${owner}/awt" >> "$GITHUB_OUTPUT"
+          echo "tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@f7ce87c1d6bead3e36075b2ce75da1f6cc28aaca # v3.9.0
+      - uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.vars.outputs.image }}:${{ steps.vars.outputs.tag }}
+            ${{ steps.vars.outputs.image }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build
+    # One deploy at a time; a newer push waits instead of cancelling a running deploy.
+    concurrency:
+      group: deploy
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read # the GITHUB_TOKEN is handed to the VPS for `docker login ghcr.io`
+    env:
+      TAG: ${{ needs.build.outputs.tag }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ github.sha }}
+      - name: Configure ssh
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf 'Host vps\n  HostName %s\n  User %s\n  Port %s\n  IdentityFile ~/.ssh/id_deploy\n  IdentitiesOnly yes\n  StrictHostKeyChecking yes\n' \
+            "$VPS_HOST" "$VPS_USER" "${VPS_PORT:-22}" > ~/.ssh/config
+      # The deploy key is restricted on the VPS to /opt/awt/deploy/deploy.sh
+      # (authorized_keys: restrict,command=...). The only things it accepts:
+      # `sync` (tar of compose.yaml + Caddyfile on stdin) and `<env> <tag>`.
+      - name: Sync compose.yaml and Caddyfile
+        run: tar -cf - compose.yaml Caddyfile | ssh vps sync
+      - name: Deploy training (health checked, rolls back on failure)
+        env:
+          REGISTRY_USER: ${{ github.repository_owner }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: printf '%s %s\n' "$REGISTRY_USER" "$REGISTRY_TOKEN" | ssh vps "training ${TAG}"
+      - name: Deploy prod (health checked, rolls back on failure)
+        env:
+          REGISTRY_USER: ${{ github.repository_owner }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: printf '%s %s\n' "$REGISTRY_USER" "$REGISTRY_TOKEN" | ssh vps "prod ${TAG}"

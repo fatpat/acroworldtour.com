@@ -4,7 +4,7 @@ One OVHcloud VPS runs Docker Compose: `caddy`, `awt-prod`, `awt-training`. Cloud
 
 Layout on the VPS: `/opt/awt/{compose.yaml,caddy/Caddyfile,certs/,.env*}` and `/opt/awt/deploy/{deploy.sh,weekly-restore-test.sh}`.
 
-Files: `Dockerfile`, `litestream.yml`, `compose.yaml`, `Caddyfile`, `deploy/` (entrypoint, deploy and restore scripts, env examples), `.github/workflows/deploy.yml`.
+Files: `Dockerfile`, `litestream.yml`, `compose.yaml`, `Caddyfile`, `deploy/` (entrypoint, deploy and restore scripts, env examples), `.github/workflows/ci.yml` (jobs `build` and `deploy`, run after `check` on a push to the deploy branch).
 
 ## 1. Provision the VPS
 
@@ -55,7 +55,7 @@ The workflow passes the run's `GITHUB_TOKEN` (valid for the run) on stdin to the
 
 ## 3. First deploy
 
-1. Provision and configure as above. Push to `main`; after CI the deploy workflow syncs `compose.yaml` and `Caddyfile`, deploys training (health checked), then deploys prod. The first run starts empty databases (migrations run at `awt serve` startup).
+1. Provision and configure as above. Push to the deploy branch (`rewrite-go`, set in the `if:` of the `build` job in `.github/workflows/ci.yml`); after `check` passes, the `deploy` job syncs `compose.yaml` and `Caddyfile`, deploys training (health checked), then deploys prod. The first run starts empty databases (migrations run at `awt serve` startup).
 2. Check: `docker compose ps` shows `healthy` for `awt-prod` and `awt-training`; `docker compose logs awt-prod` shows `listening`; the public URL answers through Cloudflare; the bucket gets a `litestream/prod/` prefix within a minute.
 3. Create the first admin: `docker compose exec awt-prod awt user add --email you@example.org --name "You" --role admin` (the password is read from stdin or prompted).
 
@@ -75,7 +75,7 @@ Run it on training first and check the result in the browser. Then repeat on pro
 
 ## 5. Routine deploys and rollback
 
-Every push to `main` that passes CI deploys automatically: training, then prod. `deploy.sh <env> <tag>` waits up to 120 s for the container health check, then requests `/healthz` inside the stack (directly on the app container, then through Caddy on its loopback-only listener `127.0.0.1:8081` in the `caddy` container, which is never published). Caddy's config is validated and reloaded on every deploy; a validation or reload failure fails the deploy (no silent success). If the new app container is not healthy it restarts the previous tag and exits non-zero, which fails the workflow. On the very first deploy there is no previous tag and nothing to roll back to.
+Every push to the deploy branch that passes `check` deploys automatically: training, then prod. `deploy.sh <env> <tag>` waits up to 120 s for the container health check, then requests `/healthz` inside the stack (directly on the app container, then through Caddy on its loopback-only listener `127.0.0.1:8081` in the `caddy` container, which is never published). Caddy's config is validated and reloaded on every deploy; a validation or reload failure fails the deploy (no silent success). If the new app container is not healthy it restarts the previous tag and exits non-zero, which fails the workflow. On the very first deploy there is no previous tag and nothing to roll back to.
 
 Manual rollback (for example a bad release that is healthy but wrong): `/opt/awt/deploy/deploy.sh prod <previous-sha>` (as `deploy` or an admin user; run `docker login ghcr.io` first if the image is not already local). Tags are the commit SHAs in the GHCR package list. Migrations only move forward and must stay compatible with the previous release for one version; if a migration itself is the problem, restore the database (next section).
 
