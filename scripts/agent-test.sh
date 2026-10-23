@@ -21,6 +21,9 @@ export COMPOSE_PROJECT_NAME=awt-agent-test-$run_id
 HEALTH_TIMEOUT=${HEALTH_TIMEOUT:-45}
 LOCAL=awt-agent-test-$run_id
 REG_NAME=awt-agent-test-registry-$run_id
+# The agent's staging containers carry this label: per run, so a concurrent
+# test's agent never removes ours.
+STAGING_LABEL=awt-agent-staging-$run_id
 G1=1111111111111111111111111111111111111111
 G2=2222222222222222222222222222222222222222
 BAD=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
@@ -35,6 +38,8 @@ G5=5555555555555555555555555555555555555555
 G6=6666666666666666666666666666666666666666
 G7=7777777777777777777777777777777777777777
 TRAINFAIL=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1
+# Its baked compose.yaml runs an entrypoint only its own image has.
+NEWCOMPOSE=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa2
 BAD4=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb4
 # In the pre-0019 state/failed-revisions: must count as failed on both.
 LEGACY=0000000000000000000000000000000000000001
@@ -77,6 +82,7 @@ run_agent() {
   set +e
   out=$(AWT_ROOT="$root" AWT_IMAGE="$IMAGE" AWT_CHANNEL=test AWT_LOCK="$root/agent.lock" \
     HEALTH_TIMEOUT="$HEALTH_TIMEOUT" AWT_PRUNE_DAYS="${PRUNE_DAYS:-30}" \
+    AWT_STAGING_LABEL="$STAGING_LABEL" \
     AWT_TEST_KILL_AFTER_INSTALL="${KILL_AFTER_INSTALL:-}" "$root/deploy/agent.sh" 2>&1)
   rc=$?
   set -e
@@ -130,6 +136,16 @@ CMD ["serve"]'
 overlay "$TRAINFAIL" "$(marker "$TRAINFAIL")"'
 ENTRYPOINT ["/bin/sh", "-c", "if [ \"$AWT_ENV\" = training ]; then exec sleep 3600; fi; exec /usr/local/bin/entrypoint.sh \"$@\"", "sh"]
 CMD ["serve"]'
+# NEWCOMPOSE: its compose.yaml starts both apps through entrypoint-v2.sh,
+# which only this image has; as prod it never gets healthy. Rolled back
+# under its own compose.yaml, the previous image could not even start.
+overlay "$NEWCOMPOSE" "$(marker "$NEWCOMPOSE")"'
+USER root
+RUN printf '"'"'#!/bin/sh\nif [ "$AWT_ENV" = prod ]; then exec sleep 3600; fi\nexec /usr/local/bin/entrypoint.sh "$@"\n'"'"' > /usr/local/bin/entrypoint-v2.sh \
+ && chmod 755 /usr/local/bin/entrypoint-v2.sh \
+ && sed -i '"'"'/^x-awt: &awt$/a\  entrypoint: ["/usr/local/bin/entrypoint-v2.sh"]\n  command: ["serve"]'"'"' /usr/share/awt/deploy/compose.yaml \
+ && grep -q entrypoint-v2 /usr/share/awt/deploy/compose.yaml
+USER awt'
 overlay "$BAD4" "$(marker "$BAD4")
 ENTRYPOINT [\"sleep\", \"3600\"]"
 # Starts, never answers /healthz.
@@ -328,6 +344,7 @@ check "logs retry" eval 'printf "%s" "$out" | grep -q "will retry"'
 check "not recorded as failed" [ "$(failed_both)" = "$failed" ]
 check "tags untouched" [ "$(tag_of AWT_TRAINING_TAG) $(tag_of AWT_PROD_TAG)" = "$G2 $G2" ]
 check "apps not restarted" [ "$(ctr awt-training) $(ctr awt-prod)" = "$before" ]
+check "pull failures are not rolled back" eval '! printf "%s" "$out" | grep -q "rolled back"'
 check "previous compose.yaml and Caddyfile restored" has_marker "$G2"
 
 echo "== case: :<rev> missing in the registry, present locally (retry of $G3; prune age 0)"
@@ -356,6 +373,8 @@ run_agent
 check "exit 0, logs the skip on prod only" eval '[ "$rc" = 0 ] && [ "$out" = "agent: skip $PRODFAIL: failed before on prod" ]'
 check "no restart" [ "$(ctr awt-training) $(ctr awt-prod) $(ctr caddy)" = "$before" ]
 check "nothing recorded" [ "$(failed_both)" = "$failed" ]
+run_agent
+check "third run: exit 0, silent (skip logged once per revision)" eval '[ "$rc" = 0 ] && [ -z "$out" ]'
 
 echo "== case: training fails, prod succeeds ($TRAINFAIL healthy as prod, not as training)"
 publish "$TRAINFAIL"
@@ -396,7 +415,7 @@ check "logs kept saved state" eval 'printf "%s" "$out" | grep -q "previous run d
 check "files of $TRAINFAIL restored" has_marker "$TRAINFAIL"
 check "tags back" [ "$(tag_of AWT_TRAINING_TAG) $(tag_of AWT_PROD_TAG)" = "$PRODFAIL $TRAINFAIL" ]
 check "training runs $PRODFAIL, prod $TRAINFAIL" eval '[ "$(ctr_image awt-training) $(ctr_image awt-prod)" = "$IMAGE:$PRODFAIL $IMAGE:$TRAINFAIL" ]'
-check "staging and config container of the killed run removed" eval 'no_staging && [ -z "$(docker ps -aq --filter label=awt-agent-staging)" ]'
+check "staging and config container of the killed run removed" eval 'no_staging && [ -z "$(docker ps -aq --filter "label=$STAGING_LABEL")" ]'
 
 echo "== case: next run deploys $G4 (AWT_PRUNE_DAYS invalid)"
 publish "$G4"
@@ -429,6 +448,23 @@ for v in 08 12345678901234567890; do
   check "tags = $r" [ "$(tag_of AWT_TRAINING_TAG) $(tag_of AWT_PROD_TAG)" = "$r $r" ]
   check "logs invalid prune days" eval 'printf "%s" "$out" | grep -q "AWT_PRUNE_DAYS=.$v. is not a number"'
 done
+
+echo "== case: prod fails on $NEWCOMPOSE, whose compose.yaml the previous image cannot run; training takes it"
+publish "$NEWCOMPOSE"
+run_agent
+check "exit non-zero" [ "$rc" != 0 ]
+check "training on $NEWCOMPOSE, prod rolled back to $G6" [ "$(tag_of AWT_TRAINING_TAG) $(tag_of AWT_PROD_TAG)" = "$NEWCOMPOSE $G6" ]
+check "config of $NEWCOMPOSE installed (training runs it)" has_marker "$NEWCOMPOSE"
+check "prod rolled back under the previous compose.yaml: healthy on $G6, without entrypoint-v2" eval '
+  cid=$(dc ps -q awt-prod) && [ "$(docker inspect -f "{{.Config.Image}} {{.State.Health.Status}}" "$cid")" = "$IMAGE:$G6 healthy" ] \
+  && ! docker inspect -f "{{json .Config.Entrypoint}}" "$cid" | grep -q entrypoint-v2'
+check "training runs entrypoint-v2" eval 'docker inspect -f "{{json .Config.Entrypoint}}" "$(dc ps -q awt-training)" | grep -q entrypoint-v2'
+check "recorded as failed on prod alone" eval 'failed_of prod | grep -qx "$NEWCOMPOSE" && ! failed_of training | grep -qx "$NEWCOMPOSE"'
+check "logs the rollback under the previous compose.yaml" eval 'printf "%s" "$out" | grep -q "rolled back prod to $G6 (previous compose.yaml)"'
+echo "  -- back to $G6 on training"
+publish "$G6"
+run_agent
+check "both on $G6 with its config" eval '[ "$rc" = 0 ] && [ "$(tag_of AWT_TRAINING_TAG) $(tag_of AWT_PROD_TAG)" = "$G6 $G6" ] && has_marker "$G6"'
 
 echo "== case: training refresh incomplete (state/sync-training.incomplete), new revision $G7: training skipped, prod deployed"
 : > "$root/state/sync-training.incomplete"

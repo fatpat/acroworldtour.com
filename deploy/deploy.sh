@@ -18,6 +18,12 @@
 # instead of recording the revision as failed); 4 training not deployed: a
 # training refresh did not finish (state/sync-training.incomplete, written by
 # deploy/sync-training.sh; deploying would serve its partial state).
+#
+# AWT_COMPOSE_FILE (optional): run the app service from this compose file
+# instead of the installed compose.yaml (compose.override.yaml still applies
+# when present). The agent uses it to roll an environment back under the
+# previous revision's compose.yaml after the other environment took a new
+# one (decision 0019). Caddy is always run from the installed files.
 set -eu
 cd "$(dirname "$0")/.."
 
@@ -32,6 +38,20 @@ if [ "$env_name" = training ] && [ -f state/sync-training.incomplete ]; then
   echo "deploy: training not deployed: a training refresh did not finish (state/sync-training.incomplete); run deploy/sync-training.sh again (docs/ops.md 6b)" >&2
   exit 4
 fi
+
+if [ -n "${AWT_COMPOSE_FILE:-}" ] && [ ! -f "$AWT_COMPOSE_FILE" ]; then
+  die "AWT_COMPOSE_FILE $AWT_COMPOSE_FILE does not exist"
+fi
+# app <compose args>: compose for the app service (AWT_COMPOSE_FILE above).
+app() {
+  if [ -z "${AWT_COMPOSE_FILE:-}" ]; then
+    docker compose "$@"
+  elif [ -f compose.override.yaml ]; then
+    docker compose --project-directory . -f "$AWT_COMPOSE_FILE" -f compose.override.yaml "$@"
+  else
+    docker compose --project-directory . -f "$AWT_COMPOSE_FILE" "$@"
+  fi
+}
 
 svc="awt-$env_name"
 upper=$(echo "$env_name" | tr '[:lower:]' '[:upper:]')
@@ -49,9 +69,9 @@ set_tag() {
 wait_healthy() {
   waited=0
   while [ "$waited" -lt "$timeout_s" ]; do
-    cid=$(docker compose ps -q "$svc" 2>/dev/null || true)
+    cid=$(app ps -q "$svc" 2>/dev/null || true)
     if [ -n "$cid" ] && [ "$(docker inspect -f '{{.State.Health.Status}}' "$cid")" = healthy ] \
-      && docker compose exec -T "$svc" wget -q -O /dev/null http://127.0.0.1:8080/healthz; then
+      && app exec -T "$svc" wget -q -O /dev/null http://127.0.0.1:8080/healthz; then
       return 0
     fi
     waited=$((waited + 3)); sleep 3
@@ -83,12 +103,12 @@ prev=$(sed -n "s/^$var=//p" .env | tail -1)
 case "$prev" in none) prev="" ;; esac
 echo "deploy $svc: ${prev:-none} -> $tag"
 set_tag "$tag"
-if ! docker compose pull --policy missing "$svc"; then
+if ! app pull --policy missing "$svc"; then
   echo "deploy $svc: pull of $tag failed, nothing changed" >&2
   set_tag "${prev:-none}"
   exit 3
 fi
-docker compose up -d "$svc"
+app up -d "$svc"
 if wait_healthy; then
   caddy_up || exit 1
   echo "deploy $svc: healthy on $tag"
@@ -96,11 +116,11 @@ if wait_healthy; then
 fi
 
 echo "deploy $svc: $tag is not healthy after ${timeout_s}s" >&2
-docker compose logs --tail 50 "$svc" >&2 || true
+app logs --tail 50 "$svc" >&2 || true
 if [ -n "$prev" ] && [ "$prev" != "$tag" ]; then
   echo "rolling back to $prev" >&2
   set_tag "$prev"
-  docker compose up -d "$svc"
+  app up -d "$svc"
   if wait_healthy; then echo "rolled back to $prev" >&2; else echo "ROLLBACK ALSO UNHEALTHY" >&2; fi
 else
   echo "no previous tag to roll back to" >&2

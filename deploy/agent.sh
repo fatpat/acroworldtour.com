@@ -14,9 +14,10 @@
 # is appended to state/failed-revisions.<env> and never retried there (delete
 # the line to retry); the other environment still gets it. A revision whose
 # baked config is invalid reaches neither and is recorded for both. A failed
-# pull is not recorded: the next run retries. A failed environment is rolled
-# back to its previous revision; when no environment took the revision, the
-# previous compose.yaml and Caddyfile come back too. While a training refresh
+# pull is not recorded and not rolled back: the next run retries. A failed
+# environment is rolled back to its previous revision under the previous
+# compose.yaml (the shared Caddyfile stays the new one); when no environment
+# took the revision, the previous compose.yaml and Caddyfile come back. While a training refresh
 # is incomplete (state/sync-training.incomplete, docs/ops.md 6b) training is
 # skipped. Nothing new = no output.
 #
@@ -27,7 +28,9 @@
 # Environment (all optional): AWT_ROOT (default /opt/awt); AWT_IMAGE and
 # AWT_CHANNEL (default: from $AWT_ROOT/.env; channel rewrite-go); AWT_LOCK
 # (default /run/lock/awt-agent.lock); HEALTH_TIMEOUT (passed to deploy.sh);
-# AWT_PRUNE_DAYS (default 30: age of local images removed after a deploy).
+# AWT_PRUNE_DAYS (default 30: age of local images removed after a deploy);
+# AWT_STAGING_LABEL (default awt-agent-staging: label of the config
+# containers, removed when a run finds them left over; tests set their own).
 set -eu
 
 root=${AWT_ROOT:-/opt/awt}
@@ -35,6 +38,7 @@ lock=${AWT_LOCK:-/run/lock/awt-agent.lock}
 LABEL=org.opencontainers.image.revision
 BAKED=/usr/share/awt/deploy
 SOURCE=https://github.com/fatpat/acroworldtour.com
+staging_label=${AWT_STAGING_LABEL:-awt-agent-staging}
 
 log() { echo "agent: $*"; }
 err() { echo "agent: $*" >&2; }
@@ -92,7 +96,11 @@ if [ -z "$pending" ]; then
   # files are its (that deploy finished): restore the marker if a run died
   # just before writing it, so the next revision saves them as state/prev.
   if [ "$on_rev" = 1 ] && [ ! -f state/installed-ok ]; then : > state/installed-ok; fi
-  [ -z "$failed_before" ] || log "skip $rev: failed before on $failed_before"
+  # Said once per revision, not every 60 s (state/skip-logged).
+  if [ -n "$failed_before" ] && [ "$(cat state/skip-logged 2>/dev/null || true)" != "$rev $failed_before" ]; then
+    log "skip $rev: failed before on $failed_before"
+    echo "$rev $failed_before" > state/skip-logged
+  fi
   exit 0
 fi
 
@@ -103,7 +111,7 @@ log "new revision $rev on $ref: deploying to $pending"
 # Copy the baked config out of the image and validate it before installing.
 # Leftovers of a killed run (staging dirs, config containers) go first.
 rm -rf state/staging-*
-docker ps -aq --filter label=awt-agent-staging | xargs -r docker rm -f -v >/dev/null 2>&1 || true
+docker ps -aq --filter "label=$staging_label" | xargs -r docker rm -f -v >/dev/null 2>&1 || true
 staging="state/staging-$rev"
 cid=""
 need_restore=0
@@ -125,7 +133,7 @@ on_exit() {
 trap on_exit EXIT
 trap 'exit 1' INT TERM
 mkdir -p "$staging"
-cid=$(docker create --label awt-agent-staging=1 "$ref")
+cid=$(docker create --label "$staging_label=1" "$ref")
 docker cp -q "$cid:$BAKED/compose.yaml" "$staging/compose.yaml"
 docker cp -q "$cid:$BAKED/Caddyfile" "$staging/Caddyfile"
 
@@ -177,16 +185,25 @@ else
 fi
 read -r prev_training prev_prod < state/prev/tags || true
 
-# rollback_env <env>: back to the revision it ran before this run.
+# rollback_env <env> [prev-compose]: back to the revision it ran before this
+# run. With prev-compose, under the previous compose.yaml (state/prev): the
+# other environment took the revision, so the installed compose.yaml is the
+# new one, which the previous image may not run (decision 0019).
 rollback_env() {
   if [ "$1" = training ]; then p=$prev_training; else p=$prev_prod; fi
   case "$p" in none|"$rev"|"") return 0 ;; esac
-  if "$root/deploy/deploy.sh" "$1" "$p"; then
-    err "rolled back $1 to $p"
+  how=""
+  if [ "${2:-}" = prev-compose ] && [ -f state/prev/compose.yaml ] && ! cmp -s state/prev/compose.yaml compose.yaml; then
+    how=" (previous compose.yaml)"
+    AWT_COMPOSE_FILE="$root/state/prev/compose.yaml" "$root/deploy/deploy.sh" "$1" "$p" || how=failed
   else
+    "$root/deploy/deploy.sh" "$1" "$p" || how=failed
+  fi
+  if [ "$how" = failed ]; then
     err "ROLLBACK OF $1 TO $p FAILED: check $root by hand (docs/ops.md section 5)"
     return 1
   fi
+  err "rolled back $1 to $p$how"
 }
 # restore_all: no environment took the revision: the previous files, then
 # the previous revision of each environment attempted (under those files).
@@ -217,17 +234,19 @@ docker tag "$ref" "$image:$rev"
 
 # Each pending environment in turn, whatever happened to the other. Exit 3
 # from deploy.sh = pull failed, nothing changed: not the revision's fault,
-# not recorded, retried next run. Exit 4 = training refresh incomplete
-# (started meanwhile): skipped. Any other failure (unhealthy app, Caddy
-# check) records the revision on that environment.
-ok="" bad=""
+# not recorded, not rolled back (it still runs its revision), retried next
+# run. Exit 4 = training refresh incomplete (started meanwhile): skipped.
+# Any other failure (unhealthy app, Caddy check) records the revision on
+# that environment, which is then rolled back.
+ok="" bad="" pull_failed=""
 for e in $pending; do
   attempted="$attempted $e"
   rc=0
   "$root/deploy/deploy.sh" "$e" "$rev" || rc=$?
   case "$rc" in
     0) ok="$ok $e" ;;
-    3) err "$e: pull of $image:$rev failed; will retry"; bad="$bad $e" ;;
+    3) err "$e: pull of $image:$rev failed; will retry"; pull_failed="$pull_failed $e"
+       attempted=$(echo "$attempted" | sed "s/ $e\$//") ;;
     4) err "$e: skipped, a training refresh did not finish"
        attempted=$(echo "$attempted" | sed "s/ $e\$//") ;;
     *) record_failed "$e"; bad="$bad $e" ;;
@@ -238,14 +257,15 @@ if [ -z "$ok" ]; then
   restore_all
   exit 1
 fi
-# The revision runs somewhere: its files stay; failed environments go back
-# to their previous revision under them.
-for e in $bad; do rollback_env "$e" || true; done
+# The revision runs somewhere: its files stay installed. A failed
+# environment goes back to its previous revision under the previous
+# compose.yaml; the Caddyfile is shared and stays the new one.
+for e in $bad; do rollback_env "$e" prev-compose || true; done
 : > state/installed-ok
-if [ -z "$bad" ]; then
+if [ -z "$bad$pull_failed" ]; then
   log "deployed $rev to$ok"
 else
-  log "deployed $rev to$ok; failed on$bad"
+  log "deployed $rev to$ok; failed on$bad$pull_failed"
 fi
 
 # Disk: drop local images of $image older than AWT_PRUNE_DAYS (0-9999, no
@@ -272,5 +292,5 @@ prune_images() {
     --filter "label=org.opencontainers.image.source=$SOURCE" >/dev/null 2>&1 || true
 }
 prune_images || true
-[ -z "$bad" ] || exit 1
+[ -z "$bad$pull_failed" ] || exit 1
 exit 0
