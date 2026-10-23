@@ -37,7 +37,7 @@ umask 077
 
 # Input names (docs/ops.md section 0 documents the same names).
 GLOBAL_INPUTS=(AWT_PROD_HOST AWT_TRAINING_HOST AWT_IMAGE AWT_CHANNEL AWT_REPO_RAW AWT_TLS_CERT_FILE AWT_TLS_KEY_FILE)
-ENV_INPUTS=(S3_ENDPOINT S3_REGION S3_BUCKET S3_ACCESS_KEY S3_SECRET_KEY MFA_KEY CLOUDFLARE_ZONE_ID CLOUDFLARE_TOKEN)
+ENV_INPUTS=(S3_ENDPOINT S3_REGION S3_BUCKET BUCKET_PREFIX S3_ACCESS_KEY S3_SECRET_KEY MFA_KEY CLOUDFLARE_ZONE_ID CLOUDFLARE_TOKEN)
 CONTROL_INPUTS=(AWT_INIT_FORCE AWT_INIT_ALLOW_OS)
 ENVS=(prod training)
 
@@ -72,6 +72,7 @@ declare -A DESC=(
   [S3_ENDPOINT]="S3 endpoint URL"
   [S3_REGION]="S3 region"
   [S3_BUCKET]="S3 bucket (Litestream replica, uploads)"
+  [BUCKET_PREFIX]="prefix of everything written to the bucket (default prod/ or training/, may be empty)"
   [S3_ACCESS_KEY]="S3 access key"
   [S3_SECRET_KEY]="S3 secret key"
   [MFA_KEY]="manager MFA key (base64, 32 bytes)"
@@ -187,6 +188,11 @@ check_value() {
     url) [[ $v =~ ^https://[A-Za-z0-9.-]+(:[0-9]+)?/?$ ]] || { echo "must be an https:// URL like https://s3.gra.io.cloud.ovh.net"; return 1; } ;;
     region) [[ $v =~ ^[a-z0-9-]{1,32}$ ]] || { echo "must be a region name like gra"; return 1; } ;;
     bucket) [[ $v =~ ^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$ ]] || { echo "must be an S3 bucket name"; return 1; } ;;
+    prefix)
+      # Same rule as awt (internal/config ParseBucketPrefix, decision 0017).
+      local p=${v#/}; p=${p%/}
+      [[ $v != *//* ]] && { [ -z "$p" ] || [[ /$p/ =~ ^(/[A-Za-z0-9._-]+)+/$ && /$p/ != */./* && /$p/ != */../* ]]; } \
+        || { echo "must be empty or segments of letters, digits, '.', '_', '-' separated by single slashes, without . or .. segments (prod/, training/)"; return 1; } ;;
     token)
       # Written as KEY=value in env files read by compose: no quoting needed.
       case "$v" in ""|*[[:space:]\"\'\`\$\#\\]*) echo "must be non-empty without spaces, quotes, \$, # or backslash"; return 1 ;; esac ;;
@@ -204,7 +210,7 @@ kind_of() {
   case "$1" in
     *_HOST) echo host ;; AWT_IMAGE) echo image ;; AWT_CHANNEL) echo tag ;; AWT_REPO_RAW) echo rawurl ;;
     AWT_TLS_*_FILE) echo pemfile ;; *_S3_ENDPOINT) echo url ;; *_S3_REGION) echo region ;;
-    *_S3_BUCKET) echo bucket ;; *_MFA_KEY) echo mfa ;; *_CLOUDFLARE_ZONE_ID) echo zone ;; *) echo token ;;
+    *_S3_BUCKET) echo bucket ;; *_BUCKET_PREFIX) echo prefix ;; *_MFA_KEY) echo mfa ;; *_CLOUDFLARE_ZONE_ID) echo zone ;; *) echo token ;;
   esac
 }
 desc_of() { local n=$1; n=${n#PROD_}; n=${n#TRAINING_}; echo "${DESC[$1]:-${DESC[$n]:-}}"; }
@@ -272,6 +278,37 @@ resolve() {
   fi
 }
 
+# norm_prefix <valid prefix>: "" or "<segments>/", as awt normalises it.
+norm_prefix() { local p=${1#/}; p=${p%/}; [ -z "$p" ] || p="$p/"; printf '%s' "$p"; }
+
+# resolve_prefix <E> <env file>: like resolve with a default (prod/,
+# training/), but empty is a valid value (a dedicated bucket), so a stored
+# key or a variable set to empty counts. Never prompted.
+resolve_prefix() {
+  local E=$1 f=$2 name="${1}_BUCKET_PREFIX" v msg
+  if file_has_key "$f" AWT_BUCKET_PREFIX; then
+    v=$(file_value "$f" AWT_BUCKET_PREFIX)
+    if [ -n "${!name+x}" ] && ! { check_value prefix "${!name}" >/dev/null && check_value prefix "$v" >/dev/null \
+        && [ "$(norm_prefix "${!name}")" = "$(norm_prefix "$v")" ]; }; then
+      if [ "$FORCE" = 1 ]; then
+        v=${!name}; new_inputs=1
+      else
+        warn "$name: keeping the value already stored on this host (AWT_INIT_FORCE=1 replaces it)"
+      fi
+    fi
+  elif [ -n "${!name+x}" ]; then
+    v=${!name}; new_inputs=1
+  else
+    v="${E,,}/"
+  fi
+  if msg=$(check_value prefix "$v"); then
+    printf -v "V_$name" '%s' "$(norm_prefix "$v")"
+  else
+    printf -v "V_$name" '%s' ""
+    errors+=("$name: $msg")
+  fi
+}
+
 # read_pem <label> <secret 0|1>: file path or pasted PEM (until the END line).
 read_pem() {
   local first line pem="" ropt=(-r)
@@ -324,6 +361,7 @@ step_inputs() {
     resolve "${E}_S3_ENDPOINT" "$(file_value "$f" AWT_S3_ENDPOINT)" required 0
     resolve "${E}_S3_REGION" "$(file_value "$f" LITESTREAM_S3_REGION)" required 0
     resolve "${E}_S3_BUCKET" "$(file_value "$f" AWT_S3_BUCKET)" required 0
+    resolve_prefix "$E" "$f"
     resolve "${E}_S3_ACCESS_KEY" "$(file_value "$f" AWT_S3_ACCESS_KEY)" required 1
     resolve "${E}_S3_SECRET_KEY" "$(file_value "$f" AWT_S3_SECRET_KEY)" required 1
     # Generated or required later (step env_files), depending on the replica.
@@ -733,30 +771,39 @@ step_tls() {
   fi
 }
 
+# replica_url <env>: where the env's Litestream replica lives, for messages.
+replica_url() {
+  local b="V_${1^^}_S3_BUCKET" p="V_${1^^}_BUCKET_PREFIX"
+  printf 's3://%s/%slitestream/' "${!b}" "${!p}"
+}
+
 # replica_exists <env>: whether the env's bucket holds a Litestream replica,
 # asked to litestream itself in a one-shot container of the app image (same
 # litestream.yml as the app). litestream exits 0 on S3 errors, so they are
 # detected in its log.
 replica_exists() {
   local e=$1 E=${1^^} image="$V_AWT_IMAGE:$V_AWT_CHANNEL" out err rc=0 v
-  local bucket="V_${E}_S3_BUCKET"
+  local replica prefix="V_${E}_BUCKET_PREFIX"
+  replica=$(replica_url "$e")
   docker pull -q "$image" >/dev/null 2>&1 \
-    || die "cannot pull $image to check s3://${!bucket}/litestream/$e for a replica (is the image published?); or set ${E}_MFA_KEY"
+    || die "cannot pull $image to check $replica for a replica (is the image published?); or set ${E}_MFA_KEY"
   out=$(mktemp); err=$(mktemp)
   for v in S3_ENDPOINT S3_BUCKET S3_ACCESS_KEY S3_SECRET_KEY; do
     local src="V_${E}_$v"; export "AWT_$v=${!src}"
   done
   local region="V_${E}_S3_REGION"; export LITESTREAM_S3_REGION="${!region}"
-  # Secrets go by name (-e NAME), never on the command line.
-  docker run --rm --entrypoint litestream -e "AWT_ENV=$e" -e AWT_S3_ENDPOINT -e AWT_S3_BUCKET \
-    -e AWT_S3_ACCESS_KEY -e AWT_S3_SECRET_KEY -e LITESTREAM_S3_REGION \
-    "$image" snapshots -config /etc/litestream.yml /data/awt.db >"$out" 2>"$err" || rc=$?
+  # Secrets go by name (-e NAME), never on the command line. The replica
+  # path comes from awt in the image, as in the entrypoint.
+  docker run --rm --entrypoint sh -e "AWT_BUCKET_PREFIX=${!prefix}" -e AWT_S3_ENDPOINT -e AWT_S3_BUCKET \
+    -e AWT_S3_ACCESS_KEY -e AWT_S3_SECRET_KEY -e LITESTREAM_S3_REGION "$image" -c \
+    'p=$(awt bucket-path litestream) && LITESTREAM_REPLICA_PATH=$p exec litestream snapshots -config /etc/litestream.yml /data/awt.db' \
+    >"$out" 2>"$err" || rc=$?
   unset AWT_S3_ENDPOINT AWT_S3_BUCKET AWT_S3_ACCESS_KEY AWT_S3_SECRET_KEY LITESTREAM_S3_REGION
   if [ "$rc" != 0 ] || grep -q 'level=ERROR' "$err"; then
     local why
     why=$(grep -m1 'level=ERROR' "$err" || tail -1 "$err")
     rm -f "$out" "$err"
-    die "cannot list s3://${!bucket}/litestream/$e: $why
+    die "cannot list $replica: $why
        Fix ${E}_S3_* (stored values are kept unless AWT_INIT_FORCE=1), or set ${E}_MFA_KEY."
   fi
   rc=$(tail -n +2 "$out" | grep -c . || true)
@@ -767,10 +814,12 @@ replica_exists() {
 # write_env <file> <example> KEY=VALUE...: a new file starts from the example
 # with the given values; an existing one only gets missing keys (from the
 # example) and values for keys that are missing or empty, or that changed
-# with AWT_INIT_FORCE=1 (resolve() keeps stored values otherwise). The image
-# tags (AWT_*_TAG) belong to deploy.sh and are never changed here.
+# with AWT_INIT_FORCE=1 (resolve() keeps stored values otherwise). An empty
+# value is skipped (the example's value stays), unless written +KEY=VALUE:
+# then empty is a value too (AWT_BUCKET_PREFIX). The image tags (AWT_*_TAG)
+# belong to deploy.sh and are never changed here.
 write_env() {
-  local dest=$1 example=$2 tmp kv k v cur line
+  local dest=$1 example=$2 tmp kv k v cur line always
   shift 2
   tmp=$(mktemp)
   if [ -f "$dest" ]; then
@@ -784,8 +833,10 @@ write_env() {
     cp "$example" "$tmp"
   fi
   for kv in "$@"; do
+    always=0
+    if [[ $kv == +* ]]; then always=1; kv=${kv#+}; fi
     k=${kv%%=*}; v=${kv#*=}
-    [ -n "$v" ] || continue
+    [ -n "$v" ] || [ "$always" = 1 ] || continue
     cur=$(file_value "$tmp" "$k")
     if ! grep -q "^$k=" "$tmp" || [ "$cur" != "$v" ]; then set_key "$tmp" "$k" "$v"; fi
   done
@@ -800,10 +851,10 @@ step_env_files() {
   # the existing key, and a new one would make every enrolled app unusable.
   for e in "${ENVS[@]}"; do
     E=${e^^}
-    local name="${E}_MFA_KEY" var="V_${E}_MFA_KEY" bucket="V_${E}_S3_BUCKET"
+    local name="${E}_MFA_KEY" var="V_${E}_MFA_KEY"
     [ -z "${!var}" ] || continue
     if replica_exists "$e"; then
-      local why="s3://${!bucket}/litestream/$e holds a Litestream replica: the $e database restored from it may hold TOTP secrets encrypted with its existing MFA key. A new key would make every enrolled authenticator app unusable (docs/ops.md section 7b), so none is generated."
+      local why="$(replica_url "$e") holds a Litestream replica: the $e database restored from it may hold TOTP secrets encrypted with its existing MFA key. A new key would make every enrolled authenticator app unusable (docs/ops.md section 7b), so none is generated."
       if [ "$INTERACTIVE" = 1 ]; then
         warn "$why Enter the existing $name (from your secrets backup)."
         ask "$name" 1 0
@@ -812,7 +863,7 @@ step_env_files() {
       fi
     else
       printf -v "$var" '%s' "$(openssl rand -base64 32)"
-      note "generated $name (no replica in s3://${!bucket}/litestream/$e). Back it up with the other secrets."
+      note "generated $name (no replica in $(replica_url "$e")). Back it up with the other secrets."
     fi
     if [ "$e" = training ] && [ "$V_TRAINING_MFA_KEY" = "${V_PROD_MFA_KEY:-}" ]; then
       die "TRAINING_MFA_KEY must differ from PROD_MFA_KEY"
@@ -839,9 +890,9 @@ step_env_files() {
     E=${e^^}
     local h="V_AWT_${E}_HOST" s1="V_${E}_S3_ENDPOINT" s2="V_${E}_S3_REGION" s3="V_${E}_S3_BUCKET" \
       s4="V_${E}_S3_ACCESS_KEY" s5="V_${E}_S3_SECRET_KEY" m="V_${E}_MFA_KEY" \
-      z="V_${E}_CLOUDFLARE_ZONE_ID" t="V_${E}_CLOUDFLARE_TOKEN"
+      z="V_${E}_CLOUDFLARE_ZONE_ID" t="V_${E}_CLOUDFLARE_TOKEN" p="V_${E}_BUCKET_PREFIX"
     write_env "$ROOT/.env.$e" "$ex/$e" "AWT_BASE_URL=https://${!h}" "AWT_S3_ENDPOINT=${!s1}" \
-      "LITESTREAM_S3_REGION=${!s2}" "AWT_S3_BUCKET=${!s3}" "AWT_S3_ACCESS_KEY=${!s4}" \
+      "LITESTREAM_S3_REGION=${!s2}" "AWT_S3_BUCKET=${!s3}" "+AWT_BUCKET_PREFIX=${!p}" "AWT_S3_ACCESS_KEY=${!s4}" \
       "AWT_S3_SECRET_KEY=${!s5}" "AWT_MFA_KEY=${!m}" "AWT_CLOUDFLARE_ZONE_ID=${!z}" \
       "AWT_CLOUDFLARE_TOKEN=${!t}"
   done
@@ -929,9 +980,9 @@ step_summary() {
   log "  image:      $V_AWT_IMAGE:$V_AWT_CHANNEL, training=$(file_value "$ROOT/.env" AWT_TRAINING_TAG) prod=$(file_value "$ROOT/.env" AWT_PROD_TAG)"
   for e in "${ENVS[@]}"; do
     E=${e^^}
-    local b="V_${E}_S3_BUCKET" a="V_${E}_S3_ACCESS_KEY" sk="V_${E}_S3_SECRET_KEY" m="V_${E}_MFA_KEY" t="V_${E}_CLOUDFLARE_TOKEN"
+    local b="V_${E}_S3_BUCKET" p="V_${E}_BUCKET_PREFIX" a="V_${E}_S3_ACCESS_KEY" sk="V_${E}_S3_SECRET_KEY" m="V_${E}_MFA_KEY" t="V_${E}_CLOUDFLARE_TOKEN"
     s=$(db_status "$e")
-    log "  $e: bucket ${!b}, S3 access key $(mask "${!a}"), S3 secret $(mask "${!sk}"), MFA key $(mask "${!m}"), Cloudflare token $(mask "${!t}")"
+    log "  $e: bucket ${!b}, prefix ${!p:-(none)}, S3 access key $(mask "${!a}"), S3 secret $(mask "${!sk}"), MFA key $(mask "${!m}"), Cloudflare token $(mask "${!t}")"
     log "  $e database: $s"
     [ "$s" != empty ] || empty+=("$e")
   done

@@ -1,6 +1,6 @@
 # Operations
 
-One OVHcloud VPS runs Docker Compose: `caddy`, `awt-prod`, `awt-training`. Cloudflare sits in front. Each awt container runs `litestream replicate -exec "awt serve"` and replicates its SQLite database to OVHcloud Object Storage (`litestream/<env>/` in the bucket; uploaded files go under `files/`, section 6). Design: `specifications/08-rewrite-recommendations.md` section 6. Image decision: `docs/decisions/0013-runtime-image.md`. Deploy decision: `docs/decisions/0016-pull-deploy.md`.
+One OVHcloud VPS runs Docker Compose: `caddy`, `awt-prod`, `awt-training`. Cloudflare sits in front. Each awt container runs `litestream replicate -exec "awt serve"` and replicates its SQLite database to OVHcloud Object Storage (`<AWT_BUCKET_PREFIX>litestream/` in the bucket; uploaded files go under `<AWT_BUCKET_PREFIX>files/`, section 6). Design: `specifications/08-rewrite-recommendations.md` section 6. Image decision: `docs/decisions/0013-runtime-image.md`. Deploy decision: `docs/decisions/0016-pull-deploy.md`.
 
 Layout on the VPS: `/opt/awt/{compose.yaml,caddy/Caddyfile,certs/,state/,.env*}`, `/opt/awt/deploy/{agent.sh,deploy.sh,weekly-restore-test.sh}` and `/etc/systemd/system/awt-agent.{service,timer}`.
 
@@ -53,7 +53,8 @@ rm /root/awt-init.env
 | `AWT_TLS_KEY_FILE` | required (or pasted) | `certs/origin.key` (600) | Its private key; must match the certificate. |
 | `PROD_S3_ENDPOINT`, `TRAINING_S3_ENDPOINT` | required | `AWT_S3_ENDPOINT` in `.env.prod`, `.env.training` | `https://` only, for example `https://s3.gra.io.cloud.ovh.net`. |
 | `PROD_S3_REGION`, `TRAINING_S3_REGION` | required | `LITESTREAM_S3_REGION` | For example `gra`. |
-| `PROD_S3_BUCKET`, `TRAINING_S3_BUCKET` | required | `AWT_S3_BUCKET` | Litestream replicates to `litestream/<env>/` in it; uploads go under `files/` (section 6). |
+| `PROD_S3_BUCKET`, `TRAINING_S3_BUCKET` | required | `AWT_S3_BUCKET` | One bucket shared by both environments, or one each. Litestream replicates to `<prefix>litestream/` in it; uploads go under `<prefix>files/` (section 6). |
+| `PROD_BUCKET_PREFIX`, `TRAINING_BUCKET_PREFIX` | `prod/`, `training/` | `AWT_BUCKET_PREFIX` | Prefix of everything the environment writes to its bucket. The defaults work with a shared bucket and with dedicated ones; with a dedicated bucket it may be empty (set the variable to an empty value). Segments of letters, digits, `.`, `_`, `-` separated by single `/`, no `.` or `..` segment; the trailing `/` is optional (stored with one). Never prompted. |
 | `PROD_S3_ACCESS_KEY`, `TRAINING_S3_ACCESS_KEY` | required | `AWT_S3_ACCESS_KEY` | Secret: hidden prompt, masked in the output. |
 | `PROD_S3_SECRET_KEY`, `TRAINING_S3_SECRET_KEY` | required | `AWT_S3_SECRET_KEY` | Secret. |
 | `PROD_MFA_KEY`, `TRAINING_MFA_KEY` | generated, unless the bucket holds a replica | `AWT_MFA_KEY` | Base64 of 32 bytes, different per environment. See the MFA rule below. |
@@ -77,7 +78,7 @@ Values are written as `KEY=value` lines: secrets must not contain spaces, quotes
 9. `first_deploy`: one agent run (`systemctl start awt-agent.service`), then `/healthz` of both apps, directly and through Caddy, as `deploy.sh` does.
 10. `summary`: hosts, deployed revision, masked secrets (`****` and the last 4 characters), and for each database whether it was restored from the S3 replica, already held data, or is empty, with the commands of section 4 (`awt import`, `awt user add`) for each empty one.
 
-**MFA key rule.** A stored key is kept. A given key is used. Otherwise the script asks Litestream, in a one-shot container of the app image with the environment's S3 settings (`litestream snapshots`), whether the bucket holds a replica under `litestream/<env>/`. No replica: it generates a key (`openssl rand -base64 32`). A replica: the database restored from it may hold TOTP secrets encrypted with the existing key, and a new key would make every enrolled authenticator app unusable (section 7b), so it never generates one: it prompts for the existing key (from your secrets backup), or, without a terminal, stops and names the variable to set. If the bucket cannot be listed (wrong endpoint or credentials, image not published) it stops too.
+**MFA key rule.** A stored key is kept. A given key is used. Otherwise the script asks Litestream, in a one-shot container of the app image with the environment's S3 settings (`litestream snapshots`), whether the bucket holds a replica under `<prefix>litestream/` (the path comes from `awt bucket-path litestream` in that container, as in the entrypoint). No replica: it generates a key (`openssl rand -base64 32`). A replica: the database restored from it may hold TOTP secrets encrypted with the existing key, and a new key would make every enrolled authenticator app unusable (section 7b), so it never generates one: it prompts for the existing key (from your secrets backup), or, without a terminal, stops and names the variable to set. If the bucket cannot be listed (wrong endpoint or credentials, image not published) it stops too.
 
 **Database.** The first deploy starts each app on an empty volume: the entrypoint restores the Litestream replica when the bucket has one (section 6), otherwise the database starts empty and you run section 4 (legacy import) and section 3.3 (first admin); the summary prints the exact commands.
 
@@ -94,7 +95,7 @@ Values are written as `KEY=value` lines: secrets must not contain spaces, quotes
 - Back up `/opt/awt/.env.prod` and `/opt/awt/.env.training` (MFA keys, S3 secrets) with your other secrets.
 - The weekly restore test cron (section 6) and uptime monitoring (section 7).
 
-**Local test:** `make init-vps-test` runs the script as root in `debian:13` containers: packages, users, firewall files, layout, certificate, env files and units are produced for real; `systemctl`, `journalctl`, `nft` (loading rules needs `NET_ADMIN`) and `docker` (no daemon; the agent run is simulated) are stubbed. `nft` also parses the generated ruleset for real (without `NET_ADMIN` it stops at its kernel cache, after the syntax check; the check is complete where the Docker daemon allows `--cap-add NET_ADMIN`). sshd is absent, or a stub answering `sshd -T`. Cases: happy path (no sshd: SSH on 22, nothing SSH-related installed or written, two-phase firewall load, umask), re-run with no input (nothing changes), no SSH input (`AWT_ADMIN_*`, `AWT_SSH_PORT`) listed, required or prompted, missing values, invalid `http://` endpoint and MFA key, one TLS file only (interactive), wrong system, not root, the SSH rule following `sshd -T` (port 22, port 2200, several ports, `sshd -T` failing) and the session's port (kept, firewall already up, certificate kept with `AWT_INIT_FORCE=1`, then dropped from a session on sshd's port), mismatched certificate, S3 listing error with exit 0, replica without MFA key (non-interactive and prompted), failed first deploy then resume, and every input name documented here. It needs Docker and network and takes a few minutes; it is not part of `make check`.
+**Local test:** `make init-vps-test` runs the script as root in `debian:13` containers: packages, users, firewall files, layout, certificate, env files and units are produced for real; `systemctl`, `journalctl`, `nft` (loading rules needs `NET_ADMIN`) and `docker` (no daemon; the agent run is simulated) are stubbed. `nft` also parses the generated ruleset for real (without `NET_ADMIN` it stops at its kernel cache, after the syntax check; the check is complete where the Docker daemon allows `--cap-add NET_ADMIN`). sshd is absent, or a stub answering `sshd -T`. Cases: happy path (no sshd: SSH on 22, nothing SSH-related installed or written, two-phase firewall load, umask), re-run with no input (nothing changes), no SSH input (`AWT_ADMIN_*`, `AWT_SSH_PORT`) listed, required or prompted, default bucket prefixes, a prefix normalised (`prod` to `prod/`) or emptied with `AWT_INIT_FORCE=1` and kept on a re-run, missing values, invalid `http://` endpoint, MFA key and bucket prefixes, one TLS file only (interactive), wrong system, not root, the SSH rule following `sshd -T` (port 22, port 2200, several ports, `sshd -T` failing) and the session's port (kept, firewall already up, certificate kept with `AWT_INIT_FORCE=1`, then dropped from a session on sshd's port), mismatched certificate, S3 listing error with exit 0, replica without MFA key (non-interactive and prompted), failed first deploy then resume, and every input name documented here. It needs Docker and network and takes a few minutes; it is not part of `make check`.
 
 ## 1. Provision the VPS
 
@@ -128,9 +129,11 @@ Nothing secret is committed. On the VPS, in `/opt/awt` (mode 600, owner = deploy
 |---|---|---|
 | `.env` | `deploy/env.example` | hosts, image name, moving tag the agent follows (`AWT_CHANNEL`, default `rewrite-go`), deployed image tags (rewritten by `deploy.sh`; `none` = nothing deployed yet, there is no `latest` default) |
 | `.env.prod` | `deploy/env.prod.example` | `AWT_*` for prod: base URL (required), S3 keys, Cloudflare token, trusted proxies |
-| `.env.training` | `deploy/env.training.example` | same for training, with its own base URL and bucket |
+| `.env.training` | `deploy/env.training.example` | same for training, with its own base URL and bucket or bucket prefix |
 
 There is no session secret: sessions are random tokens stored in the database. `AWT_ENV` is set per service in `compose.yaml` (`prod`, `training`); the app refuses to start outside dev without `AWT_BASE_URL`. Set `AWT_IMAGE` in `.env` to `ghcr.io/<lowercase-owner>/awt`. Create the Object Storage bucket(s) and an S3 user with read/write access to them. `LITESTREAM_S3_REGION` is the OVH region (for example `gra`). Leave `AWT_S3_BUCKET` empty to run without replication (not for prod).
+
+**Bucket prefix.** `AWT_BUCKET_PREFIX` (`prod/` and `training/` in the examples) is put in front of every object key the environment writes: the replica in `<prefix>litestream/`, uploads in `<prefix>files/`. So both environments can share one bucket (different prefixes), or each have its own (any prefix, or empty). With or without a trailing `/`; letters, digits, `.`, `_`, `-` and single `/` only, no `.` or `..` segment. The app refuses to start on an invalid value, and so does the container: the entrypoint gets the replica path from `awt bucket-path litestream`, which applies the same rule (decision 0017). `AWT_ENV` is not part of any bucket path.
 
 **Manager MFA key.** TOTP secrets are stored encrypted with `AWT_MFA_KEY` (base64, 32 bytes). Generate it once per environment with `openssl rand -base64 32` and put it in `.env.prod` / `.env.training` (different values). The app refuses to start outside dev if any TOTP secret exists and the key is missing; if the key is lost or changed, enrolled TOTP secrets become unusable and each affected manager must be reset by an admin and re-enrol. Back it up with the other secrets. In dev a fixed key is used and a warning is logged.
 
@@ -147,7 +150,7 @@ Deploys need no GitHub secret and no registry credential on the VPS: the reposit
    systemctl enable --now awt-agent.timer
    ```
    Push to the deploy branch (`rewrite-go`, set in the `if:` of the `build` job in `.github/workflows/ci.yml`; the moving tag has the same name). After `check` passes, `build` publishes the image; within a minute the agent installs its `compose.yaml` and `Caddyfile`, deploys training (health checked), then prod. Follow it with `journalctl -u awt-agent -f`. The first run starts empty databases (migrations run at `awt serve` startup).
-2. Check: `docker compose ps` shows `healthy` for `awt-prod` and `awt-training`; `docker compose logs awt-prod` shows `listening`; the public URL answers through Cloudflare; the bucket gets a `litestream/prod/` prefix within a minute.
+2. Check: `docker compose ps` shows `healthy` for `awt-prod` and `awt-training`; `docker compose logs awt-prod` shows `listening`; the public URL answers through Cloudflare; the bucket gets a `<prefix>litestream/` prefix within a minute (`prod/litestream/` with the example prefix).
 3. Create the first admin: `docker compose exec awt-prod awt user add --email you@example.org --name "You" --role admin` (the password is read from stdin or prompted).
 
 ## 4. First import (legacy data)
@@ -190,27 +193,42 @@ Operating the agent (as an admin, with `sudo`):
 
 ## 6. Backups and restore
 
-**Bucket layout.** Each environment's bucket holds two prefixes:
+**Bucket layout.** Each environment writes under its `AWT_BUCKET_PREFIX` (section 2; `<prefix>` below, possibly empty), in its own bucket or in one bucket shared with the other environment:
 
-- `litestream/<env>/`: the database replica (below).
-- `files/<sha256>`: uploaded photos, logos and PDFs. Each object is named by the SHA-256 of its content and carries its content type. The original filename lives in the database's `files` table. Litestream does not back these up, so never delete them by hand; the database refers to them.
+- `<prefix>litestream/`: the database replica (below).
+- `<prefix>files/<sha256>`: uploaded photos, logos and PDFs. Each object is named by the SHA-256 of its content and carries its content type. The original filename lives in the database's `files` table. Litestream does not back these up, so never delete them by hand; the database refers to them.
 
-Images built before this layout stored the files at the bucket root. To move a bucket's root-level files under `files/`, run this once per bucket, before the new image deploys. The copy leaves the old objects in place, so the running app keeps working:
+For example, one bucket for both: `prod/litestream/`, `prod/files/`, `training/litestream/`, `training/files/`. A dedicated bucket with an empty prefix: `litestream/`, `files/`.
+
+**Moving from the old layout.** Images built before this layout stored the files at the bucket root and the replica in `litestream/<env>/`.
+
+Files: copy the bucket's root-level files to `<prefix>files/` once per environment, before the new image deploys. The copy leaves the old objects in place, so the running app keeps working. `<old-bucket>` is the bucket the environment used so far; `<bucket>` is its bucket from now on (the same one, or a shared one):
 
 ```sh
 AWS='docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION=gra
   amazon/aws-cli@sha256:e3e329e1d2894b7b4bbb0aacacd0a155262159b2e7a3b4275eb1f24046d3e06c
   --endpoint-url https://s3.gra.io.cloud.ovh.net'
 HEX=$(printf '[0-9a-f]%.0s' $(seq 64))   # matches only the 64-hex names at the root
+PREFIX=prod/                             # this environment's AWT_BUCKET_PREFIX, with its trailing /, or empty
 read -r AWS_ACCESS_KEY_ID; read -rs AWS_SECRET_ACCESS_KEY; export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
-$AWS s3 cp s3://<bucket>/ s3://<bucket>/files/ --recursive --exclude '*' --include "$HEX"
+$AWS s3 cp s3://<old-bucket>/ "s3://<bucket>/${PREFIX}files/" --recursive --exclude '*' --include "$HEX"
 ```
 
 Once the new image is deployed and images load on the site, remove the old copies:
 
 ```sh
-$AWS s3 rm s3://<bucket>/ --recursive --exclude '*' --include "$HEX"
+$AWS s3 rm s3://<old-bucket>/ --recursive --exclude '*' --include "$HEX"
 ```
+
+Litestream: nothing to move on a running server. The volume already holds the database, so when the new image starts, Litestream finds no replica at `<prefix>litestream/` and starts a fresh one there from the local database (check that it appears, section 3). Once it exists, delete the old replica:
+
+```sh
+$AWS s3 rm s3://<old-bucket>/litestream/<env>/ --recursive   # <env> = prod or training
+```
+
+With an empty prefix in the same bucket, the new replica is `litestream/generations/` and the old one `litestream/<env>/`: the command above only removes the old one. The one caveat: between the deploy and the first snapshot at the new path, a restore on an empty volume (section 6 below, or the weekly restore test) finds no replica, so do not wipe a volume in that window.
+
+These commands were checked against a local MinIO (same `aws-cli` image): only the 64-hex root objects are copied and removed, other keys and the other environment's objects are left alone, with the same bucket or another one as the target.
 
 Litestream replicates the database continuously (about 1 s lag), snapshots every 6 h, keeps 30 days (`litestream.yml`).
 
@@ -224,16 +242,16 @@ docker volume rm awt_prod_data
 docker compose up -d awt-prod          # restores from the replica, then serves
 ```
 
-**Point in time restore** to a scratch file (does not touch prod):
+**Point in time restore** to a scratch file (does not touch prod). Litestream commands run outside the entrypoint (`--entrypoint sh`, `docker compose exec`) do not see the `LITESTREAM_REPLICA_PATH` it exports: set it from `awt bucket-path litestream` first, as below; without it, `litestream.yml` points at the bucket root.
 
 ```sh
 docker compose run --rm --no-deps --entrypoint sh awt-prod -c \
-  'litestream restore -config /etc/litestream.yml -timestamp 2026-10-18T12:00:00Z -o /tmp/pit.db /data/awt.db && ls -l /tmp/pit.db'
+  'p=$(awt bucket-path litestream) && export LITESTREAM_REPLICA_PATH=$p && litestream restore -config /etc/litestream.yml -timestamp 2026-10-18T12:00:00Z -o /tmp/pit.db /data/awt.db && ls -l /tmp/pit.db'
 ```
 
 To make a point in time restore live, restore to `/data/awt.db` on an emptied volume (same command with `-o /data/awt.db` inside a container mounting the volume), then start the service.
 
-**Local drill:** `make backup-restore-test` runs the whole cycle against a local MinIO in a few seconds (writes data, deletes the volume, starts again, checks the data is back).
+**Local drill:** `make backup-restore-test` runs the whole cycle against a local MinIO in a few seconds (writes data, deletes the volume, starts again, checks the data is back). It runs with `AWT_BUCKET_PREFIX=restore-test/` and checks the replica lands under `restore-test/litestream/` and not at the bucket root.
 
 **Weekly restore test (cron on the VPS).** `deploy/weekly-restore-test.sh` restores the latest prod replica into a throwaway container and runs `PRAGMA integrity_check`, requires at least one row in `users`, and opens it with `awt migrate`; it fails loudly on any of these. Install it in the deploy user's crontab (`sudo crontab -u deploy -e`):
 

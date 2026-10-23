@@ -13,8 +13,10 @@
 #
 # Cases: every input documented in docs/ops.md, no SSH input (AWT_ADMIN_*,
 # AWT_SSH_PORT) listed, required or prompted, happy path (no sshd: SSH rule
-# on 22), re-run (nothing changes), missing values (non-interactive), invalid
-# inputs (http S3 endpoint, MFA key), one TLS file only (interactive), wrong
+# on 22), default bucket prefixes, re-run (nothing changes), missing values
+# (non-interactive), invalid inputs (http S3 endpoint, MFA key, bucket
+# prefixes), bucket prefix normalised or emptied with AWT_INIT_FORCE=1 and
+# kept on a re-run, one TLS file only (interactive), wrong
 # OS, not root, firewall SSH rule following `sshd -T` (port 22, 2200, several
 # ports, sshd -T failing) plus the port of the SSH session running the
 # script (kept, then dropped from a session on sshd's port), mismatched TLS
@@ -164,7 +166,8 @@ fi
 case "$1" in
   run)
     env=""
-    for a in "$@"; do case "$a" in AWT_ENV=*) env=${a#AWT_ENV=} ;; esac; done
+    # The environment, from its bucket prefix (the defaults prod/, training/).
+    for a in "$@"; do case "$a" in AWT_BUCKET_PREFIX=*) env=${a#AWT_BUCKET_PREFIX=}; env=${env%/} ;; esac; done
     case "$*" in
       *snapshots*)
         echo "replica  generation        index  size  created"
@@ -362,10 +365,12 @@ check "no SSH input listed as missing" no_ssh_input
 check "nothing installed (no apt run)" eval '! exists /usr/sbin/nft && ! exists /opt/awt'
 
 echo "== case: invalid inputs, all refused at once before anything changes"
-run_init "${FULL[@]}" -e PROD_S3_ENDPOINT=http://s3.gra.io.cloud.ovh.net -e TRAINING_MFA_KEY=not-base64-32
+run_init "${FULL[@]}" -e PROD_S3_ENDPOINT=http://s3.gra.io.cloud.ovh.net -e TRAINING_MFA_KEY=not-base64-32 \
+  -e PROD_BUCKET_PREFIX=prod/../x -e TRAINING_BUCKET_PREFIX=a//b
 check "exit non-zero" [ "$rc" != 0 ]
 check "http:// S3 endpoint refused (https only)" has "PROD_S3_ENDPOINT: must be an https:// URL"
 check "invalid MFA key named too (all errors at once)" has "TRAINING_MFA_KEY: must be base64 of 32 bytes"
+check "bucket prefixes with a .. segment or // refused" eval 'has "PROD_BUCKET_PREFIX: must be empty or segments" && has "TRAINING_BUCKET_PREFIX: must be empty or segments"'
 check "nothing installed, no systemctl call" eval '! exists /usr/sbin/nft && ! exists /opt/awt && [ -z "$(calls)" ]'
 
 echo "== case: interactive, only one TLS file given"
@@ -429,12 +434,13 @@ check ".env.training has every key" all_keys env.training.example /opt/awt/.env.
 check ".env values" eval '[ "$(env_value /opt/awt/.env AWT_IMAGE)" = ghcr.io/fatpat/awt ] && [ "$(env_value /opt/awt/.env AWT_CHANNEL)" = rewrite-go ] && [ "$(env_value /opt/awt/.env AWT_PROD_HOST)" = prod.example.org ] && [ "$(env_value /opt/awt/.env AWT_TRAINING_HOST)" = training.example.org ]'
 check ".env.prod values" eval '[ "$(env_value /opt/awt/.env.prod AWT_BASE_URL)" = https://prod.example.org ] && [ "$(env_value /opt/awt/.env.prod AWT_S3_BUCKET)" = awt-prod ] && [ "$(env_value /opt/awt/.env.prod AWT_S3_SECRET_KEY)" = prod-secret-value-9876 ] && [ "$(env_value /opt/awt/.env.prod LITESTREAM_S3_REGION)" = gra ] && [ "$(env_value /opt/awt/.env.prod AWT_CLOUDFLARE_TOKEN)" = cf-token-value-5555 ]'
 check ".env.training values" eval '[ "$(env_value /opt/awt/.env.training AWT_BASE_URL)" = https://training.example.org ] && [ "$(env_value /opt/awt/.env.training AWT_S3_BUCKET)" = awt-training ] && [ "$(env_value /opt/awt/.env.training AWT_S3_ACCESS_KEY)" = trainaccess0002 ]'
+check "default bucket prefixes prod/ and training/" eval '[ "$(env_value /opt/awt/.env.prod AWT_BUCKET_PREFIX)" = prod/ ] && [ "$(env_value /opt/awt/.env.training AWT_BUCKET_PREFIX)" = training/ ] && has "prefix prod/" && has "prefix training/"'
 # shellcheck disable=SC2034 # used in eval checks
 mfa_prod=$(env_value /opt/awt/.env.prod AWT_MFA_KEY)
 # shellcheck disable=SC2034
 mfa_training=$(env_value /opt/awt/.env.training AWT_MFA_KEY)
 check "MFA keys generated (no replica), base64 32 bytes, distinct" eval 'b64_32 "$mfa_prod" && b64_32 "$mfa_training" && [ "$mfa_prod" != "$mfa_training" ]'
-check "replica checked for both environments" eval 'in_ctr grep -q "AWT_ENV=prod.*snapshots" /var/lib/awt-test/docker.log && in_ctr grep -q "AWT_ENV=training.*snapshots" /var/lib/awt-test/docker.log'
+check "replica checked for both environments, under their prefix" eval 'in_ctr grep -q "AWT_BUCKET_PREFIX=prod/ .*awt bucket-path litestream.*snapshots" /var/lib/awt-test/docker.log && in_ctr grep -q "AWT_BUCKET_PREFIX=training/ .*awt bucket-path litestream.*snapshots" /var/lib/awt-test/docker.log'
 check "secrets handled under umask 077" eval '[ -n "$(in_ctr cat /var/lib/awt-test/umask.log)" ] && ! in_ctr grep -vqx 0077 /var/lib/awt-test/umask.log'
 check "no temporary file left in /tmp or /opt/awt" eval '[ -z "$(in_ctr find /tmp /opt/awt -maxdepth 1 \( -name "tmp.*" -o -name ".awt-init.*" -o -name "*.tmp" -o -name ".env*.??????" \) -print)" ]'
 check "agent lock usable by the agent (deploy)" [ "$(stat_of /run/lock/awt-agent.lock)" = "deploy:deploy 644" ]
@@ -465,8 +471,10 @@ check "firewall already done (same rule as the fallback)" has "==> firewall: alr
 
 echo "== case: sshd moved to 2200, run over SSH on port 22, firewall already up, AWT_INIT_FORCE=1"
 in_ctr sh -c 'echo "port 2200" > /var/lib/awt-test/sshd-T; : > /var/lib/awt-test/calls.log; rm -f /var/lib/awt-test/nft-load.*'
-run_init "${FULL[@]}" -e AWT_INIT_FORCE=1 -e "SSH_CONNECTION=203.0.113.5 50022 198.51.100.7 22"
+run_init "${FULL[@]}" -e AWT_INIT_FORCE=1 -e "SSH_CONNECTION=203.0.113.5 50022 198.51.100.7 22" \
+  -e PROD_BUCKET_PREFIX=prod -e TRAINING_BUCKET_PREFIX=
 check "exit 0" [ "$rc" = 0 ]
+check "bucket prefix: prod normalised to prod/, training emptied (dedicated bucket)" eval 'grep -qx "AWT_BUCKET_PREFIX=prod/" <<<"$(in_ctr cat /opt/awt/.env.prod)" && grep -qx "AWT_BUCKET_PREFIX=" <<<"$(in_ctr cat /opt/awt/.env.training)" && has "prefix (none)"'
 check "SSH rules: 2200 (sshd -T) and 22 (this session)" ssh_ports_are "22 2200"
 check "says this session's port is kept" has "port 22 (this SSH session)"
 check "table already up: loaded once, no policy-accept phase" eval '[ "$(calls | grep -c "^nft -f")" = 1 ] && ! in_ctr grep -q "policy accept;" /var/lib/awt-test/nft-load.1'
@@ -479,6 +487,7 @@ run_init -e AWT_INIT_FORCE=1 -e "SSH_CONNECTION=203.0.113.5 50023 198.51.100.7 2
 check "exit 0" [ "$rc" = 0 ]
 check "no certificate asked for (installed one kept)" eval 'hasnt AWT_TLS_CERT_FILE && hasnt Missing'
 check "SSH rule on 2200 only" ssh_ports_are 2200
+check "empty training prefix kept on a re-run without input" eval 'grep -qx "AWT_BUCKET_PREFIX=" <<<"$(in_ctr cat /opt/awt/.env.training)"'
 check "firewall changed" has "==> firewall: changed"
 
 echo "== case: sshd -T reports several ports"
@@ -505,7 +514,7 @@ echo "== case: litestream reports an S3 error but exits 0"
 in_ctr touch /var/lib/awt-test/s3-error
 run_init "${FULL[@]}"
 check "exit non-zero" [ "$rc" != 0 ]
-check "reports the S3 error" eval 'has "cannot list s3://awt-prod/litestream/prod" && has "cannot determine snapshots"'
+check "reports the S3 error" eval 'has "cannot list s3://awt-prod/prod/litestream/" && has "cannot determine snapshots"'
 check "no MFA key generated, .env.prod not written" eval 'hasnt "generated PROD_MFA_KEY" && ! exists /opt/awt/.env.prod'
 in_ctr rm /var/lib/awt-test/s3-error
 
