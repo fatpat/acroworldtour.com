@@ -17,7 +17,7 @@ The owner decided on 2026-10-23, verbatim: "remove the rule on deployment to tra
 - Rollback is per environment: a failed environment goes back to its previous revision, the other keeps the new one.
 - The baked `compose.yaml` and `Caddyfile` are shared:
   - If they fail validation, no environment gets the revision, and it is recorded as failed on both.
-  - If at least one environment runs the revision, its files stay installed and a failed environment runs its previous image under them.
+  - If at least one environment runs the revision, its files stay installed and a failed environment is rolled back to its previous image under the previous `compose.yaml` (`state/prev/compose.yaml`, given to `deploy.sh` as `AWT_COMPOSE_FILE`), so it runs exactly as before. The `Caddyfile` is shared and stays the new one: as a technical constraint of the single shared proxy, a `Caddyfile` change must keep serving the previous app version. Until a new revision arrives, the failed environment stays on its previous image under that previous definition; a later deploy of it uses the installed files.
   - If no environment took it, the previous files are put back before the failed environments are rolled back.
 - The no-op check and the `state/installed-ok` repair work per environment: a run has nothing to do when each environment is on the revision, skipped or failed there before. The marker is repaired when at least one environment runs the revision.
 - While a training refresh is incomplete (`state/sync-training.incomplete`, decision 0018), training is skipped and prod proceeds. This is the general rule applied to an environment that cannot be deployed, not a special policy.
@@ -27,4 +27,5 @@ The owner decided on 2026-10-23, verbatim: "remove the rule on deployment to tra
 
 - A revision may reach prod without running on training first, and training no longer protects prod from a bad release. The health check and per-environment rollback in `deploy.sh` remain.
 - Training and prod may run different revisions for a while (one failed, the other did not); `journalctl -u awt-agent` and the two failed lists show which.
-- An older prod image may run under a newer revision's `compose.yaml` and `Caddyfile` when only training took that revision. The deploy configuration changes rarely and stays compatible across one release, like migrations (`docs/ops.md` section 5).
+- After a partial success the failed environment runs its previous image under its previous `compose.yaml` but behind the new `Caddyfile` (the shared proxy, above).
+- A failed pull is neither recorded nor rolled back: nothing changed on that environment.
