@@ -109,6 +109,13 @@ func TestResetTrainingAuth(t *testing.T) {
 			t.Fatalf("%s: %v", q, err)
 		}
 	}
+	// Every table classified "reset" holds a row, so a reset table that
+	// ResetTrainingAuth forgets fails the emptiness check below.
+	for _, tbl := range authTables {
+		if n := count(t, db, `SELECT count(*) FROM "`+tbl+`"`); n == 0 {
+			t.Fatalf("fixture: reset table %s is empty; add a row to it", tbl)
+		}
+	}
 	before := fingerprint(t, db)
 
 	got, err := store.ResetTrainingAuth(ctx, db)
