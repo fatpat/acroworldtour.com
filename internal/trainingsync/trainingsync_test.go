@@ -290,3 +290,67 @@ func TestPrepareDBRefusesCorruptIndex(t *testing.T) {
 		t.Errorf("err = %v", err)
 	}
 }
+
+// Bucket names are compared without case: refusing too much is safe.
+func TestCheckSeparateIgnoresCase(t *testing.T) {
+	err := trainingsync.CheckSeparate(target(t, "prod", "AWT", "prod/"), target(t, "training", "awt", ""))
+	if !errors.Is(err, trainingsync.ErrOverlap) {
+		t.Errorf("err = %v, want ErrOverlap", err)
+	}
+}
+
+// The env file on disk may have been edited without recreating the
+// container: the running settings must be the file's, or the overlap check
+// would judge a place the container no longer (or not yet) writes to.
+func TestCheckLive(t *testing.T) {
+	prod := target(t, "prod", "awt", "prod/")
+	same := []trainingsync.Live{
+		{Endpoint: "https://s3.gra.io.cloud.ovh.net", Bucket: "awt", Prefix: "prod/"},
+		{Endpoint: "https://s3.gra.io.cloud.ovh.net/", Bucket: "awt", Prefix: "prod"},
+		{Endpoint: "https://s3.gra.io.cloud.ovh.net", Bucket: "awt", Prefix: "/prod/"},
+	}
+	for _, l := range same {
+		if err := trainingsync.CheckLive(prod, l); err != nil {
+			t.Errorf("%+v: %v", l, err)
+		}
+	}
+	drift := []trainingsync.Live{
+		{Endpoint: "https://s3.gra.io.cloud.ovh.net", Bucket: "awt-old", Prefix: "prod/"},
+		{Endpoint: "https://s3.gra.io.cloud.ovh.net", Bucket: "awt", Prefix: ""},
+		{Endpoint: "https://s3.sbg.io.cloud.ovh.net", Bucket: "awt", Prefix: "prod/"},
+		{Endpoint: "https://s3.gra.io.cloud.ovh.net", Bucket: "awt", Prefix: "../x"},
+	}
+	for _, l := range drift {
+		err := trainingsync.CheckLive(prod, l)
+		if !errors.Is(err, trainingsync.ErrDrift) {
+			t.Errorf("%+v: err = %v, want ErrDrift", l, err)
+		} else if !strings.Contains(err.Error(), "docker compose up -d awt-prod") {
+			t.Errorf("%+v: no remedy in %v", l, err)
+		}
+	}
+}
+
+// A prod newer than this binary may hold auth tables ResetTrainingAuth does
+// not know: refuse, before training is touched.
+func TestPrepareDBRefusesNewerSchema(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "snapshot.db")
+	seedDB(t, path)
+	db, err := sql.Open("sqlite", "file:"+path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO schema_migrations (version) VALUES ('9999_future_auth')`); err != nil {
+		t.Fatal(err)
+	}
+	db.Close()
+	_, err = trainingsync.PrepareDB(context.Background(), path)
+	if err == nil || !strings.Contains(err.Error(), "9999_future_auth") {
+		t.Fatalf("err = %v, want a refusal naming 9999_future_auth", err)
+	}
+	db, _ = sql.Open("sqlite", "file:"+path+"?mode=ro")
+	defer db.Close()
+	var sessions int
+	if err := db.QueryRow(`SELECT count(*) FROM sessions`).Scan(&sessions); err != nil || sessions != 1 {
+		t.Errorf("sessions = %d, %v: the snapshot was changed", sessions, err)
+	}
+}

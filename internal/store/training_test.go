@@ -5,14 +5,25 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"regexp"
 	"slices"
 	"testing"
 
 	"awt/internal/store"
 )
 
-// authTables are emptied on training (decision 0018).
-var authTables = []string{"sessions", "login_challenges", "user_totp", "user_webauthn_credentials", "user_recovery_codes"}
+// authTables are emptied on training (decision 0018): the tables
+// classified "reset" in trainingClone.
+var authTables = func() []string {
+	var out []string
+	for table, class := range trainingClone {
+		if class == "reset" {
+			out = append(out, table)
+		}
+	}
+	slices.Sort(out)
+	return out
+}()
 
 // fingerprint hashes every row of every table except the auth tables and
 // the users' MFA failure columns, so a cleanup that touches anything else
@@ -137,5 +148,87 @@ func TestResetTrainingAuth(t *testing.T) {
 	// Again on a clean database: nothing to remove, no error.
 	if got, err := store.ResetTrainingAuth(ctx, db); err != nil || got != (store.TrainingAuthReset{}) {
 		t.Errorf("second reset = %+v, %v", got, err)
+	}
+}
+
+func TestUnknownMigrations(t *testing.T) {
+	db := openMigrated(t)
+	ctx := context.Background()
+	if got, err := store.UnknownMigrations(ctx, db); err != nil || len(got) != 0 {
+		t.Fatalf("fresh schema: %v, %v", got, err)
+	}
+	if _, err := db.Write.Exec(`INSERT INTO schema_migrations (version) VALUES ('9999_b'), ('9998_a')`); err != nil {
+		t.Fatal(err)
+	}
+	got, err := store.UnknownMigrations(ctx, db)
+	if err != nil || !slices.Equal(got, []string{"9998_a", "9999_b"}) {
+		t.Fatalf("got %v, %v", got, err)
+	}
+}
+
+// Decision 0018: the training clone keeps every table of prod except the
+// auth state ResetTrainingAuth removes. Every table of the schema must be
+// classified here, so a migration adding a table (a new kind of second
+// factor, a token store...) fails this test until someone decides whether
+// training keeps it or ResetTrainingAuth clears it.
+var trainingClone = map[string]string{
+	"rulesets": "cloned", "pilots": "cloned", "pilot_awt_years": "cloned", "teams": "cloned",
+	"team_pilots": "cloned", "judges": "cloned", "tricks": "cloned", "unique_tricks": "cloned",
+	"files": "cloned", "seasons": "cloned", "competitions": "cloned", "competition_seasons": "cloned",
+	"competition_pilots": "cloned", "competition_teams": "cloned", "competition_judges": "cloned",
+	"competition_repeatable_tricks": "cloned", "runs": "cloned", "run_participants": "cloned",
+	"run_judges": "cloned", "flights": "cloned", "flight_tricks": "cloned", "flight_marks": "cloned",
+	"flight_warnings": "cloned", "ranking_entries": "cloned", "user_competitions": "cloned",
+	"news": "cloned", "events": "cloned", "event_competitions": "cloned", "documents": "cloned",
+	"pages": "cloned", "redirects": "cloned", "site_settings": "cloned", "schema_migrations": "cloned",
+	// Accounts and passwords stay (managers log in with their prod
+	// password); the MFA failure columns are reset (resetColumns).
+	"users":                     "cloned",
+	"sessions":                  "reset",
+	"login_challenges":          "reset",
+	"user_totp":                 "reset",
+	"user_webauthn_credentials": "reset",
+	"user_recovery_codes":       "reset",
+}
+
+// resetColumns are the columns of cloned tables that ResetTrainingAuth
+// resets. A cloned table's column whose name looks like auth state must be
+// listed here or in authLookingButCloned.
+var resetColumns = []string{"users.mfa_failed_count", "users.mfa_locked_until"}
+
+var authLookingButCloned = []string{"users.password_hash"}
+
+var authLooking = regexp.MustCompile(`(?i)mfa|totp|webauthn|passkey|session|token|secret|recovery|password|challenge|credential|otp`)
+
+func TestTrainingCloneClassifiesEverySchemaTable(t *testing.T) {
+	db := openMigrated(t)
+	rows, err := db.Read.Query(`SELECT m.name, p.name FROM sqlite_master m, pragma_table_info(m.name) p
+		WHERE m.type = 'table' AND m.name NOT LIKE 'sqlite_%' ORDER BY 1, 2`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	seen := map[string]bool{}
+	for rows.Next() {
+		var table, column string
+		if err := rows.Scan(&table, &column); err != nil {
+			t.Fatal(err)
+		}
+		seen[table] = true
+		class, ok := trainingClone[table]
+		if !ok {
+			t.Errorf("table %s is not classified for the training clone (decision 0018): add it to trainingClone as cloned, or clear it in store.ResetTrainingAuth and mark it reset", table)
+			continue
+		}
+		col := table + "." + column
+		if class == "cloned" && authLooking.MatchString(column) &&
+			!slices.Contains(resetColumns, col) && !slices.Contains(authLookingButCloned, col) {
+			t.Errorf("column %s looks like auth state: reset it in store.ResetTrainingAuth (resetColumns) or list it in authLookingButCloned", col)
+		}
+	}
+	for table := range trainingClone {
+		if !seen[table] {
+			t.Errorf("trainingClone lists %s, which is not in the schema", table)
+		}
 	}
 }

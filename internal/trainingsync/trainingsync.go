@@ -22,6 +22,36 @@ import (
 // ErrOverlap means wiping training could touch prod's objects.
 var ErrOverlap = errors.New("prod and training overlap in object storage")
 
+// ErrDrift means a running container does not use its env file's object
+// storage settings (the file was edited, the container not recreated).
+var ErrDrift = errors.New("running container differs from its env file")
+
+// Live is what a running container uses (docker inspect): the non-secret
+// object storage settings, as raw environment values.
+type Live struct{ Endpoint, Bucket, Prefix string }
+
+// CheckLive refuses when the running container of t's environment does
+// not use t's endpoint, bucket and prefix. The overlap check judges the env
+// files; it is only meaningful if they are what the containers run with.
+// Values are named, never quoted: only the setting that differs.
+func CheckLive(t Target, live Live) error {
+	var differ []string
+	if strings.TrimSuffix(live.Endpoint, "/") != strings.TrimSuffix(t.S3.Endpoint, "/") {
+		differ = append(differ, "AWT_S3_ENDPOINT")
+	}
+	if live.Bucket != t.S3.Bucket {
+		differ = append(differ, "AWT_S3_BUCKET")
+	}
+	if p, err := config.ParseBucketPrefix(live.Prefix); err != nil || p != t.Prefix {
+		differ = append(differ, "AWT_BUCKET_PREFIX")
+	}
+	if len(differ) == 0 {
+		return nil
+	}
+	return fmt.Errorf("%w: the running awt-%s uses another %s than .env.%s; recreate it with the file's settings (docker compose up -d awt-%s) or restore the file, then run again",
+		ErrDrift, t.Env, strings.Join(differ, ", "), t.Env, t.Env)
+}
+
 // Target is where one environment keeps its objects.
 type Target struct {
 	Env    string // AWT_ENV
@@ -73,10 +103,11 @@ func (t Target) String() string {
 }
 
 // CheckSeparate refuses a prod and a training in one bucket whose prefixes
-// are equal or contain one another. Buckets are compared by name only: two
-// endpoints may reach the same bucket, so a same-named bucket counts as one.
+// are equal or contain one another. Buckets are compared by name only, and
+// without case: two endpoints may reach the same bucket, so a same-named
+// bucket counts as one (refusing too much is the safe side).
 func CheckSeparate(prod, training Target) error {
-	if prod.S3.Bucket != training.S3.Bucket {
+	if !strings.EqualFold(prod.S3.Bucket, training.S3.Bucket) {
 		return nil
 	}
 	if strings.HasPrefix(prod.Prefix, training.Prefix) || strings.HasPrefix(training.Prefix, prod.Prefix) {
@@ -141,6 +172,15 @@ func PrepareDB(ctx context.Context, path string) (Prepared, error) {
 		return p, err
 	}
 	err = func() error {
+		// Migrate skips versions it does not know: a newer prod may hold
+		// auth tables ResetTrainingAuth would not clear.
+		unknown, err := store.UnknownMigrations(ctx, db)
+		if err != nil {
+			return err
+		}
+		if len(unknown) > 0 {
+			return fmt.Errorf("prod's schema is newer than the training image (migrations %s unknown): deploy the same revision to training first", strings.Join(unknown, ", "))
+		}
 		if err := store.Migrate(ctx, db); err != nil {
 			return err
 		}

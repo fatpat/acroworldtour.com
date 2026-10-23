@@ -76,9 +76,24 @@ func trainingEnv(over map[string]string) func(string) string {
 	return func(k string) string { return m[k] }
 }
 
-type fakePurger struct{ calls int }
+type fakePurger struct {
+	calls int
+	hosts []string
+}
 
-func (p *fakePurger) PurgeEverything(context.Context) error { p.calls++; return nil }
+func (p *fakePurger) PurgeHosts(_ context.Context, hosts []string) error {
+	p.calls++
+	p.hosts = hosts
+	return nil
+}
+
+// liveProd is what the script reads from the running awt-prod (docker
+// inspect), matching prodEnv.
+var liveProd = []string{"--live-prod-endpoint=https://s3.gra.io.cloud.ovh.net", "--live-prod-bucket=awt", "--live-prod-prefix=prod/"}
+
+func step(name string, extra ...string) []string {
+	return append(append([]string{name}, liveProd...), extra...)
+}
 
 func run(t *testing.T, args []string, getenv func(string) string, stdin string, server memBuckets, purger *fakePurger) (string, error) {
 	t.Helper()
@@ -138,16 +153,46 @@ func TestSyncTrainingRefuses(t *testing.T) {
 		{"bad prod prefix", trainingEnv(nil), strings.Replace(prodEnv, "prod/", "../prod", 1), "AWT_BUCKET_PREFIX"},
 	}
 	for _, c := range cases {
-		for _, step := range []string{"check", "wipe-bucket", "copy-files"} {
-			_, err := run(t, []string{step}, c.getenv, c.stdin, nil, nil)
+		for _, name := range []string{"check", "wipe-bucket", "copy-files"} {
+			_, err := run(t, step(name), c.getenv, c.stdin, nil, nil)
 			if err == nil || !strings.Contains(err.Error(), c.want) {
-				t.Errorf("%s, %s: err = %v, want one mentioning %q", c.name, step, err, c.want)
+				t.Errorf("%s, %s: err = %v, want one mentioning %q", c.name, name, err, c.want)
 			}
 		}
 	}
-	_, err := run(t, []string{"check"}, trainingEnv(map[string]string{"AWT_BUCKET_PREFIX": "prod"}), prodEnv, nil, nil)
+	_, err := run(t, step("check"), trainingEnv(map[string]string{"AWT_BUCKET_PREFIX": "prod"}), prodEnv, nil, nil)
 	if !errors.Is(err, trainingsync.ErrOverlap) {
 		t.Errorf("overlap: %v", err)
+	}
+}
+
+// The overlap check judges the env files: it must refuse when a running
+// container does not use its file's settings. The case that matters: .env.prod
+// was moved to a new bucket but awt-prod still writes awt with no prefix,
+// where an empty-prefix training in bucket awt would be wiped.
+func TestSyncTrainingRefusesDrift(t *testing.T) {
+	movedProd := strings.Replace(prodEnv, "AWT_S3_BUCKET=awt", "AWT_S3_BUCKET=awt-new", 1)
+	rootTraining := trainingEnv(map[string]string{"AWT_BUCKET_PREFIX": ""})
+	oldLive := []string{"--live-prod-endpoint=https://s3.gra.io.cloud.ovh.net", "--live-prod-bucket=awt", "--live-prod-prefix="}
+	liveTraining := []string{"--live-training-endpoint=https://s3.gra.io.cloud.ovh.net", "--live-training-bucket=awt", "--live-training-prefix=training/"}
+	for _, name := range []string{"check", "wipe-bucket", "copy-files"} {
+		_, err := run(t, append([]string{name}, oldLive...), rootTraining, movedProd, nil, nil)
+		if !errors.Is(err, trainingsync.ErrDrift) || !strings.Contains(err.Error(), "AWT_S3_BUCKET") {
+			t.Errorf("%s, prod moved in its file only: err = %v, want ErrDrift naming AWT_S3_BUCKET", name, err)
+		}
+		// Training running with another prefix than its file.
+		drifted := append(step(name), strings.Replace(liveTraining[2], "training/", "other/", 1), liveTraining[0], liveTraining[1])
+		if _, err := run(t, drifted, trainingEnv(nil), prodEnv, nil, nil); !errors.Is(err, trainingsync.ErrDrift) || !strings.Contains(err.Error(), "awt-training") {
+			t.Errorf("%s, training drifted: err = %v", name, err)
+		}
+		// Prod not running: no live values to compare.
+		if _, err := run(t, []string{name}, trainingEnv(nil), prodEnv, nil, nil); err == nil || !strings.Contains(err.Error(), "awt-prod is not running") {
+			t.Errorf("%s, no live prod: err = %v", name, err)
+		}
+		// Half the training values: a script bug, not a stopped container.
+		if _, err := run(t, append(step(name), liveTraining[0]), trainingEnv(nil), prodEnv, nil, nil); err == nil || !strings.Contains(err.Error(), "usage") {
+			t.Errorf("%s, partial training values: err = %v", name, err)
+		}
 	}
 }
 
@@ -159,7 +204,8 @@ func TestSyncTrainingBucketSteps(t *testing.T) {
 		"training/files/trainee":            {[]byte("T"), "image/jpeg"},
 		"training/litestream/generations/x": {[]byte("t"), ""},
 	}}
-	out, err := run(t, []string{"check"}, trainingEnv(nil), prodEnv, server, nil)
+	liveTraining := []string{"--live-training-endpoint=https://s3.gra.io.cloud.ovh.net", "--live-training-bucket=awt", "--live-training-prefix=training"}
+	out, err := run(t, step("check", liveTraining...), trainingEnv(nil), prodEnv, server, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -172,11 +218,11 @@ func TestSyncTrainingBucketSteps(t *testing.T) {
 		t.Fatal("check changed the bucket")
 	}
 
-	out, err = run(t, []string{"wipe-bucket"}, trainingEnv(nil), prodEnv, server, nil)
+	out, err = run(t, step("wipe-bucket"), trainingEnv(nil), prodEnv, server, nil)
 	if err != nil || !strings.Contains(out, "deleted 1 replica objects and 1 files") {
 		t.Fatalf("wipe: %v\n%s", err, out)
 	}
-	out, err = run(t, []string{"copy-files"}, trainingEnv(nil), prodEnv, server, nil)
+	out, err = run(t, step("copy-files"), trainingEnv(nil), prodEnv, server, nil)
 	if err != nil || !strings.Contains(out, "copied 2 files (3 bytes, streamed)") {
 		t.Fatalf("copy: %v\n%s", err, out)
 	}
@@ -221,8 +267,8 @@ func TestSyncTrainingPurgeCDN(t *testing.T) {
 	}
 	set := trainingEnv(map[string]string{"AWT_CLOUDFLARE_ZONE_ID": "zone", "AWT_CLOUDFLARE_TOKEN": "token"})
 	out, err = run(t, []string{"purge-cdn"}, set, "", nil, p)
-	if err != nil || p.calls != 1 || !strings.Contains(out, "purged") {
-		t.Errorf("set: %v %d %q", err, p.calls, out)
+	if err != nil || p.calls != 1 || !slices.Equal(p.hosts, []string{"training.example.org"}) || !strings.Contains(out, "purged training.example.org") {
+		t.Errorf("set: %v %d %v %q", err, p.calls, p.hosts, out)
 	}
 	half := trainingEnv(map[string]string{"AWT_CLOUDFLARE_ZONE_ID": "zone"})
 	if _, err := run(t, []string{"purge-cdn"}, half, "", nil, p); err == nil || !strings.Contains(err.Error(), "AWT_CLOUDFLARE_TOKEN") {

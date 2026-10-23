@@ -55,10 +55,11 @@ func (p *CloudflarePurger) purgeBatch(ctx context.Context, urls []string) error 
 	return p.send(ctx, map[string][]string{"files": urls})
 }
 
-// PurgeEverything empties the zone's cache, for when the whole site
-// changed (training refresh, docs/ops.md).
-func (p *CloudflarePurger) PurgeEverything(ctx context.Context) error {
-	return p.send(ctx, map[string]bool{"purge_everything": true})
+// PurgeHosts empties the cache of every URL of the given hosts, for when a
+// whole site changed (training refresh, docs/ops.md section 6b). Unlike a
+// zone-wide purge, it leaves other sites of the zone (prod) alone.
+func (p *CloudflarePurger) PurgeHosts(ctx context.Context, hosts []string) error {
+	return p.send(ctx, map[string][]string{"hosts": hosts})
 }
 
 func (p *CloudflarePurger) send(ctx context.Context, payload any) error {

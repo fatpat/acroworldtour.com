@@ -20,16 +20,10 @@ func Migrate(ctx context.Context, db *DB) error {
 	if _, err := db.Write.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS schema_migrations (version TEXT PRIMARY KEY)`); err != nil {
 		return fmt.Errorf("create schema_migrations: %w", err)
 	}
-	entries, err := migrationFiles.ReadDir("migrations")
+	names, err := migrationNames()
 	if err != nil {
-		return fmt.Errorf("read migrations: %w", err)
+		return err
 	}
-	names := make([]string, 0, len(entries))
-	for _, e := range entries {
-		names = append(names, e.Name())
-	}
-	sort.Strings(names)
-
 	for _, name := range names {
 		version := strings.TrimSuffix(name, ".sql")
 		var done int
@@ -48,6 +42,51 @@ func Migrate(ctx context.Context, db *DB) error {
 		}
 	}
 	return seedRulesets(ctx, db)
+}
+
+// migrationNames lists the embedded migration files in order.
+func migrationNames() ([]string, error) {
+	entries, err := migrationFiles.ReadDir("migrations")
+	if err != nil {
+		return nil, fmt.Errorf("read migrations: %w", err)
+	}
+	names := make([]string, 0, len(entries))
+	for _, e := range entries {
+		names = append(names, e.Name())
+	}
+	sort.Strings(names)
+	return names, nil
+}
+
+// UnknownMigrations returns the versions recorded in schema_migrations that
+// this binary does not embed, sorted: the database comes from a newer
+// release. Migrate ignores them; the training refresh refuses them
+// (decision 0018), as their tables may hold auth state it does not clear.
+func UnknownMigrations(ctx context.Context, db *DB) ([]string, error) {
+	names, err := migrationNames()
+	if err != nil {
+		return nil, err
+	}
+	known := map[string]bool{}
+	for _, n := range names {
+		known[strings.TrimSuffix(n, ".sql")] = true
+	}
+	rows, err := db.Read.QueryContext(ctx, `SELECT version FROM schema_migrations ORDER BY version`)
+	if err != nil {
+		return nil, fmt.Errorf("list schema_migrations: %w", err)
+	}
+	defer rows.Close()
+	var unknown []string
+	for rows.Next() {
+		var v string
+		if err := rows.Scan(&v); err != nil {
+			return nil, fmt.Errorf("list schema_migrations: %w", err)
+		}
+		if !known[v] {
+			unknown = append(unknown, v)
+		}
+	}
+	return unknown, rows.Err()
 }
 
 func applyMigration(ctx context.Context, db *DB, version, body string) error {

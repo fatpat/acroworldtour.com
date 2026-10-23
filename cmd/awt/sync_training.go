@@ -3,8 +3,11 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
+	"net/url"
+	"strings"
 
 	"awt/internal/blob"
 	"awt/internal/cache"
@@ -12,17 +15,23 @@ import (
 	"awt/internal/trainingsync"
 )
 
-const syncTrainingUsage = `usage: awt sync-training check|wipe-bucket|copy-files < .env.prod
+const syncTrainingUsage = `usage: awt sync-training check|wipe-bucket|copy-files LIVE < .env.prod
        awt sync-training prepare-db <snapshot.db>
        awt sync-training purge-cdn
+LIVE: --live-prod-endpoint=V --live-prod-bucket=V --live-prod-prefix=V
+      [--live-training-endpoint=V --live-training-bucket=V --live-training-prefix=V]
 
 Internal steps of deploy/sync-training.sh, which replaces training with a
 copy of prod (docs/ops.md "Refresh training from prod", decision 0018). The
 bucket steps and purge-cdn run in a one-off container of the training
 service: training's settings in the environment (AWT_ENV=training, else
-refused), prod's env file on stdin. Nothing prints a secret.
+refused), prod's env file on stdin. LIVE are AWT_S3_ENDPOINT, AWT_S3_BUCKET
+and AWT_BUCKET_PREFIX of the running awt-prod (required: prod must run) and
+awt-training (when it runs), from docker inspect: a running container that
+does not use its env file's values is refused. Nothing prints a secret.
 
-  check        refuse unless both use S3 with every setting set and their
+  check        refuse unless both use S3 with every setting set, the
+               running containers use their files' settings and the
                prefixes are apart (one bucket: neither prefix contains the
                other); list both sides; change nothing
   wipe-bucket  delete training's <prefix>litestream/ and <prefix>files/
@@ -30,10 +39,11 @@ refused), prod's env file on stdin. Nothing prints a secret.
                the same endpoint and credentials, otherwise streamed)
   prepare-db   integrity check, migrate, then remove every session, pending
                login and second factor of a prod snapshot (needs no settings)
-  purge-cdn    purge training's Cloudflare zone (skipped when unset)`
+  purge-cdn    purge training's host (AWT_BASE_URL) in its Cloudflare zone
+               (skipped when the zone and token are unset)`
 
 type cdnPurger interface {
-	PurgeEverything(ctx context.Context) error
+	PurgeHosts(ctx context.Context, hosts []string) error
 }
 
 type syncDeps struct {
@@ -64,12 +74,20 @@ func syncTrainingCmd(ctx context.Context, args []string, d syncDeps) error {
 			return errors.New(syncTrainingUsage)
 		}
 		return prepareDBStep(ctx, args[1], d.out)
-	case "check", "wipe-bucket", "copy-files", "purge-cdn":
+	case "purge-cdn":
 		if len(args) != 1 {
 			return errors.New(syncTrainingUsage)
 		}
+	case "check", "wipe-bucket", "copy-files":
 	default:
 		return errors.New(syncTrainingUsage)
+	}
+	var live liveValues
+	if step != "purge-cdn" {
+		var err error
+		if live, err = parseLive(args[1:]); err != nil {
+			return err
+		}
 	}
 
 	training, err := config.Load(d.getenv)
@@ -83,7 +101,7 @@ func syncTrainingCmd(ctx context.Context, args []string, d syncDeps) error {
 		return purgeCDNStep(ctx, training, d)
 	}
 
-	prodT, trainingT, err := loadTargets(training, d)
+	prodT, trainingT, err := loadTargets(training, live, d)
 	if err != nil {
 		return err
 	}
@@ -115,9 +133,51 @@ func syncTrainingCmd(ctx context.Context, args []string, d syncDeps) error {
 	return nil
 }
 
-// loadTargets reads prod's env file from stdin and checks both targets.
-// Every refusal happens here, before any bucket is opened.
-func loadTargets(training config.Config, d syncDeps) (prod, train trainingsync.Target, err error) {
+// liveValues are the running containers' object storage settings.
+type liveValues struct {
+	prod     *trainingsync.Live
+	training *trainingsync.Live // nil: awt-training is not running
+}
+
+// parseLive reads the --live-* flags: all three of an environment, or
+// none (that container is not running).
+func parseLive(args []string) (liveValues, error) {
+	fs := flag.NewFlagSet("sync-training", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	var p, t trainingsync.Live
+	fs.StringVar(&p.Endpoint, "live-prod-endpoint", "", "")
+	fs.StringVar(&p.Bucket, "live-prod-bucket", "", "")
+	fs.StringVar(&p.Prefix, "live-prod-prefix", "", "")
+	fs.StringVar(&t.Endpoint, "live-training-endpoint", "", "")
+	fs.StringVar(&t.Bucket, "live-training-bucket", "", "")
+	fs.StringVar(&t.Prefix, "live-training-prefix", "", "")
+	if err := fs.Parse(args); err != nil || fs.NArg() != 0 {
+		return liveValues{}, errors.New(syncTrainingUsage)
+	}
+	set := map[string]int{}
+	fs.Visit(func(f *flag.Flag) { set[strings.SplitN(f.Name, "-", 3)[1]]++ })
+	var lv liveValues
+	for env, n := range set {
+		if n != 3 {
+			return liveValues{}, fmt.Errorf("%s: give all three --live-%s-* values or none", syncTrainingUsage, env)
+		}
+	}
+	if set["prod"] == 3 {
+		lv.prod = &p
+	}
+	if set["training"] == 3 {
+		lv.training = &t
+	}
+	return lv, nil
+}
+
+// loadTargets reads prod's env file from stdin and checks both targets
+// against each other and against the running containers. Every refusal
+// happens here, before any bucket is opened.
+func loadTargets(training config.Config, live liveValues, d syncDeps) (prod, train trainingsync.Target, err error) {
+	if live.prod == nil {
+		return prod, train, errors.New("refused: awt-prod is not running (no live settings given): start prod first; the check compares what it runs with .env.prod")
+	}
 	vars, err := config.ParseEnvFile(d.stdin)
 	if err != nil {
 		return prod, train, fmt.Errorf("prod env file (stdin): %w", err)
@@ -141,8 +201,18 @@ func loadTargets(training config.Config, d syncDeps) (prod, train trainingsync.T
 	if train, err = trainingsync.TargetFromConfig(training, d.getenv("LITESTREAM_S3_REGION")); err != nil {
 		return prod, train, err
 	}
+	// Prod's file must be what runs before it can judge the overlap; an
+	// overlap of the files is reported before a training drift.
+	if err := trainingsync.CheckLive(prod, *live.prod); err != nil {
+		return prod, train, err
+	}
 	if err := trainingsync.CheckSeparate(prod, train); err != nil {
 		return prod, train, err
+	}
+	if live.training != nil {
+		if err := trainingsync.CheckLive(train, *live.training); err != nil {
+			return prod, train, err
+		}
 	}
 	return prod, train, nil
 }
@@ -196,6 +266,7 @@ func prepareDBStep(ctx context.Context, path string, out io.Writer) error {
 	return nil
 }
 
+// purgeCDNStep purges training's host only: prod may share the zone.
 func purgeCDNStep(ctx context.Context, cfg config.Config, d syncDeps) error {
 	switch {
 	case cfg.CloudflareZoneID == "" && cfg.CloudflareToken == "":
@@ -204,9 +275,14 @@ func purgeCDNStep(ctx context.Context, cfg config.Config, d syncDeps) error {
 	case cfg.CloudflareZoneID == "" || cfg.CloudflareToken == "":
 		return errors.New("cdn purge: set both AWT_CLOUDFLARE_ZONE_ID and AWT_CLOUDFLARE_TOKEN for training, or neither")
 	}
-	if err := d.purger(cfg.CloudflareZoneID, cfg.CloudflareToken).PurgeEverything(ctx); err != nil {
+	u, err := url.Parse(cfg.BaseURL) // validated by config.Load
+	if err != nil || u.Hostname() == "" {
+		return errors.New("cdn purge: AWT_BASE_URL has no host")
+	}
+	host := u.Hostname()
+	if err := d.purger(cfg.CloudflareZoneID, cfg.CloudflareToken).PurgeHosts(ctx, []string{host}); err != nil {
 		return err
 	}
-	fmt.Fprintln(d.out, "cdn purge: purged everything in training's Cloudflare zone")
+	fmt.Fprintf(d.out, "cdn purge: purged %s\n", host)
 	return nil
 }

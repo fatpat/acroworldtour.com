@@ -85,8 +85,9 @@ func TestNoopPurger(t *testing.T) {
 	}
 }
 
-// The training refresh replaces the whole site: it purges the zone.
-func TestCloudflarePurgeEverything(t *testing.T) {
+// The training refresh replaces the whole site: it purges its host, not the
+// zone, which prod may share.
+func TestCloudflarePurgeHosts(t *testing.T) {
 	var gotPath, gotAuth, gotBody string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath, gotAuth = r.URL.Path, r.Header.Get("Authorization")
@@ -97,10 +98,10 @@ func TestCloudflarePurgeEverything(t *testing.T) {
 	defer srv.Close()
 	p := cache.NewCloudflarePurger("zone1", "tok")
 	p.Endpoint = srv.URL
-	if err := p.PurgeEverything(context.Background()); err != nil {
+	if err := p.PurgeHosts(context.Background(), []string{"training.example.org"}); err != nil {
 		t.Fatal(err)
 	}
-	if gotPath != "/zones/zone1/purge_cache" || gotAuth != "Bearer tok" || gotBody != `{"purge_everything":true}` {
+	if gotPath != "/zones/zone1/purge_cache" || gotAuth != "Bearer tok" || gotBody != `{"hosts":["training.example.org"]}` {
 		t.Fatalf("path %q auth %q body %q", gotPath, gotAuth, gotBody)
 	}
 
@@ -109,7 +110,7 @@ func TestCloudflarePurgeEverything(t *testing.T) {
 	}))
 	defer fail.Close()
 	p.Endpoint = fail.URL
-	if err := p.PurgeEverything(context.Background()); err == nil || !strings.Contains(err.Error(), "403") {
+	if err := p.PurgeHosts(context.Background(), []string{"training.example.org"}); err == nil || !strings.Contains(err.Error(), "403") {
 		t.Fatalf("err = %v", err)
 	}
 }

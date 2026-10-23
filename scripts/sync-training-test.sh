@@ -4,19 +4,25 @@
 # image) and a local MinIO standing in for OVHcloud Object Storage.
 # systemctl is a stub; the agent lock is a temporary file.
 #
-# Cases: refusals that change nothing (no terminal without --yes, prefixes
-# overlapping, a missing setting); a run failing after the wipe, then a
-# re-run (agent lock held at first); a shared bucket (prefixes prod/ and
-# training/, server-side copy); separate buckets on different endpoints
-# with an empty training prefix (streamed copy). After each refresh:
-# training holds exactly prod's data and files, no trainee leftovers, no
-# session or second factor, a new replica instead of the old one; prod's
-# data, files and replica are unchanged.
+# Cases: refusals that change nothing (no terminal without --yes, wrong
+# answer, prefixes overlapping, a missing setting, a running prod or
+# training whose env file was edited without recreating it); runs failing
+# after the wipe and after the clone (deploy.sh then refuses training), a
+# leftover one-off container and an unlabelled volume with stale files,
+# then a re-run (agent lock held at first); a shared bucket (prefixes prod/
+# and training/, server-side copy); separate buckets on different
+# endpoints with an empty training prefix (streamed copy) after a kill -9
+# left the timer state file; prod with an empty prefix and training in
+# another bucket. After each refresh: training holds exactly prod's data
+# and files, no trainee leftovers, no session or second factor, a new
+# replica instead of the old one; prod's container (not restarted), data,
+# files, replica objects and generations are unchanged.
 # Run via `make sync-training-test` (it builds awt:dev first; needs Docker,
 # not root; takes a few minutes).
+# Variables read only inside the eval'd check strings:
+# shellcheck disable=SC2034
 set -eu
 cd "$(dirname "$0")/.."
-repo=$(pwd)
 
 export COMPOSE_PROJECT_NAME=awt-sync-test
 # aws-cli, pinned by digest (the image docs/ops.md section 6 uses).
@@ -47,6 +53,7 @@ check() { # check <description> <command...>
 # --- the temporary /opt/awt --------------------------------------------------
 cp compose.yaml "$root/compose.yaml"
 cp deploy/sync-training.sh "$root/deploy/sync-training.sh"
+cp deploy/deploy.sh "$root/deploy/deploy.sh"
 # A second name for MinIO: an endpoint that differs from prod's, so the copy
 # cannot be server-side (separate buckets and credentials on the VPS).
 cat > "$root/compose.override.yaml" <<'EOF'
@@ -225,10 +232,27 @@ wait_new_generation awt-test prod/litestream/ "" || { echo "no prod replica" >&2
 wait_new_generation awt-test training/litestream/ "" || { echo "no training replica" >&2; exit 1; }
 sleep 3   # let Litestream ship the writes above
 
-prod_fp=$(fingerprint awt-prod)
-prod_auth=$(auth_rows awt-prod)
-prod_files=$(objects awt-test prod/files/)
-prod_replica=$(objects awt-test prod/litestream/)
+# Prod's location in the bucket (changed for the last case).
+P_BUCKET=awt-test P_PREFIX=prod/
+prod_ctr() { docker inspect -f '{{.Id}} {{.State.StartedAt}}' "$(ctr_id awt-prod)"; }
+capture_prod() {
+  prod_fp=$(fingerprint awt-prod)
+  prod_auth=$(auth_rows awt-prod)
+  prod_files=$(objects "$P_BUCKET" "${P_PREFIX}files/")
+  prod_replica=$(objects "$P_BUCKET" "${P_PREFIX}litestream/")
+  prod_gens=$(generations "$P_BUCKET" "${P_PREFIX}litestream/")
+  prod_state=$(prod_ctr)
+}
+prod_replica_kept() { # every prod replica object from before is still there, unchanged
+  now=$(objects "$P_BUCKET" "${P_PREFIX}litestream/")
+  [ -z "$(printf '%s\n' "$prod_replica" | grep . | grep -vxF "$now")" ]
+}
+prod_unchanged() {
+  [ "$(prod_ctr)" = "$prod_state" ] && [ "$(fingerprint awt-prod)" = "$prod_fp" ] \
+    && [ "$(auth_rows awt-prod)" = "$prod_auth" ] && [ "$(objects "$P_BUCKET" "${P_PREFIX}files/")" = "$prod_files" ] \
+    && prod_replica_kept && [ "$(generations "$P_BUCKET" "${P_PREFIX}litestream/")" = "$prod_gens" ]
+}
+capture_prod
 old_gens=$(generations awt-test training/litestream/)
 training_ctr=$(ctr_id awt-training)
 training_fp=$(fingerprint awt-training)
@@ -239,14 +263,15 @@ check "fixture: prod has 2 files, 1 news, every auth table filled" \
 training_unchanged() {
   [ "$(ctr_id awt-training)" = "$training_ctr" ] && [ "$(fingerprint awt-training)" = "$training_fp" ] \
     && [ "$(objects awt-test training/files/ | grep -c .)" = 2 ] && [ "$(cat "$root/timer")" = active ] \
-    && ! grep -q '^stop' "$root/calls"
+    && ! grep -q '^stop' "$root/calls" && [ ! -e "$root/state/sync-training.incomplete" ]
 }
+refused_cleanly() { training_unchanged && prod_unchanged; }
 
 # --- refusals --------------------------------------------------------------------
 echo "== refused: no terminal and no --yes"
 run_sync < /dev/null
 check "exit 2, says to pass --yes" eval '[ "$rc" = 2 ] && has "pass --yes" && has "nothing was changed"'
-check "nothing changed" training_unchanged
+check "nothing changed" refused_cleanly
 
 echo "== refused: a terminal, answer other than \"training\""
 if command -v script >/dev/null 2>&1; then
@@ -257,7 +282,7 @@ if command -v script >/dev/null 2>&1; then
   set -e
   printf '%s\n' "$out" | sed 's/^/    | /'
   check "asked, exit 2, not confirmed" eval '[ "$rc" = 2 ] && has "Type \"training\" to continue" && has "not confirmed"'
-  check "nothing changed" training_unchanged
+  check "nothing changed" refused_cleanly
 else
   echo "  skipped: no script(1) for a pseudo-terminal"
 fi
@@ -266,41 +291,91 @@ echo "== refused: training prefix inside prod's in the same bucket"
 training_env http://minio:9000 awt-test prod/training/
 run_sync --yes
 check "exit 2, names the overlap" eval '[ "$rc" = 2 ] && has "overlap" && has "nothing was changed"'
-check "nothing changed" training_unchanged
+check "nothing changed" refused_cleanly
 
 echo "== refused: same prefix as prod"
 training_env http://minio:9000 awt-test prod
 run_sync --yes
 check "exit 2, names the overlap" eval '[ "$rc" = 2 ] && has "overlap"'
-check "nothing changed" training_unchanged
+check "nothing changed" refused_cleanly
 
 echo "== refused: a missing setting"
 training_env http://minio:9000 "" training/
 run_sync --yes
 check "exit 2, names AWT_S3_BUCKET" eval '[ "$rc" = 2 ] && has "AWT_S3_BUCKET"'
-check "nothing changed" training_unchanged
+check "nothing changed" refused_cleanly
+
+echo "== refused: .env.prod moved to another bucket, awt-prod not recreated (training: empty prefix in prod's live bucket)"
+cp "$root/.env.prod" "$work/env.prod.saved"
+sed -i 's/^AWT_S3_BUCKET=.*/AWT_S3_BUCKET=awt-new/' "$root/.env.prod"
+training_env http://minio:9000 awt-test ""
+run_sync --yes
+check "exit 2, names the running awt-prod and the bucket" eval '[ "$rc" = 2 ] && has "running awt-prod uses another AWT_S3_BUCKET" && has "docker compose up -d awt-prod"'
+check "nothing changed" refused_cleanly
+cp "$work/env.prod.saved" "$root/.env.prod"
+
+echo "== refused: .env.prod prefix edited, awt-prod not recreated"
+sed -i 's/^AWT_BUCKET_PREFIX=.*/AWT_BUCKET_PREFIX=prod-new\//' "$root/.env.prod"
+training_env http://minio:9000 awt-test training/
+run_sync --yes
+check "exit 2, names AWT_BUCKET_PREFIX" eval '[ "$rc" = 2 ] && has "running awt-prod uses another AWT_BUCKET_PREFIX"'
+check "nothing changed" refused_cleanly
+cp "$work/env.prod.saved" "$root/.env.prod"
+
+echo "== refused: .env.training prefix edited, awt-training not recreated"
+training_env http://minio:9000 awt-test training2/
+run_sync --yes
+check "exit 2, names the running awt-training" eval '[ "$rc" = 2 ] && has "running awt-training uses another AWT_BUCKET_PREFIX"'
+check "nothing changed" refused_cleanly
 training_env http://minio:9000 awt-test training/
 
-# --- a run failing midway, then a re-run -------------------------------------------
+# --- runs failing midway, then a re-run --------------------------------------------
+# run_failing <step>: AWT_SYNC_TEST_FAIL_AFTER=<step>.
+run_failing() {
+  set +e
+  out=$(AWT_SYNC_TEST_FAIL_AFTER=$1 AWT_LOCK="$root/agent.lock" SYSTEMCTL="$root/bin/systemctl" \
+    "$root/deploy/sync-training.sh" --yes 2>&1)
+  rc=$?
+  set -e
+  printf '%s\n' "$out" | sed 's/^/    | /'
+}
+deploy_training_refused() {
+  set +e
+  dout=$("$root/deploy/deploy.sh" training 0123456789abcdef0123456789abcdef01234567 2>&1); drc=$?
+  set -e
+  [ "$drc" = 4 ] && printf '%s' "$dout" | grep -q "a training refresh did not finish"
+}
+after_failure() {
+  check "exit 1, says to run it again" eval '[ "$rc" = 1 ] && has "FAILED" && has "run this script again"'
+  check "timer restarted" eval '[ "$(cat "$root/timer")" = active ] && grep -q "^start" "$root/calls"'
+  check "staging volume removed" eval '! docker volume inspect ${COMPOSE_PROJECT_NAME}_sync_training_stage >/dev/null 2>&1'
+  check "incomplete marker left, deploy.sh refuses training (exit 4)" eval '[ -f "$root/state/sync-training.incomplete" ] && deploy_training_refused'
+  check "prod untouched, not restarted" prod_unchanged
+}
+
 echo "== run failing after the wipe"
-set +e
-out=$(AWT_SYNC_TEST_FAIL_AFTER=wipe AWT_LOCK="$root/agent.lock" SYSTEMCTL="$root/bin/systemctl" \
-  "$root/deploy/sync-training.sh" --yes 2>&1)
-rc=$?
-set -e
-printf '%s\n' "$out" | sed 's/^/    | /'
-check "exit 1, says to run it again" eval '[ "$rc" = 1 ] && has "FAILED" && has "run this script again"'
-check "timer restarted" eval '[ "$(cat "$root/timer")" = active ] && grep -q "^start" "$root/calls"'
-check "staging volume removed" eval '! docker volume inspect ${COMPOSE_PROJECT_NAME}_sync_training_stage >/dev/null 2>&1'
-check "training is down and wiped" eval '[ -z "$(ctr_id awt-training)" ] && [ -z "$(objects awt-test training/files/)" ] && [ -z "$(objects awt-test training/litestream/)" ]'
-check "prod untouched" eval '[ "$(fingerprint awt-prod)" = "$prod_fp" ] && [ "$(objects awt-test prod/files/)" = "$prod_files" ]'
+run_failing wipe
+after_failure
+check "training is down and wiped" eval '[ -z "$(ctr_id awt-training)" ] && [ -z "$(objects awt-test training/files/)" ] && [ -z "$(objects awt-test training/litestream/)" ] && ! docker volume inspect ${COMPOSE_PROJECT_NAME}_training_data >/dev/null 2>&1'
+
+echo "== leftovers: an unlabelled training volume with stale files, a one-off container on it"
+docker volume create "${COMPOSE_PROJECT_NAME}_training_data" >/dev/null
+docker run --rm -v "${COMPOSE_PROJECT_NAME}_training_data:/data" --entrypoint sh awt:dev \
+  -c 'echo junk > /data/junk && echo junk > /data/awt.db-wal && mkdir /data/.awt.db-litestream'
+dc run -d --no-deps --entrypoint sleep awt-training 3600 >/dev/null 2>&1
+check "fixture: one-off container running" eval '[ -n "$(docker ps -q --filter label=com.docker.compose.project=$COMPOSE_PROJECT_NAME --filter label=com.docker.compose.service=awt-training)" ]'
+
+echo "== run failing after the clone"
+: > "$root/calls"
+run_failing clone
+after_failure
+volume_files() { docker run --rm -v "${COMPOSE_PROJECT_NAME}_training_data:/data" --entrypoint sh awt:dev -c 'ls -A /data | tr "\n" " "'; }
+check "stale files gone: the new volume holds only the copy" eval '[ "$(volume_files)" = "awt.db " ]'
+check "one-off container removed" eval '[ -z "$(docker ps -aq --filter label=com.docker.compose.project=$COMPOSE_PROJECT_NAME --filter label=com.docker.compose.service=awt-training)" ]'
+check "training down, prod's files copied" eval '[ -z "$(ctr_id awt-training)" ] && [ "$(objects awt-test training/files/)" = "$prod_files" ]'
 
 trainee_rows() {
   sql awt-training "SELECT (SELECT count(*) FROM users WHERE email = 'trainee@example.org') + (SELECT count(*) FROM news WHERE slug = 'trainee-news')"
-}
-prod_replica_kept() { # every prod replica object from before is still there, unchanged
-  now=$(objects awt-test prod/litestream/)
-  [ -z "$(printf '%s\n' "$prod_replica" | grep . | grep -vxF "$now")" ]
 }
 
 # after_refresh <bucket> <files prefix> <replica prefix> <old generations>
@@ -313,9 +388,10 @@ after_refresh() {
   check "training's files are prod's files" eval '[ "$(objects "$ar_bucket" "$ar_files")" = "$prod_files" ]'
   check "content types kept" eval '[ "$(content_type "$ar_bucket" "$ar_files$(sha pdf-content)")" = application/pdf ]'
   check "old training replica gone, a new one started" eval 'wait_new_generation "$ar_bucket" "$ar_replica" "$ar_old" && ! generations "$ar_bucket" "$ar_replica" | grep -qxF "$ar_old"'
-  check "prod data, auth rows and files unchanged" eval '[ "$(fingerprint awt-prod)" = "$prod_fp" ] && [ "$(auth_rows awt-prod)" = "$prod_auth" ] && [ "$(objects awt-test prod/files/)" = "$prod_files" ]'
-  check "prod replica: nothing removed or changed" prod_replica_kept
+  check "prod not restarted; data, auth rows, files, replica objects and generations unchanged" prod_unchanged
   check "staging volume removed" eval '! docker volume inspect ${COMPOSE_PROJECT_NAME}_sync_training_stage >/dev/null 2>&1'
+  check "incomplete marker removed" eval '[ ! -e "$root/state/sync-training.incomplete" ]'
+  check "timer state file removed" eval '[ ! -e "$root/state/sync-training.timer" ]'
   check "summary printed" eval 'has "Training refreshed from prod" && has "1 users, 1 competitions, 1 news, 2 files"'
 }
 
@@ -329,25 +405,54 @@ wait "$locker" || true
 after_refresh awt-test training/files/ training/litestream/ "$old_gens"
 check "timer back to active" eval '[ "$(cat "$root/timer")" = active ]'
 check "waited for the agent lock" has "waiting for the running deploy"
+check "noted the earlier incomplete run" has "an earlier refresh did not finish"
 check "timer stopped, then started" eval '[ "$(grep -E "^(stop|start)" "$root/calls" | tr "\n" " ")" = "stop awt-agent.timer start awt-agent.timer " ]'
 check "server-side copy" has "server-side"
 check "removed prod's sessions and factors in the copy" has "removed: 1 sessions, 1 pending logins, 1 authenticator apps, 1 security keys, 1 recovery codes, 1 mfa lockouts"
 
-# --- separate buckets, other endpoint, empty prefix -----------------------------
-echo "== separate buckets: training in awt-train (prefix empty) on another endpoint"
+# --- separate buckets, other endpoint, empty prefix; after a kill -9 -------------
+echo "== separate buckets: training in awt-train (prefix empty) on another endpoint; a killed run left the timer state (inactive) and the staging volume"
 aws s3 mb s3://awt-train >/dev/null
 put awt-train "files/$(sha trainee-content)" image/jpeg trainee-content
 put awt-train "litestream/generations/0000000000000000/snapshots/00000000.snapshot.lz4" application/octet-stream old-replica
 put awt-train "unrelated/keep.txt" text/plain keep
 training_env http://minio-alt:9000 awt-train ""
-echo inactive > "$root/timer"
+dc up -d awt-training >/dev/null 2>&1   # running with its file's settings
+wait_healthy awt-training
+# What a run killed after pausing leaves: the timer was inactive before it,
+# the stub timer stayed stopped... then someone started it by hand.
+echo inactive > "$root/state/sync-training.timer"
+echo active > "$root/timer"
+docker run --rm -v "${COMPOSE_PROJECT_NAME}_sync_training_stage:/data" --entrypoint true awt:dev
 : > "$root/calls"
 run_sync --yes
 after_refresh awt-train files/ litestream/ 0000000000000000
 check "streamed copy" has "streamed"
 check "keys outside files/ and litestream/ kept" eval 'objects awt-train unrelated/ | grep -q "^keep.txt[[:space:]]"'
 check "the shared bucket's old training prefix is not touched" eval '[ "$(objects awt-test training/files/)" = "$prod_files" ]'
-check "paused timer left paused" eval '[ "$(cat "$root/timer")" = inactive ] && ! grep -q "^start" "$root/calls" && has "left paused"'
+check "timer restored to its state before the killed run (inactive)" eval '[ "$(cat "$root/timer")" = inactive ] && ! grep -q "^start" "$root/calls" && has "left paused"'
+
+# --- prod with an empty prefix, training in another bucket ----------------------
+echo "== prod with an empty prefix in awt-test, training in awt-train under t/"
+sed -i 's/^AWT_BUCKET_PREFIX=.*/AWT_BUCKET_PREFIX=/' "$root/.env.prod"
+put awt-test "files/$(sha png-content)" image/png png-content
+put awt-test "files/$(sha pdf-content)" application/pdf pdf-content
+dc up -d awt-prod >/dev/null 2>&1
+wait_healthy awt-prod
+P_PREFIX=""
+wait_new_generation awt-test litestream/ "" || { echo "no prod replica at the bucket root" >&2; exit 1; }
+sleep 3
+capture_prod
+put awt-train "t/litestream/generations/1111111111111111/snapshots/00000000.snapshot.lz4" application/octet-stream old-replica
+put awt-train "t/files/$(sha trainee-content)" image/jpeg trainee-content
+training_env http://minio:9000 awt-train t/
+dc up -d awt-training >/dev/null 2>&1
+wait_healthy awt-training
+echo active > "$root/timer"
+run_sync --yes
+after_refresh awt-train t/files/ t/litestream/ 1111111111111111
+check "server-side copy" has "server-side"
+check "training's previous place (awt-train root) not touched" eval '[ "$(objects awt-train files/)" = "$prod_files" ]'
 
 echo
 if [ "$failures" -gt 0 ]; then
