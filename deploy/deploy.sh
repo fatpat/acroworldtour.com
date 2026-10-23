@@ -4,8 +4,9 @@
 #
 #   deploy.sh training|prod <image-tag>   deploy one environment
 #
-# Called by the deploy agent (deploy/agent.sh) for each new revision, or by an
-# admin for a manual rollback (docs/ops.md). The image is public: no login.
+# Called by the deploy agent (deploy/agent.sh) for each new revision, once
+# per environment, independently (decision 0019), or by an admin for a manual
+# rollback (docs/ops.md). The image is public: no login.
 #
 # Deploying pulls the tag (only if it is not already local: the agent tags
 # the image it pulled), restarts the service, waits for the container health
