@@ -1,6 +1,6 @@
 # 0016. Pull-based deploy: an agent on the VPS follows a moving image tag
 
-Status: accepted
+Status: accepted, partly superseded by 0019 (deploy order and failure bookkeeping)
 Date: 2026-10-23
 
 ## Context
@@ -12,8 +12,8 @@ The owner decided on 2026-10-23: a pull-based agent; both environments updated a
 ## Decision
 
 - CI only builds and pushes `ghcr.io/<owner>/awt:<sha>` and the moving tag `:rewrite-go` (named after the deploy branch). The image carries its commit in the OCI label `org.opencontainers.image.revision` and the deploy configuration (`compose.yaml`, `Caddyfile`) under `/usr/share/awt/deploy/`, so code and configuration ship as one artifact.
-- On the VPS a systemd timer runs `deploy/agent.sh` every 60 s as the `deploy` user. It pulls the moving tag anonymously (`AWT_CHANNEL` in `/opt/awt/.env`, default `rewrite-go`), reads the revision label (40 lowercase hex characters, otherwise refused), validates the baked `compose.yaml` and `Caddyfile`, installs them, then runs the existing `deploy.sh training <rev>` and, only if it succeeded, `deploy.sh prod <rev>` (health check and rollback unchanged).
-- A revision that fails validation or either deploy is recorded in `/opt/awt/state/failed-revisions` and never retried automatically; deleting its line retries it. A failed pull is not recorded: the next tick retries.
+- On the VPS a systemd timer runs `deploy/agent.sh` every 60 s as the `deploy` user. It pulls the moving tag anonymously (`AWT_CHANNEL` in `/opt/awt/.env`, default `rewrite-go`), reads the revision label (40 lowercase hex characters, otherwise refused), validates the baked `compose.yaml` and `Caddyfile`, installs them, then runs the existing `deploy.sh training <rev>` and, only if it succeeded, `deploy.sh prod <rev>` (health check and rollback unchanged). *Superseded by 0019: both environments are deployed in the same run, independently.*
+- A revision that fails validation or either deploy is recorded in `/opt/awt/state/failed-revisions` and never retried automatically; deleting its line retries it. *Superseded by 0019: recorded per environment.* A failed pull is not recorded: the next tick retries.
 - Results go to journald (`journalctl -u awt-agent`). No notification channel.
 - The SSH forced-command mode and `sync` are removed from `deploy.sh`; the `deploy` user has no SSH key. Admin SSH is unchanged.
 

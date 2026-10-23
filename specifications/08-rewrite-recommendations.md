@@ -119,7 +119,7 @@ Why:
 
 - **One provider** for compute and storage, instead of four today (fly.io, render.com, Vercel, OVHcloud). The current MongoDB is already on OVHcloud, which keeps billing and the data migration simple.
 - **Fixed, predictable cost**: no usage-based billing that grows during a live competition.
-- **Simple deploys**: GitHub Actions runs the tests, builds the image and pushes it to a registry. An agent on the VPS polls the registry and runs `docker compose pull && docker compose up -d`, training first, then prod (decision 0016; no SSH from CI). A training environment can run on the same VPS with its own database and subdomain. An admin refreshes training from prod by hand when needed: training is wiped, then gets a copy of prod's database and files, without sessions or second factors (decision 0018, `docs/ops.md` section 6b).
+- **Simple deploys**: GitHub Actions runs the tests, builds the image and pushes it to a registry. An agent on the VPS polls the registry and runs `docker compose pull && docker compose up -d` on training and prod in the same run, independently: neither result gates the other (decisions 0016 and 0019; no SSH from CI). A training environment can run on the same VPS with its own database and subdomain. An admin refreshes training from prod by hand when needed: training is wiped, then gets a copy of prod's database and files, without sessions or second factors (decision 0018, `docs/ops.md` section 6b).
 - **During live events, Cloudflare serves the public traffic**. The VPS only handles judges' writes and the SSE stream.
 
 ```mermaid
