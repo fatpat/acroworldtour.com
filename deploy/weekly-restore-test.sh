@@ -12,6 +12,8 @@ ping_url=${RESTORE_TEST_PING_URL:-}
 if docker run --rm --env-file .env.prod --entrypoint sh "$img" -c '
     set -eu
     export LITESTREAM_S3_REGION="${LITESTREAM_S3_REGION:-us-east-1}"
+    LITESTREAM_REPLICA_PATH=$(awt bucket-path litestream)
+    export LITESTREAM_REPLICA_PATH
     litestream restore -config /etc/litestream.yml -o /tmp/restored.db "$AWT_DB_PATH"
     [ "$(sqlite3 /tmp/restored.db "PRAGMA integrity_check")" = ok ] || { echo "integrity_check failed" >&2; exit 1; }
     users=$(sqlite3 /tmp/restored.db "SELECT count(*) FROM users")

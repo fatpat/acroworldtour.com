@@ -57,6 +57,13 @@ func main() {
 			fmt.Fprintln(os.Stderr, "golden-verify:", err)
 			os.Exit(1)
 		}
+	case "bucket-path":
+		// Internal: deploy/entrypoint.sh asks for the replica path so the
+		// prefix is normalised in one place (decision 0017).
+		if err := bucketPathCmd(os.Args[2:], os.Getenv, os.Stdout); err != nil {
+			fmt.Fprintln(os.Stderr, "bucket-path:", err)
+			os.Exit(1)
+		}
 	case "user":
 		if err := userCmd(os.Args[2:], os.Stdin); err != nil {
 			fmt.Fprintln(os.Stderr, "user:", err)

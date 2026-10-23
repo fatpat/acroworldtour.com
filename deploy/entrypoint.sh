@@ -12,6 +12,10 @@ fi
 export AWT_DB_PATH="${AWT_DB_PATH:-/data/awt.db}"
 export AWT_ENV="${AWT_ENV:-prod}"
 export LITESTREAM_S3_REGION="${LITESTREAM_S3_REGION:-us-east-1}"
+# <AWT_BUCKET_PREFIX>litestream, normalised by awt itself (decision 0017).
+# An invalid prefix stops the container here, before any restore.
+LITESTREAM_REPLICA_PATH=$(awt bucket-path litestream) || exit 1
+export LITESTREAM_REPLICA_PATH
 CFG=/etc/litestream.yml
 
 litestream restore -config "$CFG" -if-db-not-exists -if-replica-exists "$AWT_DB_PATH"

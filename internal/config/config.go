@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/netip"
 	"net/url"
+	"regexp"
 	"strings"
 )
 
@@ -40,6 +41,10 @@ type Config struct {
 	// WebAuthnRPID is the WebAuthn relying party ID (AWT_WEBAUTHN_RP_ID):
 	// default is the host of AWT_BASE_URL, localhost in dev without one.
 	WebAuthnRPID string
+	// BucketPrefix is AWT_BUCKET_PREFIX normalised: "" or "<segments>/".
+	// Uploads go under BucketPrefix+"files/", the Litestream replica under
+	// LitestreamReplicaPath (decision 0017).
+	BucketPrefix string
 }
 
 // Load reads the configuration through getenv and refuses to start on a
@@ -76,6 +81,11 @@ func Load(getenv func(string) string) (Config, error) {
 		}
 		cfg.TrustedProxies = append(cfg.TrustedProxies, p.Masked())
 	}
+	prefix, err := ParseBucketPrefix(getenv("AWT_BUCKET_PREFIX"))
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.BucketPrefix = prefix
 	switch cfg.ClientIPHeader {
 	case "CF-Connecting-IP", "X-Forwarded-For":
 	default:
@@ -139,6 +149,39 @@ func Load(getenv func(string) string) (Config, error) {
 	}
 	return cfg, nil
 }
+
+var prefixSegment = regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
+
+// ParseBucketPrefix validates and normalises AWT_BUCKET_PREFIX, the only
+// place doing so (the entrypoint asks `awt bucket-path`): with or without
+// leading and trailing slashes, segments of [A-Za-z0-9._-] separated by
+// single slashes, no "." or ".." segment. The result is "" or ends with
+// exactly one "/" (decision 0017).
+func ParseBucketPrefix(raw string) (string, error) {
+	invalid := func(why string) (string, error) {
+		return "", fmt.Errorf("AWT_BUCKET_PREFIX %q: %s (examples: prod/, training/, or empty)", raw, why)
+	}
+	if strings.Contains(raw, "//") {
+		return invalid("must not contain //")
+	}
+	p := strings.TrimSuffix(strings.TrimPrefix(raw, "/"), "/")
+	if p == "" {
+		return "", nil
+	}
+	for seg := range strings.SplitSeq(p, "/") {
+		if seg == "." || seg == ".." {
+			return invalid("must not contain . or .. segments")
+		}
+		if !prefixSegment.MatchString(seg) {
+			return invalid("segments may only hold letters, digits, '.', '_' and '-'")
+		}
+	}
+	return p + "/", nil
+}
+
+// LitestreamReplicaPath is the replica's path in the bucket, exported by
+// deploy/entrypoint.sh as LITESTREAM_REPLICA_PATH for litestream.yml.
+func (c Config) LitestreamReplicaPath() string { return c.BucketPrefix + "litestream" }
 
 // Origins are the browser origins the manager is served from: the origin of
 // AWT_BASE_URL; in dev without one, the local addresses of AWT_ADDR. Never

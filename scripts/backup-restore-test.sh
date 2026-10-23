@@ -1,6 +1,8 @@
 #!/bin/sh
 # Backup/restore test: replicate to a local MinIO, wipe the app volume, start
-# again, and check the data was restored from the replica. Run via
+# again, and check the data was restored from the replica. The test service
+# sets AWT_BUCKET_PREFIX=restore-test/ (compose.yaml): the replica must land
+# under restore-test/litestream/ and nowhere else. Run via
 # `make backup-restore-test` (it builds awt:dev first).
 set -eu
 cd "$(dirname "$0")/.."
@@ -28,10 +30,14 @@ wait_healthy() {
   fail "awt-test did not become healthy"
 }
 
-# Number of WAL segments litestream has shipped to the replica.
+# Number of WAL segments litestream has shipped to the replica. `exec` does
+# not see what the entrypoint exported: ask awt for the replica path too.
 wal_count() {
-  $DC exec -T awt-test litestream wal -config /etc/litestream.yml /data/awt.db 2>/dev/null | tail -n +2 | wc -l
+  $DC exec -T awt-test sh -c 'p=$(awt bucket-path litestream) && LITESTREAM_REPLICA_PATH=$p exec litestream wal -config /etc/litestream.yml /data/awt.db' 2>/dev/null | tail -n +2 | wc -l
 }
+
+# MinIO keeps each object as a directory named by its key under /data/<bucket>.
+in_bucket() { $DC exec -T minio sh -c "test -e /data/awt-test/$1"; }
 
 # Wait until the replica stops changing (initial snapshot and migrations shipped).
 wait_replica_idle() {
@@ -50,6 +56,9 @@ $DC up -d minio awt-test
 wait_healthy
 wait_replica_idle
 base=$(wal_count)
+in_bucket restore-test/litestream/generations || fail "no replica under restore-test/litestream/ in the bucket"
+! in_bucket litestream || fail "a replica was written to litestream/ at the bucket root (prefix ignored)"
+echo "   replica under restore-test/litestream/"
 
 echo "== write data"
 printf '%s\n' "$PASS" | $DC exec -T awt-test awt user add --email "$EMAIL" --name Restore --role admin \

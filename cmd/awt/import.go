@@ -75,11 +75,16 @@ func importCmd(args []string, out io.Writer) error {
 
 func newBlobStore(cfg config.Config) (blob.Store, error) {
 	if cfg.BlobBackend == "s3" {
-		return blob.NewS3(blob.S3Config{
-			Endpoint: cfg.S3Endpoint, Bucket: cfg.S3Bucket, AccessKey: cfg.S3AccessKey, SecretKey: cfg.S3SecretKey, UseSSL: true,
-		})
+		return blob.NewS3(s3Config(cfg))
 	}
 	return blob.NewFS(cfg.BlobDir)
+}
+
+func s3Config(cfg config.Config) blob.S3Config {
+	return blob.S3Config{
+		Endpoint: cfg.S3Endpoint, Bucket: cfg.S3Bucket, AccessKey: cfg.S3AccessKey, SecretKey: cfg.S3SecretKey, UseSSL: true,
+		Prefix: cfg.BucketPrefix,
+	}
 }
 
 func printReport(w io.Writer, rep importer.Report) {

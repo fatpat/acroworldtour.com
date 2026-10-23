@@ -111,7 +111,7 @@ The load is tiny: a few hundred pilots, about twenty competitions a year, and tr
 |---|---|---|
 | Application + database | One entry-level **OVHcloud VPS** (about 4 vCPU, 8 GB RAM, 75 GB SSD) running Docker Compose: the app and the database side by side | ~€5–7/month |
 | Backups | Nightly dump to **OVHcloud Object Storage** (S3), 30-day retention | a few cents |
-| Files (photos, logos, PDFs) | Same Object Storage bucket | a few cents |
+| Files (photos, logos, PDFs) | Same Object Storage bucket as the backups: each environment writes under its own prefix (`<prefix>files/`, `<prefix>litestream/`), so prod and training can share one bucket or have one each (decision 0017) | a few cents |
 | CDN, TLS, DDoS protection | **Cloudflare free plan** in front, cache purged when a flight is published | €0 |
 | Monitoring | UptimeRobot or Better Stack for uptime, Sentry for errors (free tiers) | €0 |
 

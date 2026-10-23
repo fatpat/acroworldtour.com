@@ -159,3 +159,50 @@ func TestOrigins(t *testing.T) {
 		}
 	}
 }
+
+// AWT_BUCKET_PREFIX: normalised to "" or "<segments>/" (decision 0017).
+func TestLoadBucketPrefix(t *testing.T) {
+	cases := []struct {
+		in, want string
+		ok       bool
+	}{
+		{"", "", true},
+		{"prod/", "prod/", true},
+		{"prod", "prod/", true},
+		{"/prod/", "prod/", true},
+		{"/", "", true},
+		{"training", "training/", true},
+		{"awt/prod", "awt/prod/", true},
+		{"a.b_c-D9/x", "a.b_c-D9/x/", true},
+		{"prod//", "", false},
+		{"//prod", "", false},
+		{"a//b", "", false},
+		{".", "", false},
+		{"..", "", false},
+		{"prod/../x", "", false},
+		{"./prod", "", false},
+		{"pr od", "", false},
+		{"prod/é", "", false},
+		{"prod\\x", "", false},
+		{"//", "", false},
+	}
+	for _, c := range cases {
+		cfg, err := config.Load(env(map[string]string{"AWT_ENV": "dev", "AWT_BUCKET_PREFIX": c.in}))
+		if !c.ok {
+			if err == nil || !strings.Contains(err.Error(), "AWT_BUCKET_PREFIX") {
+				t.Errorf("AWT_BUCKET_PREFIX=%q: want an error naming the variable, got %v (prefix %q)", c.in, err, cfg.BucketPrefix)
+			}
+			continue
+		}
+		if err != nil {
+			t.Errorf("AWT_BUCKET_PREFIX=%q: %v", c.in, err)
+			continue
+		}
+		if cfg.BucketPrefix != c.want {
+			t.Errorf("AWT_BUCKET_PREFIX=%q: BucketPrefix = %q, want %q", c.in, cfg.BucketPrefix, c.want)
+		}
+		if got, want := cfg.LitestreamReplicaPath(), c.want+"litestream"; got != want {
+			t.Errorf("AWT_BUCKET_PREFIX=%q: LitestreamReplicaPath = %q, want %q", c.in, got, want)
+		}
+	}
+}
