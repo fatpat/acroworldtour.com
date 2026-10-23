@@ -105,8 +105,11 @@ timer_state=state/sync-training.timer
 
 # awt_training <args>: the awt binary in a one-off container of the training
 # service: training's env file, AWT_ENV=training, its volume, the compose
-# network. The bucket steps read prod's env file on stdin.
-awt_training() { docker compose run --rm --no-deps -T --entrypoint awt awt-training "$@"; }
+# network, but prod's image (AWT_TRAINING_TAG from the environment wins over
+# .env in compose's interpolation): training is cloned onto prod's revision,
+# so a prod image without these steps fails the checks, before the wipe
+# (exit 2). The bucket steps read prod's env file on stdin.
+awt_training() { AWT_TRAINING_TAG=$prod_tag docker compose run --rm --no-deps -T --entrypoint awt awt-training "$@"; }
 
 # service_ctr <service>: sets ctr to the id of the service's running
 # container (labels of this compose project, not a one-off). Returns 1 when

@@ -45,7 +45,7 @@ dc() { (cd "$root" && docker compose "$@"); }
 cleanup() {
   dc --profile test down -v --remove-orphans >/dev/null 2>&1 || true
   docker volume rm -f "${COMPOSE_PROJECT_NAME}_sync_training_stage" >/dev/null 2>&1 || true
-  docker image rm -f "$IMG:dev" "$IMG:next" >/dev/null 2>&1 || true
+  docker image rm -f "$IMG:dev" "$IMG:next" "$IMG:nosync" >/dev/null 2>&1 || true
   rm -rf "$root"
 }
 trap cleanup EXIT
@@ -517,6 +517,29 @@ run_sync --yes
 after_refresh awt-train t/files/ t/litestream/ 1111111111111111
 check "server-side copy" has "server-side"
 check "training's previous place (awt-train root) not touched" eval '[ "$(objects awt-train files/)" = "$prod_files" ]'
+
+# --- prod on an image without the sync steps --------------------------------------
+echo "== refused before the wipe: prod's image has no sync-training steps"
+mkdir -p "$work/nosync"
+cat > "$work/nosync/Dockerfile" <<EOF
+FROM $IMG:next
+USER root
+RUN mv /usr/local/bin/awt /usr/local/bin/awt-real \
+ && printf '#!/bin/sh\n[ "\$1" != sync-training ] || { echo "unknown command" >&2; exit 2; }\nexec /usr/local/bin/awt-real "\$@"\n' > /usr/local/bin/awt \
+ && chmod 755 /usr/local/bin/awt
+USER awt
+EOF
+docker build -q -t "$IMG:nosync" "$work/nosync" >/dev/null
+sed -i 's/^AWT_PROD_TAG=.*/AWT_PROD_TAG=nosync/' "$root/.env"
+dc up -d awt-prod >/dev/null 2>&1
+wait_healthy awt-prod
+training_ctr=$(ctr_id awt-training)
+training_fp=$(fingerprint awt-training)
+echo active > "$root/timer"
+: > "$root/calls"
+run_sync --yes
+check "exit 2, nothing was changed" eval '[ "$rc" = 2 ] && has "nothing was changed"'
+check "training untouched, agent never paused" eval '[ "$(ctr_id awt-training)" = "$training_ctr" ] && [ "$(fingerprint awt-training)" = "$training_fp" ] && ! grep -q "^stop" "$root/calls" && [ "$(sed -n "s/^AWT_TRAINING_TAG=//p" "$root/.env")" = next ]'
 
 echo
 if [ "$failures" -gt 0 ]; then
