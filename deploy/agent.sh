@@ -101,8 +101,38 @@ install_file() {
   mv "$2.new" "$2"
   log "installed $2"
 }
+
+# Keep what runs now: on any failure from here on, restore() puts back these
+# files and redeploys these revisions, so both apps and Caddy run the
+# previous revision with its own config.
+prev_training=$(env_value AWT_TRAINING_TAG)
+prev_prod=$(env_value AWT_PROD_TAG)
+rm -rf state/prev; mkdir -p state/prev caddy
+if [ -f compose.yaml ]; then cp compose.yaml state/prev/compose.yaml; fi
+if [ -f caddy/Caddyfile ]; then cp caddy/Caddyfile state/prev/Caddyfile; fi
+
+# restore <prod attempted: 0|1>
+restore() {
+  err "restoring the previous compose.yaml, Caddyfile and revisions"
+  if [ -f state/prev/compose.yaml ]; then install_file state/prev/compose.yaml compose.yaml; fi
+  if [ -f state/prev/Caddyfile ]; then install_file state/prev/Caddyfile caddy/Caddyfile; fi
+  restored=1
+  case "$prev_training" in none|"$rev"|"") ;; *)
+    "$root/deploy/deploy.sh" training "$prev_training" || restored=0 ;;
+  esac
+  if [ "$1" = 1 ]; then
+    case "$prev_prod" in none|"$rev"|"") ;; *)
+      "$root/deploy/deploy.sh" prod "$prev_prod" || restored=0 ;;
+    esac
+  fi
+  if [ "$restored" = 1 ]; then
+    err "restored training=${prev_training:-none} prod=${prev_prod:-none}"
+  else
+    err "RESTORE FAILED: check $root by hand (docs/ops.md section 5)"
+  fi
+}
+
 install_file "$staging/compose.yaml" compose.yaml
-mkdir -p caddy
 install_file "$staging/Caddyfile" caddy/Caddyfile
 
 # deploy.sh pulls $image:$rev only if missing: tag the image just pulled so
@@ -111,6 +141,8 @@ docker tag "$ref" "$image:$rev"
 
 # deploy_env <env>: exit 3 from deploy.sh = pull failed, nothing changed:
 # not the revision's fault, so it is not recorded and the next run retries.
+# Any other failure (unhealthy app, Caddy check) records the revision. Either
+# way the previous config and revisions are restored.
 deploy_env() {
   rc=0
   "$root/deploy/deploy.sh" "$1" "$rev" || rc=$?
@@ -120,6 +152,7 @@ deploy_env() {
   else
     record_failed
   fi
+  if [ "$1" = prod ]; then restore 1; else restore 0; fi
   exit 1
 }
 if [ "$(env_value AWT_TRAINING_TAG)" != "$rev" ]; then

@@ -20,6 +20,7 @@ G2=2222222222222222222222222222222222222222
 BAD=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 BADCFG=cccccccccccccccccccccccccccccccccccccccc
 G3=3333333333333333333333333333333333333333
+PRODFAIL=dddddddddddddddddddddddddddddddddddddddd
 
 root=$(mktemp -d)
 port=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
@@ -46,6 +47,7 @@ check() { # check <description> <command...>
 tag_of() { sed -n "s/^$1=//p" "$root/.env" | tail -1; }
 # Id and start time: a restart or a recreate changes one of them.
 ctr() { cid=$(dc ps -q "$1" 2>/dev/null || true); [ -n "$cid" ] && docker inspect -f '{{.Id}} {{.State.StartedAt}}' "$cid" || echo none; }
+ctr_image() { cid=$(dc ps -q "$1" 2>/dev/null || true); [ -n "$cid" ] && docker inspect -f '{{.Config.Image}}' "$cid" || echo none; }
 files_sum() { cat "$root/compose.yaml" "$root/caddy/Caddyfile" | sha256sum; }
 failed_list() { cat "$root/state/failed-revisions" 2>/dev/null || true; }
 has_marker() { grep -q "# agent-test revision $1" "$root/compose.yaml" && grep -q "# agent-test revision $1" "$root/caddy/Caddyfile"; }
@@ -91,6 +93,10 @@ docker build -q -t "$LOCAL:base" . >/dev/null
 overlay "$G1" "$(marker "$G1")"
 overlay "$G2" "$(marker "$G2")"
 overlay "$G3" "$(marker "$G3")"
+# Healthy as training, never healthy as prod (AWT_ENV is set by compose.yaml).
+overlay "$PRODFAIL" "$(marker "$PRODFAIL")"'
+ENTRYPOINT ["/bin/sh", "-c", "if [ \"$AWT_ENV\" = prod ]; then exec sleep 3600; fi; exec /usr/local/bin/entrypoint.sh \"$@\"", "sh"]
+CMD ["serve"]'
 # Starts, never answers /healthz.
 overlay "$BAD" "$(marker "$BAD")
 ENTRYPOINT [\"sleep\", \"3600\"]"
@@ -180,6 +186,8 @@ check "training rolled back to $G1" [ "$(tag_of AWT_TRAINING_TAG)" = "$G1" ]
 check "prod tag untouched" [ "$(tag_of AWT_PROD_TAG)" = "$G1" ]
 check "prod container untouched" [ "$(ctr awt-prod)" = "$prod_before" ]
 check "revision recorded as failed" [ "$(failed_list)" = "$BAD" ]
+check "previous compose.yaml and Caddyfile restored" has_marker "$G1"
+check "training runs $G1" eval '[ "$(ctr_image awt-training)" = "$IMAGE:$G1" ]'
 echo "  -- next run"
 before="$(ctr awt-training) $(ctr awt-prod) $(ctr caddy)"
 run_agent
@@ -254,6 +262,7 @@ check "logs retry" eval 'printf "%s" "$out" | grep -q "will retry"'
 check "not recorded as failed" [ "$(failed_list)" = "$failed" ]
 check "tags untouched" [ "$(tag_of AWT_TRAINING_TAG) $(tag_of AWT_PROD_TAG)" = "$G2 $G2" ]
 check "apps not restarted" [ "$(ctr awt-training) $(ctr awt-prod)" = "$before" ]
+check "previous compose.yaml and Caddyfile restored" has_marker "$G2"
 
 echo "== case: :<rev> missing in the registry, present locally (retry of $G3)"
 run_agent
@@ -261,6 +270,17 @@ check "exit 0" [ "$rc" = 0 ]
 check "training tag = $G3" [ "$(tag_of AWT_TRAINING_TAG)" = "$G3" ]
 check "prod tag = $G3" [ "$(tag_of AWT_PROD_TAG)" = "$G3" ]
 check "baked files of $G3 installed" has_marker "$G3"
+
+echo "== case: prod fails ($PRODFAIL healthy as training, not as prod)"
+publish "$PRODFAIL"
+run_agent
+check "exit non-zero" [ "$rc" != 0 ]
+check "revision recorded as failed" eval 'failed_list | grep -qx "$PRODFAIL"'
+check "tags back to $G3" [ "$(tag_of AWT_TRAINING_TAG) $(tag_of AWT_PROD_TAG)" = "$G3 $G3" ]
+check "previous compose.yaml and Caddyfile restored" has_marker "$G3"
+check "training runs $G3 again" eval '[ "$(ctr_image awt-training)" = "$IMAGE:$G3" ]'
+check "prod runs $G3" eval '[ "$(ctr_image awt-prod)" = "$IMAGE:$G3" ]'
+check "logs restored" eval 'printf "%s" "$out" | grep -q "restored training=$G3 prod=$G3"'
 
 if [ "$failures" -gt 0 ]; then
   echo "FAIL: $failures check(s) failed" >&2
