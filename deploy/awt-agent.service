@@ -12,3 +12,5 @@ Type=oneshot
 User=deploy
 ExecStart=/opt/awt/deploy/agent.sh
 Nice=10
+# A deploy of both environments with rollback takes a few minutes at most.
+TimeoutStartSec=20min

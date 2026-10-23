@@ -2,9 +2,10 @@
 # Deploy agent test: a local registry stands in for GHCR, a temp directory for
 # /opt/awt, and deploy/agent.sh runs against them through the real deploy.sh
 # and compose.yaml. Cases: lock held, happy path, no-op, bad revision (app
-# never healthy), bad config (invalid baked Caddyfile), no label, registry
-# down then back (retry). Run via `make agent-test` (needs Docker, not root;
-# takes a few minutes).
+# never healthy), bad config (invalid baked Caddyfile or compose.yaml), label
+# "unknown" or missing, registry down then back (retry), pull failing inside
+# deploy.sh, :<rev> only local, prod failing after training, image pruning.
+# Run via `make agent-test` (needs Docker, not root; takes several minutes).
 set -eu
 cd "$(dirname "$0")/.."
 repo=$(pwd)
@@ -21,6 +22,7 @@ BAD=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 BADCFG=cccccccccccccccccccccccccccccccccccccccc
 G3=3333333333333333333333333333333333333333
 PRODFAIL=dddddddddddddddddddddddddddddddddddddddd
+BADCOMPOSE=eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
 
 root=$(mktemp -d)
 port=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
@@ -56,7 +58,7 @@ no_staging() { ! ls -d "$root"/state/staging-* >/dev/null 2>&1; }
 run_agent() {
   set +e
   out=$(AWT_ROOT="$root" AWT_IMAGE="$IMAGE" AWT_CHANNEL=test AWT_LOCK="$root/agent.lock" \
-    HEALTH_TIMEOUT="$HEALTH_TIMEOUT" "$root/deploy/agent.sh" 2>&1)
+    HEALTH_TIMEOUT="$HEALTH_TIMEOUT" AWT_PRUNE_DAYS="${PRUNE_DAYS:-30}" "$root/deploy/agent.sh" 2>&1)
   rc=$?
   set -e
   [ -z "$out" ] || printf '%s\n' "$out" | sed 's/^/    | /'
@@ -100,6 +102,11 @@ CMD ["serve"]'
 # Starts, never answers /healthz.
 overlay "$BAD" "$(marker "$BAD")
 ENTRYPOINT [\"sleep\", \"3600\"]"
+overlay "$BADCOMPOSE" 'USER root
+RUN echo "services: [this is not { compose" >> /usr/share/awt/deploy/compose.yaml
+USER awt'
+# No label at all (the base has org.opencontainers.image.revision=unknown).
+printf 'FROM scratch\nENV AWT_AGENT_TEST=1\n' | docker build -q -t "$LOCAL:nolabel" - >/dev/null
 overlay "$BADCFG" 'USER root
 RUN echo "this is { not a caddyfile" >> /usr/share/awt/deploy/Caddyfile
 USER awt'
@@ -208,7 +215,32 @@ check "no restart" [ "$(ctr awt-training) $(ctr awt-prod) $(ctr caddy)" = "$befo
 check "revision recorded as failed" eval '[ "$(failed_list)" = "$(printf "%s\n%s" "$BAD" "$BADCFG")" ]'
 check "staging cleaned" no_staging
 
-echo "== case: no label (image built outside CI)"
+echo "== case: bad config $BADCOMPOSE (invalid baked compose.yaml)"
+publish "$BADCOMPOSE"
+before="$(ctr awt-training) $(ctr awt-prod) $(ctr caddy)"
+sum=$(files_sum)
+failed=$(failed_list)
+run_agent
+check "exit non-zero" [ "$rc" != 0 ]
+check "logs invalid compose.yaml" eval 'printf "%s" "$out" | grep -q "compose.yaml of $BADCOMPOSE is invalid"'
+check "files untouched" [ "$(files_sum)" = "$sum" ]
+check "tags untouched" [ "$(tag_of AWT_TRAINING_TAG) $(tag_of AWT_PROD_TAG)" = "$G1 $G1" ]
+check "no restart" [ "$(ctr awt-training) $(ctr awt-prod) $(ctr caddy)" = "$before" ]
+check "revision recorded as failed" eval '[ "$(failed_list)" = "$(printf "%s\n%s" "$failed" "$BADCOMPOSE")" ]'
+
+echo "== case: no label at all"
+docker tag "$LOCAL:nolabel" "$IMAGE:test"
+docker push -q "$IMAGE:test" >/dev/null
+failed=$(failed_list)
+run_agent
+check "exit non-zero" [ "$rc" != 0 ]
+check "logs refused" eval 'printf "%s" "$out" | grep -q "refused"'
+check "files untouched" [ "$(files_sum)" = "$sum" ]
+check "tags untouched" [ "$(tag_of AWT_TRAINING_TAG) $(tag_of AWT_PROD_TAG)" = "$G1 $G1" ]
+check "no restart" [ "$(ctr awt-training) $(ctr awt-prod) $(ctr caddy)" = "$before" ]
+check "failed revisions unchanged" [ "$(failed_list)" = "$failed" ]
+
+echo "== case: label 'unknown' (image built outside CI)"
 docker tag "$LOCAL:base" "$IMAGE:test"
 docker push -q "$IMAGE:test" >/dev/null
 before="$(ctr awt-training) $(ctr awt-prod) $(ctr caddy)"
@@ -264,12 +296,14 @@ check "tags untouched" [ "$(tag_of AWT_TRAINING_TAG) $(tag_of AWT_PROD_TAG)" = "
 check "apps not restarted" [ "$(ctr awt-training) $(ctr awt-prod)" = "$before" ]
 check "previous compose.yaml and Caddyfile restored" has_marker "$G2"
 
-echo "== case: :<rev> missing in the registry, present locally (retry of $G3)"
-run_agent
+echo "== case: :<rev> missing in the registry, present locally (retry of $G3; prune age 0)"
+PRUNE_DAYS=0 run_agent
 check "exit 0" [ "$rc" = 0 ]
 check "training tag = $G3" [ "$(tag_of AWT_TRAINING_TAG)" = "$G3" ]
 check "prod tag = $G3" [ "$(tag_of AWT_PROD_TAG)" = "$G3" ]
 check "baked files of $G3 installed" has_marker "$G3"
+check "previous revision image kept" eval 'docker image inspect "$IMAGE:$G2" >/dev/null 2>&1'
+check "older image pruned" eval '! docker image inspect "$IMAGE:$G1" >/dev/null 2>&1'
 
 echo "== case: prod fails ($PRODFAIL healthy as training, not as prod)"
 publish "$PRODFAIL"

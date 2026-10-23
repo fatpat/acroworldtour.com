@@ -13,13 +13,15 @@
 #
 # Environment (all optional): AWT_ROOT (default /opt/awt); AWT_IMAGE and
 # AWT_CHANNEL (default: from $AWT_ROOT/.env; channel rewrite-go); AWT_LOCK
-# (default /run/lock/awt-agent.lock); HEALTH_TIMEOUT (passed to deploy.sh).
+# (default /run/lock/awt-agent.lock); HEALTH_TIMEOUT (passed to deploy.sh);
+# AWT_PRUNE_DAYS (default 30: age of local images removed after a deploy).
 set -eu
 
 root=${AWT_ROOT:-/opt/awt}
 lock=${AWT_LOCK:-/run/lock/awt-agent.lock}
 LABEL=org.opencontainers.image.revision
 BAKED=/usr/share/awt/deploy
+SOURCE=https://github.com/fatpat/acroworldtour.com
 
 log() { echo "agent: $*"; }
 err() { echo "agent: $*" >&2; }
@@ -63,10 +65,11 @@ log "new revision $rev on $ref"
 staging="state/staging-$rev"
 cid=""
 cleanup() {
-  [ -z "$cid" ] || docker rm -f "$cid" >/dev/null 2>&1 || true
+  [ -z "$cid" ] || docker rm -f -v "$cid" >/dev/null 2>&1 || true
   rm -rf "$staging"
 }
 trap cleanup EXIT
+trap 'exit 1' INT TERM
 rm -rf "$staging"; mkdir -p "$staging"
 cid=$(docker create "$ref")
 docker cp -q "$cid:$BAKED/compose.yaml" "$staging/compose.yaml"
@@ -74,12 +77,12 @@ docker cp -q "$cid:$BAKED/Caddyfile" "$staging/Caddyfile"
 
 validate() {
   # Same interpolation as at deploy time (.env); profiles are not checked.
-  docker compose -f "$staging/compose.yaml" --env-file .env config -q 2>&1 \
+  docker compose -f "$staging/compose.yaml" --project-directory "$root" --env-file .env config -q 2>&1 \
     || { err "compose.yaml of $rev is invalid"; return 1; }
   # Validate with the Caddy image the new compose.yaml runs, given what
   # compose gives Caddy: the two hosts from .env and the certs directory
   # (AWT_TLS_CERT/KEY keep their Caddyfile defaults, as in compose.yaml).
-  caddy_image=$(docker compose -f "$staging/compose.yaml" --env-file .env config --images 2>/dev/null \
+  caddy_image=$(docker compose -f "$staging/compose.yaml" --project-directory "$root" --env-file .env config --images 2>/dev/null \
     | grep -E '^caddy[:@]' | head -1)
   [ -n "$caddy_image" ] || { err "no caddy image in compose.yaml of $rev"; return 1; }
   docker run --rm --network none \
@@ -160,3 +163,21 @@ if [ "$(env_value AWT_TRAINING_TAG)" != "$rev" ]; then
 fi
 deploy_env prod
 log "deployed $rev to training and prod"
+
+# Disk: drop local images of $image older than AWT_PRUNE_DAYS, never the
+# new revision, the previous training and prod revisions or the moving tag;
+# then dangling images of this project (source label) as old. Best effort:
+# never fails the run.
+days=${AWT_PRUNE_DAYS:-30}
+cutoff=$(($(date +%s) - days * 86400))
+docker image ls "$image" --format '{{.Tag}}' | while read -r t; do
+  case " $rev $prev_training $prev_prod $channel <none> " in *" $t "*) continue ;; esac
+  # .Created is RFC 3339 with a zone offset: compare as epoch seconds.
+  raw=$(docker image inspect -f '{{.Created}}' "$image:$t" 2>/dev/null) || continue
+  created=$(date -d "$raw" +%s 2>/dev/null) || continue
+  if [ "$created" -lt "$cutoff" ]; then
+    docker image rm "$image:$t" >/dev/null 2>&1 && log "removed old image $image:$t" || true
+  fi
+done
+docker image prune -f --filter "until=$((days * 24))h" \
+  --filter "label=org.opencontainers.image.source=$SOURCE" >/dev/null 2>&1 || true
