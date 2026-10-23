@@ -67,3 +67,19 @@ func TestS3ConfigPrefix(t *testing.T) {
 		t.Errorf("S3Config.Prefix = %q, want %q", got, "prod/")
 	}
 }
+
+// The VPS env files hold AWT_S3_ENDPOINT=https://... (Litestream needs the
+// scheme): the app's S3 store must accept it.
+func TestNewBlobStoreAcceptsEndpointURL(t *testing.T) {
+	cfg, err := config.Load(func(k string) string {
+		return map[string]string{"AWT_ENV": "dev", "AWT_BLOB_BACKEND": "s3",
+			"AWT_S3_ENDPOINT": "https://s3.gra.io.cloud.ovh.net", "AWT_S3_BUCKET": "b",
+			"AWT_S3_ACCESS_KEY": "k", "AWT_S3_SECRET_KEY": "s"}[k]
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := newBlobStore(cfg); err != nil {
+		t.Fatalf("newBlobStore: %v", err)
+	}
+}

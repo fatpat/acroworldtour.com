@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
+	"strings"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -12,7 +14,9 @@ import (
 
 // S3Config configures the S3-compatible backend (OVHcloud Object Storage).
 type S3Config struct {
-	Endpoint  string // host[:port], no scheme; UseSSL selects TLS
+	// Endpoint is AWT_S3_ENDPOINT: https://host[:port] or http://host[:port]
+	// (the scheme selects TLS), or a bare host[:port] (UseSSL selects TLS).
+	Endpoint  string
 	Bucket    string
 	AccessKey string
 	SecretKey string
@@ -36,17 +40,43 @@ func (s *S3) objectKey(key string) string { return s.prefix + "files/" + key }
 
 // NewS3 builds the client; it does not contact the server.
 func NewS3(cfg S3Config) (*S3, error) {
+	c, err := newClient(cfg)
+	if err != nil {
+		return nil, err
+	}
+	return &S3{client: c, bucket: cfg.Bucket, prefix: cfg.Prefix}, nil
+}
+
+func newClient(cfg S3Config) (*minio.Client, error) {
 	if cfg.Endpoint == "" || cfg.Bucket == "" {
 		return nil, errors.New("s3: endpoint and bucket are required")
 	}
-	c, err := minio.New(cfg.Endpoint, &minio.Options{
+	host, secure, err := splitEndpoint(cfg.Endpoint, cfg.UseSSL)
+	if err != nil {
+		return nil, err
+	}
+	c, err := minio.New(host, &minio.Options{
 		Creds:  credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""),
-		Secure: cfg.UseSSL,
+		Secure: secure,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("s3 client: %w", err)
 	}
-	return &S3{client: c, bucket: cfg.Bucket, prefix: cfg.Prefix}, nil
+	return c, nil
+}
+
+// splitEndpoint takes the scheme off an endpoint URL: the minio client wants
+// host[:port] and a TLS flag, Litestream (same variable) wants the URL.
+func splitEndpoint(endpoint string, useSSL bool) (host string, secure bool, err error) {
+	if !strings.Contains(endpoint, "://") {
+		return endpoint, useSSL, nil
+	}
+	u, err := url.Parse(endpoint)
+	if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" ||
+		(u.Path != "" && u.Path != "/") || u.RawQuery != "" || u.User != nil {
+		return "", false, fmt.Errorf("s3 endpoint %q: must be http(s)://host[:port]", endpoint)
+	}
+	return u.Host, u.Scheme == "https", nil
 }
 
 // Put uploads r with an unknown size (streamed multipart).
