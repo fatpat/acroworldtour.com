@@ -854,7 +854,8 @@ step_env_files() {
     local name="${E}_MFA_KEY" var="V_${E}_MFA_KEY"
     [ -z "${!var}" ] || continue
     if replica_exists "$e"; then
-      local why="$(replica_url "$e") holds a Litestream replica: the $e database restored from it may hold TOTP secrets encrypted with its existing MFA key. A new key would make every enrolled authenticator app unusable (docs/ops.md section 7b), so none is generated."
+      local why
+      why="$(replica_url "$e") holds a Litestream replica: the $e database restored from it may hold TOTP secrets encrypted with its existing MFA key. A new key would make every enrolled authenticator app unusable (docs/ops.md section 7b), so none is generated."
       if [ "$INTERACTIVE" = 1 ]; then
         warn "$why Enter the existing $name (from your secrets backup)."
         ask "$name" 1 0
