@@ -20,12 +20,15 @@
 #   2. pauses the deploy agent: stops awt-agent.timer and takes its lock;
 #      the timer's previous state comes back on any exit
 #   3. snapshot of the prod database (VACUUM INTO from a read-only
-#      connection, prod keeps serving), integrity check, schema check,
-#      migration and removal of sessions and second factors
-#      (`awt sync-training prepare-db`)
+#      connection, prod keeps serving), then, in prod's image, integrity
+#      check, schema check, migration and removal of sessions and second
+#      factors (`awt sync-training prepare-db`)
 #   4. wipe: writes state/sync-training.incomplete (deploy.sh then refuses
-#      training), removes the awt-training containers, deletes training's
-#      <prefix>litestream/ and <prefix>files/ objects, removes its volume
+#      training), sets AWT_TRAINING_TAG to prod's revision (training runs
+#      prod's code with prod's schema; this also ends the case where a
+#      failed refresh left training behind a newer prod), removes the
+#      awt-training containers, deletes training's <prefix>litestream/ and
+#      <prefix>files/ objects, removes its volume
 #   5. clone: the snapshot becomes /data/awt.db on a new training volume;
 #      prod's files are copied to training's <prefix>files/
 #   6. starts training (Litestream starts a new replica from the copy),
@@ -105,29 +108,55 @@ timer_state=state/sync-training.timer
 # network. The bucket steps read prod's env file on stdin.
 awt_training() { docker compose run --rm --no-deps -T --entrypoint awt awt-training "$@"; }
 
-# read_live: the object storage settings the running containers use
-# (docker inspect), never the files: the bucket steps compare them with the
-# env files. Only these three variables are kept; no other value is read
-# into the script. live_training=0 when awt-training is not running.
+# service_ctr <service>: sets ctr to the id of the service's running
+# container (labels of this compose project, not a one-off). Returns 1 when
+# none runs, 2 when several do or docker fails (live_err says which).
+service_ctr() {
+  ctr=""
+  if ! ids=$(docker ps -q --filter "label=com.docker.compose.project=$project" \
+      --filter "label=com.docker.compose.service=$1" --filter "label=com.docker.compose.oneoff=False" \
+      --filter status=running); then
+    live_err="docker ps failed for $1"; return 2
+  fi
+  n=$(printf '%s\n' "$ids" | grep -c . || true)
+  case "$n" in
+    0) live_err="$1 is not running"; return 1 ;;
+    1) ctr=$ids ;;
+    *) live_err="$n running containers of $1: expected one (docker compose ps $1)"; return 2 ;;
+  esac
+}
+# live_env <container>: sets envs to the three object storage variables of
+# the container; no other variable is kept or printed.
+live_env() {
+  if ! all=$(docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$1"); then
+    live_err="docker inspect of $1 failed"; return 2
+  fi
+  envs=$(printf '%s\n' "$all" | grep -E '^(AWT_S3_ENDPOINT|AWT_S3_BUCKET|AWT_BUCKET_PREFIX)=' || true)
+  all=""
+}
 live_value() { printf '%s\n' "$2" | sed -n "s/^$1=//p" | tail -1; }
+# read_live: the object storage settings the running containers use, never
+# the files: the bucket steps compare them with the env files. Prod must
+# run; live_training=0 when awt-training does not. Non-zero with live_err
+# set on any other outcome.
 read_live() {
-  cid=$(docker compose ps -q --status running awt-prod 2>/dev/null || true)
-  [ -n "$cid" ] || return 1
-  envs=$(docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$cid" \
-    | grep -E '^(AWT_S3_ENDPOINT|AWT_S3_BUCKET|AWT_BUCKET_PREFIX)=' || true)
+  live_err=""
+  service_ctr awt-prod || return 1
+  live_env "$ctr" || return 1
   lp_endpoint=$(live_value AWT_S3_ENDPOINT "$envs")
   lp_bucket=$(live_value AWT_S3_BUCKET "$envs")
   lp_prefix=$(live_value AWT_BUCKET_PREFIX "$envs")
   live_training=0
-  cid=$(docker compose ps -q --status running awt-training 2>/dev/null || true)
-  if [ -n "$cid" ]; then
-    envs=$(docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$cid" \
-      | grep -E '^(AWT_S3_ENDPOINT|AWT_S3_BUCKET|AWT_BUCKET_PREFIX)=' || true)
-    lt_endpoint=$(live_value AWT_S3_ENDPOINT "$envs")
-    lt_bucket=$(live_value AWT_S3_BUCKET "$envs")
-    lt_prefix=$(live_value AWT_BUCKET_PREFIX "$envs")
-    live_training=1
-  fi
+  rc=0; service_ctr awt-training || rc=$?
+  case "$rc" in
+    0) live_env "$ctr" || return 1
+       lt_endpoint=$(live_value AWT_S3_ENDPOINT "$envs")
+       lt_bucket=$(live_value AWT_S3_BUCKET "$envs")
+       lt_prefix=$(live_value AWT_BUCKET_PREFIX "$envs")
+       live_training=1 ;;
+    1) ;;
+    *) return 1 ;;
+  esac
 }
 # bucket_step <step>: a bucket step with the live settings, prod's env file
 # on stdin.
@@ -141,12 +170,12 @@ bucket_step() {
 }
 
 log "checking settings and buckets"
-read_live || refuse "awt-prod is not running: start it first (the check compares what it runs with .env.prod)"
+read_live || refuse "$live_err (the check compares what the running containers use with their env files; prod must run)"
 if ! plan=$(bucket_step check); then
   refuse "the check above failed"
 fi
 if [ "$prod_tag" != "$training_tag" ]; then
-  log "note: prod runs $prod_tag and training $training_tag; training migrates the copy to its own schema"
+  log "note: training runs $training_tag; it will run prod's revision $prod_tag after the refresh"
 fi
 if [ -f "$incomplete" ]; then
   log "note: an earlier refresh did not finish ($root/$incomplete): training is partial; this run replaces it"
@@ -240,26 +269,48 @@ log "deploy agent paused"
 # running containers' settings as they are now.
 prod_tag=$(env_value AWT_PROD_TAG)
 training_tag=$(env_value AWT_TRAINING_TAG)
-read_live || { echo "sync-training: awt-prod is not running" >&2; exit 2; }
+read_live || { echo "sync-training: $live_err" >&2; exit 2; }
 
+# Training is cloned onto prod's revision: the copy's schema is prod's, so
+# training runs prod's code from now on (prepare-db, the clone and the start
+# all use prod's image; the schema check stays as a guard).
 # 3. Snapshot of prod: a read-only connection (mode=ro never creates or
 # writes the file), VACUUM INTO a staging volume. The staging volume is
 # first mounted on the image's /data, so it gets /data's owner (the awt user).
 docker volume rm -f "$stage_vol" >/dev/null 2>&1 || true
-docker run --rm --network none -v "$stage_vol:/data" --entrypoint true "$image:$training_tag"
+docker run --rm --network none -v "$stage_vol:/data" --entrypoint true "$image:$prod_tag"
 log "snapshot of the prod database"
 docker compose run --rm --no-deps -T -v "$stage_vol:/stage" --entrypoint sqlite3 awt-prod \
   -bail -cmd ".timeout 30000" "file:/data/awt.db?mode=ro" "VACUUM INTO '/stage/prod.db'"
 log "integrity check and cleanup of the snapshot"
-prepared=$(docker run --rm --network none -v "$stage_vol:/stage" --entrypoint awt "$image:$training_tag" \
+prepared=$(docker run --rm --network none -v "$stage_vol:/stage" --entrypoint awt "$image:$prod_tag" \
   sync-training prepare-db /stage/prod.db)
 printf '%s\n' "$prepared" | sed 's/^/  /'
 # Re-checked with the settings read after the pause, before deleting.
 bucket_step check >/dev/null
 
+# set_training_tag <tag>: AWT_TRAINING_TAG in .env, written next to it then
+# renamed (atomic, as deploy.sh does), keeping its owner and mode: the agent
+# (user deploy) reads and rewrites it. Called under the agent lock.
+set_training_tag() {
+  tmp=$(mktemp .env.sync-XXXXXX)
+  if grep -q '^AWT_TRAINING_TAG=' .env; then
+    sed "s|^AWT_TRAINING_TAG=.*|AWT_TRAINING_TAG=$1|" .env > "$tmp"
+  else
+    cat .env > "$tmp"; echo "AWT_TRAINING_TAG=$1" >> "$tmp"
+  fi
+  chown --reference=.env "$tmp" && chmod --reference=.env "$tmp" && mv "$tmp" .env \
+    || { rm -f "$tmp"; echo "sync-training: could not update AWT_TRAINING_TAG in .env" >&2; return 1; }
+}
+
 # 4. Wipe training.
 touched=1
 : > "$incomplete"
+if [ "$training_tag" != "$prod_tag" ]; then
+  set_training_tag "$prod_tag"
+  log "training moved to prod's revision $prod_tag (was $training_tag)"
+  training_tag=$prod_tag
+fi
 log "wiping training: container, replica, files, volume"
 docker compose rm -s -f awt-training
 wiped=$(bucket_step wipe-bucket)

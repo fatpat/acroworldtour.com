@@ -179,7 +179,10 @@ func PrepareDB(ctx context.Context, path string) (Prepared, error) {
 			return err
 		}
 		if len(unknown) > 0 {
-			return fmt.Errorf("prod's schema is newer than the training image (migrations %s unknown): deploy the same revision to training first", strings.Join(unknown, ", "))
+			// deploy/sync-training.sh runs this in prod's image: this
+			// means prod runs an older revision than its database (a
+			// rollback past a migration).
+			return fmt.Errorf("the database holds migrations this image does not know (%s): it comes from a newer revision; refusing, as their tables may hold auth state the cleanup does not clear (deploy that revision first)", strings.Join(unknown, ", "))
 		}
 		if err := store.Migrate(ctx, db); err != nil {
 			return err

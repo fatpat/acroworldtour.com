@@ -16,7 +16,10 @@
 # another bucket. After each refresh: training holds exactly prod's data
 # and files, no trainee leftovers, no session or second factor, a new
 # replica instead of the old one; prod's container (not restarted), data,
-# files, replica objects and generations are unchanged.
+# files, replica objects and generations are unchanged. Also: a failed
+# refresh, then prod deployed to a revision with a new migration: the
+# re-run moves training to prod's revision (with a one-off container of
+# awt-prod running next to it).
 # Run via `make sync-training-test` (it builds awt:dev first; needs Docker,
 # not root; takes a few minutes).
 # Variables read only inside the eval'd check strings:
@@ -24,7 +27,10 @@
 set -eu
 cd "$(dirname "$0")/.."
 
-export COMPOSE_PROJECT_NAME=awt-sync-test
+# Names carry the process id: concurrent runs do not collide.
+run_id=$$
+export COMPOSE_PROJECT_NAME=awt-sync-test-$run_id
+IMG=awt-sync-test-$run_id
 # aws-cli, pinned by digest (the image docs/ops.md section 6 uses).
 AWSCLI=amazon/aws-cli@sha256:e3e329e1d2894b7b4bbb0aacacd0a155262159b2e7a3b4275eb1f24046d3e06c
 HEALTH_TIMEOUT=${HEALTH_TIMEOUT:-90}
@@ -39,6 +45,7 @@ dc() { (cd "$root" && docker compose "$@"); }
 cleanup() {
   dc --profile test down -v --remove-orphans >/dev/null 2>&1 || true
   docker volume rm -f "${COMPOSE_PROJECT_NAME}_sync_training_stage" >/dev/null 2>&1 || true
+  docker image rm -f "$IMG:dev" "$IMG:next" >/dev/null 2>&1 || true
   rm -rf "$root"
 }
 trap cleanup EXIT
@@ -56,20 +63,27 @@ cp deploy/sync-training.sh "$root/deploy/sync-training.sh"
 cp deploy/deploy.sh "$root/deploy/deploy.sh"
 # A second name for MinIO: an endpoint that differs from prod's, so the copy
 # cannot be server-side (separate buckets and credentials on the VPS).
+# The edge network gets a subnet Docker picks (compose.yaml fixes one), so
+# concurrent runs and a local stack do not clash.
 cat > "$root/compose.override.yaml" <<'EOF'
 services:
   minio:
     networks:
       edge:
         aliases: [minio-alt]
+networks:
+  edge:
+    ipam: !reset {}
 EOF
-cat > "$root/.env" <<'EOF'
-AWT_IMAGE=awt
+docker tag awt:dev "$IMG:dev"
+cat > "$root/.env" <<EOF
+AWT_IMAGE=$IMG
 AWT_PROD_TAG=dev
 AWT_TRAINING_TAG=dev
 AWT_PROD_HOST=prod.invalid
 AWT_TRAINING_HOST=training.invalid
 EOF
+chmod 600 "$root/.env"
 mfa_key() { head -c 32 /dev/urandom | base64; }
 cat > "$root/.env.prod" <<EOF
 AWT_ENV=prod
@@ -167,7 +181,11 @@ auth_rows() {
     (SELECT count(*) FROM user_recovery_codes) || ' ' ||
     (SELECT count(*) FROM users WHERE mfa_failed_count <> 0 OR mfa_locked_until IS NOT NULL)"
 }
-ctr_id() { dc ps -q "$1" 2>/dev/null || true; }
+# ctr_id <service>: the service's running container, never a one-off.
+ctr_id() {
+  docker ps -q --filter "label=com.docker.compose.project=$COMPOSE_PROJECT_NAME" \
+    --filter "label=com.docker.compose.service=$1" --filter label=com.docker.compose.oneoff=False 2>/dev/null || true
+}
 
 wait_healthy() {
   for svc in "$@"; do
@@ -409,6 +427,52 @@ check "noted the earlier incomplete run" has "an earlier refresh did not finish"
 check "timer stopped, then started" eval '[ "$(grep -E "^(stop|start)" "$root/calls" | tr "\n" " ")" = "stop awt-agent.timer start awt-agent.timer " ]'
 check "server-side copy" has "server-side"
 check "removed prod's sessions and factors in the copy" has "removed: 1 sessions, 1 pending logins, 1 authenticator apps, 1 security keys, 1 recovery codes, 1 mfa lockouts"
+
+# --- a failed refresh, then prod moves to a revision with a new migration ---------
+# Before the refresh cloned onto prod's revision, this deadlocked: prepare-db
+# in training's older image refused the newer schema, and deploy.sh refused
+# training while the refresh was incomplete.
+echo "== build $IMG:next: the same app plus a migration"
+mkdir -p "$work/next"
+echo 'CREATE TABLE sync_test_next (id INTEGER PRIMARY KEY);' > "$work/next/0099_sync_test_next.sql"
+{
+  grep -m1 '^FROM golang' Dockerfile
+  cat <<'EOF'
+WORKDIR /src
+ENV CGO_ENABLED=0 GOFLAGS=-trimpath
+COPY --from=src go.mod go.sum ./
+RUN go mod download
+COPY --from=src . .
+COPY 0099_sync_test_next.sql internal/store/migrations/
+RUN go build -ldflags="-s -w" -o /out/awt ./cmd/awt
+EOF
+  echo "FROM $IMG:dev"
+  echo 'COPY --from=build /out/awt /usr/local/bin/awt'
+} > "$work/next/Dockerfile"
+docker build -q --build-context src=. -t "$IMG:next" "$work/next" >/dev/null
+
+echo "== refresh failing after the wipe, then prod deployed to next (new migration)"
+run_failing wipe
+check "failed, marker left" eval '[ "$rc" = 1 ] && [ -f "$root/state/sync-training.incomplete" ]'
+sed -i 's/^AWT_PROD_TAG=.*/AWT_PROD_TAG=next/' "$root/.env"
+dc up -d awt-prod >/dev/null 2>&1
+wait_healthy awt-prod
+check "prod on next has the new table" eval '[ "$(sql awt-prod "SELECT count(*) FROM sqlite_master WHERE name = '"'"'sync_test_next'"'"'")" = 1 ]'
+sleep 3
+capture_prod
+env_mode=$(stat -c '%a %U' "$root/.env")
+# A one-off container of awt-prod running next to it must not be taken for
+# the service's container.
+dc run -d --no-deps --entrypoint sleep awt-prod 3600 >/dev/null 2>&1
+echo "== re-run: training moves to prod's revision (next), a one-off of awt-prod running"
+: > "$root/calls"
+run_sync --yes
+after_refresh awt-test training/files/ training/litestream/ none-before
+check "AWT_TRAINING_TAG moved to next, .env mode and owner kept" eval '[ "$(sed -n "s/^AWT_TRAINING_TAG=//p" "$root/.env")" = next ] && [ "$(stat -c "%a %U" "$root/.env")" = "$env_mode" ]'
+check "training runs $IMG:next" eval '[ "$(docker inspect -f "{{.Config.Image}}" "$(ctr_id awt-training)")" = "$IMG:next" ]'
+check "logs the move" has "training moved to prod's revision next (was dev)"
+docker ps -q --filter "label=com.docker.compose.project=$COMPOSE_PROJECT_NAME" --filter label=com.docker.compose.oneoff=True \
+  | xargs -r docker rm -f >/dev/null
 
 # --- separate buckets, other endpoint, empty prefix; after a kill -9 -------------
 echo "== separate buckets: training in awt-train (prefix empty) on another endpoint; a killed run left the timer state (inactive) and the staging volume"
