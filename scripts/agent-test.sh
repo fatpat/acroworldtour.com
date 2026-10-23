@@ -26,6 +26,9 @@ PRODFAIL=dddddddddddddddddddddddddddddddddddddddd
 BADCOMPOSE=eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
 G4=4444444444444444444444444444444444444444
 BAD2=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb2
+BAD3=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb3
+G5=5555555555555555555555555555555555555555
+G6=6666666666666666666666666666666666666666
 
 root=$(mktemp -d)
 port=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
@@ -102,6 +105,10 @@ overlay "$G3" "$(marker "$G3")"
 overlay "$G4" "$(marker "$G4")"
 overlay "$BAD2" "$(marker "$BAD2")
 ENTRYPOINT [\"sleep\", \"3600\"]"
+overlay "$BAD3" "$(marker "$BAD3")
+ENTRYPOINT [\"sleep\", \"3600\"]"
+overlay "$G5" "$(marker "$G5")"
+overlay "$G6" "$(marker "$G6")"
 # Healthy as training, never healthy as prod (AWT_ENV is set by compose.yaml).
 overlay "$PRODFAIL" "$(marker "$PRODFAIL")"'
 ENTRYPOINT ["/bin/sh", "-c", "if [ \"$AWT_ENV\" = prod ]; then exec sleep 3600; fi; exec /usr/local/bin/entrypoint.sh \"$@\"", "sh"]
@@ -355,6 +362,30 @@ check "exit 0" [ "$rc" = 0 ]
 check "tags = $G4" [ "$(tag_of AWT_TRAINING_TAG) $(tag_of AWT_PROD_TAG)" = "$G4 $G4" ]
 check "baked files of $G4 installed" has_marker "$G4"
 check "logs invalid prune days" eval 'printf "%s" "$out" | grep -q "AWT_PRUNE_DAYS=.abc. is not a number"'
+
+echo "== case: marker lost after a successful deploy (killed before writing it), no-op run"
+rm -f "$root/state/installed-ok"
+run_agent
+check "exit 0" [ "$rc" = 0 ]
+check "silent" [ -z "$out" ]
+check "marker written back" [ -f "$root/state/installed-ok" ]
+echo "  -- next run: $BAD3 (never healthy) must restore $G4, the files of the last deploy"
+publish "$BAD3"
+run_agent
+check "exit non-zero" [ "$rc" != 0 ]
+check "saved state refreshed" eval '! printf "%s" "$out" | grep -q "previous run did not finish"'
+check "files of $G4 restored" has_marker "$G4"
+check "tags = $G4" [ "$(tag_of AWT_TRAINING_TAG) $(tag_of AWT_PROD_TAG)" = "$G4 $G4" ]
+
+for v in 08 12345678901234567890; do
+  [ "$v" = 08 ] && r=$G5 || r=$G6
+  echo "== case: deploy $r with AWT_PRUNE_DAYS=$v"
+  publish "$r"
+  PRUNE_DAYS=$v run_agent
+  check "exit 0" [ "$rc" = 0 ]
+  check "tags = $r" [ "$(tag_of AWT_TRAINING_TAG) $(tag_of AWT_PROD_TAG)" = "$r $r" ]
+  check "logs invalid prune days" eval 'printf "%s" "$out" | grep -q "AWT_PRUNE_DAYS=.$v. is not a number"'
+done
 
 if [ "$failures" -gt 0 ]; then
   echo "FAIL: $failures check(s) failed" >&2

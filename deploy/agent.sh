@@ -49,9 +49,14 @@ if ! printf '%s' "$rev" | grep -Eqx '[0-9a-f]{40}'; then
   exit 1
 fi
 
-[ "$(env_value AWT_TRAINING_TAG)" = "$rev" ] && [ "$(env_value AWT_PROD_TAG)" = "$rev" ] && exit 0
-
 mkdir -p state
+# Nothing new. Both apps run this revision, so the installed files are its
+# (deploy finished): restore the marker if a run died just before writing it,
+# so the next revision saves these files as state/prev.
+if [ "$(env_value AWT_TRAINING_TAG)" = "$rev" ] && [ "$(env_value AWT_PROD_TAG)" = "$rev" ]; then
+  [ -f state/installed-ok ] || : > state/installed-ok
+  exit 0
+fi
 failed=state/failed-revisions
 if [ -f "$failed" ] && grep -qx "$rev" "$failed"; then
   log "skip $rev: failed before"
@@ -193,13 +198,16 @@ need_restore=0
 : > state/installed-ok
 log "deployed $rev to training and prod"
 
-# Disk: drop local images of $image older than AWT_PRUNE_DAYS (digits only,
-# default 30), never the new revision, the previous training and prod
+# Disk: drop local images of $image older than AWT_PRUNE_DAYS (0-9999, no
+# leading zero: dash rejects "08" or overlong numbers in arithmetic; default 30), never the new revision, the previous training and prod
 # revisions or the moving tag; then dangling images of this project (source
 # label) as old. Best effort: never fails the run.
 prune_images() {
   days=${AWT_PRUNE_DAYS:-30}
-  case "$days" in ''|*[!0-9]*) err "AWT_PRUNE_DAYS='$days' is not a number of days, using 30"; days=30 ;; esac
+  case "$days" in
+    0|[1-9]|[1-9][0-9]|[1-9][0-9][0-9]|[1-9][0-9][0-9][0-9]) ;;
+    *) err "AWT_PRUNE_DAYS='$days' is not a number of days (0-9999), using 30"; days=30 ;;
+  esac
   cutoff=$(($(date +%s) - days * 86400))
   docker image ls "$image" --format '{{.Tag}}' | while read -r t; do
     case " $rev $prev_training $prev_prod $channel <none> " in *" $t "*) continue ;; esac
