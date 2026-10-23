@@ -417,7 +417,7 @@ in_ctr sh -c 'sed "s/tcp dport 22 accept/tcp dprt 22 accept/" /etc/nftables.d/aw
 check "the nft check catches a broken ruleset" eval '! nft_parses /tmp/broken.nft'
 check "deploy user: docker group, no login, no key" eval 'in_ctr id -nG deploy | grep -qw docker && [ "$(in_ctr getent passwd deploy | cut -d: -f7)" = /usr/sbin/nologin ] && ! exists /home/deploy/.ssh/authorized_keys'
 check "layout owners/modes" eval '[ "$(stat_of /opt/awt)" = "deploy:deploy 750" ] && [ "$(stat_of /opt/awt/state)" = "deploy:deploy 750" ] && [ "$(stat_of /opt/awt/caddy)" = "deploy:deploy 755" ] && [ "$(stat_of /opt/awt/certs)" = "deploy:deploy 700" ] && [ "$(stat_of /opt/awt/deploy)" = "root:root 755" ]'
-for f in agent.sh deploy.sh weekly-restore-test.sh; do
+for f in agent.sh deploy.sh weekly-restore-test.sh sync-training.sh; do
   check "deploy/$f installed root 755, from the repo" eval '[ "$(stat_of /opt/awt/deploy/$f)" = "root:root 755" ] && same_as_repo deploy/$f /opt/awt/deploy/$f'
 done
 for u in awt-agent.service awt-agent.timer; do

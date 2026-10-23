@@ -51,3 +51,31 @@ func TestS3Endpoint(t *testing.T) {
 		}
 	}
 }
+
+// A server-side copy needs one endpoint and one set of credentials; the
+// bucket may differ.
+func TestS3BucketCanCopyFrom(t *testing.T) {
+	mk := func(endpoint, bucket, access, secret string) *S3Bucket {
+		b, err := NewS3Bucket(S3Config{Endpoint: endpoint, Bucket: bucket, AccessKey: access, SecretKey: secret})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return b
+	}
+	dst := mk("https://s3.gra.io.cloud.ovh.net", "awt-training", "k", "s")
+	for _, c := range []struct {
+		src  *S3Bucket
+		want bool
+	}{
+		{mk("https://s3.gra.io.cloud.ovh.net/", "awt-prod", "k", "s"), true},
+		{mk("https://s3.gra.io.cloud.ovh.net", "awt-training", "k", "s"), true},
+		{mk("https://s3.gra.io.cloud.ovh.net", "awt-prod", "k2", "s"), false},
+		{mk("https://s3.gra.io.cloud.ovh.net", "awt-prod", "k", "s2"), false},
+		{mk("https://s3.sbg.io.cloud.ovh.net", "awt-prod", "k", "s"), false},
+		{mk("http://s3.gra.io.cloud.ovh.net", "awt-prod", "k", "s"), false},
+	} {
+		if got := dst.CanCopyFrom(c.src); got != c.want {
+			t.Errorf("CanCopyFrom(%s %s) = %v, want %v", c.src.client.EndpointURL(), c.src.bucket, got, c.want)
+		}
+	}
+}

@@ -1,4 +1,4 @@
-.PHONY: dev generate test golden golden-regen e2e lint check migrate docker backup-restore-test agent-test init-vps-test www-dates e2e-deps
+.PHONY: dev generate test golden golden-regen e2e lint check migrate docker backup-restore-test agent-test init-vps-test sync-training-test www-dates e2e-deps
 
 GO ?= go
 
@@ -57,6 +57,14 @@ docker:
 # restart, check the data came back. See scripts/backup-restore-test.sh.
 backup-restore-test: docker
 	./scripts/backup-restore-test.sh
+
+# Training refresh test: deploy/sync-training.sh against a temp /opt/awt with
+# prod and training on awt:dev and a local MinIO: refusals, a failed run then
+# a re-run, shared bucket (server-side copy), separate buckets (streamed).
+# Not part of check (needs Docker, takes minutes). See
+# scripts/sync-training-test.sh.
+sync-training-test: docker
+	./scripts/sync-training-test.sh
 
 # Deploy agent test: local registry + temp /opt/awt, every agent case (happy
 # path, no-op, bad revision, bad config, no label, registry down). Not part of

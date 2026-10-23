@@ -64,6 +64,15 @@ func main() {
 			fmt.Fprintln(os.Stderr, "bucket-path:", err)
 			os.Exit(1)
 		}
+	case "sync-training":
+		// Internal: the steps of deploy/sync-training.sh (docs/ops.md).
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		err := syncTrainingCmd(ctx, os.Args[2:], defaultSyncDeps(os.Getenv, os.Stdin, os.Stdout))
+		stop()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "sync-training:", err)
+			os.Exit(1)
+		}
 	case "user":
 		if err := userCmd(os.Args[2:], os.Stdin); err != nil {
 			fmt.Fprintln(os.Stderr, "user:", err)

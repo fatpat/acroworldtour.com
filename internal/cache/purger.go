@@ -52,11 +52,21 @@ func (p *CloudflarePurger) Purge(ctx context.Context, urls []string) error {
 }
 
 func (p *CloudflarePurger) purgeBatch(ctx context.Context, urls []string) error {
+	return p.send(ctx, map[string][]string{"files": urls})
+}
+
+// PurgeEverything empties the zone's cache, for when the whole site
+// changed (training refresh, docs/ops.md).
+func (p *CloudflarePurger) PurgeEverything(ctx context.Context) error {
+	return p.send(ctx, map[string]bool{"purge_everything": true})
+}
+
+func (p *CloudflarePurger) send(ctx context.Context, payload any) error {
 	base := p.Endpoint
 	if base == "" {
 		base = "https://api.cloudflare.com/client/v4"
 	}
-	body, err := json.Marshal(map[string][]string{"files": urls})
+	body, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("encode purge request: %w", err)
 	}

@@ -739,7 +739,7 @@ step_layout() {
   ensure_dir "$ROOT/certs" deploy:deploy 700
   ensure_dir "$ROOT/deploy" root:root 755
   tmp=$(mktemp)
-  for f in agent.sh deploy.sh weekly-restore-test.sh; do
+  for f in agent.sh deploy.sh weekly-restore-test.sh sync-training.sh; do
     fetch "deploy/$f" "$tmp"
     [[ $(head -1 "$tmp") == '#!'* ]] || die "deploy/$f from $V_AWT_REPO_RAW is not a script"
     put_file "$ROOT/deploy/$f" root:root 755 < "$tmp"

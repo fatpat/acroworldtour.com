@@ -84,3 +84,32 @@ func TestNoopPurger(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// The training refresh replaces the whole site: it purges the zone.
+func TestCloudflarePurgeEverything(t *testing.T) {
+	var gotPath, gotAuth, gotBody string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath, gotAuth = r.URL.Path, r.Header.Get("Authorization")
+		b, _ := io.ReadAll(r.Body)
+		gotBody = string(b)
+		_, _ = w.Write([]byte(`{"success":true}`))
+	}))
+	defer srv.Close()
+	p := cache.NewCloudflarePurger("zone1", "tok")
+	p.Endpoint = srv.URL
+	if err := p.PurgeEverything(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if gotPath != "/zones/zone1/purge_cache" || gotAuth != "Bearer tok" || gotBody != `{"purge_everything":true}` {
+		t.Fatalf("path %q auth %q body %q", gotPath, gotAuth, gotBody)
+	}
+
+	fail := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+	}))
+	defer fail.Close()
+	p.Endpoint = fail.URL
+	if err := p.PurgeEverything(context.Background()); err == nil || !strings.Contains(err.Error(), "403") {
+		t.Fatalf("err = %v", err)
+	}
+}

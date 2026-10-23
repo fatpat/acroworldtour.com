@@ -21,6 +21,8 @@ type S3Config struct {
 	AccessKey string
 	SecretKey string
 	UseSSL    bool
+	// Region is optional (LITESTREAM_S3_REGION); empty asks the server.
+	Region string
 	// Prefix is config.Config.BucketPrefix, already normalised: "" or
 	// "<segments>/" (decision 0017).
 	Prefix string
@@ -36,7 +38,7 @@ type S3 struct {
 // objectKey puts uploads under <prefix>files/, apart from the Litestream
 // replica under <prefix>litestream, so one bucket can serve one environment
 // or several (decision 0017).
-func (s *S3) objectKey(key string) string { return s.prefix + "files/" + key }
+func (s *S3) objectKey(key string) string { return FilesPrefix(s.prefix) + key }
 
 // NewS3 builds the client; it does not contact the server.
 func NewS3(cfg S3Config) (*S3, error) {
@@ -58,6 +60,7 @@ func newClient(cfg S3Config) (*minio.Client, error) {
 	c, err := minio.New(host, &minio.Options{
 		Creds:  credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""),
 		Secure: secure,
+		Region: cfg.Region,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("s3 client: %w", err)
