@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -305,9 +306,11 @@ func TestAccountWrongPasswordsLimited(t *testing.T) {
 		e.wantStatus(change("wrong-password"), http.StatusUnprocessableEntity, "Current password is wrong")
 	}
 	rec := change(accountPassword)
-	e.wantStatus(rec, http.StatusTooManyRequests, "Too many wrong passwords, try again in 15 minutes")
-	if ra := rec.Header().Get("Retry-After"); ra == "" || ra == "0" {
-		t.Fatalf("Retry-After = %q", ra)
+	// The minutes depend on how long the five bcrypt checks took (14 or 15 on
+	// a slow -race run); TestLimitedMessageRoundsUpToMinutes pins the rounding.
+	e.wantStatus(rec, http.StatusTooManyRequests, "Too many wrong passwords, try again in ")
+	if ra, err := strconv.Atoi(rec.Header().Get("Retry-After")); err != nil || ra < 1 || ra > 900 {
+		t.Fatalf("Retry-After = %q, want 1..900 seconds", rec.Header().Get("Retry-After"))
 	}
 	key, _ := webauthntest.NewKey()
 	rec = e.addKey(&e.scorer, key, "Key", accountPassword)
