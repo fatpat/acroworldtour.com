@@ -239,7 +239,9 @@ run_init_tty() {
 stat_of() { in_ctr stat -c '%U:%G %a' "$1" 2>/dev/null || echo missing; }
 file_has() { in_ctr grep -Eq -- "$2" "$1"; }
 exists() { in_ctr test -e "$1"; }
-calls() { in_ctr cat /var/lib/awt-test/calls.log 2>/dev/null || true; }
+# Buffered: `calls | grep -q` must not cut docker exec's output stream short
+# (pipefail would then fail the check).
+calls() { local c; c=$(in_ctr cat /var/lib/awt-test/calls.log 2>/dev/null || true); printf '%s\n' "$c"; }
 agent_runs() { in_ctr sh -c 'wc -l < /var/lib/awt-test/agent-runs 2>/dev/null || echo 0'; }
 env_value() { { in_ctr sed -n "s/^$2=//p" "$1" 2>/dev/null || true; } | tail -1; }
 same_as_repo() { in_ctr cmp -s "/src/$1" "$2"; }
@@ -465,7 +467,7 @@ run_init "${FULL[@]}" -e AWT_INIT_FORCE=1 -e AWT_SSH_PORT=2300 -e "SSH_CONNECTIO
 check "exit 0" [ "$rc" = 0 ]
 check "new port inserted in the running firewall before sshd moves" eval 'calls | grep -qx "nft insert rule inet awt input tcp dport 2300 accept"'
 check "ssh.socket replaced by ssh.service, restarted (not reloaded)" eval 'calls | grep -q "^systemctl disable --now ssh.socket" && calls | grep -q "^systemctl restart ssh.service" && ! calls | grep -q "^systemctl reload ssh"'
-check "sshd on 2300 (real sshd -T)" eval 'in_ctr sshd -T 2>/dev/null | grep -qx "port 2300"'
+check "sshd on 2300 (real sshd -T)" eval 'grep -qx "port 2300" <<<"$(in_ctr sshd -T 2>/dev/null)"'
 check "ruleset: new port open" file_has /etc/nftables.d/awt.nft 'tcp dport 2300 accept$'
 check "ruleset: this session's port kept, commented" file_has /etc/nftables.d/awt.nft 'tcp dport 2222 accept comment "awt-init: SSH port'
 check "table already up: loaded once, no policy-accept phase" eval '[ "$(calls | grep -c "^nft -f")" = 1 ] && ! in_ctr grep -q "policy accept;" /var/lib/awt-test/nft-load.1'
