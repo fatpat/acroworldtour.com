@@ -1,4 +1,4 @@
-.PHONY: dev generate test golden golden-regen e2e lint check migrate docker backup-restore-test agent-test e2e-deps
+.PHONY: dev generate test golden golden-regen e2e lint check migrate docker backup-restore-test agent-test init-vps-test e2e-deps
 
 GO ?= go
 
@@ -58,3 +58,9 @@ backup-restore-test: docker
 # check (needs Docker, takes minutes). See scripts/agent-test.sh.
 agent-test:
 	./scripts/agent-test.sh
+
+# VPS initialization test: deploy/init-vps.sh in debian:13 containers (real
+# apt, users, sshd -t, files; systemctl, nft and docker stubbed). Not part of
+# check (needs Docker and network, takes minutes). See scripts/init-vps-test.sh.
+init-vps-test:
+	./scripts/init-vps-test.sh
