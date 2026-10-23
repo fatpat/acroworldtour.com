@@ -323,3 +323,27 @@ func TestWWWFailsOnDatabaseErrorDuringUpload(t *testing.T) {
 		t.Fatal("want an error when files cannot be written")
 	}
 }
+
+// The app image has no git: undated legacy news take the first-commit date
+// recorded in legacy_news_dates.tsv, without any git repository around.
+func TestWWWUndatedNewsUseTheRecordedLegacyDates(t *testing.T) {
+	www := filepath.Join(t.TempDir(), "www")
+	copyTree(t, wwwDir, www)
+	if err := os.Remove(filepath.Join(www, "index.html")); err != nil { // no teaser date
+		t.Fatal(err)
+	}
+	if err := os.Rename(filepath.Join(www, "news", "sample-news.html"), filepath.Join(www, "news", "brienz-results.html")); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", t.TempDir()) // no git binary
+
+	ctx := context.Background()
+	db, blobs := setup(t)
+	if _, err := importer.WWW(ctx, db, blobs, www); err != nil {
+		t.Fatal(err)
+	}
+	n, err := gen.New(db.Read).GetNewsBySlug(ctx, "brienz-results")
+	if err != nil || n.PublishedAt.String != "2023-05-26T17:41:27Z" {
+		t.Errorf("published_at = %q, err %v; want the recorded legacy date", n.PublishedAt.String, err)
+	}
+}

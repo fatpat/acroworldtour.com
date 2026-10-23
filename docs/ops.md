@@ -165,7 +165,20 @@ docker compose cp /tmp/mongo.backup.*.tar.gz awt-training:/tmp/export.tar.gz
 docker compose exec awt-training awt import --from /tmp/export.tar.gz
 ```
 
-Run it on training first and check the result in the browser. Then repeat on prod (`awt-prod`) before opening the site. The import writes through the normal database connection, so Litestream replicates it. Delete the archive from the VPS and the container (`rm`) afterwards.
+Then import the legacy institutional site: news, events, the sporting code PDFs and the redirects of the old `.html` URLs (spec 07 §10). `awt import` does not bring them. Build the archive on your machine from the legacy repository (`legacy/legacy` here, or the `main` branch of the GitHub repository), then:
+
+```sh
+tar -czf www.tar.gz -C legacy/legacy www                      # on your machine
+scp www.tar.gz <you>@<vps-host>:/tmp/
+ssh <you>@<vps-host>
+cd /opt/awt
+docker compose cp /tmp/www.tar.gz awt-training:/tmp/www.tar.gz
+docker compose exec awt-training sh -c 'tar -xzf /tmp/www.tar.gz -C /tmp && awt import-www --from /tmp/www'
+```
+
+Undated news take the date of the commit that added them to the legacy repository, recorded in the image (`internal/importer/legacy_news_dates.tsv`), so the archive needs no git history. The report lists any news left as a draft: set its date in the manager to publish it. Re-running `import-www` overwrites manager edits to the same news and events, so run it once.
+
+Run both imports on training first and check the result in the browser. Then repeat on prod (`awt-prod`) before opening the site. The imports write through the normal database connection, so Litestream replicates them. Delete the archives from the VPS and the container (`rm -r /tmp/export.tar.gz /tmp/www.tar.gz /tmp/www`) afterwards.
 
 ## 5. Routine deploys and rollback
 

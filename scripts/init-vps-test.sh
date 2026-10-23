@@ -449,7 +449,7 @@ check "secrets not printed" eval 'hasnt prod-secret-value-9876 && hasnt training
 check "secrets masked in the summary" eval 'has "****9876" && has "****4321" && has "****5555" && has "****${mfa_prod: -4}"'
 check "agent run once, tags deployed" eval '[ "$(agent_runs)" = 1 ] && [ "$(env_value /opt/awt/.env AWT_PROD_TAG)" = "$REV" ] && [ "$(env_value /opt/awt/.env AWT_TRAINING_TAG)" = "$REV" ]'
 check "both apps checked through the stack" eval 'in_ctr grep -q "exec -T awt-prod wget" /var/lib/awt-test/docker.log && in_ctr grep -q "exec -T caddy wget.*/training/healthz" /var/lib/awt-test/docker.log'
-check "empty database: points to ops.md section 4" eval 'has "empty" && has "docs/ops.md" && has "awt import --from" && has "awt user add"'
+check "empty database: points to ops.md section 4" eval 'has "empty" && has "docs/ops.md" && has "awt import --from" && has "awt import-www --from" && has "awt user add"'
 
 echo "== case: re-run on the configured host, no input given"
 # shellcheck disable=SC2034

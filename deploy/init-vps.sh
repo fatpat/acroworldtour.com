@@ -990,13 +990,16 @@ step_summary() {
     log ""
     log "Empty database for: ${empty[*]}. Import the legacy data, then create the first admin (docs/ops.md sections 3 and 4):"
     log "  scp mongo.backup.YYYYMMDD-HHMM.tar.gz <you>@<this host>:/tmp/   (your usual SSH access)"
+    log "  scp www.tar.gz <you>@<this host>:/tmp/   (tar -czf www.tar.gz -C legacy/legacy www: news, events)"
     log "  cd $ROOT"
     for e in "${empty[@]}"; do
       log "  docker compose cp /tmp/mongo.backup.YYYYMMDD-HHMM.tar.gz awt-$e:/tmp/export.tar.gz"
       log "  docker compose exec awt-$e awt import --from /tmp/export.tar.gz"
+      log "  docker compose cp /tmp/www.tar.gz awt-$e:/tmp/www.tar.gz"
+      log "  docker compose exec awt-$e sh -c 'tar -xzf /tmp/www.tar.gz -C /tmp && awt import-www --from /tmp/www'"
       log "  docker compose exec awt-$e awt user add --email you@example.org --name \"You\" --role admin"
     done
-    log "  (training first, check it in the browser, then prod; delete the archive afterwards)"
+    log "  (training first, check it in the browser, then prod; delete the archives afterwards)"
   fi
   log ""
   log "Left to do by hand (docs/ops.md section 0):"

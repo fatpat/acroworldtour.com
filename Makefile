@@ -1,4 +1,4 @@
-.PHONY: dev generate test golden golden-regen e2e lint check migrate docker backup-restore-test agent-test init-vps-test e2e-deps
+.PHONY: dev generate test golden golden-regen e2e lint check migrate docker backup-restore-test agent-test init-vps-test www-dates e2e-deps
 
 GO ?= go
 
@@ -14,6 +14,11 @@ test:
 
 golden:
 	$(GO) test ./internal/scoring ./internal/ranking -run Golden -count=1
+
+# Record the legacy news first-commit dates (internal/importer/
+# legacy_news_dates.tsv) from the legacy git history; needs legacy/legacy.
+www-dates:
+	$(GO) test ./internal/importer -run TestLegacyNewsDatesMatchTheGitHistory -count=1 -update-legacy-dates
 
 # Regenerate testdata/golden from a production export with the legacy engine
 # (see tools/golden/README.md). Runs from a temporary directory with -I so

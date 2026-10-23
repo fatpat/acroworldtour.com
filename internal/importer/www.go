@@ -40,7 +40,8 @@ const maxWWWFile = 10 << 20
 // nothing. It overwrites admin edits to the same slugs, so run it once at
 // migration time, but it never restores news or events deleted in the admin
 // (they are skipped with a warning). Undated articles get the date of the
-// commit that added them to the legacy git repository, or stay drafts.
+// commit that added them to the legacy git repository (recorded in
+// legacy_news_dates.tsv, else read from git when available), or stay drafts.
 func WWW(ctx context.Context, db *store.DB, blobs blob.Store, dir string) (Report, error) {
 	rep := Report{Counts: map[string]int{}}
 	for _, sub := range []string{"news", "event"} {
@@ -48,8 +49,12 @@ func WWW(ctx context.Context, db *store.DB, blobs blob.Store, dir string) (Repor
 			return rep, fmt.Errorf("%s is not a legacy www directory (no %s/)", dir, sub)
 		}
 	}
-	w := &wwwImport{dir: dir, blobs: blobs, rep: &rep, now: time.Now().UTC(), dates: teaserDates(dir)}
-	err := db.Tx(ctx, func(q *gen.Queries) error {
+	gitDates, err := parseLegacyNewsDates(legacyNewsDatesTSV)
+	if err != nil {
+		return rep, err
+	}
+	w := &wwwImport{dir: dir, blobs: blobs, rep: &rep, now: time.Now().UTC(), dates: teaserDates(dir), gitDates: gitDates}
+	err = db.Tx(ctx, func(q *gen.Queries) error {
 		w.q = q
 		for _, step := range []func(context.Context) error{w.news, w.events, w.documents, w.redirects} {
 			if err := step(ctx); err != nil {
@@ -68,8 +73,10 @@ type wwwImport struct {
 	rep   *Report
 	now   time.Time
 	dates map[string]string // news slug -> RFC 3339 date from the home teasers
-	files map[string]string // legacy asset path -> stored file id ("" when skipped)
-	err   error             // first database failure met while converting; checked by every step
+	// news slug -> date of the commit that added it (legacy_news_dates.tsv)
+	gitDates map[string]string
+	files    map[string]string // legacy asset path -> stored file id ("" when skipped)
+	err      error             // first database failure met while converting; checked by every step
 }
 
 func newHexID() (string, error) {
@@ -512,6 +519,9 @@ func (w *wwwImport) news(ctx context.Context) error {
 		published := articleDate(doc)
 		if published == "" {
 			published = w.dates[slug]
+		}
+		if published == "" {
+			published = w.gitDates[slug]
 		}
 		if published == "" {
 			published = firstCommitDate(ctx, filepath.Join(w.dir, "news", name))
