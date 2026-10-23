@@ -3,13 +3,14 @@
 # AcroWorldTour host (prod + training), ending after the first deploy.
 # Automates docs/ops.md sections 1-3 and 5; see docs/ops.md section 0.
 #
-#   curl -fsSLO https://raw.githubusercontent.com/fatpat/acroworldtour.com/rewrite-go/deploy/init-vps.sh
+#   curl -fsSLO --proto '=https' https://raw.githubusercontent.com/fatpat/acroworldtour.com/<sha>/deploy/init-vps.sh
 #   less init-vps.sh                              # review it first
-#   sudo AWT_ADMIN_USER=... ... bash init-vps.sh  # or answer the prompts
+#   sudo AWT_REPO_RAW=https://raw.githubusercontent.com/fatpat/acroworldtour.com/<sha> bash init-vps.sh
 #
 # Every input comes from an environment variable or, when unset and stdin is a
 # terminal, from a prompt (secrets hidden). Without a terminal, all missing
-# values are listed at once and nothing is changed. `bash init-vps.sh
+# values are listed at once, before anything is changed (only the replica
+# check of step env_files can stop a run later). `bash init-vps.sh
 # --list-inputs` prints the input names.
 #
 # Idempotent: each step checks before acting and reports
@@ -18,13 +19,17 @@
 # unless AWT_INIT_FORCE=1. A failed run can simply be run again: it resumes.
 #
 # Repository files (agent, deploy scripts, systemd units, env examples) are
-# downloaded from $AWT_REPO_RAW; compose.yaml and the Caddyfile come from the
+# downloaded from $AWT_REPO_RAW (pin it to a commit SHA, docs/ops.md section
+# 0); compose.yaml and the Caddyfile come from the
 # image (the deploy agent installs them). The first deploy is one run of the
 # agent: if the S3 bucket holds a Litestream replica the container restores it
 # at start (deploy/entrypoint.sh), otherwise the database starts empty.
 set -Eeuo pipefail
 shopt -s inherit_errexit
-umask 022
+# Every file the script writes holding a secret (temporary files included)
+# is private from creation; put_file and ensure_dir set explicit modes, and
+# apt runs with Debian's usual umask (with_umask022).
+umask 077
 
 # Input names (docs/ops.md section 0 documents the same names).
 GLOBAL_INPUTS=(AWT_ADMIN_USER AWT_ADMIN_SSH_KEY AWT_SSH_PORT AWT_PROD_HOST AWT_TRAINING_HOST
@@ -48,6 +53,11 @@ SUDOERS=/etc/sudoers.d/90-awt-admin
 DOCKER_KEY=/etc/apt/keyrings/docker.asc
 # Docker's release signing key (https://docs.docker.com/engine/install/debian/).
 DOCKER_KEY_FPR=9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+# The deploy agent's lock (deploy/agent.sh): held while writing env files.
+AGENT_LOCK=/run/lock/awt-agent.lock
+# Comment of the temporary rule keeping the SSH port of the running session
+# open (step_firewall, docs/ops.md section 1.8).
+LIVE_SSH_COMMENT="awt-init: SSH port of the session that ran init-vps.sh"
 FORCE=${AWT_INIT_FORCE:-0}
 # Fallback when https://www.cloudflare.com/ips-v4 and ips-v6 cannot be fetched
 # (same list as the Caddyfile).
@@ -142,7 +152,7 @@ ensure_dir() {
 # fetch <repository path> <local file>: downloads a file of the repository.
 fetch() {
   local url="${V_AWT_REPO_RAW%/}/$1"
-  curl -fsSL --proto '=https,file' --retry 3 --max-time 60 -o "$2" "$url" \
+  curl -fsSL --proto '=https,file' --proto-redir '=https' --retry 3 --max-time 60 -o "$2" "$url" \
     || die "cannot download $url (check AWT_REPO_RAW / AWT_CHANNEL)"
   [ -s "$2" ] || die "$url is empty"
 }
@@ -156,13 +166,17 @@ file_has_key() { [ -r "$1" ] && grep -q "^$2=" "$1"; }
 
 # set_key <file> <key> <value>: replaces every KEY= line, or appends one.
 set_key() {
+  local tmp
+  tmp=$(mktemp "$1.XXXXXX")   # mode 600: the file holds secrets
   K=$2 V=$3 awk 'BEGIN { k = ENVIRON["K"]; v = ENVIRON["V"] }
     index($0, k "=") == 1 { print k "=" v; done = 1; next } { print }
-    END { if (!done) print k "=" v }' "$1" > "$1.tmp"
-  mv -f "$1.tmp" "$1"
+    END { if (!done) print k "=" v }' "$1" > "$tmp"
+  mv -f "$tmp" "$1"
 }
 
 dc() { (cd "$ROOT" && docker compose "$@"); }
+# Package maintainer scripts expect Debian's default umask.
+with_umask022() { (umask 022 && "$@"); }
 
 # ---------------------------------------------------------------- validation
 
@@ -183,7 +197,7 @@ check_value() {
     image) [[ $v =~ ^[a-z0-9][a-z0-9._/:-]*[a-z0-9]$ ]] || { echo "must be an image name without tag (ghcr.io/owner/awt)"; return 1; } ;;
     tag) [[ $v =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$ ]] || { echo "must be an image tag"; return 1; } ;;
     rawurl) [[ $v =~ ^(https|file)://[^[:space:]]+$ ]] || { echo "must be an https:// URL"; return 1; } ;;
-    url) [[ $v =~ ^https?://[A-Za-z0-9.-]+(:[0-9]+)?/?$ ]] || { echo "must be an URL like https://s3.gra.io.cloud.ovh.net"; return 1; } ;;
+    url) [[ $v =~ ^https://[A-Za-z0-9.-]+(:[0-9]+)?/?$ ]] || { echo "must be an https:// URL like https://s3.gra.io.cloud.ovh.net"; return 1; } ;;
     region) [[ $v =~ ^[a-z0-9-]{1,32}$ ]] || { echo "must be a region name like gra"; return 1; } ;;
     bucket) [[ $v =~ ^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$ ]] || { echo "must be an S3 bucket name"; return 1; } ;;
     token)
@@ -348,6 +362,10 @@ step_inputs() {
   resolve AWT_IMAGE "$(file_value "$ROOT/.env" AWT_IMAGE)" default:ghcr.io/fatpat/awt 0
   resolve AWT_CHANNEL "$(file_value "$ROOT/.env" AWT_CHANNEL)" default:rewrite-go 0
   resolve AWT_REPO_RAW "" "default:https://raw.githubusercontent.com/fatpat/acroworldtour.com/$V_AWT_CHANNEL" 0
+  # A branch moves: the files fetched may differ from the script reviewed.
+  if [[ $V_AWT_REPO_RAW == https://* ]] && ! [[ ${V_AWT_REPO_RAW%/} =~ /[0-9a-f]{40}$ ]]; then
+    warn "AWT_REPO_RAW ($V_AWT_REPO_RAW) is not pinned to a commit: the agent, deploy scripts and units fetched from it may differ from the script you reviewed. Prefer https://raw.githubusercontent.com/fatpat/acroworldtour.com/<40-hex commit SHA> (docs/ops.md section 0)."
+  fi
 
   for e in "${ENVS[@]}"; do
     E=${e^^}; f="$ROOT/.env.$e"
@@ -372,16 +390,26 @@ step_inputs() {
     fi
   done
 
-  # TLS: Cloudflare Origin CA certificate and key, unless already installed.
+  # TLS: Cloudflare Origin CA certificate and key. An installed pair is kept
+  # unless new files are given with AWT_INIT_FORCE=1.
   V_TLS_CERT=""; V_TLS_KEY=""; V_TLS_NEW=0
-  if [ -f "$ROOT/certs/origin.pem" ] && [ -f "$ROOT/certs/origin.key" ] && [ "$FORCE" != 1 ]; then
-    if [ -n "${AWT_TLS_CERT_FILE:-}${AWT_TLS_KEY_FILE:-}" ]; then
+  local tls_installed=0 tls_given=0
+  [ ! -f "$ROOT/certs/origin.pem" ] || [ ! -f "$ROOT/certs/origin.key" ] || tls_installed=1
+  [ -z "${AWT_TLS_CERT_FILE:-}${AWT_TLS_KEY_FILE:-}" ] || tls_given=1
+  if [ "$tls_installed" = 1 ] && { [ "$tls_given" = 0 ] || [ "$FORCE" != 1 ]; }; then
+    if [ "$tls_given" = 1 ]; then
       warn "AWT_TLS_CERT_FILE/AWT_TLS_KEY_FILE: keeping the certificate already installed in $ROOT/certs (AWT_INIT_FORCE=1 replaces it)"
     fi
-  elif [ -n "${AWT_TLS_CERT_FILE:-}" ] || [ -n "${AWT_TLS_KEY_FILE:-}" ] || [ "$INTERACTIVE" = 0 ]; then
-    local msg
+  elif [ "$tls_given" = 1 ] || [ "$INTERACTIVE" = 0 ]; then
+    local msg other
     for f in AWT_TLS_CERT_FILE AWT_TLS_KEY_FILE; do
-      if [ -z "${!f:-}" ]; then missing+=("$f")
+      if [ -z "${!f:-}" ]; then
+        if [ "$tls_given" = 1 ]; then
+          other=AWT_TLS_CERT_FILE; [ "$f" = AWT_TLS_KEY_FILE ] || other=AWT_TLS_KEY_FILE
+          errors+=("$f: required with $other (give both files)")
+        else
+          missing+=("$f")
+        fi
       elif ! msg=$(check_value pemfile "${!f}"); then errors+=("$f: $msg")
       fi
     done
@@ -406,7 +434,11 @@ step_inputs() {
     {
       echo "ERROR: cannot continue, nothing was changed."
       if [ "${#missing[@]}" -gt 0 ]; then
-        echo "  Missing values (stdin is not a terminal: set them in the environment):"
+        if [ "$INTERACTIVE" = 1 ]; then
+          echo "  Missing values (set them in the environment):"
+        else
+          echo "  Missing values (stdin is not a terminal: set them in the environment):"
+        fi
         for f in "${missing[@]}"; do printf '    %-28s %s\n' "$f" "$(desc_of "$f")"; done
       fi
       if [ "${#errors[@]}" -gt 0 ]; then
@@ -423,13 +455,13 @@ step_inputs() {
 
 step_packages() {
   local p need=()
-  for p in ca-certificates curl gnupg openssl sudo nftables openssh-server fail2ban python3-systemd unattended-upgrades; do
-    dpkg-query -W -f='${db:Status-Abbrev}' "$p" 2>/dev/null | grep -q '^ii' || need+=("$p")
+  for p in ca-certificates curl gnupg openssl sudo iproute2 nftables openssh-server fail2ban python3-systemd unattended-upgrades; do
+    [[ $(dpkg-query -W -f='${db:Status-Abbrev}' "$p" 2>/dev/null || true) == ii* ]] || need+=("$p")
   done
   if [ "${#need[@]}" -gt 0 ]; then
     note "installing ${need[*]}"
-    apt-get update -q >/dev/null
-    DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends "${need[@]}" >/dev/null
+    with_umask022 apt-get update -q >/dev/null
+    with_umask022 env DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends "${need[@]}" >/dev/null
     changed "installed ${need[*]}"
   fi
   # What `dpkg-reconfigure -plow unattended-upgrades` writes (docs/ops.md 1.6).
@@ -439,12 +471,22 @@ APT::Periodic::Unattended-Upgrade "1";
 EOF
 }
 
+# sshd_listens <port>: whether a TCP socket listens on the port (5 s at most).
+sshd_listens() {
+  local i
+  for i in 1 2 3 4 5 6 7 8 9 10; do
+    [ -z "$(ss -Hltn "sport = :$1" 2>/dev/null || true)" ] || return 0
+    [ "$i" = 10 ] || sleep 0.5
+  done
+  return 1
+}
+
 step_users_ssh() {
   local user=$V_AWT_ADMIN_USER port=$V_AWT_SSH_PORT home grp ak keys tmp
   if ! id -u "$user" >/dev/null 2>&1; then
     useradd -m -s /bin/bash -G sudo "$user"
     changed "created admin user $user"
-  elif ! id -nG "$user" | grep -qw sudo; then
+  elif ! [[ " $(id -nG "$user") " == *" sudo "* ]]; then
     usermod -aG sudo "$user"
     changed "added $user to sudo"
   fi
@@ -472,10 +514,19 @@ step_users_ssh() {
   put_file "$SUDOERS" root:root 440 < "$tmp"
   rm -f "$tmp"
 
+  # useradd leaves the password field "!" (locked). Without PAM, sshd refuses
+  # every login to a locked account, keys included; "*" (no password, not
+  # locked) allows key logins only.
+  local pw
+  pw=$(getent shadow "$user" | cut -d: -f2)
+  case "$pw" in
+    '!'|'!!'|'!*') usermod -p '*' "$user"; changed "$user: password field set to * (no password; key login allowed)" ;;
+  esac
+
   # sshd: first value wins, so this file (10-) overrides later ones such as
   # 50-cloud-init.conf. Tested with `sshd -t` and `sshd -T` before any reload.
-  local old="" had=0 content eff ok=1 want
-  content=$(printf '# Managed by deploy/init-vps.sh (docs/ops.md section 1).\nPort %s\nPasswordAuthentication no\nKbdInteractiveAuthentication no\nPermitRootLogin no\nAllowUsers %s\n' "$port" "$user")
+  local old="" had=0 content eff ok=1 want verb=reload
+  content=$(printf '# Managed by deploy/init-vps.sh (docs/ops.md section 1).\nPort %s\nPubkeyAuthentication yes\nPasswordAuthentication no\nKbdInteractiveAuthentication no\nPermitRootLogin no\nAllowUsers %s\n' "$port" "$user")
   if [ "$(cat "$SSHD_CONF" 2>/dev/null || true)" != "$content" ]; then
     if [ -f "$SSHD_CONF" ]; then had=1; old=$(cat "$SSHD_CONF"); fi
     put_file "$SSHD_CONF" root:root 644 <<<"$content"
@@ -488,9 +539,16 @@ step_users_ssh() {
        refusing to reload sshd; the previous SSH configuration is left in place"
     fi
     eff=$(sshd -T 2>/dev/null || true)
-    for want in "port $port" "passwordauthentication no" "permitrootlogin no" "allowusers $user"; do
-      printf '%s\n' "$eff" | grep -qx "$want" || { ok=0; warn "sshd would not apply '$want' (another file in /etc/ssh overrides it)"; }
+    for want in "port $port" "pubkeyauthentication yes" "authenticationmethods any" \
+      "passwordauthentication no" "permitrootlogin no" "allowusers $user"; do
+      grep -qx -- "$want" <<<"$eff" || { ok=0; warn "sshd would not apply '$want' (another file in /etc/ssh overrides it)"; }
     done
+    grep -Eq '^authorizedkeysfile( .*)? (%h/)?\.ssh/authorized_keys( |$)' <<<"$eff" \
+      || { ok=0; warn "sshd would not read ~/.ssh/authorized_keys (AuthorizedKeysFile is overridden)"; }
+    pw=$(getent shadow "$user" | cut -d: -f2)
+    if [[ $pw == '!'* ]] && ! grep -qx 'usepam yes' <<<"$eff"; then
+      ok=0; warn "$user's password is locked and sshd does not use PAM: key logins would be refused"
+    fi
     if [ "$ok" = 0 ]; then
       restore_sshd
       die "refusing to reload sshd; the previous SSH configuration is left in place"
@@ -499,14 +557,25 @@ step_users_ssh() {
     if nft list table inet awt >/dev/null 2>&1; then
       nft insert rule inet awt input tcp dport "$port" accept
     fi
-    # Socket activation ignores Port in sshd_config: run the plain service.
+    # Socket activation ignores Port in sshd_config: run the plain service,
+    # restarted (not reloaded) so that it binds the new port.
     if systemctl is-enabled ssh.socket >/dev/null 2>&1 || systemctl is-active ssh.socket >/dev/null 2>&1; then
       systemctl disable --now ssh.socket
       systemctl enable --now ssh.service
+      verb=restart
       changed "ssh.socket replaced by ssh.service"
     fi
-    systemctl reload ssh.service
-    changed "sshd reloaded: port $port, key-only, AllowUsers $user"
+    systemctl "$verb" ssh.service
+    # Never let the firewall close the old port unless sshd took the new one.
+    if ! sshd_listens "$port"; then
+      restore_sshd
+      systemctl "$verb" ssh.service || true
+      die "sshd does not listen on port $port after 'systemctl $verb ssh': the previous SSH configuration was restored and sshd ${verb}ed; the firewall was not changed.
+       Keep this session open. Check: journalctl -u ssh -n 50; ss -ltnp
+       If SSH is unreachable, log in through the provider's console (OVHcloud KVM, or rescue mode),
+       fix or remove $SSHD_CONF, then: systemctl restart ssh"
+    fi
+    changed "sshd ${verb}ed: port $port, key-only, AllowUsers $user"
     warn "SSH now listens on port $port for $user only. Keep this session open and test a new SSH session (ssh -p $port $user@<this host>) before closing this one."
   fi
 
@@ -526,23 +595,81 @@ EOF
   fi
 }
 
-# cf_ranges <4|6>: Cloudflare ranges, fetched (validated) or the pinned list.
+# valid_cidrs <4|6> <list>: every network of the space-separated list is an
+# IPv4 /8 to /32 or an IPv6 /16 to /128 (nothing wider, so a tampered list
+# cannot open the web ports to the whole Internet).
+valid_cidrs() {
+  local c addr len o nets
+  read -ra nets <<<"$2"
+  [ "${#nets[@]}" -gt 0 ] || return 1
+  for c in "${nets[@]}"; do
+    [[ $c =~ ^([0-9a-fA-F:.]+)/([0-9]{1,3})$ ]] || return 1
+    addr=${BASH_REMATCH[1]}; len=$((10#${BASH_REMATCH[2]}))
+    if [ "$1" = 4 ]; then
+      [[ $addr =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] || return 1
+      for o in ${addr//./ }; do [ "$((10#$o))" -le 255 ] || return 1; done
+      [ "$len" -ge 8 ] && [ "$len" -le 32 ] || return 1
+    else
+      [[ $addr =~ ^[0-9a-fA-F:]+$ && $addr == *:* ]] || return 1
+      [ "$len" -ge 16 ] && [ "$len" -le 128 ] || return 1
+    fi
+  done
+}
+
+# installed_cf <4|6>: the Cloudflare set of the installed awt.nft, space
+# separated (empty if none).
+installed_cf() {
+  [ -r "$NFT_FILE" ] || return 0
+  awk -v s="set cloudflare$1 {" 'index($0, s) { f = 1 }
+    f && /elements = \{/ { sub(/.*elements = \{ */, ""); sub(/ *\}.*/, ""); gsub(/,/, ""); print; exit }' "$NFT_FILE"
+}
+
+# cf_ranges <4|6>: Cloudflare ranges, fetched and validated; otherwise the
+# list already installed (it may be newer than the pinned one), otherwise the
+# list pinned in this script.
 cf_ranges() {
-  local list re
-  if [ "$1" = 4 ]; then re='^[0-9]{1,3}(\.[0-9]{1,3}){3}/[0-9]{1,2}$'; else re='^[0-9a-f:]+/[0-9]{1,3}$'; fi
-  list=$(curl -fsS --max-time 15 "https://www.cloudflare.com/ips-v$1" 2>/dev/null | tr -d '\r' || true)
-  if [ -n "$list" ] && ! printf '%s\n' "$list" | grep -Evq "$re"; then
-    printf '%s\n' "$list" | paste -sd ' ' -
-  else
-    warn "cannot fetch https://www.cloudflare.com/ips-v$1: using the list pinned in this script"
-    if [ "$1" = 4 ]; then echo "$CF4_FALLBACK"; else echo "$CF6_FALLBACK"; fi
+  local list
+  list=$(curl -fsS --proto '=https' --proto-redir '=https' --max-time 15 "https://www.cloudflare.com/ips-v$1" 2>/dev/null | tr -d '\r' | paste -sd ' ' - || true)
+  if valid_cidrs "$1" "$list"; then echo "$list"; return 0; fi
+  list=$(installed_cf "$1")
+  if valid_cidrs "$1" "$list"; then
+    warn "cannot fetch a valid list from https://www.cloudflare.com/ips-v$1: keeping the ranges already in $NFT_FILE"
+    echo "$list"; return 0
+  fi
+  warn "cannot fetch a valid list from https://www.cloudflare.com/ips-v$1: using the list pinned in this script"
+  if [ "$1" = 4 ]; then echo "$CF4_FALLBACK"; else echo "$CF6_FALLBACK"; fi
+}
+
+# live_ssh_port: the server port of the SSH session running this script
+# (SSH_CONNECTION is "client-ip client-port server-ip server-port"), taken
+# from the closest process that has it since `sudo -i` drops it; empty
+# outside SSH.
+live_ssh_port() {
+  local conn=${SSH_CONNECTION:-} pid=$$ sport
+  while [ -z "$conn" ]; do
+    pid=$(awk '/^PPid:/ { print $2 }' "/proc/$pid/status" 2>/dev/null || true)
+    if ! [[ $pid =~ ^[0-9]+$ ]] || [ "$pid" -le 1 ]; then break; fi
+    conn=$(tr '\0' '\n' < "/proc/$pid/environ" 2>/dev/null | sed -n 's/^SSH_CONNECTION=//p' || true)
+    conn=${conn%%$'\n'*}
+  done
+  read -r _ _ _ sport _ <<<"$conn"
+  if [[ ${sport:-} =~ ^[0-9]{1,5}$ ]] && [ "$((10#$sport))" -ge 1 ] && [ "$((10#$sport))" -le 65535 ]; then
+    echo "$((10#$sport))"
   fi
 }
 
 step_firewall() {
-  local port=$V_AWT_SSH_PORT cf4 cf6 tmp
+  local port=$V_AWT_SSH_PORT cf4 cf6 tmp live live_rule=""
   cf4=$(cf_ranges 4 | sed 's/ /, /g')
   cf6=$(cf_ranges 6 | sed 's/ /, /g')
+  # Run over SSH on another port than the new one (the first run, on port
+  # 22): keep that port open so this session survives, until a run from a
+  # session on the new port drops the rule (docs/ops.md section 1.8).
+  live=$(live_ssh_port)
+  if [ -n "$live" ] && [ "$live" != "$port" ]; then
+    live_rule=$'\n\t\t'"tcp dport $live accept comment \"$LIVE_SSH_COMMENT\""
+    note "keeping port $live (this SSH session) open until a run from a session on port $port"
+  fi
   tmp=$(mktemp)
   # Docker publishes Caddy's ports with DNAT in prerouting: that traffic goes
   # through the forward hook, never the input chain. A drop in any base chain
@@ -573,7 +700,7 @@ table inet awt {
 		meta l4proto { icmp, ipv6-icmp } accept
 		udp sport 67 udp dport 68 accept
 		udp sport 547 udp dport 546 accept
-		tcp dport $port accept
+		tcp dport $port accept$live_rule
 		ip saddr @cloudflare4 tcp dport { 80, 443 } accept
 		ip6 saddr @cloudflare6 tcp dport { 80, 443 } accept
 		ip saddr @cloudflare4 udp dport 443 accept
@@ -618,6 +745,19 @@ EOF
   [ "$before" = 0 ] || step_changed=1
   if [ "$step_changed" = 1 ] || ! nft list table inet awt >/dev/null 2>&1; then
     nft -c -f /etc/nftables.conf
+    if ! nft list table inet awt >/dev/null 2>&1; then
+      # First load: on a fresh host no rule uses conntrack yet, so this SSH
+      # session has no conntrack entry, and under the drop policy its next
+      # packet would be "ct state new" and dropped. Load the same rules with
+      # policy accept first: conntrack picks up the open connections and sees
+      # both directions, then the real ruleset finds them established.
+      tmp=$(mktemp)
+      sed 's/policy drop;/policy accept;/' "$NFT_FILE" > "$tmp"
+      nft -f "$tmp"
+      rm -f "$tmp"
+      note "firewall: tracking open connections before the drop policy applies"
+      sleep 2
+    fi
     nft -f /etc/nftables.conf
     changed "firewall loaded: SSH $port from anywhere, 80/443 from Cloudflare only"
   fi
@@ -637,14 +777,20 @@ compose_ok() {
 
 step_docker() {
   if ! compose_ok; then
-    local tmp gh fpr codename arch
+    local tmp gh keys fpr npub codename arch
     tmp=$(mktemp)
-    curl -fsSL --max-time 60 -o "$tmp" https://download.docker.com/linux/debian/gpg \
+    curl -fsSL --proto '=https' --proto-redir '=https' --max-time 60 -o "$tmp" https://download.docker.com/linux/debian/gpg \
       || die "cannot download Docker's apt key"
     gh=$(mktemp -d)
-    fpr=$(GNUPGHOME=$gh gpg --show-keys --with-colons "$tmp" 2>/dev/null | awk -F: '$1 == "fpr" { print $10; exit }')
+    keys=$(GNUPGHOME=$gh gpg --show-keys --with-colons "$tmp" 2>/dev/null || true)
     rm -rf "$gh"
-    [ "$fpr" = "$DOCKER_KEY_FPR" ] || { rm -f "$tmp"; die "Docker's apt key has fingerprint '$fpr', expected $DOCKER_KEY_FPR"; }
+    # Exactly one primary key, Docker's: an extra key in the file would be
+    # trusted for the repository too.
+    npub=$(awk -F: '$1 == "pub"' <<<"$keys" | wc -l)
+    fpr=$(awk -F: '$1 == "fpr" { print $10; exit }' <<<"$keys")
+    if [ "$npub" != 1 ] || [ "$fpr" != "$DOCKER_KEY_FPR" ]; then
+      rm -f "$tmp"; die "Docker's apt key file holds $npub key(s), first fingerprint '$fpr'; expected only $DOCKER_KEY_FPR"
+    fi
     ensure_dir /etc/apt/keyrings root:root 755
     put_file "$DOCKER_KEY" root:root 644 < "$tmp"
     rm -f "$tmp"
@@ -659,8 +805,8 @@ Architectures: $arch
 Signed-By: $DOCKER_KEY
 EOF
     note "installing Docker Engine and the compose plugin"
-    apt-get update -q >/dev/null
-    DEBIAN_FRONTEND=noninteractive apt-get install -y -q docker-ce docker-ce-cli containerd.io \
+    with_umask022 apt-get update -q >/dev/null
+    with_umask022 env DEBIAN_FRONTEND=noninteractive apt-get install -y -q docker-ce docker-ce-cli containerd.io \
       docker-buildx-plugin docker-compose-plugin >/dev/null
     changed "installed Docker Engine"
     compose_ok || die "Docker Compose 2.22 or later is required (docker compose version)"
@@ -686,7 +832,7 @@ step_layout() {
   if ! id -u deploy >/dev/null 2>&1; then
     useradd -m -s /usr/sbin/nologin -G docker deploy
     changed "created user deploy (docker group, no login shell)"
-  elif ! id -nG deploy | grep -qw docker; then
+  elif ! [[ " $(id -nG deploy) " == *" docker "* ]]; then
     usermod -aG docker deploy
     changed "added deploy to docker"
   fi
@@ -705,7 +851,7 @@ step_layout() {
   tmp=$(mktemp)
   for f in agent.sh deploy.sh weekly-restore-test.sh; do
     fetch "deploy/$f" "$tmp"
-    head -1 "$tmp" | grep -q '^#!' || die "deploy/$f from $V_AWT_REPO_RAW is not a script"
+    [[ $(head -1 "$tmp") == '#!'* ]] || die "deploy/$f from $V_AWT_REPO_RAW is not a script"
     put_file "$ROOT/deploy/$f" root:root 755 < "$tmp"
   done
   rm -f "$tmp"
@@ -724,7 +870,7 @@ step_tls() {
     || tls_fail "the TLS certificate and key do not match"
   openssl x509 -in "$c" -noout -checkend 0 >/dev/null || tls_fail "the TLS certificate has expired"
   for h in "$V_AWT_PROD_HOST" "$V_AWT_TRAINING_HOST"; do
-    openssl x509 -in "$c" -noout -checkhost "$h" | grep -q ' does match' \
+    [[ $(openssl x509 -in "$c" -noout -checkhost "$h") == *' does match'* ]] \
       || tls_fail "the TLS certificate does not cover $h"
   done
   put_file "$cert" deploy:deploy 644 < "$c"
@@ -772,7 +918,7 @@ replica_exists() {
 # with AWT_INIT_FORCE=1 (resolve() keeps stored values otherwise). The image
 # tags (AWT_*_TAG) belong to deploy.sh and are never changed here.
 write_env() {
-  local dest=$1 example=$2 tmp kv k v cur
+  local dest=$1 example=$2 tmp kv k v cur line
   shift 2
   tmp=$(mktemp)
   if [ -f "$dest" ]; then
@@ -822,6 +968,15 @@ step_env_files() {
   done
 
   ex=$(mktemp -d)
+  # The agent (and deploy.sh under it) rewrites .env: take its lock so both
+  # never write at the same time. Created for the agent's user when missing.
+  [ -d "${AGENT_LOCK%/*}" ] || install -d -m 1777 "${AGENT_LOCK%/*}"
+  [ -e "$AGENT_LOCK" ] || install -o deploy -g deploy -m 644 /dev/null "$AGENT_LOCK"
+  # Read-only, no O_CREAT: root may not create/open for writing a file of
+  # another user in the sticky /run/lock (fs.protected_regular); flock works
+  # on any open file.
+  exec 8<"$AGENT_LOCK"
+  flock -w 300 8 || die "the deploy agent holds $AGENT_LOCK for more than 5 minutes; re-run later"
   fetch deploy/env.example "$ex/env"
   fetch deploy/env.prod.example "$ex/prod"
   fetch deploy/env.training.example "$ex/training"
@@ -838,6 +993,7 @@ step_env_files() {
       "AWT_S3_SECRET_KEY=${!s5}" "AWT_MFA_KEY=${!m}" "AWT_CLOUDFLARE_ZONE_ID=${!z}" \
       "AWT_CLOUDFLARE_TOKEN=${!t}"
   done
+  exec 8>&-   # releases the lock
   rm -rf "$ex"
 }
 
@@ -902,7 +1058,7 @@ db_status() {
   local logs users
   logs=$(dc logs --no-log-prefix "awt-$1" 2>/dev/null || true)
   users=$(dc exec -T "awt-$1" sqlite3 /data/awt.db 'SELECT count(*) FROM users' 2>/dev/null | tr -d '\r' || true)
-  if printf '%s' "$logs" | grep -q 'msg="restoring snapshot"'; then
+  if grep -q 'msg="restoring snapshot"' <<<"$logs"; then
     echo "restored from the S3 replica (${users:-?} users)"
   elif [ "$users" = 0 ]; then
     echo "empty"
