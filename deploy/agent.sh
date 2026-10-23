@@ -62,16 +62,30 @@ record_failed() { echo "$rev" >> "$failed"; err "$rev recorded as failed in $roo
 log "new revision $rev on $ref"
 
 # Copy the baked config out of the image and validate it before installing.
+# Leftovers of a killed run (staging dirs, config containers) go first.
+rm -rf state/staging-*
+docker ps -aq --filter label=awt-agent-staging | xargs -r docker rm -f -v >/dev/null 2>&1 || true
 staging="state/staging-$rev"
 cid=""
-cleanup() {
+need_restore=0
+prod_attempted=0
+# On any non-zero exit after the install (deploy failure, failed command,
+# INT/TERM, systemd timeout), restore exactly once, then clean up.
+on_exit() {
+  rc=$?
+  trap - EXIT INT TERM
+  if [ "$rc" != 0 ] && [ "$need_restore" = 1 ]; then
+    need_restore=0
+    restore "$prod_attempted" || true
+  fi
   [ -z "$cid" ] || docker rm -f -v "$cid" >/dev/null 2>&1 || true
   rm -rf "$staging"
+  exit "$rc"
 }
-trap cleanup EXIT
+trap on_exit EXIT
 trap 'exit 1' INT TERM
-rm -rf "$staging"; mkdir -p "$staging"
-cid=$(docker create "$ref")
+mkdir -p "$staging"
+cid=$(docker create --label awt-agent-staging=1 "$ref")
 docker cp -q "$cid:$BAKED/compose.yaml" "$staging/compose.yaml"
 docker cp -q "$cid:$BAKED/Caddyfile" "$staging/Caddyfile"
 
@@ -107,19 +121,27 @@ install_file() {
 
 # Keep what runs now: on any failure from here on, restore() puts back these
 # files and redeploys these revisions, so both apps and Caddy run the
-# previous revision with its own config.
-prev_training=$(env_value AWT_TRAINING_TAG)
-prev_prod=$(env_value AWT_PROD_TAG)
-rm -rf state/prev; mkdir -p state/prev caddy
-if [ -f compose.yaml ]; then cp compose.yaml state/prev/compose.yaml; fi
-if [ -f caddy/Caddyfile ]; then cp caddy/Caddyfile state/prev/Caddyfile; fi
+# previous revision with its own config. state/installed-ok exists only while
+# the installed files belong to deployed revisions (written after a deploy or
+# a restore). Without it a run died after installing: keep the state/prev
+# saved by that run, the installed files are not known good.
+mkdir -p state/prev caddy
+if [ -f state/installed-ok ] || [ ! -f state/prev/tags ]; then
+  rm -rf state/prev; mkdir -p state/prev
+  if [ -f compose.yaml ]; then cp compose.yaml state/prev/compose.yaml; fi
+  if [ -f caddy/Caddyfile ]; then cp caddy/Caddyfile state/prev/Caddyfile; fi
+  echo "$(env_value AWT_TRAINING_TAG) $(env_value AWT_PROD_TAG)" > state/prev/tags
+else
+  err "previous run did not finish: keeping its saved config and revisions"
+fi
+read -r prev_training prev_prod < state/prev/tags || true
 
 # restore <prod attempted: 0|1>
 restore() {
   err "restoring the previous compose.yaml, Caddyfile and revisions"
-  if [ -f state/prev/compose.yaml ]; then install_file state/prev/compose.yaml compose.yaml; fi
-  if [ -f state/prev/Caddyfile ]; then install_file state/prev/Caddyfile caddy/Caddyfile; fi
   restored=1
+  if [ -f state/prev/compose.yaml ]; then install_file state/prev/compose.yaml compose.yaml || restored=0; fi
+  if [ -f state/prev/Caddyfile ]; then install_file state/prev/Caddyfile caddy/Caddyfile || restored=0; fi
   case "$prev_training" in none|"$rev"|"") ;; *)
     "$root/deploy/deploy.sh" training "$prev_training" || restored=0 ;;
   esac
@@ -129,13 +151,18 @@ restore() {
     esac
   fi
   if [ "$restored" = 1 ]; then
+    : > state/installed-ok
     err "restored training=${prev_training:-none} prod=${prev_prod:-none}"
   else
     err "RESTORE FAILED: check $root by hand (docs/ops.md section 5)"
   fi
 }
 
+rm -f state/installed-ok
+need_restore=1
 install_file "$staging/compose.yaml" compose.yaml
+# Test hook (scripts/agent-test.sh): die between the two installs.
+case "${AWT_TEST_KILL_AFTER_INSTALL:-}" in TERM|KILL) kill -s "$AWT_TEST_KILL_AFTER_INSTALL" $$ ;; esac
 install_file "$staging/Caddyfile" caddy/Caddyfile
 
 # deploy.sh pulls $image:$rev only if missing: tag the image just pulled so
@@ -145,7 +172,7 @@ docker tag "$ref" "$image:$rev"
 # deploy_env <env>: exit 3 from deploy.sh = pull failed, nothing changed:
 # not the revision's fault, so it is not recorded and the next run retries.
 # Any other failure (unhealthy app, Caddy check) records the revision. Either
-# way the previous config and revisions are restored.
+# way the exit trap restores the previous config and revisions.
 deploy_env() {
   rc=0
   "$root/deploy/deploy.sh" "$1" "$rev" || rc=$?
@@ -155,29 +182,36 @@ deploy_env() {
   else
     record_failed
   fi
-  if [ "$1" = prod ]; then restore 1; else restore 0; fi
   exit 1
 }
 if [ "$(env_value AWT_TRAINING_TAG)" != "$rev" ]; then
   deploy_env training
 fi
+prod_attempted=1
 deploy_env prod
+need_restore=0
+: > state/installed-ok
 log "deployed $rev to training and prod"
 
-# Disk: drop local images of $image older than AWT_PRUNE_DAYS, never the
-# new revision, the previous training and prod revisions or the moving tag;
-# then dangling images of this project (source label) as old. Best effort:
-# never fails the run.
-days=${AWT_PRUNE_DAYS:-30}
-cutoff=$(($(date +%s) - days * 86400))
-docker image ls "$image" --format '{{.Tag}}' | while read -r t; do
-  case " $rev $prev_training $prev_prod $channel <none> " in *" $t "*) continue ;; esac
-  # .Created is RFC 3339 with a zone offset: compare as epoch seconds.
-  raw=$(docker image inspect -f '{{.Created}}' "$image:$t" 2>/dev/null) || continue
-  created=$(date -d "$raw" +%s 2>/dev/null) || continue
-  if [ "$created" -lt "$cutoff" ]; then
-    docker image rm "$image:$t" >/dev/null 2>&1 && log "removed old image $image:$t" || true
-  fi
-done
-docker image prune -f --filter "until=$((days * 24))h" \
-  --filter "label=org.opencontainers.image.source=$SOURCE" >/dev/null 2>&1 || true
+# Disk: drop local images of $image older than AWT_PRUNE_DAYS (digits only,
+# default 30), never the new revision, the previous training and prod
+# revisions or the moving tag; then dangling images of this project (source
+# label) as old. Best effort: never fails the run.
+prune_images() {
+  days=${AWT_PRUNE_DAYS:-30}
+  case "$days" in ''|*[!0-9]*) err "AWT_PRUNE_DAYS='$days' is not a number of days, using 30"; days=30 ;; esac
+  cutoff=$(($(date +%s) - days * 86400))
+  docker image ls "$image" --format '{{.Tag}}' | while read -r t; do
+    case " $rev $prev_training $prev_prod $channel <none> " in *" $t "*) continue ;; esac
+    # .Created is RFC 3339 with a zone offset: compare as epoch seconds.
+    raw=$(docker image inspect -f '{{.Created}}' "$image:$t" 2>/dev/null) || continue
+    created=$(date -d "$raw" +%s 2>/dev/null) || continue
+    if [ "$created" -lt "$cutoff" ]; then
+      if docker image rm "$image:$t" >/dev/null 2>&1; then log "removed old image $image:$t"; fi
+    fi
+  done
+  docker image prune -f --filter "until=$((days * 24))h" \
+    --filter "label=org.opencontainers.image.source=$SOURCE" >/dev/null 2>&1 || true
+}
+prune_images || true
+exit 0

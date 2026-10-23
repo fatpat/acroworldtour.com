@@ -81,7 +81,7 @@ jobs:
         run: |
           head=$(git ls-remote origin "refs/heads/${CHANNEL}" | cut -f1)
           if [ "$head" != "$SHA" ]; then
-            echo "::notice::${CHANNEL} is now at ${head:-unknown}, not ${SHA}: pushed :${SHA} only, :${CHANNEL} not moved"
+            echo "::warning::${CHANNEL} is now at ${head:-unknown}, not ${SHA}: pushed :${SHA} only, :${CHANNEL} not moved"
             exit 0
           fi
           docker buildx imagetools create -t "${IMAGE}:${CHANNEL}" "${IMAGE}:${SHA}"

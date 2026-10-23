@@ -4,7 +4,8 @@
 # and compose.yaml. Cases: lock held, happy path, no-op, bad revision (app
 # never healthy), bad config (invalid baked Caddyfile or compose.yaml), label
 # "unknown" or missing, registry down then back (retry), pull failing inside
-# deploy.sh, :<rev> only local, prod failing after training, image pruning.
+# deploy.sh, :<rev> only local, prod failing after training, image pruning,
+# run interrupted (TERM) or killed (KILL) after installing the config.
 # Run via `make agent-test` (needs Docker, not root; takes several minutes).
 set -eu
 cd "$(dirname "$0")/.."
@@ -23,6 +24,8 @@ BADCFG=cccccccccccccccccccccccccccccccccccccccc
 G3=3333333333333333333333333333333333333333
 PRODFAIL=dddddddddddddddddddddddddddddddddddddddd
 BADCOMPOSE=eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+G4=4444444444444444444444444444444444444444
+BAD2=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb2
 
 root=$(mktemp -d)
 port=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
@@ -58,7 +61,8 @@ no_staging() { ! ls -d "$root"/state/staging-* >/dev/null 2>&1; }
 run_agent() {
   set +e
   out=$(AWT_ROOT="$root" AWT_IMAGE="$IMAGE" AWT_CHANNEL=test AWT_LOCK="$root/agent.lock" \
-    HEALTH_TIMEOUT="$HEALTH_TIMEOUT" AWT_PRUNE_DAYS="${PRUNE_DAYS:-30}" "$root/deploy/agent.sh" 2>&1)
+    HEALTH_TIMEOUT="$HEALTH_TIMEOUT" AWT_PRUNE_DAYS="${PRUNE_DAYS:-30}" \
+    AWT_TEST_KILL_AFTER_INSTALL="${KILL_AFTER_INSTALL:-}" "$root/deploy/agent.sh" 2>&1)
   rc=$?
   set -e
   [ -z "$out" ] || printf '%s\n' "$out" | sed 's/^/    | /'
@@ -95,6 +99,9 @@ docker build -q -t "$LOCAL:base" . >/dev/null
 overlay "$G1" "$(marker "$G1")"
 overlay "$G2" "$(marker "$G2")"
 overlay "$G3" "$(marker "$G3")"
+overlay "$G4" "$(marker "$G4")"
+overlay "$BAD2" "$(marker "$BAD2")
+ENTRYPOINT [\"sleep\", \"3600\"]"
 # Healthy as training, never healthy as prod (AWT_ENV is set by compose.yaml).
 overlay "$PRODFAIL" "$(marker "$PRODFAIL")"'
 ENTRYPOINT ["/bin/sh", "-c", "if [ \"$AWT_ENV\" = prod ]; then exec sleep 3600; fi; exec /usr/local/bin/entrypoint.sh \"$@\"", "sh"]
@@ -315,6 +322,39 @@ check "previous compose.yaml and Caddyfile restored" has_marker "$G3"
 check "training runs $G3 again" eval '[ "$(ctr_image awt-training)" = "$IMAGE:$G3" ]'
 check "prod runs $G3" eval '[ "$(ctr_image awt-prod)" = "$IMAGE:$G3" ]'
 check "logs restored" eval 'printf "%s" "$out" | grep -q "restored training=$G3 prod=$G3"'
+
+echo "== case: interrupted (TERM) between the two installs ($G4)"
+publish "$G4"
+failed=$(failed_list)
+KILL_AFTER_INSTALL=TERM run_agent
+check "exit non-zero" [ "$rc" != 0 ]
+check "previous compose.yaml and Caddyfile restored" has_marker "$G3"
+check "tags untouched" [ "$(tag_of AWT_TRAINING_TAG) $(tag_of AWT_PROD_TAG)" = "$G3 $G3" ]
+check "not recorded as failed" [ "$(failed_list)" = "$failed" ]
+check "staging cleaned" no_staging
+
+echo "== case: killed (KILL) between the two installs ($G4), then a failing revision"
+KILL_AFTER_INSTALL=KILL run_agent
+check "exit non-zero" [ "$rc" != 0 ]
+check "compose.yaml of $G4 left behind" grep -q "# agent-test revision $G4" "$root/compose.yaml"
+check "tags untouched" [ "$(tag_of AWT_TRAINING_TAG) $(tag_of AWT_PROD_TAG)" = "$G3 $G3" ]
+echo "  -- next run: $BAD2 (never healthy) must restore $G3, not the leftovers"
+publish "$BAD2"
+run_agent
+check "exit non-zero" [ "$rc" != 0 ]
+check "logs kept saved state" eval 'printf "%s" "$out" | grep -q "previous run did not finish"'
+check "files of $G3 restored" has_marker "$G3"
+check "tags = $G3" [ "$(tag_of AWT_TRAINING_TAG) $(tag_of AWT_PROD_TAG)" = "$G3 $G3" ]
+check "training runs $G3" eval '[ "$(ctr_image awt-training)" = "$IMAGE:$G3" ]'
+check "staging and config container of the killed run removed" eval 'no_staging && [ -z "$(docker ps -aq --filter label=awt-agent-staging)" ]'
+
+echo "== case: next run deploys $G4 (AWT_PRUNE_DAYS invalid)"
+publish "$G4"
+PRUNE_DAYS=abc run_agent
+check "exit 0" [ "$rc" = 0 ]
+check "tags = $G4" [ "$(tag_of AWT_TRAINING_TAG) $(tag_of AWT_PROD_TAG)" = "$G4 $G4" ]
+check "baked files of $G4 installed" has_marker "$G4"
+check "logs invalid prune days" eval 'printf "%s" "$out" | grep -q "AWT_PRUNE_DAYS=.abc. is not a number"'
 
 if [ "$failures" -gt 0 ]; then
   echo "FAIL: $failures check(s) failed" >&2
