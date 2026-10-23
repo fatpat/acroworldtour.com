@@ -14,7 +14,9 @@
 #
 # Exit codes: 0 deployed; 1 deploy failed (unhealthy, rolled back; or Caddy
 # check failed); 2 bad usage; 3 pull failed, nothing changed (the agent retries
-# instead of recording the revision as failed).
+# instead of recording the revision as failed); 4 training not deployed: a
+# training refresh did not finish (state/sync-training.incomplete, written by
+# deploy/sync-training.sh; deploying would serve its partial state).
 set -eu
 cd "$(dirname "$0")/.."
 
@@ -24,6 +26,11 @@ env_name=${1:-}; tag=${2:-}
 [ "$#" -eq 2 ] || die "usage: deploy.sh training|prod <tag>"
 case "$env_name" in training|prod) ;; *) die "unknown environment" ;; esac
 printf '%s' "$tag" | grep -Eq '^[0-9a-f]{7,40}$' || die "tag must be a lowercase hex commit id"
+
+if [ "$env_name" = training ] && [ -f state/sync-training.incomplete ]; then
+  echo "deploy: training not deployed: a training refresh did not finish (state/sync-training.incomplete); run deploy/sync-training.sh again (docs/ops.md 6b)" >&2
+  exit 4
+fi
 
 svc="awt-$env_name"
 upper=$(echo "$env_name" | tr '[:lower:]' '[:upper:]')

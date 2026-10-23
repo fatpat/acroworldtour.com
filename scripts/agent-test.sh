@@ -5,11 +5,11 @@
 # never healthy), bad config (invalid baked Caddyfile or compose.yaml), label
 # "unknown" or missing, registry down then back (retry), pull failing inside
 # deploy.sh, :<rev> only local, prod failing after training, image pruning,
-# run interrupted (TERM) or killed (KILL) after installing the config.
+# run interrupted (TERM) or killed (KILL) after installing the config,
+# training refresh incomplete (prod deployed alone, training refused).
 # Run via `make agent-test` (needs Docker, not root; takes several minutes).
 set -eu
 cd "$(dirname "$0")/.."
-repo=$(pwd)
 
 # registry 2.8.3, pinned by digest.
 REGISTRY_IMAGE=registry:2.8.3@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
@@ -29,6 +29,7 @@ BAD2=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb2
 BAD3=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb3
 G5=5555555555555555555555555555555555555555
 G6=6666666666666666666666666666666666666666
+G7=7777777777777777777777777777777777777777
 
 root=$(mktemp -d)
 port=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
@@ -109,6 +110,7 @@ overlay "$BAD3" "$(marker "$BAD3")
 ENTRYPOINT [\"sleep\", \"3600\"]"
 overlay "$G5" "$(marker "$G5")"
 overlay "$G6" "$(marker "$G6")"
+overlay "$G7" "$(marker "$G7")"
 # Healthy as training, never healthy as prod (AWT_ENV is set by compose.yaml).
 overlay "$PRODFAIL" "$(marker "$PRODFAIL")"'
 ENTRYPOINT ["/bin/sh", "-c", "if [ \"$AWT_ENV\" = prod ]; then exec sleep 3600; fi; exec /usr/local/bin/entrypoint.sh \"$@\"", "sh"]
@@ -386,6 +388,31 @@ for v in 08 12345678901234567890; do
   check "tags = $r" [ "$(tag_of AWT_TRAINING_TAG) $(tag_of AWT_PROD_TAG)" = "$r $r" ]
   check "logs invalid prune days" eval 'printf "%s" "$out" | grep -q "AWT_PRUNE_DAYS=.$v. is not a number"'
 done
+
+echo "== case: training refresh incomplete (state/sync-training.incomplete), new revision $G7"
+: > "$root/state/sync-training.incomplete"
+publish "$G7"
+before_training=$(ctr awt-training)
+run_agent
+check "exit 0" [ "$rc" = 0 ]
+check "prod deployed, training left on $G6" [ "$(tag_of AWT_TRAINING_TAG) $(tag_of AWT_PROD_TAG)" = "$G6 $G7" ]
+check "training not restarted" [ "$(ctr awt-training)" = "$before_training" ]
+check "logs why training was skipped" eval 'printf "%s" "$out" | grep -q "training not deployed: a training refresh did not finish"'
+check "revision not recorded as failed" eval '! failed_list | grep -qx "$G7"'
+before="$(ctr awt-training) $(ctr awt-prod)"
+run_agent
+check "next run: exit 0, silent, no restart" eval '[ "$rc" = 0 ] && [ -z "$out" ] && [ "$(ctr awt-training) $(ctr awt-prod)" = "$before" ]'
+set +e
+# shellcheck disable=SC2034 # read in the eval check below
+dout=$("$root/deploy/deploy.sh" training "$G7" 2>&1)
+# shellcheck disable=SC2034
+drc=$?
+set -e
+check "deploy.sh training refuses (exit 4)" eval '[ "$drc" = 4 ] && printf "%s" "$dout" | grep -q "run deploy/sync-training.sh again"'
+check "deploy.sh refused before changing .env" [ "$(tag_of AWT_TRAINING_TAG)" = "$G6" ]
+rm -f "$root/state/sync-training.incomplete"
+run_agent
+check "marker gone: training deployed to $G7" eval '[ "$rc" = 0 ] && [ "$(tag_of AWT_TRAINING_TAG) $(tag_of AWT_PROD_TAG)" = "$G7 $G7" ]'
 
 if [ "$failures" -gt 0 ]; then
   echo "FAIL: $failures check(s) failed" >&2

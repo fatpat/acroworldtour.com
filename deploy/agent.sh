@@ -5,7 +5,8 @@
 # Pulls the moving tag $AWT_IMAGE:$AWT_CHANNEL (public image, no login), reads
 # the commit from its org.opencontainers.image.revision label, installs the
 # compose.yaml and Caddyfile baked into the image once they validate, then
-# runs deploy.sh for training and, only if training is healthy, for prod.
+# runs deploy.sh for training and, only if training is healthy, for prod
+# (prod alone while a training refresh is incomplete, docs/ops.md 6b).
 #
 # A revision that fails validation or a deploy is appended to
 # state/failed-revisions and skipped from then on (delete the line to retry).
@@ -56,6 +57,15 @@ mkdir -p state
 if [ "$(env_value AWT_TRAINING_TAG)" = "$rev" ] && [ "$(env_value AWT_PROD_TAG)" = "$rev" ]; then
   [ -f state/installed-ok ] || : > state/installed-ok
   exit 0
+fi
+# A training refresh that did not finish (deploy/sync-training.sh) leaves
+# training partial and deploy.sh refuses it: deploy prod alone (training is
+# no test bed while broken, and a stuck refresh must not hold back prod
+# fixes). With prod already on the revision there is nothing to do.
+training_blocked=0
+if [ -f state/sync-training.incomplete ]; then
+  training_blocked=1
+  [ "$(env_value AWT_PROD_TAG)" != "$rev" ] || exit 0
 fi
 failed=state/failed-revisions
 if [ -f "$failed" ] && grep -qx "$rev" "$failed"; then
@@ -148,7 +158,11 @@ restore() {
   if [ -f state/prev/compose.yaml ]; then install_file state/prev/compose.yaml compose.yaml || restored=0; fi
   if [ -f state/prev/Caddyfile ]; then install_file state/prev/Caddyfile caddy/Caddyfile || restored=0; fi
   case "$prev_training" in none|"$rev"|"") ;; *)
-    "$root/deploy/deploy.sh" training "$prev_training" || restored=0 ;;
+    if [ "$training_blocked" = 1 ]; then
+      err "training left as it is: a training refresh did not finish"
+    else
+      "$root/deploy/deploy.sh" training "$prev_training" || restored=0
+    fi ;;
   esac
   if [ "$1" = 1 ]; then
     case "$prev_prod" in none|"$rev"|"") ;; *)
@@ -190,7 +204,11 @@ deploy_env() {
   exit 1
 }
 if [ "$(env_value AWT_TRAINING_TAG)" != "$rev" ]; then
-  deploy_env training
+  if [ "$training_blocked" = 1 ]; then
+    err "training not deployed: a training refresh did not finish (state/sync-training.incomplete); deploying prod without the training check (docs/ops.md 6b)"
+  else
+    deploy_env training
+  fi
 fi
 prod_attempted=1
 deploy_env prod
