@@ -19,6 +19,7 @@ G1=1111111111111111111111111111111111111111
 G2=2222222222222222222222222222222222222222
 BAD=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 BADCFG=cccccccccccccccccccccccccccccccccccccccc
+G3=3333333333333333333333333333333333333333
 
 root=$(mktemp -d)
 port=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
@@ -68,6 +69,12 @@ publish() {
   docker push -q "$IMAGE:test" >/dev/null
 }
 
+# publish_channel_only <revision>: move :test without pushing :<revision>.
+publish_channel_only() {
+  docker tag "$LOCAL:$1" "$IMAGE:test"
+  docker push -q "$IMAGE:test" >/dev/null
+}
+
 # overlay <revision> <dockerfile lines>: an image on top of the base build.
 overlay() {
   rev=$1; shift
@@ -83,6 +90,7 @@ echo "== build test images"
 docker build -q -t "$LOCAL:base" . >/dev/null
 overlay "$G1" "$(marker "$G1")"
 overlay "$G2" "$(marker "$G2")"
+overlay "$G3" "$(marker "$G3")"
 # Starts, never answers /healthz.
 overlay "$BAD" "$(marker "$BAD")
 ENTRYPOINT [\"sleep\", \"3600\"]"
@@ -228,6 +236,31 @@ check "exit 0" [ "$rc" = 0 ]
 check "training tag = $G2" [ "$(tag_of AWT_TRAINING_TAG)" = "$G2" ]
 check "prod tag = $G2" [ "$(tag_of AWT_PROD_TAG)" = "$G2" ]
 check "baked files of $G2 installed" has_marker "$G2"
+
+echo "== case: pull inside deploy.sh fails ($G3 only on the moving tag, local tag removed)"
+publish_channel_only "$G3"
+mv "$root/deploy/deploy.sh" "$root/deploy/deploy-real.sh"
+# Drop the local tag the agent just made, so deploy.sh must pull :<rev>,
+# which the registry does not have.
+printf '#!/bin/sh\ndocker image rm "%s:$2" >/dev/null 2>&1 || true\nexec "%s" "$@"\n' \
+  "$IMAGE" "$root/deploy/deploy-real.sh" > "$root/deploy/deploy.sh"
+chmod +x "$root/deploy/deploy.sh"
+before="$(ctr awt-training) $(ctr awt-prod)"
+failed=$(failed_list)
+run_agent
+mv "$root/deploy/deploy-real.sh" "$root/deploy/deploy.sh"
+check "exit non-zero" [ "$rc" != 0 ]
+check "logs retry" eval 'printf "%s" "$out" | grep -q "will retry"'
+check "not recorded as failed" [ "$(failed_list)" = "$failed" ]
+check "tags untouched" [ "$(tag_of AWT_TRAINING_TAG) $(tag_of AWT_PROD_TAG)" = "$G2 $G2" ]
+check "apps not restarted" [ "$(ctr awt-training) $(ctr awt-prod)" = "$before" ]
+
+echo "== case: :<rev> missing in the registry, present locally (retry of $G3)"
+run_agent
+check "exit 0" [ "$rc" = 0 ]
+check "training tag = $G3" [ "$(tag_of AWT_TRAINING_TAG)" = "$G3" ]
+check "prod tag = $G3" [ "$(tag_of AWT_PROD_TAG)" = "$G3" ]
+check "baked files of $G3 installed" has_marker "$G3"
 
 if [ "$failures" -gt 0 ]; then
   echo "FAIL: $failures check(s) failed" >&2

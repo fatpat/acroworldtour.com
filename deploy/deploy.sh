@@ -7,9 +7,14 @@
 # Called by the deploy agent (deploy/agent.sh) for each new revision, or by an
 # admin for a manual rollback (docs/ops.md). The image is public: no login.
 #
-# Deploying pulls the tag, restarts the service, waits for the container health
+# Deploying pulls the tag (only if it is not already local: the agent tags
+# the image it pulled), restarts the service, waits for the container health
 # check, then checks /healthz inside the stack (app, then through Caddy). If the
 # new container is not healthy it restarts the previous tag and exits non-zero.
+#
+# Exit codes: 0 deployed; 1 deploy failed (unhealthy, rolled back; or Caddy
+# check failed); 2 bad usage; 3 pull failed, nothing changed (the agent retries
+# instead of recording the revision as failed).
 set -eu
 cd "$(dirname "$0")/.."
 
@@ -70,10 +75,10 @@ prev=$(sed -n "s/^$var=//p" .env | tail -1)
 case "$prev" in none) prev="" ;; esac
 echo "deploy $svc: ${prev:-none} -> $tag"
 set_tag "$tag"
-if ! docker compose pull "$svc"; then
+if ! docker compose pull --policy missing "$svc"; then
   echo "deploy $svc: pull of $tag failed, nothing changed" >&2
   set_tag "${prev:-none}"
-  exit 1
+  exit 3
 fi
 docker compose up -d "$svc"
 if wait_healthy; then

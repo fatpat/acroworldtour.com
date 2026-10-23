@@ -105,14 +105,25 @@ install_file "$staging/compose.yaml" compose.yaml
 mkdir -p caddy
 install_file "$staging/Caddyfile" caddy/Caddyfile
 
-if [ "$(env_value AWT_TRAINING_TAG)" != "$rev" ]; then
-  if ! "$root/deploy/deploy.sh" training "$rev"; then
+# deploy.sh pulls $image:$rev only if missing: tag the image just pulled so
+# the deploy needs no second registry round-trip.
+docker tag "$ref" "$image:$rev"
+
+# deploy_env <env>: exit 3 from deploy.sh = pull failed, nothing changed:
+# not the revision's fault, so it is not recorded and the next run retries.
+deploy_env() {
+  rc=0
+  "$root/deploy/deploy.sh" "$1" "$rev" || rc=$?
+  [ "$rc" = 0 ] && return 0
+  if [ "$rc" = 3 ]; then
+    err "$1: pull of $image:$rev failed; will retry"
+  else
     record_failed
-    exit 1
   fi
-fi
-if ! "$root/deploy/deploy.sh" prod "$rev"; then
-  record_failed
   exit 1
+}
+if [ "$(env_value AWT_TRAINING_TAG)" != "$rev" ]; then
+  deploy_env training
 fi
+deploy_env prod
 log "deployed $rev to training and prod"
