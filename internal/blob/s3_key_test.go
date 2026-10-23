@@ -1,6 +1,9 @@
 package blob
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 // The prefix comes normalised from config (AWT_BUCKET_PREFIX, decision 0017):
 // "" or "<segments>/". "prod" without a slash is normalised there to "prod/".
@@ -76,6 +79,27 @@ func TestS3BucketCanCopyFrom(t *testing.T) {
 	} {
 		if got := dst.CanCopyFrom(c.src); got != c.want {
 			t.Errorf("CanCopyFrom(%s %s) = %v, want %v", c.src.client.EndpointURL(), c.src.bucket, got, c.want)
+		}
+	}
+}
+
+// An endpoint is never echoed in an error: a mistyped one may carry
+// credentials (user:secret@host).
+func TestS3EndpointErrorsHideTheValue(t *testing.T) {
+	for _, bad := range []string{
+		"https://user:s3cr3t@s3.example.org",
+		"user:s3cr3t@s3.example.org",
+		"https://s3.example.org/s3cr3t",
+		"https://s3cr3t%zz.example.org",
+		"ftp://s3cr3t.example.org",
+	} {
+		_, err := NewS3(S3Config{Endpoint: bad, Bucket: "b"})
+		if err == nil {
+			t.Errorf("%q accepted", bad)
+			continue
+		}
+		if strings.Contains(err.Error(), "s3cr3t") {
+			t.Errorf("%q: error echoes the value: %v", bad, err)
 		}
 	}
 }

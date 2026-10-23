@@ -68,16 +68,23 @@ func newClient(cfg S3Config) (*minio.Client, error) {
 	return c, nil
 }
 
+// errEndpoint never quotes the value: a mistyped endpoint may carry
+// credentials (user:secret@host).
+var errEndpoint = errors.New("s3 endpoint (AWT_S3_ENDPOINT): must be https://host[:port], http://host[:port] or host[:port], without credentials, path or query")
+
 // splitEndpoint takes the scheme off an endpoint URL: the minio client wants
 // host[:port] and a TLS flag, Litestream (same variable) wants the URL.
 func splitEndpoint(endpoint string, useSSL bool) (host string, secure bool, err error) {
+	if strings.ContainsAny(endpoint, "@/?#") && !strings.Contains(endpoint, "://") {
+		return "", false, errEndpoint
+	}
 	if !strings.Contains(endpoint, "://") {
 		return endpoint, useSSL, nil
 	}
 	u, err := url.Parse(endpoint)
 	if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" ||
-		(u.Path != "" && u.Path != "/") || u.RawQuery != "" || u.User != nil {
-		return "", false, fmt.Errorf("s3 endpoint %q: must be http(s)://host[:port]", endpoint)
+		(u.Path != "" && u.Path != "/") || u.RawQuery != "" || u.Fragment != "" || u.User != nil {
+		return "", false, errEndpoint
 	}
 	return u.Host, u.Scheme == "https", nil
 }
