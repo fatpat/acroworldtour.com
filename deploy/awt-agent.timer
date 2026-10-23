@@ -1,0 +1,13 @@
+# Runs awt-agent.service every 60 s. Install:
+# /etc/systemd/system/awt-agent.timer, then systemctl enable --now awt-agent.timer
+# Pause deploys: systemctl stop awt-agent.timer
+[Unit]
+Description=AcroWorldTour deploy agent every 60 s
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=60s
+Persistent=false
+
+[Install]
+WantedBy=timers.target

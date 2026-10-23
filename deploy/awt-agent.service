@@ -1,0 +1,14 @@
+# Deploy agent: one pass of deploy/agent.sh (pull the moving tag, deploy
+# training then prod if it carries a new revision). Started by
+# awt-agent.timer. Install: /etc/systemd/system/awt-agent.service (docs/ops.md).
+# Logs: journalctl -u awt-agent
+[Unit]
+Description=AcroWorldTour deploy agent
+Wants=network-online.target docker.service
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+User=deploy
+ExecStart=/opt/awt/deploy/agent.sh
+Nice=10

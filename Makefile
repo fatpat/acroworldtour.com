@@ -1,4 +1,4 @@
-.PHONY: dev generate test golden golden-regen e2e lint check migrate docker backup-restore-test e2e-deps
+.PHONY: dev generate test golden golden-regen e2e lint check migrate docker backup-restore-test agent-test e2e-deps
 
 GO ?= go
 
@@ -52,3 +52,9 @@ docker:
 # restart, check the data came back. See scripts/backup-restore-test.sh.
 backup-restore-test: docker
 	./scripts/backup-restore-test.sh
+
+# Deploy agent test: local registry + temp /opt/awt, every agent case (happy
+# path, no-op, bad revision, bad config, no label, registry down). Not part of
+# check (needs Docker, takes minutes). See scripts/agent-test.sh.
+agent-test:
+	./scripts/agent-test.sh
