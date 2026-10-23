@@ -9,7 +9,7 @@
 # the real CLI is installed by apt, the stub answers in its place). Repository
 # files are served from this checkout (AWT_REPO_RAW=file:///src).
 #
-# Cases: happy path, re-run (nothing changes), missing values (non-interactive),
+# Cases: every input documented in docs/ops.md, happy path, re-run (nothing changes), missing values (non-interactive),
 # invalid inputs (SSH key, port), wrong OS, not root, broken sshd config
 # (no reload), mismatched TLS pair, S3 replica without MFA key (refused
 # non-interactive, prompted interactive), failed first deploy then resume.
@@ -261,6 +261,11 @@ SNAP_PATHS+=" /home/alice/.ssh /home/deploy /etc/passwd /etc/group"
 snapshot() {
   in_ctr sh -c "find $SNAP_PATHS -exec stat -c '%n %U:%G %a' {} + | sort; find $SNAP_PATHS -type f -exec sha256sum {} + | sort"
 }
+
+echo "== case: every input of the script is documented in docs/ops.md"
+for v in $(bash deploy/init-vps.sh --list-inputs); do
+  check "docs/ops.md documents $v" grep -qw -- "$v" docs/ops.md
+done
 
 echo "== case: missing values, non-interactive"
 start_ctr cheap

@@ -8,9 +8,99 @@ Files: `Dockerfile`, `litestream.yml`, `compose.yaml`, `Caddyfile`, `deploy/` (e
 
 How a release reaches the VPS: CI pushes `ghcr.io/<owner>/awt:<sha>` and the moving tag `:rewrite-go` (public package; the image carries its commit in the `org.opencontainers.image.revision` label and `compose.yaml` + `Caddyfile` under `/usr/share/awt/deploy/`). On the VPS, `awt-agent.timer` runs `deploy/agent.sh` every 60 s: it pulls the moving tag and, when it carries a new revision, installs the baked config and deploys training, then prod (section 5). Nothing connects to the VPS to deploy.
 
+## 0. New server in one command
+
+`deploy/init-vps.sh` does sections 1 to 3 (and installs the agent of section 5) on a fresh **Debian 13 (trixie)** VPS, as root, and stops once the first deploy is healthy. Sections 1 to 3 stay the reference: they describe what the script does and how to do it by hand.
+
+Before running it:
+
+- an OVHcloud VPS with Debian 13 and your SSH key (section 1.1);
+- the Object Storage bucket(s) and an S3 user with read/write access (section 2);
+- a Cloudflare Origin CA certificate and key covering both hosts (section 1.9), copied to the server or ready to paste;
+- an image published on the deploy branch (`rewrite-go`, CI job `build`) in the public GHCR package. Without it the first deploy fails; push, wait for CI, re-run.
+
+Run it as root after reading it:
+
+```sh
+curl -fsSLO https://raw.githubusercontent.com/fatpat/acroworldtour.com/rewrite-go/deploy/init-vps.sh
+less init-vps.sh          # review what you are about to run as root
+sudo -i                   # the script needs root
+bash /home/<you>/init-vps.sh
+```
+
+In a terminal it prompts for each missing value (secrets are not echoed; the certificate and key can be given as a file path or pasted). Without a terminal (`</dev/null`, CI, a pipe) it never prompts: it lists every missing or invalid value at once and changes nothing. To run it non-interactively, put the values in a root-only file instead of the shell history, load it, run, then delete the file:
+
+```sh
+install -m 600 /dev/null /root/awt-init.env && editor /root/awt-init.env   # NAME=value lines
+set -a; . /root/awt-init.env; set +a
+bash init-vps.sh </dev/null
+rm /root/awt-init.env
+```
+
+`bash init-vps.sh --list-inputs` prints every input name. Inputs (env file keys are in `/opt/awt`, section 2):
+
+| Variable | Default | Stored in | Notes |
+|---|---|---|---|
+| `AWT_ADMIN_USER` | required | `AllowUsers` in `/etc/ssh/sshd_config.d/10-awt-hardening.conf` | Your login: created if missing, in `sudo` with `NOPASSWD` (key-only login, no password), the only SSH user. Not `root` or `deploy`. |
+| `AWT_ADMIN_SSH_KEY` | required while the admin has no key | `~<admin>/.ssh/authorized_keys` | One public key line (`ssh-ed25519 AAAA... you@laptop`). Added if not there yet; sshd is never restricted without a valid key. |
+| `AWT_SSH_PORT` | `2222` | `Port` in the same file | 1024 to 65535. |
+| `AWT_PROD_HOST` | required | `.env` | Host name, for example `www.example.org`. `.env.prod` gets `AWT_BASE_URL=https://<host>`. |
+| `AWT_TRAINING_HOST` | required | `.env` | Must differ from the prod host. |
+| `AWT_IMAGE` | `ghcr.io/fatpat/awt` | `.env` | Image name without tag. |
+| `AWT_CHANNEL` | `rewrite-go` | `.env` | Moving tag the agent follows. |
+| `AWT_REPO_RAW` | `https://raw.githubusercontent.com/fatpat/acroworldtour.com/$AWT_CHANNEL` | not stored | Where `deploy/agent.sh`, `deploy.sh`, `weekly-restore-test.sh`, the systemd units and the env examples are downloaded from. |
+| `AWT_TLS_CERT_FILE` | required (or pasted) | `certs/origin.pem` | Origin CA certificate (PEM). Checked: parses, not expired, covers both hosts. |
+| `AWT_TLS_KEY_FILE` | required (or pasted) | `certs/origin.key` (600) | Its private key; must match the certificate. |
+| `PROD_S3_ENDPOINT`, `TRAINING_S3_ENDPOINT` | required | `AWT_S3_ENDPOINT` in `.env.prod`, `.env.training` | For example `https://s3.gra.io.cloud.ovh.net`. |
+| `PROD_S3_REGION`, `TRAINING_S3_REGION` | required | `LITESTREAM_S3_REGION` | For example `gra`. |
+| `PROD_S3_BUCKET`, `TRAINING_S3_BUCKET` | required | `AWT_S3_BUCKET` | Litestream replicates to `litestream/<env>/` in it. |
+| `PROD_S3_ACCESS_KEY`, `TRAINING_S3_ACCESS_KEY` | required | `AWT_S3_ACCESS_KEY` | Secret: hidden prompt, masked in the output. |
+| `PROD_S3_SECRET_KEY`, `TRAINING_S3_SECRET_KEY` | required | `AWT_S3_SECRET_KEY` | Secret. |
+| `PROD_MFA_KEY`, `TRAINING_MFA_KEY` | generated, unless the bucket holds a replica | `AWT_MFA_KEY` | Base64 of 32 bytes, different per environment. See the MFA rule below. |
+| `PROD_CLOUDFLARE_ZONE_ID`, `TRAINING_CLOUDFLARE_ZONE_ID` | optional | `AWT_CLOUDFLARE_ZONE_ID` | 32 hexadecimal characters; given with the token or not at all. |
+| `PROD_CLOUDFLARE_TOKEN`, `TRAINING_CLOUDFLARE_TOKEN` | optional | `AWT_CLOUDFLARE_TOKEN` | Cache purge token. Prompted only before the env file exists. |
+| `AWT_INIT_FORCE` | `0` | not stored | `1` replaces stored values (env files, sshd settings, certificate) with the ones given. The deployed image tags are never touched. |
+| `AWT_INIT_ALLOW_OS` | `0` | not stored | `1` runs on another system than Debian 13 (tests only). |
+
+Values are written as `KEY=value` lines: secrets must not contain spaces, quotes, `$`, `#` or a backslash.
+
+**What it does**, one idempotent step at a time, each reporting `==> <step>: changed` or `already done`:
+
+1. `preflight`: root, Debian 13. `inputs`: environment, values stored on the host, prompts, validation (nothing is changed before every value is valid).
+2. `packages`: `curl`, `gnupg`, `openssl`, `sudo`, `nftables`, `openssh-server`, `fail2ban`, `unattended-upgrades` (automatic security updates, section 1.6).
+3. `users_ssh`: the admin user and key, `sudoers.d/90-awt-admin`, `sshd_config.d/10-awt-hardening.conf` (port, key-only, no root, `AllowUsers <admin>`). The file is checked with `sshd -t` and `sshd -T` (the settings really apply) before `systemctl reload ssh`; if either fails the previous file is put back, sshd is not reloaded and the script stops. If the firewall is already up, the new port is opened first. Then a `fail2ban` jail for sshd on that port (journal backend, nftables actions).
+4. `firewall`: `/etc/nftables.d/awt.nft` and `/etc/nftables.conf` (see section 1.8), loaded and enabled at boot.
+5. `docker`: Docker Engine and the compose plugin from Docker's apt repository (key fingerprint checked), Compose 2.22 or later, log rotation in `/etc/docker/daemon.json` (only if the file does not exist; section 7).
+6. `layout`: user `deploy` (group `docker`, no login shell, no `authorized_keys`), `/opt/awt` and its directories with the owners and modes of section 1.7, the three scripts of `deploy/` from the repository (root, 755).
+7. `tls`: the certificate and key in `/opt/awt/certs`.
+8. `env_files`: `.env`, `.env.prod`, `.env.training` (owner `deploy`, mode 600) from the examples of the repository. A new file gets every example key with the given values; an existing file only gets the keys it lacks.
+9. `agent`: `awt-agent.service` and `awt-agent.timer` from the repository, timer enabled (section 3.1).
+10. `first_deploy`: one agent run (`systemctl start awt-agent.service`), then `/healthz` of both apps, directly and through Caddy, as `deploy.sh` does.
+11. `summary`: hosts, deployed revision, masked secrets (`****` and the last 4 characters), and for each database whether it was restored from the S3 replica, already held data, or is empty, with the commands of section 4 (`awt import`, `awt user add`) for each empty one.
+
+**MFA key rule.** A stored key is kept. A given key is used. Otherwise the script asks Litestream, in a one-shot container of the app image with the environment's S3 settings (`litestream snapshots`), whether the bucket holds a replica under `litestream/<env>/`. No replica: it generates a key (`openssl rand -base64 32`). A replica: the database restored from it may hold TOTP secrets encrypted with the existing key, and a new key would make every enrolled authenticator app unusable (section 7b), so it never generates one: it prompts for the existing key (from your secrets backup), or, without a terminal, stops and names the variable to set. If the bucket cannot be listed (wrong endpoint or credentials, image not published) it stops too.
+
+**Database.** The first deploy starts each app on an empty volume: the entrypoint restores the Litestream replica when the bucket has one (section 6), otherwise the database starts empty and you run section 4 (legacy import) and section 3.3 (first admin); the summary prints the exact commands.
+
+**Re-running** on a configured host changes nothing and asks for nothing that is already stored: every step reports `already done`. A run that stopped (invalid value, `sshd -t` failure, agent failure) can be re-run as is: finished steps are skipped and it resumes where it failed. When the first deploy fails, the script prints the end of `journalctl -u awt-agent` and the next steps; everything else stays installed and the timer keeps retrying every 60 s (a revision recorded in `state/failed-revisions` is skipped until you delete its line, section 5).
+
+**Still by hand:**
+
+- Keep your current SSH session open and test a new one on the new port (`ssh -p 2222 <admin>@<host>`) before closing it. Root login and passwords are disabled.
+- Cloudflare (section 1.10): proxied DNS records for both hosts, SSL mode Full (strict), a cache bypass rule for `/live/*`; the Origin CA certificate itself (section 1.9).
+- GitHub: the repository, the deploy branch and the public GHCR package (section 2).
+- An empty database: the legacy import (section 4) and the first admin (section 3.3).
+- Back up `/opt/awt/.env.prod` and `/opt/awt/.env.training` (MFA keys, S3 secrets) with your other secrets.
+- The weekly restore test cron (section 6) and uptime monitoring (section 7).
+
+**Local test:** `make init-vps-test` runs the script as root in `debian:13` containers: packages, users, the sshd configuration (real `sshd -t` and `sshd -T`), firewall files, layout, certificate, env files and units are produced for real; `systemctl`, `journalctl`, `nft` (loading rules needs `NET_ADMIN`) and `docker` (no daemon; the agent run is simulated) are stubbed. Cases: happy path, re-run with no input (nothing changes), missing values, invalid key and port, wrong system, not root, `sshd -t` failure, mismatched certificate, replica without MFA key (non-interactive and prompted), failed first deploy then resume, and every input name documented here. It needs Docker and network and takes a few minutes; it is not part of `make check`.
+
 ## 1. Provision the VPS
 
-1. Order an OVHcloud VPS (Debian 12 or Ubuntu 24.04 LTS). Add your SSH public key at order time.
+Section 0 automates sections 1 to 3; they remain the reference for what it does and for a manual setup.
+
+
+1. Order an OVHcloud VPS with Debian 13 (required by `deploy/init-vps.sh`; the manual steps also work on Debian 12 or Ubuntu 24.04 LTS). Add your SSH public key at order time.
 2. Create a non-root deploy user `deploy` in the `docker` group (see the note on root equivalence below), and an admin user for yourself. Harden SSH in `/etc/ssh/sshd_config.d/10-hardening.conf`, then `systemctl reload ssh`:
    ```
    Port 2222                      # any non-default port
@@ -23,7 +113,7 @@ How a release reaches the VPS: CI pushes `ghcr.io/<owner>/awt:<sha>` and the mov
 5. Install Docker Engine and the compose plugin from Docker's apt repository. Docker Compose 2.22 or later is required (`deploy.sh` uses `docker compose pull --policy missing`); check with `docker compose version`.
 6. Enable automatic security updates: `apt install unattended-upgrades` and `dpkg-reconfigure -plow unattended-upgrades`.
 7. Create the layout: `install -d -o deploy -m 750 /opt/awt /opt/awt/certs /opt/awt/state`, `install -d -o deploy -m 755 /opt/awt/caddy` (the agent installs the Caddyfile into it) and `install -d -o root -m 755 /opt/awt/deploy`. Copy `deploy/agent.sh`, `deploy/deploy.sh` and `deploy/weekly-restore-test.sh` to `/opt/awt/deploy/` (as the admin user, `chmod 755`, owned by root), `compose.yaml` to `/opt/awt/` and `Caddyfile` to `/opt/awt/caddy/` (a directory, mounted into Caddy; a single-file mount would go stale when the agent replaces the file). From then on the agent installs `compose.yaml` and `Caddyfile` from each new image; the three scripts change rarely and are copied by hand again when they change in the repository.
-8. Firewall: allow SSH (your port), allow 80 and 443 from Cloudflare ranges only, deny everything else inbound. Docker bypasses ufw for published ports, so filter in the `DOCKER-USER` chain (or use the OVHcloud network firewall in front of the VPS). Cloudflare ranges: https://www.cloudflare.com/ips-v4 and https://www.cloudflare.com/ips-v6. One allow rule per CIDR on tcp/80, tcp/443 (and udp/443 for HTTP/3), then a final deny. The Caddyfile also aborts any request whose peer is not a Cloudflare address (defence in depth). Refresh the CIDR list in the firewall and in the `Caddyfile` when Cloudflare changes it (check quarterly).
+8. Firewall: allow SSH (your port), allow 80 and 443 from Cloudflare ranges only, deny everything else inbound. Docker bypasses ufw and the input chain for published ports: it DNATs them in prerouting, so that traffic goes through the forward hook. `deploy/init-vps.sh` uses nftables directly (no ufw): `/etc/nftables.d/awt.nft` holds one table `inet awt` with sets `cloudflare4`/`cloudflare6`, an `input` chain (policy drop: established, loopback, ICMP, DHCP replies, SSH from anywhere, tcp/80, tcp/443 and udp/443 from Cloudflare) and a `forward` chain at priority `filter - 10` that drops new connections whose original destination port is 80 or 443 (`ct status dnat ct original proto-dst`) unless the source is a Cloudflare address. A drop in any base chain is final in nftables, so this holds whatever Docker's own chains accept, and Docker never touches the `awt` table. Connections taken by Docker's userland proxy (for example IPv6 to the host) reach the `input` chain and get the same rule. `/etc/nftables.conf` only includes `/etc/nftables.d/*.nft`, without Debian's `flush ruleset` (which would delete Docker's tables on every reload; the original is kept as `/etc/nftables.conf.dist`), and a drop-in makes `systemctl stop nftables` delete only the `awt` table. Reload after a change with `nft -f /etc/nftables.conf`. The OVHcloud network firewall in front of the VPS is an alternative. Cloudflare ranges: https://www.cloudflare.com/ips-v4 and https://www.cloudflare.com/ips-v6 (the script fetches them and falls back to a list pinned in it). The Caddyfile also aborts any request whose peer is not a Cloudflare address (defence in depth). Refresh the CIDR list in the firewall (re-run the script) and in the `Caddyfile` when Cloudflare changes it (check quarterly).
 9. **TLS strategy: Cloudflare Origin CA certificate, SSL mode Full (strict).** In Cloudflare, create an Origin CA certificate covering the prod and training hosts (or `*.example.org`), validity up to 15 years. Save it as `/opt/awt/certs/origin.pem` and the private key as `/opt/awt/certs/origin.key` (`chmod 700 certs`, key `600`; if Caddy cannot read the key because Docker runs with user namespaces or rootless, use `640` with a group Caddy shares, or `644` inside the 700 directory). Paths can be changed with `AWT_TLS_CERT` and `AWT_TLS_KEY` in the Caddy environment. Caddy loads these files instead of using ACME, so no certificate is requested from Let's Encrypt, and nothing but Cloudflare can complete a trusted TLS handshake with the origin. The certificate is not trusted by browsers; the origin must never be exposed without Cloudflare. Replace it before it expires: write the new files and run `docker compose restart caddy`.
 10. Cloudflare: proxied DNS records for the prod and training hosts. Do not cache `/live/*` (add a cache rule: bypass). Cloudflare closes idle connections after about 100 s; the live stream sends a heartbeat about every 30 s (spec 6.4) and Caddy does not buffer `/live/*`.
 
@@ -47,7 +137,7 @@ Deploys need no GitHub secret and no registry credential on the VPS: the reposit
 
 ## 3. First deploy
 
-1. Provision and configure as above, then install the agent (as root):
+1. Provision and configure as above, then install the agent (as root; `deploy/init-vps.sh` does this and runs the agent once, section 0):
    ```sh
    install -m 644 awt-agent.service awt-agent.timer /etc/systemd/system/   # from deploy/ in the repository
    systemctl daemon-reload
