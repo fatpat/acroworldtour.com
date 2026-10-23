@@ -3,13 +3,9 @@
 # .env, .env.prod, .env.training.
 #
 #   deploy.sh training|prod <image-tag>   deploy one environment
-#   deploy.sh sync                        install compose.yaml + Caddyfile from a tar on stdin
 #
-# It is also the SSH forced command of the CI deploy key (see docs/ops.md):
-#   restrict,command="/opt/awt/deploy/deploy.sh" ssh-ed25519 AAAA... awt-deploy
-# In that mode the request comes from SSH_ORIGINAL_COMMAND and is validated
-# against a strict pattern, and stdin may carry "<registry-user> <registry-token>"
-# on its first line (docker login ghcr.io) for `training|prod`.
+# Called by the deploy agent (deploy/agent.sh) for each new revision, or by an
+# admin for a manual rollback (docs/ops.md). The image is public: no login.
 #
 # Deploying pulls the tag, restarts the service, waits for the container health
 # check, then checks /healthz inside the stack (app, then through Caddy). If the
@@ -19,42 +15,10 @@ cd "$(dirname "$0")/.."
 
 die() { echo "deploy: $*" >&2; exit 2; }
 
-forced=0
-if [ -n "${SSH_ORIGINAL_COMMAND:-}" ]; then
-  forced=1
-  case "$SSH_ORIGINAL_COMMAND" in
-    *[!A-Za-z0-9\ ]*) die "refused: unexpected characters" ;;
-  esac
-  # shellcheck disable=SC2086 # split is safe: only [A-Za-z0-9 ] got through
-  set -- $SSH_ORIGINAL_COMMAND
-fi
-
-if [ "${1:-}" = sync ] && [ "$#" -eq 1 ]; then
-  tmp=$(mktemp)
-  trap 'rm -f "$tmp"' EXIT
-  head -c 1048576 > "$tmp"
-  [ "$(tar -tf "$tmp" | sort | tr '\n' ' ')" = "Caddyfile compose.yaml " ] || die "sync: archive must contain exactly compose.yaml and Caddyfile"
-  tar -tvf "$tmp" | cut -c1 | grep -qv '^-' && die "sync: only regular files allowed"
-  mkdir -p caddy
-  tar -xf "$tmp" --no-same-owner --no-same-permissions -C . compose.yaml
-  tar -xf "$tmp" --no-same-owner --no-same-permissions -C caddy Caddyfile
-  echo "sync: compose.yaml and Caddyfile installed"
-  exit 0
-fi
-
 env_name=${1:-}; tag=${2:-}
-[ "$#" -eq 2 ] || die "usage: deploy.sh training|prod <tag> | sync"
+[ "$#" -eq 2 ] || die "usage: deploy.sh training|prod <tag>"
 case "$env_name" in training|prod) ;; *) die "unknown environment" ;; esac
 printf '%s' "$tag" | grep -Eq '^[0-9a-f]{7,40}$' || die "tag must be a lowercase hex commit id"
-
-if [ "$forced" = 1 ]; then
-  login_user=""; login_token=""
-  read -r login_user login_token || true
-  if [ -n "$login_user" ] && [ -n "$login_token" ]; then
-    printf '%s' "$login_user" | grep -Eq '^[A-Za-z0-9-]+$' || die "bad registry user"
-    printf '%s' "$login_token" | docker login ghcr.io -u "$login_user" --password-stdin >/dev/null
-  fi
-fi
 
 svc="awt-$env_name"
 upper=$(echo "$env_name" | tr '[:lower:]' '[:upper:]')

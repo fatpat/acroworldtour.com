@@ -46,7 +46,7 @@ migrate:
 	$(GO) run ./cmd/awt migrate
 
 docker:
-	docker build -t awt:dev .
+	docker build --build-arg REVISION=$$(git rev-parse HEAD) -t awt:dev .
 
 # Restore test: MinIO + litestream replicate, write data, wipe the volume,
 # restart, check the data came back. See scripts/backup-restore-test.sh.

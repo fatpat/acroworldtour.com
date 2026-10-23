@@ -27,8 +27,8 @@ services:
       AWT_PROD_HOST: ${AWT_PROD_HOST:?set AWT_PROD_HOST in .env}
       AWT_TRAINING_HOST: ${AWT_TRAINING_HOST:?set AWT_TRAINING_HOST in .env}
     volumes:
-      # Directory mount, not a single file: `sync` replaces Caddyfile with a new
-      # inode, which a single-file bind mount would never see.
+      # Directory mount, not a single file: the deploy agent replaces Caddyfile
+      # with a new inode (mv), which a single-file bind mount would never see.
       - ./caddy:/etc/caddy/site:ro
       - ./certs:/etc/caddy/certs:ro
       - caddy_data:/data

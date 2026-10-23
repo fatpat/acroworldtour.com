@@ -22,6 +22,13 @@ COPY --from=build /out/awt /usr/local/bin/awt
 COPY --from=litestream /usr/local/bin/litestream /usr/local/bin/litestream
 COPY litestream.yml /etc/litestream.yml
 COPY deploy/entrypoint.sh /usr/local/bin/entrypoint.sh
+# The VPS deploy agent (deploy/agent.sh) installs these from the image it
+# deploys, so config and code always ship together. See docs/decisions/0016.
+COPY compose.yaml Caddyfile /usr/share/awt/deploy/
+# Commit the image was built from; the agent refuses an image without it.
+ARG REVISION=unknown
+LABEL org.opencontainers.image.revision=$REVISION \
+      org.opencontainers.image.source=https://github.com/fatpat/acroworldtour.com
 USER awt
 ENV AWT_DB_PATH=/data/awt.db AWT_BLOB_DIR=/data/blobs AWT_ADDR=:8080
 VOLUME /data

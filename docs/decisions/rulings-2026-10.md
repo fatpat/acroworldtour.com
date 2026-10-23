@@ -30,7 +30,7 @@ Decisions taken by the AI controller during the Go rewrite, on the owner's behal
 - env example files live at deploy/env*.example (tool permission denies .env* paths) — cost if wrong: rename only.
 - golden generator resolves catalog lookups of tricks deleted in 2024 (Full Stall, Super Stall, Tail Slide to Infinity Tumbling) to their last definition instead of legacy 404 — otherwise 751 flights are unscorable — cost if wrong: those cases test a reconstruction, not literal legacy behaviour.
 - historical results stay frozen (decision 0003) — confirmed by data: 913/2310 stored scores differ from today's legacy recomputation (rule/catalog drift since 2022).
-- deploy SSH = internet-reachable non-default port, key-only, fail2ban, forced-command deploy key — GitHub runners have no fixed IPs — cost if wrong: switch to self-hosted runner/VPN later.
+- deploy SSH = internet-reachable non-default port, key-only, fail2ban, forced-command deploy key — GitHub runners have no fixed IPs — cost if wrong: switch to self-hosted runner/VPN later. Superseded by decision 0016 (pull-based deploy).
 - TLS = Cloudflare Origin CA certificate, Full (strict), no ACME — Caddy only accepts Cloudflare traffic — cost if wrong: cert renewal procedure differs.
 - golden corpus pseudonymises pilot/team/judge ids (gender/country tied to real CIVL ids = personal data) — cost if wrong: none; NOTE commit b5d81d0 still holds the non-pseudonymised corpus in local history: squash/rewrite before any push (tell the user).
 - qualification in mixed AWT/AWQ events keeps the best N by overall competition score, then applies the mixed start order (AWQ first, worst→best) — avoids cutting all AWQ pilots — cost if wrong: owner may want per-category quotas (flag to user).
