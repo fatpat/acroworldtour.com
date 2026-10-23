@@ -37,6 +37,11 @@ jobs:
     # branches). The moving tag below is named after this branch; change both
     # (and AWT_CHANNEL on the VPS) to deploy from another branch.
     if: github.event_name == 'push' && github.ref == 'refs/heads/rewrite-go'
+    # One publish at a time per branch, never cancelled, so an older run can
+    # not move the tag after a newer one (with the head check below).
+    concurrency:
+      group: publish-${{ github.ref }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -62,8 +67,21 @@ jobs:
           context: .
           push: true
           build-args: REVISION=${{ github.sha }}
-          tags: |
-            ${{ steps.vars.outputs.image }}:${{ steps.vars.outputs.tag }}
-            ${{ steps.vars.outputs.image }}:${{ steps.vars.outputs.channel }}
+          tags: ${{ steps.vars.outputs.image }}:${{ steps.vars.outputs.tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      # The VPS agent deploys whatever the moving tag points to: move it only
+      # if this commit is still the head of the branch, so a slow older run
+      # never sends the tag (and prod) backwards. The :<sha> image stays.
+      - name: Move the moving tag
+        env:
+          IMAGE: ${{ steps.vars.outputs.image }}
+          SHA: ${{ github.sha }}
+          CHANNEL: ${{ steps.vars.outputs.channel }}
+        run: |
+          head=$(git ls-remote origin "refs/heads/${CHANNEL}" | cut -f1)
+          if [ "$head" != "$SHA" ]; then
+            echo "::notice::${CHANNEL} is now at ${head:-unknown}, not ${SHA}: pushed :${SHA} only, :${CHANNEL} not moved"
+            exit 0
+          fi
+          docker buildx imagetools create -t "${IMAGE}:${CHANNEL}" "${IMAGE}:${SHA}"

@@ -19,7 +19,9 @@ The owner decided on 2026-10-23: a pull-based agent; both environments updated a
 
 ## Trust model
 
-Whoever can push the moving tag to the GHCR package deploys to prod: in practice, a workflow run on the deploy branch (the `GITHUB_TOKEN` with `packages: write`) or a maintainer of the repository. This is the same trust boundary as before (whoever could push to the deploy branch deployed), minus the SSH key and the registry token on the VPS. Image signature verification (for example cosign keyless signatures checked by the agent) is deferred: it would bind deploys to the CI workflow identity instead of package write access.
+Whoever can push the moving tag to the GHCR package deploys to prod: in practice, a workflow run on the deploy branch (the `GITHUB_TOKEN` with `packages: write`) or a maintainer of the repository. This is the same trust boundary as before (whoever could push to the deploy branch deployed), minus the SSH key and the registry token on the VPS. **Downgrade risk.** The agent deploys whatever the moving tag points to and does not compare commit order, so moving the tag to an older image rolls prod back (only revisions recorded as failed are refused). CI guards against doing this by accident: the `build` job runs one at a time per branch (`concurrency`, never cancelled) and moves the tag only if its commit is still the branch head (`git ls-remote`), otherwise it pushes `:<sha>` only. Someone with package write access can still move the tag backwards on purpose; that is the manual rollback path, not a defence.
+
+Image signature verification (for example cosign keyless signatures checked by the agent) is deferred: it would bind deploys to the CI workflow identity instead of package write access.
 
 ## Consequences
 
