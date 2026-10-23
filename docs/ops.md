@@ -1,6 +1,6 @@
 # Operations
 
-One OVHcloud VPS runs Docker Compose: `caddy`, `awt-prod`, `awt-training`. Cloudflare sits in front. Each awt container runs `litestream replicate -exec "awt serve"` and replicates its SQLite database to OVHcloud Object Storage (`litestream/<env>/` in the bucket). Design: `specifications/08-rewrite-recommendations.md` section 6. Image decision: `docs/decisions/0013-runtime-image.md`. Deploy decision: `docs/decisions/0016-pull-deploy.md`.
+One OVHcloud VPS runs Docker Compose: `caddy`, `awt-prod`, `awt-training`. Cloudflare sits in front. Each awt container runs `litestream replicate -exec "awt serve"` and replicates its SQLite database to OVHcloud Object Storage (`litestream/<env>/` in the bucket; uploaded files go under `files/`, section 6). Design: `specifications/08-rewrite-recommendations.md` section 6. Image decision: `docs/decisions/0013-runtime-image.md`. Deploy decision: `docs/decisions/0016-pull-deploy.md`.
 
 Layout on the VPS: `/opt/awt/{compose.yaml,caddy/Caddyfile,certs/,state/,.env*}`, `/opt/awt/deploy/{agent.sh,deploy.sh,weekly-restore-test.sh}` and `/etc/systemd/system/awt-agent.{service,timer}`.
 
@@ -53,7 +53,7 @@ rm /root/awt-init.env
 | `AWT_TLS_KEY_FILE` | required (or pasted) | `certs/origin.key` (600) | Its private key; must match the certificate. |
 | `PROD_S3_ENDPOINT`, `TRAINING_S3_ENDPOINT` | required | `AWT_S3_ENDPOINT` in `.env.prod`, `.env.training` | `https://` only, for example `https://s3.gra.io.cloud.ovh.net`. |
 | `PROD_S3_REGION`, `TRAINING_S3_REGION` | required | `LITESTREAM_S3_REGION` | For example `gra`. |
-| `PROD_S3_BUCKET`, `TRAINING_S3_BUCKET` | required | `AWT_S3_BUCKET` | Litestream replicates to `litestream/<env>/` in it. |
+| `PROD_S3_BUCKET`, `TRAINING_S3_BUCKET` | required | `AWT_S3_BUCKET` | Litestream replicates to `litestream/<env>/` in it; uploads go under `files/` (section 6). |
 | `PROD_S3_ACCESS_KEY`, `TRAINING_S3_ACCESS_KEY` | required | `AWT_S3_ACCESS_KEY` | Secret: hidden prompt, masked in the output. |
 | `PROD_S3_SECRET_KEY`, `TRAINING_S3_SECRET_KEY` | required | `AWT_S3_SECRET_KEY` | Secret. |
 | `PROD_MFA_KEY`, `TRAINING_MFA_KEY` | generated, unless the bucket holds a replica | `AWT_MFA_KEY` | Base64 of 32 bytes, different per environment. See the MFA rule below. |
@@ -190,7 +190,29 @@ Operating the agent (as an admin, with `sudo`):
 
 ## 6. Backups and restore
 
-Litestream replicates continuously (about 1 s lag), snapshots every 6 h, keeps 30 days (`litestream.yml`).
+**Bucket layout.** Each environment's bucket holds two prefixes:
+
+- `litestream/<env>/`: the database replica (below).
+- `files/<sha256>`: uploaded photos, logos and PDFs. Each object is named by the SHA-256 of its content and carries its content type. The original filename lives in the database's `files` table. Litestream does not back these up, so never delete them by hand; the database refers to them.
+
+Images built before this layout stored the files at the bucket root. To move a bucket's root-level files under `files/`, run this once per bucket, before the new image deploys. The copy leaves the old objects in place, so the running app keeps working:
+
+```sh
+AWS='docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION=gra
+  amazon/aws-cli@sha256:e3e329e1d2894b7b4bbb0aacacd0a155262159b2e7a3b4275eb1f24046d3e06c
+  --endpoint-url https://s3.gra.io.cloud.ovh.net'
+HEX=$(printf '[0-9a-f]%.0s' $(seq 64))   # matches only the 64-hex names at the root
+read -r AWS_ACCESS_KEY_ID; read -rs AWS_SECRET_ACCESS_KEY; export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
+$AWS s3 cp s3://<bucket>/ s3://<bucket>/files/ --recursive --exclude '*' --include "$HEX"
+```
+
+Once the new image is deployed and images load on the site, remove the old copies:
+
+```sh
+$AWS s3 rm s3://<bucket>/ --recursive --exclude '*' --include "$HEX"
+```
+
+Litestream replicates the database continuously (about 1 s lag), snapshots every 6 h, keeps 30 days (`litestream.yml`).
 
 **Automatic restore on an empty volume.** The entrypoint runs `litestream restore -if-db-not-exists -if-replica-exists` before starting. To rebuild a lost or corrupted environment:
 

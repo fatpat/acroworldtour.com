@@ -25,6 +25,12 @@ type S3 struct {
 	bucket string
 }
 
+// filesPrefix keeps uploads apart from Litestream's litestream/<env>/ replica
+// in the same bucket.
+const filesPrefix = "files/"
+
+func objectKey(key string) string { return filesPrefix + key }
+
 // NewS3 builds the client; it does not contact the server.
 func NewS3(cfg S3Config) (*S3, error) {
 	if cfg.Endpoint == "" || cfg.Bucket == "" {
@@ -42,7 +48,7 @@ func NewS3(cfg S3Config) (*S3, error) {
 
 // Put uploads r with an unknown size (streamed multipart).
 func (s *S3) Put(ctx context.Context, key, contentType string, r io.Reader) error {
-	_, err := s.client.PutObject(ctx, s.bucket, key, r, -1, minio.PutObjectOptions{ContentType: contentType})
+	_, err := s.client.PutObject(ctx, s.bucket, objectKey(key), r, -1, minio.PutObjectOptions{ContentType: contentType})
 	if err != nil {
 		return fmt.Errorf("s3 put %s: %w", key, err)
 	}
@@ -51,7 +57,7 @@ func (s *S3) Put(ctx context.Context, key, contentType string, r io.Reader) erro
 
 // Get returns the object and its content type.
 func (s *S3) Get(ctx context.Context, key string) (io.ReadCloser, string, error) {
-	obj, err := s.client.GetObject(ctx, s.bucket, key, minio.GetObjectOptions{})
+	obj, err := s.client.GetObject(ctx, s.bucket, objectKey(key), minio.GetObjectOptions{})
 	if err != nil {
 		return nil, "", fmt.Errorf("s3 get %s: %w", key, err)
 	}
@@ -68,7 +74,7 @@ func (s *S3) Get(ctx context.Context, key string) (io.ReadCloser, string, error)
 
 // Delete removes the object; S3 treats a missing key as success.
 func (s *S3) Delete(ctx context.Context, key string) error {
-	if err := s.client.RemoveObject(ctx, s.bucket, key, minio.RemoveObjectOptions{}); err != nil {
+	if err := s.client.RemoveObject(ctx, s.bucket, objectKey(key), minio.RemoveObjectOptions{}); err != nil {
 		return fmt.Errorf("s3 delete %s: %w", key, err)
 	}
 	return nil
