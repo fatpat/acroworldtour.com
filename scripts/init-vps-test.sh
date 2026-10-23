@@ -1,26 +1,26 @@
 #!/usr/bin/env bash
 # VPS initialization test: runs deploy/init-vps.sh as root inside debian:13
 # containers (pinned by digest). Packages (apt, Docker's apt repository),
-# users, sshd configuration (checked with the real `sshd -t`/`sshd -T`),
-# firewall files, layout, certificates, env files and systemd units are
-# produced for real. What a container cannot do is stubbed through PATH (see
-# the stubs below): systemctl (no systemd; the deploy agent run is simulated),
-# journalctl, nft (loading a ruleset needs NET_ADMIN; the generated ruleset
-# is still parsed by the real nft, see nft_parses), ss (no sshd runs), and
+# users, firewall files, layout, certificates, env files and systemd units
+# are produced for real. What a container cannot do is stubbed through PATH
+# (see the stubs below): systemctl (no systemd; the deploy agent run is
+# simulated), journalctl, nft (loading a ruleset needs NET_ADMIN; the
+# generated ruleset is still parsed by the real nft, see nft_parses), and
 # docker (no daemon: the real CLI is installed by apt, the stub answers in its
-# place). Repository files are served from this checkout
-# (AWT_REPO_RAW=file:///src).
+# place). sshd is absent (the script installs no SSH server); where a case
+# needs one, a stub answering `sshd -T` is installed in that container.
+# Repository files are served from this checkout (AWT_REPO_RAW=file:///src).
 #
-# Cases: every input documented in docs/ops.md, happy path, re-run (nothing
-# changes), missing values (non-interactive), invalid inputs (SSH key, port,
-# http S3 endpoint), one TLS file only (interactive), wrong OS, not root,
-# broken sshd config and pubkey login disabled elsewhere (no reload), sshd
-# not listening on the new port (old config restored, firewall untouched),
-# port change over SSH with ssh.socket (firewall already up: new port
-# inserted, session port kept, then dropped from a session on the new port),
-# mismatched TLS pair, S3 listing error reported with exit 0, S3 replica
-# without MFA key (refused non-interactive, prompted interactive), failed
-# first deploy then resume.
+# Cases: every input documented in docs/ops.md, no SSH input (AWT_ADMIN_*,
+# AWT_SSH_PORT) listed, required or prompted, happy path (no sshd: SSH rule
+# on 22), re-run (nothing changes), missing values (non-interactive), invalid
+# inputs (http S3 endpoint, MFA key), one TLS file only (interactive), wrong
+# OS, not root, firewall SSH rule following `sshd -T` (port 22, 2200, several
+# ports, sshd -T failing) plus the port of the SSH session running the
+# script (kept, then dropped from a session on sshd's port), mismatched TLS
+# pair, S3 listing error reported with exit 0, S3 replica without MFA key
+# (refused non-interactive, prompted interactive), failed first deploy then
+# resume.
 # Run via `make init-vps-test` (needs Docker and network; takes a few minutes).
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -53,8 +53,6 @@ has() { printf '%s' "$out" | grep -Fq -- "$1"; }
 hasnt() { ! has "$1"; }
 
 echo "== fixtures"
-ssh-keygen -q -t ed25519 -N '' -C alice@test -f "$work/alice"
-ADMIN_KEY=$(cat "$work/alice.pub")
 openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes -days 30 \
   -subj /CN=example.org -addext 'subjectAltName=DNS:example.org,DNS:*.example.org' \
   -keyout "$work/origin.key" -out "$work/origin.pem" 2>/dev/null
@@ -126,14 +124,6 @@ case "$*" in
   *) exit 0 ;;
 esac
 EOF
-# ss: no sshd runs in the container. Answers that something listens, unless
-# /var/lib/awt-test/ss-none exists.
-cat > "$work/stubs/ss" <<'EOF'
-#!/bin/sh
-echo "ss $*" >> /var/lib/awt-test/calls.log
-[ -e /var/lib/awt-test/ss-none ] && exit 0
-echo "LISTEN 0      128          0.0.0.0:2222       0.0.0.0:*"
-EOF
 # docker: no daemon. Absent until apt installed the real CLI (so the script
 # installs Docker for real); then answers for it. /var/lib/awt-test/replica-<env>
 # = the env's bucket holds a Litestream replica; /var/lib/awt-test/s3-error =
@@ -188,6 +178,18 @@ esac
 exit 0
 EOF
 chmod 755 "$work/stubs"/*
+# sshd: not on PATH by default (the script installs no SSH server). Installed
+# as /usr/local/sbin/sshd by the cases that need one: `sshd -T` prints
+# /var/lib/awt-test/sshd-T, or fails when /var/lib/awt-test/sshd-fail exists.
+cat > "$work/sshd-stub" <<'EOF'
+#!/bin/sh
+t=/var/lib/awt-test
+echo "sshd $*" >> "$t/calls.log"
+[ "$1" = -T ] || exit 0
+if [ -e "$t/sshd-fail" ]; then echo "sshd: stub failure" >&2; exit 255; fi
+cat "$t/sshd-T"
+EOF
+chmod 755 "$work/sshd-stub"
 
 # start_ctr <name>: a fresh debian:13 "VPS" (sets $ctr).
 start_ctr() {
@@ -196,18 +198,16 @@ start_ctr() {
     -v "$APT_CACHE:/var/cache/apt/archives" "$DEBIAN_IMAGE" sleep infinity >/dev/null
   ctrs+=("$ctr")
   # Container quirks, not VPS state: keep downloaded .debs (shared cache),
-  # never start services from maintainer scripts, sshd's runtime directory
-  # (created by ssh.service on a real host).
+  # never start services from maintainer scripts.
   docker exec "$ctr" sh -c 'rm -f /etc/apt/apt.conf.d/docker-clean
     printf "#!/bin/sh\nexit 101\n" > /usr/sbin/policy-rc.d && chmod 755 /usr/sbin/policy-rc.d
-    mkdir -p /run/sshd /var/lib/awt-test'
+    mkdir -p /var/lib/awt-test'
 }
 in_ctr() { docker exec -i "$ctr" "$@"; }
 
 BASE_ENV=(-e PATH=/work/stubs:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
   -e AWT_INIT_ALLOW_OS=1 -e AWT_REPO_RAW=file:///src)
-FULL=(-e AWT_ADMIN_USER=alice -e "AWT_ADMIN_SSH_KEY=$ADMIN_KEY"
-  -e AWT_PROD_HOST=prod.example.org -e AWT_TRAINING_HOST=training.example.org
+FULL=(-e AWT_PROD_HOST=prod.example.org -e AWT_TRAINING_HOST=training.example.org
   -e PROD_S3_ENDPOINT=https://s3.gra.io.cloud.ovh.net -e PROD_S3_REGION=gra -e PROD_S3_BUCKET=awt-prod
   -e PROD_S3_ACCESS_KEY=prodaccess0001 -e PROD_S3_SECRET_KEY=prod-secret-value-9876
   -e PROD_CLOUDFLARE_ZONE_ID=0123456789abcdef0123456789abcdef -e PROD_CLOUDFLARE_TOKEN=cf-token-value-5555
@@ -255,37 +255,50 @@ all_keys() {
 b64_32() { [ "$(printf '%s' "$1" | base64 -d 2>/dev/null | wc -c)" = 32 ]; }
 steps_already_done() {
   local s
-  for s in packages users_ssh firewall docker layout tls env_files agent first_deploy; do
+  for s in packages firewall docker layout tls env_files agent first_deploy; do
     has "==> $s: already done" || { echo "    step $s not 'already done'" >&2; return 1; }
   done
   ! printf '%s' "$out" | grep -q '^==> .*: changed$'
 }
 steps_reported() {
   local s
-  for s in preflight inputs packages users_ssh firewall docker layout tls env_files agent first_deploy summary; do
+  for s in preflight inputs packages firewall docker layout tls env_files agent first_deploy summary; do
     printf '%s' "$out" | grep -Eq "^==> $s: (done|already done|changed)\$" || { echo "    step $s not reported" >&2; return 1; }
   done
 }
 steps_already_done_before_deploy() {
   local s
-  for s in packages users_ssh firewall docker layout tls env_files agent; do
+  for s in packages firewall docker layout tls env_files agent; do
     has "==> $s: already done" || { echo "    step $s not 'already done'" >&2; return 1; }
-  done
-}
-sshd_effective() {
-  local eff l
-  eff=$(in_ctr sshd -T 2>&1 || true)
-  for l in "port 2222" "passwordauthentication no" "permitrootlogin no" "allowusers alice"; do
-    printf '%s\n' "$eff" | grep -qx "$l" || { echo "    sshd -T: no '$l'" >&2; return 1; }
   done
 }
 # State that a re-run must leave untouched: content, owner and mode.
 # One line: it goes into sh -c.
-SNAP_PATHS="/opt/awt /etc/ssh/sshd_config.d /etc/nftables.conf /etc/nftables.d"
+SNAP_PATHS="/opt/awt /etc/nftables.conf /etc/nftables.d"
 SNAP_PATHS+=" /etc/systemd/system/awt-agent.service /etc/systemd/system/awt-agent.timer"
-SNAP_PATHS+=" /etc/systemd/system/nftables.service.d /etc/fail2ban/jail.d /etc/sudoers.d"
+SNAP_PATHS+=" /etc/systemd/system/nftables.service.d"
 SNAP_PATHS+=" /etc/apt/apt.conf.d/20auto-upgrades /etc/apt/sources.list.d /etc/apt/keyrings /etc/docker"
-SNAP_PATHS+=" /home/alice/.ssh /home/deploy /etc/passwd /etc/group"
+SNAP_PATHS+=" /home/deploy /etc/passwd /etc/group"
+# SSH ports the firewall accepts (the "tcp dport <n> accept" rules), sorted,
+# space separated.
+ssh_rule_ports() {
+  { in_ctr sed -n 's/^[[:space:]]*tcp dport \([0-9]*\) accept$/\1/p' /etc/nftables.d/awt.nft || true; } | sort -n | paste -sd ' ' -
+}
+ssh_ports_are() {
+  local got
+  got=$(ssh_rule_ports)
+  [ "$got" = "$1" ] || { echo "    SSH rule ports: '$got', want '$1'" >&2; return 1; }
+}
+not_installed() {
+  local p
+  for p in "$@"; do
+    ! in_ctr dpkg-query -W -f='${db:Status-Abbrev}' "$p" 2>/dev/null | grep -q '^ii' \
+      || { echo "    $p is installed" >&2; return 1; }
+  done
+}
+SSH_INPUTS_RE='AWT_ADMIN_|AWT_SSH_PORT'
+no_ssh_input() { ! printf '%s' "$out" | grep -Eq "$SSH_INPUTS_RE"; }
+
 snapshot() {
   in_ctr sh -c "find $SNAP_PATHS -exec stat -c '%n %U:%G %a' {} + | sort; find $SNAP_PATHS -type f -exec sha256sum {} + | sort"
 }
@@ -332,36 +345,36 @@ for v in $(bash deploy/init-vps.sh --list-inputs); do
   check "docs/ops.md documents $v" grep -qw -- "$v" docs/ops.md
 done
 
+echo "== case: no SSH input (SSH access is the operator's setup)"
+check "--list-inputs names no AWT_ADMIN_* or AWT_SSH_PORT" eval '! bash deploy/init-vps.sh --list-inputs | grep -Eq "$SSH_INPUTS_RE"'
+
 echo "== case: missing values, non-interactive"
 start_ctr cheap
 run_init
 check "exit non-zero" [ "$rc" != 0 ]
-for v in AWT_ADMIN_USER AWT_ADMIN_SSH_KEY AWT_PROD_HOST AWT_TRAINING_HOST \
+for v in AWT_PROD_HOST AWT_TRAINING_HOST \
   PROD_S3_ENDPOINT PROD_S3_REGION PROD_S3_BUCKET PROD_S3_ACCESS_KEY PROD_S3_SECRET_KEY \
   TRAINING_S3_ENDPOINT TRAINING_S3_REGION TRAINING_S3_BUCKET TRAINING_S3_ACCESS_KEY TRAINING_S3_SECRET_KEY \
   AWT_TLS_CERT_FILE AWT_TLS_KEY_FILE; do
   check "lists $v" has "$v"
 done
+check "no SSH input listed as missing" no_ssh_input
 check "nothing installed (no apt run)" eval '! exists /usr/sbin/nft && ! exists /opt/awt'
 
-echo "== case: invalid SSH key and port, refused before sshd is touched"
-run_init "${FULL[@]}" -e 'AWT_ADMIN_SSH_KEY=ssh-ed25519 not-a-key!! alice@test' -e AWT_SSH_PORT=80 \
-  -e PROD_S3_ENDPOINT=http://s3.gra.io.cloud.ovh.net
+echo "== case: invalid inputs, all refused at once before anything changes"
+run_init "${FULL[@]}" -e PROD_S3_ENDPOINT=http://s3.gra.io.cloud.ovh.net -e TRAINING_MFA_KEY=not-base64-32
 check "exit non-zero" [ "$rc" != 0 ]
-check "names AWT_ADMIN_SSH_KEY" has "AWT_ADMIN_SSH_KEY"
-check "names AWT_SSH_PORT (all errors at once)" has "AWT_SSH_PORT"
 check "http:// S3 endpoint refused (https only)" has "PROD_S3_ENDPOINT: must be an https:// URL"
-check "no sshd config written" eval '! exists /etc/ssh/sshd_config.d/10-awt-hardening.conf'
-check "no systemctl call" [ -z "$(calls)" ]
-run_init "${FULL[@]}" -e "AWT_ADMIN_SSH_KEY=ssh-rsa ${ADMIN_KEY#ssh-ed25519 }"
-check "key type not matching its blob: refused" eval '[ "$rc" != 0 ] && has AWT_ADMIN_SSH_KEY'
+check "invalid MFA key named too (all errors at once)" has "TRAINING_MFA_KEY: must be base64 of 32 bytes"
+check "nothing installed, no systemctl call" eval '! exists /usr/sbin/nft && ! exists /opt/awt && [ -z "$(calls)" ]'
 
 echo "== case: interactive, only one TLS file given"
 run_init_tty $'\n\n\n\n\n\n' "${FULL[@]}" -e AWT_TLS_KEY_FILE=
 check "exit non-zero" [ "$rc" != 0 ]
 check "says the key file is required with the certificate" has "AWT_TLS_KEY_FILE: required with AWT_TLS_CERT_FILE"
 check "does not claim stdin is not a terminal" hasnt "stdin is not a terminal"
-check "nothing changed" eval '! exists /etc/ssh/sshd_config.d/10-awt-hardening.conf && ! exists /opt/awt'
+check "no SSH input prompted (AWT_ADMIN_*, AWT_SSH_PORT)" no_ssh_input
+check "nothing changed" eval '! exists /usr/sbin/nft && ! exists /opt/awt'
 
 echo "== case: not Debian 13"
 in_ctr sh -c 'printf "ID=ubuntu\nVERSION_ID=\"24.04\"\n" > /etc/os-release.test && mv /etc/os-release /etc/os-release.orig && cp /etc/os-release.test /etc/os-release'
@@ -382,28 +395,20 @@ start_ctr happy
 run_init "${FULL[@]}"
 check "exit 0" [ "$rc" = 0 ]
 check "every step reported" steps_reported
-check "packages installed" in_ctr dpkg-query -W nftables openssh-server fail2ban unattended-upgrades docker-ce docker-compose-plugin
+check "no SSH input required (exit 0 without AWT_ADMIN_*, AWT_SSH_PORT)" eval '[ "$rc" = 0 ] && no_ssh_input'
+check "packages installed" in_ctr dpkg-query -W nftables unattended-upgrades docker-ce docker-compose-plugin
+check "no SSH setup: no openssh-server, sudo, fail2ban installed" not_installed openssh-server sudo fail2ban python3-systemd
+check "no SSH setup: no sshd drop-in, sudoers file or fail2ban jail" eval '! exists /etc/ssh/sshd_config.d/10-awt-hardening.conf && ! exists /etc/sudoers.d/90-awt-admin && ! exists /etc/fail2ban/jail.d/awt-sshd.local'
 check "docker apt source" file_has /etc/apt/sources.list.d/docker.sources 'Signed-By: /etc/apt/keyrings/docker.asc'
 check "unattended upgrades on" file_has /etc/apt/apt.conf.d/20auto-upgrades 'Unattended-Upgrade "1"'
-check "admin user in sudo" eval 'in_ctr id -nG alice | grep -qw sudo'
-check "admin key installed" eval '[ "$(stat_of /home/alice/.ssh/authorized_keys)" = "alice:alice 600" ] && in_ctr grep -qF "$ADMIN_KEY" /home/alice/.ssh/authorized_keys'
-check "sudoers valid" eval '[ "$(stat_of /etc/sudoers.d/90-awt-admin)" = "root:root 440" ] && in_ctr visudo -cq'
-check "sshd effective config (real sshd -T)" sshd_effective
-check "pubkey login pinned in the drop-in" file_has /etc/ssh/sshd_config.d/10-awt-hardening.conf '^PubkeyAuthentication yes$'
-check "admin password field is * (not locked, no password)" [ "$(in_ctr getent shadow alice | cut -d: -f2)" = "*" ]
-check "sshd checked to listen on the new port" eval 'calls | grep -q "^ss -Hltn sport = :2222"'
-check "sshd reloaded" eval 'calls | grep -Eq "^systemctl (reload|reload-or-restart) ssh"'
-check "warns to test a new session on port 2222" eval 'has "2222" && has "new SSH session"'
-check "fail2ban sshd jail on 2222" file_has /etc/fail2ban/jail.d/awt-sshd.local '^port *= *2222'
-check "nftables: ssh port open" file_has /etc/nftables.d/awt.nft 'tcp dport 2222 accept'
+check "no sshd, not run over SSH: SSH rule on 22 only" ssh_ports_are 22
 check "nftables: cloudflare sets" file_has /etc/nftables.d/awt.nft '173\.245\.48\.0/20'
 check "nftables: docker-published ports filtered (forward hook)" file_has /etc/nftables.d/awt.nft 'ct status dnat'
 check "nftables.conf includes, no flush ruleset" eval 'file_has /etc/nftables.conf "include \"/etc/nftables.d/\*.nft\"" && ! file_has /etc/nftables.conf "^[[:space:]]*flush ruleset"'
 check "nftables loaded and enabled" eval 'calls | grep -q "^nft -f /etc/nftables.conf" && calls | grep -q "enable.*nftables"'
 check "first load in two phases: policy accept, then the drop ruleset" eval 'in_ctr grep -q "policy accept;" /var/lib/awt-test/nft-load.1 && ! in_ctr grep -q "policy drop;" /var/lib/awt-test/nft-load.1 && in_ctr grep -q "include" /var/lib/awt-test/nft-load.2 && [ "$(calls | grep "^nft -f" | tail -1)" = "nft -f /etc/nftables.conf" ]'
-check "not run over SSH: no temporary session-port rule" eval '! file_has /etc/nftables.d/awt.nft "awt-init: SSH port"'
 check "generated ruleset parsed by the real nft" nft_parses /etc/nftables.d/awt.nft
-in_ctr sh -c 'sed "s/tcp dport 2222 accept/tcp dprt 2222 accept/" /etc/nftables.d/awt.nft > /tmp/broken.nft'
+in_ctr sh -c 'sed "s/tcp dport 22 accept/tcp dprt 22 accept/" /etc/nftables.d/awt.nft > /tmp/broken.nft'
 check "the nft check catches a broken ruleset" eval '! nft_parses /tmp/broken.nft'
 check "deploy user: docker group, no login, no key" eval 'in_ctr id -nG deploy | grep -qw docker && [ "$(in_ctr getent passwd deploy | cut -d: -f7)" = /usr/sbin/nologin ] && ! exists /home/deploy/.ssh/authorized_keys'
 check "layout owners/modes" eval '[ "$(stat_of /opt/awt)" = "deploy:deploy 750" ] && [ "$(stat_of /opt/awt/state)" = "deploy:deploy 750" ] && [ "$(stat_of /opt/awt/caddy)" = "deploy:deploy 755" ] && [ "$(stat_of /opt/awt/certs)" = "deploy:deploy 700" ] && [ "$(stat_of /opt/awt/deploy)" = "root:root 755" ]'
@@ -450,59 +455,47 @@ check "files, owners and modes unchanged" eval '[ "$(printf "%s\n" "$before" | w
 check "agent not run again" [ "$(agent_runs)" = 1 ]
 check "no prompt / missing value" hasnt "missing"
 
-echo "== case: sshd does not listen on the new port: previous config restored, firewall untouched"
-in_ctr sh -c ': > /var/lib/awt-test/calls.log; touch /var/lib/awt-test/ss-none'
-run_init "${FULL[@]}" -e AWT_INIT_FORCE=1 -e AWT_SSH_PORT=2300
-check "exit non-zero" [ "$rc" != 0 ]
-check "says sshd does not listen, with console recovery" eval 'has "does not listen on port 2300" && has "console"'
-check "new port opened in the running firewall first (nft insert)" eval 'calls | grep -qx "nft insert rule inet awt input tcp dport 2300 accept"'
-check "previous sshd config restored" eval 'file_has /etc/ssh/sshd_config.d/10-awt-hardening.conf "^Port 2222$" && ! file_has /etc/ssh/sshd_config.d/10-awt-hardening.conf "2300"'
-check "sshd reloaded back" [ "$(calls | grep -c "^systemctl reload ssh.service")" = 2 ]
-check "stopped before the firewall step" eval 'hasnt "==> firewall" && ! file_has /etc/nftables.d/awt.nft "2300" && ! calls | grep -q "^nft -f"'
-in_ctr rm /var/lib/awt-test/ss-none
-
-echo "== case: port change over SSH, ssh.socket enabled, firewall already up"
-in_ctr sh -c ': > /var/lib/awt-test/calls.log; rm -f /var/lib/awt-test/nft-load.*; touch /var/lib/awt-test/systemctl/enabled.ssh.socket /var/lib/awt-test/systemctl/active.ssh.socket'
-run_init "${FULL[@]}" -e AWT_INIT_FORCE=1 -e AWT_SSH_PORT=2300 -e "SSH_CONNECTION=203.0.113.5 50022 198.51.100.7 2222"
+echo "== case: sshd -T reports port 22, not run over SSH"
+in_ctr sh -c 'install -m 755 /work/sshd-stub /usr/local/sbin/sshd; echo "port 22" > /var/lib/awt-test/sshd-T; : > /var/lib/awt-test/calls.log'
+run_init
 check "exit 0" [ "$rc" = 0 ]
-check "new port inserted in the running firewall before sshd moves" eval 'calls | grep -qx "nft insert rule inet awt input tcp dport 2300 accept"'
-check "ssh.socket replaced by ssh.service, restarted (not reloaded)" eval 'calls | grep -q "^systemctl disable --now ssh.socket" && calls | grep -q "^systemctl restart ssh.service" && ! calls | grep -q "^systemctl reload ssh"'
-check "sshd on 2300 (real sshd -T)" eval 'grep -qx "port 2300" <<<"$(in_ctr sshd -T 2>/dev/null)"'
-check "ruleset: new port open" file_has /etc/nftables.d/awt.nft 'tcp dport 2300 accept$'
-check "ruleset: this session's port kept, commented" file_has /etc/nftables.d/awt.nft 'tcp dport 2222 accept comment "awt-init: SSH port'
+check "sshd -T read" eval 'calls | grep -qx "sshd -T"'
+check "SSH rule on 22 only" ssh_ports_are 22
+check "firewall already done (same rule as the fallback)" has "==> firewall: already done"
+
+echo "== case: sshd moved to 2200, run over SSH on port 22, firewall already up, AWT_INIT_FORCE=1"
+in_ctr sh -c 'echo "port 2200" > /var/lib/awt-test/sshd-T; : > /var/lib/awt-test/calls.log; rm -f /var/lib/awt-test/nft-load.*'
+run_init "${FULL[@]}" -e AWT_INIT_FORCE=1 -e "SSH_CONNECTION=203.0.113.5 50022 198.51.100.7 22"
+check "exit 0" [ "$rc" = 0 ]
+check "SSH rules: 2200 (sshd -T) and 22 (this session)" ssh_ports_are "22 2200"
+check "says this session's port is kept" has "port 22 (this SSH session)"
 check "table already up: loaded once, no policy-accept phase" eval '[ "$(calls | grep -c "^nft -f")" = 1 ] && ! in_ctr grep -q "policy accept;" /var/lib/awt-test/nft-load.1'
-check "fail2ban follows the new port" file_has /etc/fail2ban/jail.d/awt-sshd.local '^port *= *2300'
-check "ruleset with the session rule parsed by the real nft" nft_parses /etc/nftables.d/awt.nft
+check "ruleset with two SSH ports parsed by the real nft" nft_parses /etc/nftables.d/awt.nft
+check "sshd never reloaded or restarted" eval '! calls | grep -Eq "^systemctl .*ssh"'
 check "installed certificate kept" in_ctr cmp -s /work/origin.pem /opt/awt/certs/origin.pem
 
-echo "== case: re-run from a session on the new port, AWT_INIT_FORCE=1, no input: temporary rule dropped"
-run_init -e AWT_INIT_FORCE=1 -e "SSH_CONNECTION=203.0.113.5 50023 198.51.100.7 2300"
+echo "== case: re-run from a session on 2200, AWT_INIT_FORCE=1, no input: port 22 closed"
+run_init -e AWT_INIT_FORCE=1 -e "SSH_CONNECTION=203.0.113.5 50023 198.51.100.7 2200"
 check "exit 0" [ "$rc" = 0 ]
 check "no certificate asked for (installed one kept)" eval 'hasnt AWT_TLS_CERT_FILE && hasnt Missing'
-check "temporary session-port rule removed" eval '! file_has /etc/nftables.d/awt.nft "awt-init: SSH port" && ! file_has /etc/nftables.d/awt.nft "dport 2222"'
-check "firewall changed, sshd untouched" eval 'has "==> firewall: changed" && has "==> users_ssh: already done"'
+check "SSH rule on 2200 only" ssh_ports_are 2200
+check "firewall changed" has "==> firewall: changed"
 
-echo "== case: broken sshd config (sshd -t fails): no reload, config left in place"
-start_ctr resume
-in_ctr sh -c 'apt-get update -qq >/dev/null && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq openssh-server >/dev/null 2>&1; echo "BogusOption yes" > /etc/ssh/sshd_config.d/99-broken.conf'
-run_init "${FULL[@]}"
-check "exit non-zero" [ "$rc" != 0 ]
-check "says it refuses to reload sshd" has "refusing to reload sshd"
-check "says re-run to resume" has "re-run"
-check "hardening file not left in place" eval '! exists /etc/ssh/sshd_config.d/10-awt-hardening.conf'
-check "sshd not reloaded" eval '! calls | grep -Eq "^systemctl (reload|reload-or-restart|restart) ssh"'
-in_ctr rm /etc/ssh/sshd_config.d/99-broken.conf
+echo "== case: sshd -T reports several ports"
+in_ctr sh -c 'printf "port 2200\nport 22\n" > /var/lib/awt-test/sshd-T'
+run_init
+check "exit 0" [ "$rc" = 0 ]
+check "SSH rules on 22 and 2200" ssh_ports_are "22 2200"
 
-echo "== case: another file disables key login: refused, no reload"
-in_ctr sh -c 'echo "PubkeyAuthentication no" > /etc/ssh/sshd_config.d/05-nokeys.conf'
-run_init "${FULL[@]}"
-check "exit non-zero" [ "$rc" != 0 ]
-check "names the overridden setting" has "pubkeyauthentication yes"
-check "hardening file not left in place" eval '! exists /etc/ssh/sshd_config.d/10-awt-hardening.conf'
-check "sshd not reloaded" eval '! calls | grep -Eq "^systemctl (reload|reload-or-restart|restart) ssh"'
-in_ctr rm /etc/ssh/sshd_config.d/05-nokeys.conf
+echo "== case: sshd -T fails: 22, plus this session's port"
+in_ctr sh -c 'touch /var/lib/awt-test/sshd-fail; : > /var/lib/awt-test/calls.log'
+run_init -e "SSH_CONNECTION=203.0.113.5 50024 198.51.100.7 2200"
+check "exit 0" [ "$rc" = 0 ]
+check "sshd -T tried" eval 'calls | grep -qx "sshd -T"'
+check "SSH rules: 22 (fallback) and 2200 (this session)" ssh_ports_are "22 2200"
 
 echo "== case: certificate and key do not match"
+start_ctr resume
 run_init "${FULL[@]}" -e AWT_TLS_KEY_FILE=/work/other.key
 check "exit non-zero" [ "$rc" != 0 ]
 check "says they do not match" has "do not match"

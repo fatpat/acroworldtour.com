@@ -15,8 +15,12 @@
 #
 # Idempotent: each step checks before acting and reports
 # "==> <step>: changed|already done". Values already stored on the host (env
-# files, sshd configuration, certificates) are reused and never overwritten
-# unless AWT_INIT_FORCE=1. A failed run can simply be run again: it resumes.
+# files, certificates) are reused and never overwritten unless
+# AWT_INIT_FORCE=1. A failed run can simply be run again: it resumes.
+#
+# SSH access is not this script's business: deploys are pulled by the host
+# (deploy/agent.sh), so SSH stays as the provider set it up. The firewall
+# only keeps sshd's port(s) open (step_firewall, docs/ops.md section 1.8).
 #
 # Repository files (agent, deploy scripts, systemd units, env examples) are
 # downloaded from $AWT_REPO_RAW (pin it to a commit SHA, docs/ops.md section
@@ -32,8 +36,7 @@ shopt -s inherit_errexit
 umask 077
 
 # Input names (docs/ops.md section 0 documents the same names).
-GLOBAL_INPUTS=(AWT_ADMIN_USER AWT_ADMIN_SSH_KEY AWT_SSH_PORT AWT_PROD_HOST AWT_TRAINING_HOST
-  AWT_IMAGE AWT_CHANNEL AWT_REPO_RAW AWT_TLS_CERT_FILE AWT_TLS_KEY_FILE)
+GLOBAL_INPUTS=(AWT_PROD_HOST AWT_TRAINING_HOST AWT_IMAGE AWT_CHANNEL AWT_REPO_RAW AWT_TLS_CERT_FILE AWT_TLS_KEY_FILE)
 ENV_INPUTS=(S3_ENDPOINT S3_REGION S3_BUCKET S3_ACCESS_KEY S3_SECRET_KEY MFA_KEY CLOUDFLARE_ZONE_ID CLOUDFLARE_TOKEN)
 CONTROL_INPUTS=(AWT_INIT_FORCE AWT_INIT_ALLOW_OS)
 ENVS=(prod training)
@@ -46,18 +49,12 @@ if [ "${1:-}" = --list-inputs ]; then
 fi
 
 ROOT=/opt/awt
-SSHD_CONF=/etc/ssh/sshd_config.d/10-awt-hardening.conf
 NFT_FILE=/etc/nftables.d/awt.nft
-F2B_JAIL=/etc/fail2ban/jail.d/awt-sshd.local
-SUDOERS=/etc/sudoers.d/90-awt-admin
 DOCKER_KEY=/etc/apt/keyrings/docker.asc
 # Docker's release signing key (https://docs.docker.com/engine/install/debian/).
 DOCKER_KEY_FPR=9DC858229FC7DD38854AE2D88D81803C0EBFCD88
 # The deploy agent's lock (deploy/agent.sh): held while writing env files.
 AGENT_LOCK=/run/lock/awt-agent.lock
-# Comment of the temporary rule keeping the SSH port of the running session
-# open (step_firewall, docs/ops.md section 1.8).
-LIVE_SSH_COMMENT="awt-init: SSH port of the session that ran init-vps.sh"
 FORCE=${AWT_INIT_FORCE:-0}
 # Fallback when https://www.cloudflare.com/ips-v4 and ips-v6 cannot be fetched
 # (same list as the Caddyfile).
@@ -65,9 +62,6 @@ CF4_FALLBACK="173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 141.
 CF6_FALLBACK="2400:cb00::/32 2606:4700::/32 2803:f800::/32 2405:b500::/32 2405:8100::/32 2a06:98c0::/29 2c0f:f248::/32"
 
 declare -A DESC=(
-  [AWT_ADMIN_USER]="admin login (SSH, sudo)"
-  [AWT_ADMIN_SSH_KEY]="admin SSH public key (one authorized_keys line)"
-  [AWT_SSH_PORT]="SSH port (1024-65535)"
   [AWT_PROD_HOST]="prod site host name"
   [AWT_TRAINING_HOST]="training site host name"
   [AWT_IMAGE]="image name"
@@ -184,13 +178,6 @@ with_umask022() { (umask 022 && "$@"); }
 check_value() {
   local kind=$1 v=$2
   case "$kind" in
-    user)
-      [[ $v =~ ^[a-z_][a-z0-9_-]{0,31}$ ]] || { echo "must be a lowercase login name"; return 1; }
-      case "$v" in root|deploy) echo "must not be root or deploy"; return 1 ;; esac ;;
-    sshkey) valid_ssh_key "$v" || { echo "must be one SSH public key line (type, base64 key, optional comment)"; return 1; } ;;
-    port)
-      [[ $v =~ ^[0-9]{1,5}$ ]] && [ "$((10#$v))" -ge 1024 ] && [ "$((10#$v))" -le 65535 ] \
-        || { echo "must be a port number from 1024 to 65535"; return 1; } ;;
     host)
       [[ $v =~ ^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z][a-z0-9-]{0,61}[a-z0-9]$ ]] \
         || { echo "must be a lowercase host name (www.example.org)"; return 1; } ;;
@@ -213,23 +200,8 @@ check_value() {
   esac
 }
 
-# The base64 blob of an OpenSSH public key starts with its length-prefixed type.
-valid_ssh_key() {
-  local type blob rest decoded
-  [[ $1 != *$'\n'* ]] || return 1
-  read -r type blob rest <<<"$1"
-  case "$type" in
-    ssh-ed25519|ssh-rsa|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521|sk-ssh-ed25519@openssh.com|sk-ecdsa-sha2-nistp256@openssh.com) ;;
-    *) return 1 ;;
-  esac
-  [[ $blob =~ ^[A-Za-z0-9+/]+={0,2}$ ]] || return 1
-  decoded=$({ printf '%s' "$blob" | base64 -d 2>/dev/null || true; } | head -c $((4 + ${#type})) | tail -c "${#type}")
-  [ "$decoded" = "$type" ]
-}
-
 kind_of() {
   case "$1" in
-    AWT_ADMIN_USER) echo user ;; AWT_ADMIN_SSH_KEY) echo sshkey ;; AWT_SSH_PORT) echo port ;;
     *_HOST) echo host ;; AWT_IMAGE) echo image ;; AWT_CHANNEL) echo tag ;; AWT_REPO_RAW) echo rawurl ;;
     AWT_TLS_*_FILE) echo pemfile ;; *_S3_ENDPOINT) echo url ;; *_S3_REGION) echo region ;;
     *_S3_BUCKET) echo bucket ;; *_MFA_KEY) echo mfa ;; *_CLOUDFLARE_ZONE_ID) echo zone ;; *) echo token ;;
@@ -285,9 +257,6 @@ resolve() {
     fi
     return 0
   elif [[ $mode == default:* ]]; then
-    if [ "$INTERACTIVE" = 1 ] && [ "$name" = AWT_SSH_PORT ]; then
-      ask "$name" "$secret" 0 "${mode#default:}"; new_inputs=1; return 0
-    fi
     printf -v "V_$name" '%s' "${mode#default:}"
   elif [ "$INTERACTIVE" = 1 ]; then
     ask "$name" "$secret" 0; new_inputs=1
@@ -339,24 +308,7 @@ step_preflight() {
 }
 
 step_inputs() {
-  local e E f home stored_user stored_port
-  stored_user=""; stored_port=""
-  if [ -r "$SSHD_CONF" ]; then
-    stored_user=$(sed -n 's/^AllowUsers //p' "$SSHD_CONF" | head -1)
-    stored_port=$(sed -n 's/^Port //p' "$SSHD_CONF" | head -1)
-  fi
-  resolve AWT_ADMIN_USER "$stored_user" required 0
-  # The key is needed only while the admin account has none.
-  home=""
-  if [ -n "$V_AWT_ADMIN_USER" ] && id -u "$V_AWT_ADMIN_USER" >/dev/null 2>&1; then
-    home=$(getent passwd "$V_AWT_ADMIN_USER" | cut -d: -f6)
-  fi
-  if [ -n "$home" ] && grep -Eq '^(ssh-|ecdsa-|sk-)' "$home/.ssh/authorized_keys" 2>/dev/null; then
-    if [ -n "${AWT_ADMIN_SSH_KEY:-}" ]; then resolve AWT_ADMIN_SSH_KEY "" required 0; else V_AWT_ADMIN_SSH_KEY=""; fi
-  else
-    resolve AWT_ADMIN_SSH_KEY "" required 0
-  fi
-  resolve AWT_SSH_PORT "$stored_port" default:2222 0
+  local e E f
   resolve AWT_PROD_HOST "$(file_value "$ROOT/.env" AWT_PROD_HOST)" required 0
   resolve AWT_TRAINING_HOST "$(file_value "$ROOT/.env" AWT_TRAINING_HOST)" required 0
   resolve AWT_IMAGE "$(file_value "$ROOT/.env" AWT_IMAGE)" default:ghcr.io/fatpat/awt 0
@@ -455,7 +407,7 @@ step_inputs() {
 
 step_packages() {
   local p need=()
-  for p in ca-certificates curl gnupg openssl sudo iproute2 nftables openssh-server fail2ban python3-systemd unattended-upgrades; do
+  for p in ca-certificates curl gnupg openssl nftables unattended-upgrades; do
     [[ $(dpkg-query -W -f='${db:Status-Abbrev}' "$p" 2>/dev/null || true) == ii* ]] || need+=("$p")
   done
   if [ "${#need[@]}" -gt 0 ]; then
@@ -469,130 +421,6 @@ step_packages() {
 APT::Periodic::Update-Package-Lists "1";
 APT::Periodic::Unattended-Upgrade "1";
 EOF
-}
-
-# sshd_listens <port>: whether a TCP socket listens on the port (5 s at most).
-sshd_listens() {
-  local i
-  for i in 1 2 3 4 5 6 7 8 9 10; do
-    [ -z "$(ss -Hltn "sport = :$1" 2>/dev/null || true)" ] || return 0
-    [ "$i" = 10 ] || sleep 0.5
-  done
-  return 1
-}
-
-step_users_ssh() {
-  local user=$V_AWT_ADMIN_USER port=$V_AWT_SSH_PORT home grp ak keys tmp
-  if ! id -u "$user" >/dev/null 2>&1; then
-    useradd -m -s /bin/bash -G sudo "$user"
-    changed "created admin user $user"
-  elif ! [[ " $(id -nG "$user") " == *" sudo "* ]]; then
-    usermod -aG sudo "$user"
-    changed "added $user to sudo"
-  fi
-  home=$(getent passwd "$user" | cut -d: -f6)
-  grp=$(id -gn "$user")
-  ensure_dir "$home/.ssh" "$user:$grp" 700
-  ak=$home/.ssh/authorized_keys
-  keys=$(cat "$ak" 2>/dev/null || true)
-  if [ -n "$V_AWT_ADMIN_SSH_KEY" ]; then
-    local type blob rest
-    read -r type blob rest <<<"$V_AWT_ADMIN_SSH_KEY"
-    if ! printf '%s\n' "$keys" | awk -v t="$type" -v b="$blob" '$1 == t && $2 == b { f = 1 } END { exit !f }'; then
-      keys=$(printf '%s\n%s' "$keys" "$V_AWT_ADMIN_SSH_KEY" | sed '/^$/d')
-    fi
-  fi
-  put_file "$ak" "$user:$grp" 600 <<<"$keys"
-  # Never restrict sshd unless the admin can log in with a key.
-  ssh-keygen -l -f "$ak" >/dev/null 2>&1 \
-    || die "no valid SSH public key in $ak: refusing to reload sshd (you would be locked out); the SSH configuration is unchanged"
-
-  # Key-only login, so the admin needs sudo without a password.
-  tmp=$(mktemp)
-  printf '%s ALL=(ALL) NOPASSWD:ALL\n' "$user" > "$tmp"
-  visudo -cqf "$tmp" || { rm -f "$tmp"; die "sudoers line for $user rejected by visudo"; }
-  put_file "$SUDOERS" root:root 440 < "$tmp"
-  rm -f "$tmp"
-
-  # useradd leaves the password field "!" (locked). Without PAM, sshd refuses
-  # every login to a locked account, keys included; "*" (no password, not
-  # locked) allows key logins only.
-  local pw
-  pw=$(getent shadow "$user" | cut -d: -f2)
-  case "$pw" in
-    '!'|'!!'|'!*') usermod -p '*' "$user"; changed "$user: password field set to * (no password; key login allowed)" ;;
-  esac
-
-  # sshd: first value wins, so this file (10-) overrides later ones such as
-  # 50-cloud-init.conf. Tested with `sshd -t` and `sshd -T` before any reload.
-  local old="" had=0 content eff ok=1 want verb=reload
-  content=$(printf '# Managed by deploy/init-vps.sh (docs/ops.md section 1).\nPort %s\nPubkeyAuthentication yes\nPasswordAuthentication no\nKbdInteractiveAuthentication no\nPermitRootLogin no\nAllowUsers %s\n' "$port" "$user")
-  if [ "$(cat "$SSHD_CONF" 2>/dev/null || true)" != "$content" ]; then
-    if [ -f "$SSHD_CONF" ]; then had=1; old=$(cat "$SSHD_CONF"); fi
-    put_file "$SSHD_CONF" root:root 644 <<<"$content"
-    restore_sshd() {
-      if [ "$had" = 1 ]; then printf '%s\n' "$old" > "$SSHD_CONF"; else rm -f "$SSHD_CONF"; fi
-    }
-    if ! eff=$(sshd -t 2>&1); then
-      restore_sshd
-      die "sshd -t rejects the SSH configuration: $eff
-       refusing to reload sshd; the previous SSH configuration is left in place"
-    fi
-    eff=$(sshd -T 2>/dev/null || true)
-    for want in "port $port" "pubkeyauthentication yes" "authenticationmethods any" \
-      "passwordauthentication no" "permitrootlogin no" "allowusers $user"; do
-      grep -qx -- "$want" <<<"$eff" || { ok=0; warn "sshd would not apply '$want' (another file in /etc/ssh overrides it)"; }
-    done
-    grep -Eq '^authorizedkeysfile( .*)? (%h/)?\.ssh/authorized_keys( |$)' <<<"$eff" \
-      || { ok=0; warn "sshd would not read ~/.ssh/authorized_keys (AuthorizedKeysFile is overridden)"; }
-    pw=$(getent shadow "$user" | cut -d: -f2)
-    if [[ $pw == '!'* ]] && ! grep -qx 'usepam yes' <<<"$eff"; then
-      ok=0; warn "$user's password is locked and sshd does not use PAM: key logins would be refused"
-    fi
-    if [ "$ok" = 0 ]; then
-      restore_sshd
-      die "refusing to reload sshd; the previous SSH configuration is left in place"
-    fi
-    # Open the new port before sshd moves to it (the firewall may already be up).
-    if nft list table inet awt >/dev/null 2>&1; then
-      nft insert rule inet awt input tcp dport "$port" accept
-    fi
-    # Socket activation ignores Port in sshd_config: run the plain service,
-    # restarted (not reloaded) so that it binds the new port.
-    if systemctl is-enabled ssh.socket >/dev/null 2>&1 || systemctl is-active ssh.socket >/dev/null 2>&1; then
-      systemctl disable --now ssh.socket
-      systemctl enable --now ssh.service
-      verb=restart
-      changed "ssh.socket replaced by ssh.service"
-    fi
-    systemctl "$verb" ssh.service
-    # Never let the firewall close the old port unless sshd took the new one.
-    if ! sshd_listens "$port"; then
-      restore_sshd
-      systemctl "$verb" ssh.service || true
-      die "sshd does not listen on port $port after 'systemctl $verb ssh': the previous SSH configuration was restored and sshd ${verb}ed; the firewall was not changed.
-       Keep this session open. Check: journalctl -u ssh -n 50; ss -ltnp
-       If SSH is unreachable, log in through the provider's console (OVHcloud KVM, or rescue mode),
-       fix or remove $SSHD_CONF, then: systemctl restart ssh"
-    fi
-    changed "sshd ${verb}ed: port $port, key-only, AllowUsers $user"
-    warn "SSH now listens on port $port for $user only. Keep this session open and test a new SSH session (ssh -p $port $user@<this host>) before closing this one."
-  fi
-
-  # fail2ban: Debian 13 logs to the journal only.
-  put_file "$F2B_JAIL" root:root 644 <<EOF
-# Managed by deploy/init-vps.sh (docs/ops.md section 1).
-[sshd]
-enabled = true
-port = $port
-backend = systemd
-banaction = nftables[type=multiport]
-banaction_allports = nftables[type=allports]
-EOF
-  if [ "$step_changed" = 1 ] || ! systemctl is-enabled fail2ban >/dev/null 2>&1; then
-    systemctl enable fail2ban >/dev/null 2>&1
-    systemctl restart fail2ban
-  fi
 }
 
 # valid_cidrs <4|6> <list>: every network of the space-separated list is an
@@ -658,18 +486,38 @@ live_ssh_port() {
   fi
 }
 
+# sshd_ports: the ports sshd is configured on (the "port" lines of `sshd -T`),
+# one per line; 22 when sshd is missing or `sshd -T` fails.
+sshd_ports() {
+  local eff ports=""
+  if command -v sshd >/dev/null 2>&1 && eff=$(sshd -T 2>/dev/null); then
+    ports=$(awk '$1 == "port" && $2 ~ /^[0-9]+$/ && $2 + 0 >= 1 && $2 + 0 <= 65535 { print $2 + 0 }' <<<"$eff" | sort -nu)
+  fi
+  echo "${ports:-22}"
+}
+
 step_firewall() {
-  local port=$V_AWT_SSH_PORT cf4 cf6 tmp live live_rule=""
+  local cf4 cf6 tmp live ports p ssh_rules=""
   cf4=$(cf_ranges 4 | sed 's/ /, /g')
   cf6=$(cf_ranges 6 | sed 's/ /, /g')
-  # Run over SSH on another port than the new one (the first run, on port
-  # 22): keep that port open so this session survives, until a run from a
-  # session on the new port drops the rule (docs/ops.md section 1.8).
+  # SSH access is the operator's (provider's) setup, never this script's, and
+  # the firewall must never lock the operator out (docs/ops.md section 1.8).
+  # So the SSH rule depends on no input: it follows sshd's configuration as it
+  # is now (22 when it cannot be read), plus the server port of the session
+  # running this script when that differs (sshd -T does not show a port
+  # added by hand to ssh.socket, for example). Every run recomputes the list:
+  # a port sshd no longer uses is closed by the next run, unless that run's
+  # own session still comes in through it.
+  ports=$(sshd_ports)
   live=$(live_ssh_port)
-  if [ -n "$live" ] && [ "$live" != "$port" ]; then
-    live_rule=$'\n\t\t'"tcp dport $live accept comment \"$LIVE_SSH_COMMENT\""
-    note "keeping port $live (this SSH session) open until a run from a session on port $port"
+  if [ -n "$live" ] && ! grep -qx "$live" <<<"$ports"; then
+    note "port $live (this SSH session) is not among sshd's configured ports ($(paste -sd ' ' - <<<"$ports")): kept open too"
+    ports+=$'\n'"$live"
   fi
+  ports=$(sort -nu <<<"$ports")
+  for p in $ports; do
+    ssh_rules+=${ssh_rules:+$'\n\t\t'}"tcp dport $p accept"
+  done
   tmp=$(mktemp)
   # Docker publishes Caddy's ports with DNAT in prerouting: that traffic goes
   # through the forward hook, never the input chain. A drop in any base chain
@@ -700,7 +548,7 @@ table inet awt {
 		meta l4proto { icmp, ipv6-icmp } accept
 		udp sport 67 udp dport 68 accept
 		udp sport 547 udp dport 546 accept
-		tcp dport $port accept$live_rule
+		$ssh_rules
 		ip saddr @cloudflare4 tcp dport { 80, 443 } accept
 		ip6 saddr @cloudflare6 tcp dport { 80, 443 } accept
 		ip saddr @cloudflare4 udp dport 443 accept
@@ -746,11 +594,15 @@ EOF
   if [ "$step_changed" = 1 ] || ! nft list table inet awt >/dev/null 2>&1; then
     nft -c -f /etc/nftables.conf
     if ! nft list table inet awt >/dev/null 2>&1; then
-      # First load: on a fresh host no rule uses conntrack yet, so this SSH
-      # session has no conntrack entry, and under the drop policy its next
-      # packet would be "ct state new" and dropped. Load the same rules with
-      # policy accept first: conntrack picks up the open connections and sees
-      # both directions, then the real ruleset finds them established.
+      # First load: on a fresh host no rule uses conntrack yet, so the open
+      # connections have no conntrack entry, and under the drop policy their
+      # next packet would be "ct state new" and dropped unless a port rule
+      # matches it. The SSH rules above cover this session when its port is
+      # known, but not a session whose port could not be found (no
+      # SSH_CONNECTION in the process tree, for example inside a tmux started
+      # elsewhere) nor replies to outbound connections. Load the same rules
+      # with policy accept first: conntrack picks up the open connections and
+      # sees both directions, then the real ruleset finds them established.
       tmp=$(mktemp)
       sed 's/policy drop;/policy accept;/' "$NFT_FILE" > "$tmp"
       nft -f "$tmp"
@@ -759,7 +611,7 @@ EOF
       sleep 2
     fi
     nft -f /etc/nftables.conf
-    changed "firewall loaded: SSH $port from anywhere, 80/443 from Cloudflare only"
+    changed "firewall loaded: SSH (tcp $(paste -sd ' ' - <<<"$ports")) from anywhere, 80/443 from Cloudflare only"
   fi
   if ! systemctl is-enabled nftables >/dev/null 2>&1; then
     systemctl enable nftables
@@ -1073,7 +925,6 @@ step_summary() {
   local e E s empty=()
   log ""
   log "AcroWorldTour host ready (docs/ops.md)."
-  log "  admin SSH:  ssh -p $V_AWT_SSH_PORT $V_AWT_ADMIN_USER@<this host>   (password login and root login disabled)"
   log "  sites:      https://$V_AWT_PROD_HOST  https://$V_AWT_TRAINING_HOST"
   log "  image:      $V_AWT_IMAGE:$V_AWT_CHANNEL, training=$(file_value "$ROOT/.env" AWT_TRAINING_TAG) prod=$(file_value "$ROOT/.env" AWT_PROD_TAG)"
   for e in "${ENVS[@]}"; do
@@ -1087,7 +938,7 @@ step_summary() {
   if [ "${#empty[@]}" -gt 0 ]; then
     log ""
     log "Empty database for: ${empty[*]}. Import the legacy data, then create the first admin (docs/ops.md sections 3 and 4):"
-    log "  scp -P $V_AWT_SSH_PORT mongo.backup.YYYYMMDD-HHMM.tar.gz $V_AWT_ADMIN_USER@<this host>:/tmp/"
+    log "  scp mongo.backup.YYYYMMDD-HHMM.tar.gz <you>@<this host>:/tmp/   (your usual SSH access)"
     log "  cd $ROOT"
     for e in "${empty[@]}"; do
       log "  docker compose cp /tmp/mongo.backup.YYYYMMDD-HHMM.tar.gz awt-$e:/tmp/export.tar.gz"
@@ -1098,7 +949,6 @@ step_summary() {
   fi
   log ""
   log "Left to do by hand (docs/ops.md section 0):"
-  log "  - test a new SSH session on port $V_AWT_SSH_PORT before closing this one"
   log "  - Cloudflare: proxied DNS for both hosts, SSL mode Full (strict), cache bypass for /live/*"
   log "  - back up $ROOT/.env.prod and $ROOT/.env.training (MFA keys, S3 secrets) with your other secrets"
   log "  - weekly restore test cron (section 6) and an uptime check on https://$V_AWT_PROD_HOST/healthz (section 7)"
@@ -1109,7 +959,6 @@ main() {
   current_step=inputs; step_inputs
   if [ "$step_changed" = 1 ]; then log "==> inputs: done"; else log "==> inputs: already done"; fi
   run_step packages
-  run_step users_ssh
   run_step firewall
   run_step docker
   run_step layout
