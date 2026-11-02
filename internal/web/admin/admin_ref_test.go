@@ -494,7 +494,7 @@ func TestDashboard(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	e.wantStatus(e.get("/manager"), 200, "<strong>2</strong> pilots", "<strong>2</strong> judges", "No competition is open.")
+	e.wantStatus(e.get("/manager"), 200, "<strong>2</strong> pilots", "<strong>2</strong> judges", "No competition is open.", `<a class="btn btn--ghost" href="/">View site</a>`)
 	if err := errors.Join(e.svc.SetParticipants(ctx, comp.ID, []int{101, 102}, nil), e.svc.SetJudges(ctx, comp.ID, judges), e.svc.OpenCompetition(ctx, comp.ID)); err != nil {
 		t.Fatal(err)
 	}

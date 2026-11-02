@@ -210,7 +210,7 @@ table.table { width: 100%; border-collapse: collapse; }
   display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; gap: 12px;
 }
 .admin__top img { height: 36px; display: block; }
-.admin__user { display: flex; align-items: center; gap: 12px; font-size: 14px; }
+.admin__user { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px 12px; font-size: 14px; }
 .admin__user form { margin: 0; }
 .admin__user .btn { padding: 6px 12px; color: var(--c-nav-text); }
 .admin__sidebar { background: var(--c-surface); border-bottom: 1px solid var(--c-line); }
