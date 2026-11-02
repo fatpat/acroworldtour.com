@@ -66,21 +66,23 @@ func redirect(w http.ResponseWriter, r *http.Request, to, flash string) {
 }
 
 var flashMessages = map[string]string{
-	"created":   "Created.",
-	"saved":     "Saved.",
-	"deleted":   "Deleted.",
-	"imported":  "Imported.",
-	"ranks":     "CIVL rankings refreshed.",
-	"upload":    "File uploaded.",
-	"password":  "Password changed; the user's sessions were closed.",
-	"disabled":  "Account disabled.",
-	"enabled":   "Account enabled.",
-	"mfa_reset": "Second factor removed; the user's sessions were closed.",
-	"role":      "Role changed; the user's sessions were closed.",
-	"role_same": "Role unchanged.",
-	"opened":    "Opened.",
-	"closed":    "Closed.",
-	"reopened":  "Reopened.",
+	"created":      "Created.",
+	"saved":        "Saved.",
+	"deleted":      "Deleted.",
+	"imported":     "Imported.",
+	"ranks":        "CIVL rankings refreshed.",
+	"upload":       "File uploaded.",
+	"password":     "Password changed; the user's sessions were closed.",
+	"disabled":     "Account disabled.",
+	"enabled":      "Account enabled.",
+	"mfa_reset":    "Second factor removed; the user's sessions were closed.",
+	"role":         "Role changed; the user's sessions were closed.",
+	"role_same":    "Role unchanged.",
+	"profile":      "Email and name saved.",
+	"profile_same": "Nothing changed.",
+	"opened":       "Opened.",
+	"closed":       "Closed.",
+	"reopened":     "Reopened.",
 	// account page
 	"totp_added":   "Authenticator app added; your other sessions were closed.",
 	"totp_removed": "Authenticator app removed; your other sessions were closed.",
@@ -88,6 +90,8 @@ var flashMessages = map[string]string{
 	"key_removed":  "Security key removed; your other sessions were closed.",
 	"codes_saved":  "Keep your recovery codes somewhere safe.",
 	"own_password": "Password changed; your other sessions were closed.",
+	"own_profile":  "Name saved.",
+	"own_email":    "Email changed; your other sessions were closed.",
 }
 
 func flash(r *http.Request) string { return flashMessages[r.URL.Query().Get("ok")] }

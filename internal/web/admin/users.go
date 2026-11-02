@@ -32,6 +32,8 @@ type userView struct {
 	Flash    string
 	Errors   formErrors
 	Self     bool
+	// Profile holds the posted email and name after a refused change.
+	Profile *userForm
 }
 
 var roleOptions = []option{{auth.RoleScorer, "scorer (judges assigned competitions)"}, {auth.RoleAdmin, "admin"}}
@@ -46,6 +48,7 @@ func (h *handlers) registerUsers(r *web.Router) {
 	post(r, "/manager/users/{id}/password", h.userPassword)
 	post(r, "/manager/users/{id}/reset-mfa", h.userResetMFA)
 	post(r, "/manager/users/{id}/role", h.userRole)
+	post(r, "/manager/users/{id}/profile", h.userProfile)
 }
 
 func (h *handlers) usersPage(w http.ResponseWriter, r *http.Request, status int, f userForm, fe formErrors) {
@@ -110,11 +113,17 @@ func (h *handlers) loadUser(w http.ResponseWriter, r *http.Request) (auth.User, 
 }
 
 func (h *handlers) userPage(w http.ResponseWriter, r *http.Request, status int, u auth.User, fe formErrors) {
-	h.userPageAsk(w, r, status, u, fe, false)
+	h.userPageWith(w, r, status, userView{User: u, Errors: fe})
 }
 
 // userPageAsk is userPage, optionally asking to confirm the MFA reset.
 func (h *handlers) userPageAsk(w http.ResponseWriter, r *http.Request, status int, u auth.User, fe formErrors, confirm bool) {
+	h.userPageWith(w, r, status, userView{User: u, Errors: fe, Confirm: confirm})
+}
+
+// userPageWith renders the user page for v.User; it fills in the rest.
+func (h *handlers) userPageWith(w http.ResponseWriter, r *http.Request, status int, v userView) {
+	u := v.User
 	mfa, err := h.auth.MFAStatus(r.Context(), u.ID)
 	if err != nil {
 		h.fail(w, r, err, nil)
@@ -131,7 +140,8 @@ func (h *handlers) userPageAsk(w http.ResponseWriter, r *http.Request, status in
 		return
 	}
 	sess, _ := auth.SessionFromContext(r.Context())
-	render(w, r, status, userPage(userView{User: u, Comps: comps, Assigned: assigned, Status: mfa, Confirm: confirm, Flash: flash(r), Errors: fe, Self: sess.User.ID == u.ID}))
+	v.Comps, v.Assigned, v.Status, v.Flash, v.Self = comps, assigned, mfa, flash(r), sess.User.ID == u.ID
+	render(w, r, status, userPage(v))
 }
 
 func (h *handlers) userShow(w http.ResponseWriter, r *http.Request) {
@@ -249,6 +259,44 @@ func (h *handlers) userRole(w http.ResponseWriter, r *http.Request) {
 		key = "role_same"
 	}
 	redirect(w, r, "/manager/users/"+u.ID, key)
+}
+
+// userProfile changes another user's email and name. An admin edits their own
+// on the account page, which re-checks the password for a new email.
+func (h *handlers) userProfile(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.loadUser(w, r)
+	if !ok {
+		return
+	}
+	f := userForm{Email: r.PostFormValue("email"), Name: r.PostFormValue("name")}
+	redo := func(status int, fe formErrors) {
+		h.userPageWith(w, r, status, userView{User: u, Errors: fe, Profile: &f})
+	}
+	changed, err := h.auth.UpdateProfile(r.Context(), session(r).User.ID, u.ID, f.Email, f.Name)
+	switch {
+	case errors.Is(err, auth.ErrOwnProfile):
+		redo(http.StatusConflict, messageError("Use your account page to change your own email and name."))
+		return
+	case err != nil:
+		if !h.authFail(err, redo) {
+			h.fail(w, r, err, redo)
+		}
+		return
+	}
+	key := "profile"
+	if len(changed) == 0 {
+		key = "profile_same"
+	}
+	redirect(w, r, "/manager/users/"+u.ID, key)
+}
+
+// profile is what the email and name form shows: the posted values after a
+// refused change, the user's otherwise.
+func (v userView) profile() userForm {
+	if v.Profile != nil {
+		return *v.Profile
+	}
+	return userForm{Email: v.User.Email, Name: v.User.Name}
 }
 
 func roleLabel(u auth.User) string {

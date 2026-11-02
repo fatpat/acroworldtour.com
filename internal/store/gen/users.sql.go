@@ -262,6 +262,21 @@ func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPassword
 	return err
 }
 
+const updateUserProfile = `-- name: UpdateUserProfile :exec
+UPDATE users SET email = ?, name = ? WHERE id = ?
+`
+
+type UpdateUserProfileParams struct {
+	Email string `json:"email"`
+	Name  string `json:"name"`
+	ID    string `json:"id"`
+}
+
+func (q *Queries) UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) error {
+	_, err := q.db.ExecContext(ctx, updateUserProfile, arg.Email, arg.Name, arg.ID)
+	return err
+}
+
 const updateUserRole = `-- name: UpdateUserRole :exec
 UPDATE users SET role = ? WHERE id = ?
 `

@@ -88,15 +88,9 @@ func newUserID() (string, error) {
 
 // CreateUser adds an account. The email is stored lower-cased.
 func (a *Auth) CreateUser(ctx context.Context, email, name, role, password string) (User, error) {
-	email = normEmail(email)
-	if email == "" {
-		return User{}, &InputError{Field: "email", Msg: "email is required"}
-	}
-	if !emailShape.MatchString(email) {
-		return User{}, &InputError{Field: "email", Msg: "email must look like name@example.org"}
-	}
-	if strings.TrimSpace(name) == "" {
-		return User{}, &InputError{Field: "name", Msg: "name is required"}
+	email, name, err := checkProfile(email, name)
+	if err != nil {
+		return User{}, err
 	}
 	if err := checkPassword(password); err != nil {
 		return User{}, err

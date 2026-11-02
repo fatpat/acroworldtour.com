@@ -54,3 +54,6 @@ UPDATE users SET role = ? WHERE id = ?;
 
 -- name: CountEnabledAdmins :one
 SELECT count(*) FROM users WHERE role = 'admin' AND disabled = 0;
+
+-- name: UpdateUserProfile :exec
+UPDATE users SET email = ?, name = ? WHERE id = ?;

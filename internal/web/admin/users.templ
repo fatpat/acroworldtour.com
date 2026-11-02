@@ -73,6 +73,18 @@ templ userPage(v userView) {
 				<button class="btn" type="submit">Set password</button>
 			</form>
 		</div>
+		<form class="card form" method="post" action={ templ.SafeURL("/manager/users/" + v.User.ID + "/profile") }>
+			@csrf()
+			<h2>Email and name</h2>
+			if v.Self {
+				<p class="muted">Change your own email and name on your <a href="/manager/account">account page</a>.</p>
+			} else {
+				@textField("email", "Email (used to log in)", "email", v.profile().Email, v.Errors, templ.Attributes{"required": true, "autocomplete": "off"})
+				@textField("name", "Name", "text", v.profile().Name, v.Errors, templ.Attributes{"required": true, "autocomplete": "off"})
+				<p class="muted">The user logs in with the new email from now on; their sessions stay open.</p>
+				<button class="btn" type="submit">Save</button>
+			}
+		</form>
 		<form class="card form" method="post" action={ templ.SafeURL("/manager/users/" + v.User.ID + "/role") }>
 			@csrf()
 			<h2>Role</h2>

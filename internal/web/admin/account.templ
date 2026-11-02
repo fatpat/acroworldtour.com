@@ -20,6 +20,15 @@ func (v accountView) sectionFailed(section string) bool {
 	return v.Section == section && v.Errors.Any()
 }
 
+// profile is what the email and name form shows: the posted values after a
+// refused change, the account's otherwise.
+func (v accountView) profile() userForm {
+	if v.Profile != nil {
+		return *v.Profile
+	}
+	return userForm{Email: v.User.Email, Name: v.User.Name}
+}
+
 func qrURL(pending string) string {
 	return "/manager/account/totp/qr.png?p=" + url.QueryEscape(pending)
 }
@@ -34,14 +43,20 @@ func keyUsed(k auth.KeyInfo) string {
 // currentPassword is the re-entered password every sensitive form carries;
 // id keeps the fields of the page's several forms distinct.
 templ currentPassword(id string, fe formErrors) {
+	@passwordCheck(id, "Current password", true, fe)
+}
+
+// passwordCheck is currentPassword with its label, and optional where the
+// form needs it only for some changes.
+templ passwordCheck(id, label string, required bool, fe formErrors) {
 	<div class="field">
-		<label for={ id }>Current password</label>
+		<label for={ id }>{ label }</label>
 		<input
 			id={ id }
 			name="current_password"
 			type="password"
 			autocomplete="current-password"
-			required
+			required?={ required }
 			if fe.Msg("current_password") != "" {
 				aria-invalid="true"
 				aria-describedby={ id + "-error" }
@@ -85,6 +100,20 @@ templ accountPage(v accountView) {
 		if len(v.Codes) > 0 {
 			@recoveryCodes(v.Codes, false)
 		}
+		<section class="card account__section" aria-labelledby="profile-title">
+			<h2 id="profile-title">Email and name</h2>
+			if v.Section == secProfile {
+				@errorSummary(v.Errors)
+			}
+			<form class="form" method="post" action="/manager/account/profile">
+				@csrf()
+				@textField("email", "Email (used to log in)", "email", v.profile().Email, v.errorsFor(secProfile), templ.Attributes{"required": true, "autocomplete": "email"})
+				@textField("name", "Name", "text", v.profile().Name, v.errorsFor(secProfile), templ.Attributes{"required": true, "autocomplete": "name"})
+				@passwordCheck("profile-current", "Current password (only to change your email)", false, v.errorsFor(secProfile))
+				<button class="btn" type="submit">Save</button>
+			</form>
+			<p class="muted">Changing your email logs you out everywhere else.</p>
+		</section>
 		<section class="card account__section" aria-labelledby="totp-title">
 			<h2 id="totp-title">Authenticator app</h2>
 			if v.Section == secTOTP {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -27,6 +28,7 @@ const (
 	secTOTP     = "totp"
 	secCodes    = "codes"
 	secPassword = "password"
+	secProfile  = "profile"
 )
 
 type accountView struct {
@@ -41,6 +43,8 @@ type accountView struct {
 	Enroll *totpEnroll
 	// Codes are fresh recovery codes, shown once.
 	Codes []string
+	// Profile holds the posted email and name after a refused change.
+	Profile *userForm
 }
 
 type totpEnroll struct{ Secret, Pending string }
@@ -65,6 +69,7 @@ func (h *handlers) registerAccount(r *web.Router) {
 	userPost("/manager/account/keys/{id}/remove", h.accountKeyRemove)
 	userPost("/manager/account/recovery/regenerate", h.accountRegenerate)
 	userPost("/manager/account/password", h.accountPassword)
+	userPost("/manager/account/profile", h.accountProfile)
 }
 
 func session(r *http.Request) auth.Session {
@@ -100,6 +105,7 @@ func (h *handlers) account(w http.ResponseWriter, r *http.Request) {
 func (h *handlers) accountFail(w http.ResponseWriter, r *http.Request, err error, v accountView) {
 	var (
 		in      *auth.InputError
+		exists  *auth.ExistsError
 		limited *auth.ErrReauthLimited
 	)
 	status := http.StatusUnprocessableEntity
@@ -114,6 +120,8 @@ func (h *handlers) accountFail(w http.ResponseWriter, r *http.Request, err error
 		v.Errors = validationErrors([]domain.FieldError{{Field: "code", Msg: "The code does not match; check the time on your phone and try the next code"}})
 	case errors.As(err, &in):
 		v.Errors = validationErrors([]domain.FieldError{{Field: in.Field, Msg: in.Msg}})
+	case errors.As(err, &exists):
+		status, v.Errors = http.StatusConflict, validationErrors([]domain.FieldError{{Field: "email", Msg: "Another account uses this email"}})
 	case errors.Is(err, auth.ErrEnrollmentExpired):
 		v.Enroll, v.Errors = nil, messageError("The setup expired. Start again.")
 	case errors.Is(err, auth.ErrTOTPEnrolled):
@@ -329,6 +337,26 @@ func (h *handlers) accountPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	redirect(w, r, "/manager/account", "own_password")
+}
+
+// accountProfile changes the session's email and name; a new email needs the
+// current password (auth.UpdateOwnProfile).
+func (h *handlers) accountProfile(w http.ResponseWriter, r *http.Request) {
+	s := session(r)
+	f := userForm{Email: r.PostFormValue("email"), Name: r.PostFormValue("name")}
+	changed, err := h.auth.UpdateOwnProfile(r.Context(), s.User.ID, f.Email, f.Name, r.PostFormValue("current_password"), s.Token)
+	if err != nil {
+		h.accountFail(w, r, err, accountView{Section: secProfile, Profile: &f})
+		return
+	}
+	key := "own_profile"
+	switch {
+	case slices.Contains(changed, "email"):
+		key = "own_email"
+	case len(changed) == 0:
+		key = "profile_same"
+	}
+	redirect(w, r, "/manager/account", key)
 }
 
 // groupSecret shows a base32 secret in groups of 4 for manual entry.
