@@ -139,7 +139,7 @@ func Admin(m Meta, active string) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, ")</span> <a class=\"btn btn--ghost\" href=\"/\">View site</a> <a class=\"btn btn--ghost\" href=\"/manager/account\" aria-current=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, ")</span> <a class=\"btn btn--ghost\" href=\"/\">Exit manager</a> <a class=\"btn btn--ghost\" href=\"/manager/account\" aria-current=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
