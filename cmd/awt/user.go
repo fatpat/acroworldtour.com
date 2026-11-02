@@ -17,9 +17,9 @@ import (
 	"awt/internal/store"
 )
 
-const userUsage = "usage: awt user add --email E --name N --role admin|scorer | passwd --email E | assign --email E --competition ID|CODE | reset-mfa --email E (password on stdin for add and passwd)"
+const userUsage = "usage: awt user add --email E --name N --role admin|scorer | passwd --email E | assign --email E --competition ID|CODE | reset-mfa --email E | role --email E --role admin|scorer (password on stdin for add and passwd)"
 
-// userCmd manages accounts: `awt user add|passwd|assign|reset-mfa`.
+// userCmd manages accounts: `awt user add|passwd|assign|reset-mfa|role`.
 func userCmd(args []string, stdin *os.File) error {
 	if len(args) == 0 {
 		return errors.New(userUsage)
@@ -27,10 +27,10 @@ func userCmd(args []string, stdin *os.File) error {
 	fs := flag.NewFlagSet("user "+args[0], flag.ContinueOnError)
 	email := fs.String("email", "", "account email")
 	name := fs.String("name", "", "display name (add)")
-	role := fs.String("role", "", "admin or scorer (add)")
+	role := fs.String("role", "", "admin or scorer (add, role)")
 	comp := fs.String("competition", "", "competition id or code (assign)")
 	switch args[0] {
-	case "add", "passwd", "assign", "reset-mfa":
+	case "add", "passwd", "assign", "reset-mfa", "role":
 	default:
 		return errors.New(userUsage)
 	}
@@ -45,6 +45,8 @@ func userCmd(args []string, stdin *os.File) error {
 		return errors.New("--name and --role are required")
 	case args[0] == "assign" && *comp == "":
 		return errors.New("--competition is required")
+	case args[0] == "role" && *role == "":
+		return errors.New("--role is required")
 	}
 
 	cfg, err := config.Load(os.Getenv)
@@ -88,6 +90,22 @@ func userCmd(args []string, stdin *os.File) error {
 			return err
 		}
 		fmt.Printf("second factors removed for %s; all sessions closed\n", u.Email)
+	case "role":
+		// No actor: like reset-mfa, the CLI is the way back in, so only the
+		// last-admin guard applies.
+		u, err := a.UserByEmail(ctx, *email)
+		if err != nil {
+			return err
+		}
+		changed, err := a.SetRole(ctx, "cli", u.ID, *role)
+		if err != nil {
+			return err
+		}
+		if !changed {
+			fmt.Printf("%s is already %s\n", u.Email, *role)
+			break
+		}
+		fmt.Printf("%s is now %s; all sessions closed\n", u.Email, *role)
 	case "assign":
 		if err := a.AssignCompetition(ctx, *email, *comp); err != nil {
 			return err

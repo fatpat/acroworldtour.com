@@ -45,6 +45,7 @@ func (h *handlers) registerUsers(r *web.Router) {
 	post(r, "/manager/users/{id}/competitions", h.userCompetitions)
 	post(r, "/manager/users/{id}/password", h.userPassword)
 	post(r, "/manager/users/{id}/reset-mfa", h.userResetMFA)
+	post(r, "/manager/users/{id}/role", h.userRole)
 }
 
 func (h *handlers) usersPage(w http.ResponseWriter, r *http.Request, status int, f userForm, fe formErrors) {
@@ -219,6 +220,35 @@ func (h *handlers) userResetMFA(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	redirect(w, r, "/manager/users/"+u.ID, "mfa_reset")
+}
+
+// userRole changes a user's role. The guards (own role, last enabled admin)
+// live in auth.SetRole; they are shown on the page as a conflict.
+func (h *handlers) userRole(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.loadUser(w, r)
+	if !ok {
+		return
+	}
+	redo := func(status int, fe formErrors) { h.userPage(w, r, status, u, fe) }
+	changed, err := h.auth.SetRole(r.Context(), session(r).User.ID, u.ID, r.PostFormValue("role"))
+	switch {
+	case errors.Is(err, auth.ErrOwnRole):
+		redo(http.StatusConflict, messageError("You cannot change your own role; ask another admin."))
+		return
+	case errors.Is(err, auth.ErrLastAdmin):
+		redo(http.StatusConflict, messageError("Cannot demote the last enabled admin."))
+		return
+	case err != nil:
+		if !h.authFail(err, redo) {
+			h.fail(w, r, err, redo)
+		}
+		return
+	}
+	key := "role"
+	if !changed {
+		key = "role_same"
+	}
+	redirect(w, r, "/manager/users/"+u.ID, key)
 }
 
 func roleLabel(u auth.User) string {

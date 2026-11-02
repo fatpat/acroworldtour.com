@@ -23,6 +23,17 @@ func (q *Queries) AddUserCompetition(ctx context.Context, arg AddUserCompetition
 	return err
 }
 
+const countEnabledAdmins = `-- name: CountEnabledAdmins :one
+SELECT count(*) FROM users WHERE role = 'admin' AND disabled = 0
+`
+
+func (q *Queries) CountEnabledAdmins(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countEnabledAdmins)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const deleteExpiredSessions = `-- name: DeleteExpiredSessions :exec
 DELETE FROM sessions WHERE expires_at <= ?
 `
@@ -248,6 +259,20 @@ type UpdateUserPasswordParams struct {
 
 func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error {
 	_, err := q.db.ExecContext(ctx, updateUserPassword, arg.PasswordHash, arg.ID)
+	return err
+}
+
+const updateUserRole = `-- name: UpdateUserRole :exec
+UPDATE users SET role = ? WHERE id = ?
+`
+
+type UpdateUserRoleParams struct {
+	Role string `json:"role"`
+	ID   string `json:"id"`
+}
+
+func (q *Queries) UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) error {
+	_, err := q.db.ExecContext(ctx, updateUserRole, arg.Role, arg.ID)
 	return err
 }
 

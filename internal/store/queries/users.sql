@@ -48,3 +48,9 @@ DELETE FROM sessions WHERE user_id = ?;
 
 -- name: DeleteUserSessionsExcept :exec
 DELETE FROM sessions WHERE user_id = ? AND token_hash <> ?;
+
+-- name: UpdateUserRole :exec
+UPDATE users SET role = ? WHERE id = ?;
+
+-- name: CountEnabledAdmins :one
+SELECT count(*) FROM users WHERE role = 'admin' AND disabled = 0;

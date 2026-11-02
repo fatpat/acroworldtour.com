@@ -151,7 +151,7 @@ Deploys need no GitHub secret and no registry credential on the VPS: the reposit
    ```
    Push to the deploy branch (`rewrite-go`, set in the `if:` of the `build` job in `.github/workflows/ci.yml`; the moving tag has the same name). After `check` passes, `build` publishes the image; within a minute the agent installs its `compose.yaml` and `Caddyfile` and deploys training and prod (each health checked, independently). Follow it with `journalctl -u awt-agent -f`. The first run starts empty databases (migrations run at `awt serve` startup).
 2. Check: `docker compose ps` shows `healthy` for `awt-prod` and `awt-training`; `docker compose logs awt-prod` shows `listening`; the public URL answers through Cloudflare; the bucket gets a `<prefix>litestream/` prefix within a minute (`prod/litestream/` with the example prefix).
-3. Create the first admin: `docker compose exec awt-prod awt user add --email you@example.org --name "You" --role admin` (the password is read from stdin or prompted).
+3. Create the first admin: `docker compose exec awt-prod awt user add --email you@example.org --name "You" --role admin` (the password is read from stdin or prompted). To change a role later, see section 7c (`awt user role`).
 
 ## 4. First import (legacy data)
 
@@ -369,6 +369,19 @@ A manager who lost their authenticator app or security key and has no recovery c
 - **Restarting after losing `AWT_MFA_KEY`.** The app refuses to start outside dev while TOTP secrets exist and no key is set, so pick one:
   1. Set a **new** key (`openssl rand -base64 32`) in the environment file and start. The old TOTP secrets can no longer be opened: those managers see "authenticator codes unavailable" at login and sign in with a security key or a recovery code, or are reset by an admin. Once in, they remove the dead app on the account page and enrol again.
   2. Or, **before** restarting, reset every TOTP user from the server with `awt user reset-mfa --email ...` (it works without the key); then the app starts without a key (authenticator apps stay unavailable until one is set, and a startup warning says so).
+
+## 7c. Change a manager's role
+
+A role (`admin` or `scorer`) can be changed after the account is created.
+
+- **From the manager:** an admin opens `/manager/users`, chooses the user (Manage), picks the role in the "Role" card and presses "Change role". An admin cannot change their own role there: another admin does it.
+- **From the server** (no actor, so changing your own role is allowed, like `reset-mfa`):
+  ```sh
+  docker compose exec awt-prod awt user role --email you@example.org --role scorer
+  ```
+- Both refuse to demote the **last enabled admin**. Setting the role the user already has changes nothing.
+- A change closes all the user's sessions; they log in again with the new role. Competition assignments are kept: they are ignored while the user is an admin and apply again after a demotion to scorer.
+- Every change logs `event=user.role_changed` with `actor` (the admin's user id, or `cli`), `user_id`, `old_role` and `new_role`.
 
 ## 8. Developer setup: browser tests
 

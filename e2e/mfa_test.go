@@ -138,4 +138,13 @@ func TestTOTPLoginFlow(t *testing.T) {
 	expectText(t, root.Locator("main"), "Second factor removed")
 	loginPassword(t, p, mfaEmail, mfaPassword)
 	must(t, p.WaitForURL("**/manager"), "password-only login after the reset")
+
+	// The default admin demotes them to scorer: their session is closed.
+	_, err = root.Locator("#role").SelectOption(playwright.SelectOptionValues{Values: &[]string{"scorer"}})
+	must(t, err, "pick the scorer role")
+	click(t, role(root, "button", "Change role"), "Change role")
+	expectText(t, root.Locator("main"), "Role changed")
+	_, err = p.Goto(e.baseURL + "/manager")
+	must(t, err, "reload after the demotion")
+	must(t, p.WaitForURL("**/manager/login**"), "session closed by the role change")
 }

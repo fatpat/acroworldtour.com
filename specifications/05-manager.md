@@ -555,6 +555,7 @@ The manager does **not** compute scores. All scoring goes through the API's simu
 
 ### Platform and security
 - [ ] Real authentication with **per-user accounts and roles** (at least: admin, organizer for a competition, scorer/judge). The legacy app has one shared admin account.
+  - **Role change** (rewrite, 2026-11-02 owner request): an admin changes a user's role (`admin` ↔ `scorer`) on `/manager/users/<id>`, or from the server with `awt user role --email E --role admin|scorer`. Guards: an admin cannot change their own role in the manager (the CLI has no actor and may); the last enabled admin cannot be demoted (checked in the same transaction as the change, in the manager and the CLI); setting the current role is a no-op. A change closes all the user's sessions and logs `user.role_changed` (actor, user id, old and new role). Competition assignments are kept: admins see every competition anyway, and the assignments apply again after a demotion to scorer.
 - [ ] Every back-office route is guarded. **A 401 anywhere redirects to login with return-to.** Token refresh or a session approach. Logout.
 - [ ] Authenticated (or signed-URL) exports. Do not rely on unauthenticated API endpoints.
 - [ ] Configurable API base URL per environment, plus a **visible environment marker** (the colored border from `NEXT_PUBLIC_BORDER_COLOR`).

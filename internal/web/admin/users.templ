@@ -73,6 +73,17 @@ templ userPage(v userView) {
 				<button class="btn" type="submit">Set password</button>
 			</form>
 		</div>
+		<form class="card form" method="post" action={ templ.SafeURL("/manager/users/" + v.User.ID + "/role") }>
+			@csrf()
+			<h2>Role</h2>
+			if v.Self {
+				<p class="muted">You cannot change your own role; ask another admin.</p>
+			} else {
+				@selectField("role", "Role", v.User.Role, roleOptions, v.Errors)
+				<p class="muted">Admins see every competition. Competition assignments are kept when promoting to admin and apply again after a demotion to scorer. Changing the role closes the user's sessions. The last enabled admin cannot be demoted.</p>
+				<button class="btn" type="submit">Change role</button>
+			}
+		</form>
 		<section class="card" aria-labelledby="mfa-title">
 			<h2 id="mfa-title">Second factor</h2>
 			if v.Self {

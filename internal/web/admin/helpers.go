@@ -76,6 +76,8 @@ var flashMessages = map[string]string{
 	"disabled":  "Account disabled.",
 	"enabled":   "Account enabled.",
 	"mfa_reset": "Second factor removed; the user's sessions were closed.",
+	"role":      "Role changed; the user's sessions were closed.",
+	"role_same": "Role unchanged.",
 	"opened":    "Opened.",
 	"closed":    "Closed.",
 	"reopened":  "Reopened.",
