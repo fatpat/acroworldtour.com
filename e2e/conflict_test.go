@@ -3,7 +3,7 @@ package e2e
 import (
 	"testing"
 
-	"github.com/playwright-community/playwright-go"
+	"github.com/mxschmitt/playwright-go"
 )
 
 // TestConcurrentEditConflict: two scorers open the same saved flight; the

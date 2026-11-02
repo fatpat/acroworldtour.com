@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/playwright-community/playwright-go"
+	"github.com/mxschmitt/playwright-go"
 )
 
 const (
@@ -146,7 +146,7 @@ func run(m *testing.M) (int, error) {
 
 	pw, err := playwright.Run()
 	if err != nil {
-		return 0, fmt.Errorf("start playwright (run `go run github.com/playwright-community/playwright-go/cmd/playwright install chromium`): %w", err)
+		return 0, fmt.Errorf("start playwright (run `make e2e-deps`): %w", err)
 	}
 	defer pw.Stop()
 	browser, err := pw.Chromium.Launch()

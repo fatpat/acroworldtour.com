@@ -9,7 +9,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/playwright-community/playwright-go"
+	"github.com/mxschmitt/playwright-go"
 )
 
 const defaultTimeout = 10_000 // ms

@@ -15,7 +15,7 @@ require (
 	github.com/a-h/templ v0.3.1070
 	github.com/go-webauthn/webauthn v0.18.2
 	github.com/minio/minio-go/v7 v7.4.1
-	github.com/playwright-community/playwright-go v0.5700.1
+	github.com/mxschmitt/playwright-go v0.6201.1
 	github.com/xuri/excelize/v2 v2.11.1-0.20260930021559-01a9ff32fb3c
 	github.com/yuin/goldmark v1.8.6
 	golang.org/x/crypto v0.58.0
@@ -45,7 +45,6 @@ require (
 	github.com/fatih/structtag v1.2.0 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.4 // indirect
-	github.com/go-jose/go-jose/v3 v3.0.4 // indirect
 	github.com/go-sql-driver/mysql v1.9.3 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
