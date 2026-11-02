@@ -672,6 +672,14 @@ func TestAnonymousIsRedirectedToLogin(t *testing.T) {
 	}
 }
 
+// userAllowed are the routes open to every logged-in user besides the account
+// page. The competition list filters itself to a scorer's assignments.
+var userAllowed = map[string]bool{
+	"GET /manager":              true,
+	"GET /manager/competitions": true,
+	"POST /manager/logout":      true,
+}
+
 // scorerAllowed are the exact routes open to assigned scorers (read-only).
 var scorerAllowed = map[string]bool{
 	"GET /manager/competitions/{code}":                              true,
@@ -724,10 +732,13 @@ func TestEveryAdminRouteIsGuarded(t *testing.T) {
 		if account && rt.Guard != web.GuardUser {
 			t.Errorf("%s has guard %s, want user", rt.Pattern, rt.Guard)
 		}
-		if rt.Guard == web.GuardUser && !account && rt.Pattern != "GET /manager" && rt.Pattern != "POST /manager/logout" {
-			t.Errorf("%s is user-guarded; only the dashboard, logout and the account page may be", rt.Pattern)
+		if rt.Guard == web.GuardUser && !account && !userAllowed[rt.Pattern] {
+			t.Errorf("%s is user-guarded; only the dashboard, the competition list, logout and the account page may be", rt.Pattern)
 		}
-		if rt.Pattern != "GET /manager" && rt.Pattern != "POST /manager/logout" && !account && rt.Guard != web.GuardAdmin &&
+		if userAllowed[rt.Pattern] && rt.Guard != web.GuardUser {
+			t.Errorf("%s has guard %s, want user", rt.Pattern, rt.Guard)
+		}
+		if !userAllowed[rt.Pattern] && !account && rt.Guard != web.GuardAdmin &&
 			!scorerAllowed[rt.Pattern] && !(rt.Guard == web.GuardScorer && strings.Contains(p, "/judging")) {
 			t.Errorf("%s has guard %s, want admin", rt.Pattern, rt.Guard)
 		}

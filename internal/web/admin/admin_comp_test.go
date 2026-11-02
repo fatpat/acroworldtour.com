@@ -5,6 +5,7 @@ import (
 	"context"
 	"maps"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"os"
 	"regexp"
@@ -283,8 +284,9 @@ func TestScorerAccess(t *testing.T) {
 			t.Fatalf("scorer run page offers %q", forbidden)
 		}
 	}
-	// Setup stays admin-only.
-	for _, p := range []string{"/manager/competitions", "/manager/competitions/new", "/manager/competitions/scored-cup/edit",
+	// Setup stays admin-only. The list itself is open, filtered to the
+	// scorer's competitions (TestScorerCompetitionList).
+	for _, p := range []string{"/manager/competitions/new", "/manager/competitions/scored-cup/edit",
 		"/manager/competitions/scored-cup/participants", "/manager/competitions/scored-cup/judges", "/manager/competitions/scored-cup/config",
 		"/manager/competitions/scored-cup/state/close", "/manager/competitions/scored-cup/runs/new", "/manager/competitions/scored-cup/runs/1/state/open"} {
 		if code := sget(p); code != http.StatusForbidden {
@@ -379,4 +381,27 @@ func TestExports(t *testing.T) {
 		t.Fatal("run export lists an unpublished flight")
 	}
 	e.wantStatus(e.get(base+"/runs/1/export/results.xlsx"), http.StatusBadRequest, "not final")
+}
+
+// The sidebar's Competitions entry is the scorer's way in: the list shows
+// only their assigned competitions and no admin actions.
+func TestScorerCompetitionList(t *testing.T) {
+	e := newEnv(t)
+	e.setupData()
+	mine := e.soloComp("Mine Cup", "2026-06-01")
+	e.soloComp("Other Cup", "2026-07-01")
+	rec := e.do(httptest.NewRequest(http.MethodGet, "/manager/competitions", nil), &e.scorer)
+	e.wantStatus(rec, http.StatusOK, "not assigned to any competition")
+	if body := rec.Body.String(); strings.Contains(body, "Other Cup") || strings.Contains(body, "New competition") {
+		t.Fatal("unassigned scorer sees a competition or the create button")
+	}
+	if err := e.deps.Auth.AssignCompetition(context.Background(), "scorer@example.org", mine.ID); err != nil {
+		t.Fatal(err)
+	}
+	rec = e.do(httptest.NewRequest(http.MethodGet, "/manager/competitions", nil), &e.scorer)
+	e.wantStatus(rec, http.StatusOK, "Mine Cup", "/manager/competitions/"+mine.Code)
+	if body := rec.Body.String(); strings.Contains(body, "Other Cup") || strings.Contains(body, "New competition") {
+		t.Fatal("scorer sees a competition they are not assigned to, or the create button")
+	}
+	e.wantStatus(e.get("/manager/competitions"), http.StatusOK, "Mine Cup", "Other Cup", "New competition")
 }

@@ -23,7 +23,9 @@ func scorer(r *web.Router, pattern string, fn http.HandlerFunc) {
 }
 
 func (h *handlers) registerCompetitions(r *web.Router) {
-	get(r, "/manager/competitions", h.compList)
+	// Every logged-in user: scorers get the competitions they are assigned
+	// to, the sidebar's only entry for them.
+	r.User("GET /manager/competitions", http.HandlerFunc(h.compList))
 	get(r, "/manager/competitions/new", h.compNew)
 	post(r, "/manager/competitions", h.compCreate)
 	scorer(r, "/manager/competitions/{code}", h.compShow)
@@ -90,6 +92,7 @@ type compRow struct {
 }
 
 type compListView struct {
+	Admin bool
 	Years []int
 	Year  int
 	Rows  []compRow
@@ -102,7 +105,15 @@ func (h *handlers) compList(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, r, err, nil)
 		return
 	}
-	v := compListView{Flash: flash(r)}
+	v := compListView{Admin: session(r).User.Role == auth.RoleAdmin, Flash: flash(r)}
+	if !v.Admin {
+		mine, err := h.auth.UserCompetitions(r.Context(), session(r).User.ID)
+		if err != nil {
+			h.fail(w, r, err, nil)
+			return
+		}
+		comps = slices.DeleteFunc(comps, func(c service.Competition) bool { return !slices.Contains(mine, c.ID) })
+	}
 	for _, c := range comps {
 		if y := c.Year(); !slices.Contains(v.Years, y) {
 			v.Years = append(v.Years, y)
